@@ -1,91 +1,58 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: January 17, 2026  
-**Session Status**: Foundation Complete ✅
+**Session Status**: Tours Page + Tech-Based Templates Complete ✅
 
 ---
 
-## ✅ Work Completed This Session
+## 🎯 Key Concept: Technology-Based Templates
 
-### 1. Git Setup
-- Initialized repository and pushed to [GitHub](https://github.com/Catskill909/tourstack)
-- 3 commits on `main` branch
+Templates are now organized by **positioning technology**, not content type:
 
-### 2. Settings Page
-- Created tabbed Settings UI with API key configuration
-- **Maps & Location**: OpenStreetMap (no key) + Google Maps API key input
-- **Positioning APIs**: Estimote and Kontakt.io API key inputs
-- **General**: Language selector (9 languages), analytics toggle
-- File: `app/src/pages/Settings.tsx`
+| Icon | Template | Use Case |
+|------|----------|----------|
+| 📱 | **QR Code** | Zero cost, scan-based - perfect to start |
+| 📍 | **GPS / Lat-Long** | Outdoor exhibits, sculpture gardens |
+| 📶 | **BLE Beacon** | Indoor triangulation, ±1.5-3m accuracy |
+| 📲 | **NFC** | Tap-to-trigger, no battery required |
+| 🔖 | **RFID** | Medium-range artifact tracking |
+| 📡 | **WiFi Positioning** | Uses existing infrastructure |
+| 🎯 | **UWB** | Premium precision at ±10-50cm |
+| 🔀 | **Hybrid** | Mix multiple tech *(Phase 4)* |
 
-### 3. SQLite Database with Prisma 7
-- Created schema with 6 models (Museum, Template, Tour, Stop, AppSettings, Media)
-- Uses `@prisma/adapter-better-sqlite3` for Prisma 7 compatibility
-- Seeded 6 built-in templates (Artwork, Artifact, Natural History, etc.)
-- Files: `prisma/schema.prisma`, `prisma/seed.ts`, `src/lib/db.ts`
+This approach lets you build QR Code first to establish patterns for languages, media, and stops - then apply those to other technologies.
 
 ---
 
-## 🔜 Next Steps (Priority Order)
+## ✅ Work Completed
 
-### Phase 2: Core Features
+### Phase 1: Foundation
+- [x] Git repo → [GitHub](https://github.com/Catskill909/tourstack)
+- [x] Settings page with API key configuration
+- [x] SQLite database with Prisma 7
 
-#### 1. Build Tours Page with CRUD Operations
-- [x] Create `Tours.tsx` page component
-- [x] List existing tours from database
-- [x] Create Tour modal/form with template selection
-- [x] Delete tour with confirmation
-- [x] Tour status management (draft/published/archived)
-- [ ] Edit tour functionality (TODO)
-
-#### 2. Create Tour Wizard with Template Selection
-- [x] Step 1: Select template from built-in options
-- [x] Step 2: Basic info (title, description, languages)
-- [x] Step 3: Review and create
-- [ ] Positioning technology selection (Phase 3)
-- [ ] Accessibility settings (Phase 3)
-
-#### 3. Implement Stop/Beacon Positioning Configuration
-- [ ] Stop list within tour
-- [ ] Drag-and-drop reordering
-- [ ] Positioning config per stop (QR, GPS, BLE, etc.)
-- [ ] Content editor for each stop
-- [ ] Multilingual content support
-
-#### 4. Media Library
-- [ ] Upload/organize images, audio, video
-- [ ] Preview and delete functionality
-- [ ] Integration with stop content editor
-
-### Phase 3: Advanced Features
-- [ ] Analytics dashboard
-- [ ] Beacon scanner/testing tools
-- [ ] Export/import tours as JSON
-- [ ] Multi-user roles
-- [ ] API endpoints for visitor apps
+### Phase 2: Tours Page
+- [x] Tours page with CRUD operations
+- [x] 3-step create wizard (Template → Info → Review)
+- [x] Tour cards with status badges, action menus
+- [x] Search/filter, keyboard shortcuts (⌘N)
+- [x] Technology-based templates (7 types)
 
 ---
 
-## 🏗️ Architecture Notes
+## 🔜 Next Steps
 
-### Prisma 7 Adapter Pattern
-Prisma 7 requires driver adapters. For SQLite:
-```typescript
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
-import { PrismaClient } from '../generated/prisma';
+### Build QR Code Template Features
+1. **Stop Manager** - Add/edit/reorder stops within tours
+2. **QR Code Generator** - Generate printable QR sheets per stop
+3. **Multilingual Content** - Title/description per language
+4. **Media Library** - Upload images/audio per stop
+5. **Preview Mode** - Simulate visitor experience
 
-const adapter = new PrismaBetterSqlite3({ url: 'file:./dev.db' });
-const prisma = new PrismaClient({ adapter });
-```
-
-### Database Location
-- Database file: `app/dev.db` (in app root, not prisma folder)
-- Gitignored - run `npm run db:migrate` then `npm run db:seed` on fresh clone
-
-### Design System
-- Dark Material Design theme with purple (`#BB86FC`) and teal (`#03DAC6`) accents
-- CSS variables defined in `src/index.css`
-- Tailwind CSS v4 with `@theme` block
+### Then Apply to Other Technologies
+- GPS: Add map picker, geofence visualization
+- BLE: UUID/Major/Minor config, signal testing
+- NFC: Tag ID generator, tap instructions
 
 ---
 
@@ -93,37 +60,18 @@ const prisma = new PrismaClient({ adapter });
 
 | Purpose | File |
 |---------|------|
-| Database Schema | `app/prisma/schema.prisma` |
-| Seed Script | `app/prisma/seed.ts` |
-| DB Utility | `app/src/lib/db.ts` |
-| TypeScript Types | `app/src/types/index.ts` |
-| Settings Page | `app/src/pages/Settings.tsx` |
-| Main Router | `app/src/App.tsx` |
-| Design Tokens | `app/src/index.css` |
+| Tours Page | `app/src/pages/Tours.tsx` |
+| Tour Service | `app/src/lib/tourService.ts` |
+| Templates (7 types) | `app/prisma/seed.ts` |
+| Zustand Store | `app/src/stores/useToursStore.ts` |
 | Scope Document | `tourstack.md` |
 
 ---
 
-## 🔧 Commands Reference
+## 🔧 Commands
 
 ```bash
-# Development
 npm run dev           # Start dev server (localhost:5173)
 npm run build         # Build for production
-npm run lint          # Run ESLint
-
-# Database
-npm run db:migrate    # Run Prisma migrations
-npm run db:seed       # Seed built-in templates
-npm run db:studio     # Open Prisma Studio GUI
-```
-
----
-
-## 📋 Git Log
-
-```
-eab1edf Add SQLite database with Prisma 7
-1870775 Add Settings page with API key configuration
-0f8ca63 Initial commit: TourStack foundation
+npm run db:seed       # Seed technology templates
 ```

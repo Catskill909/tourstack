@@ -51,15 +51,20 @@ TourStack/
 - `npm run db:seed` - Seed 6 built-in templates
 - `npm run db:studio` - Open Prisma Studio GUI
 
-## 🎨 Built-in Templates
+## 🎯 Technology-Based Templates
 
-Seeded templates for different museum types:
-- 🎨 **Artwork** - Art museums and galleries
-- 🏺 **Artifact** - Historical and archaeological
-- 🦖 **Natural History** - Science museums
-- 🔬 **Interactive Science** - Science centers
-- 🏛️ **Historic Site** - Walking tours
-- 🌿 **Botanical Garden** - Arboretums
+Tours are organized by **positioning technology**:
+
+| Icon | Template | Accuracy | Best For |
+|------|----------|----------|----------|
+| 📱 | **QR Code** | Scan-based | Zero cost, easy start |
+| 📍 | **GPS / Lat-Long** | ±5-15m | Outdoor exhibits |
+| 📶 | **BLE Beacon** | ±1.5-3m | Indoor triangulation |
+| 📲 | **NFC** | Contact | Tap-to-trigger |
+| 🔖 | **RFID** | ±1-30m | Artifact tracking |
+| 📡 | **WiFi** | ±5-15m | Existing infrastructure |
+| 🎯 | **UWB** | ±10-50cm | Premium precision |
+| 🔀 | **Hybrid** | Mixed | Multi-tech *(coming soon)* |
 
 ## 📍 Positioning Technologies
 

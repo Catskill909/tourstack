@@ -6,91 +6,93 @@ import { PrismaClient } from '../src/generated/prisma';
 const adapter = new PrismaBetterSqlite3({ url: 'file:./dev.db' });
 const prisma = new PrismaClient({ adapter });
 
-// Built-in templates for different museum types
+// Built-in templates based on positioning technology
 const builtInTemplates = [
     {
-        name: 'Artwork',
-        description: 'Perfect for art museums and galleries. Includes fields for artist, medium, dimensions, and provenance.',
-        icon: '🎨',
+        name: 'QR Code',
+        description: 'Zero hardware cost. Visitors scan codes with their camera. Perfect for getting started quickly.',
+        icon: '📱',
         builtIn: true,
         customFields: JSON.stringify([
-            { id: 'artist', name: 'artist', label: 'Artist', type: 'text', required: true },
-            { id: 'year', name: 'year', label: 'Year Created', type: 'number', required: false, unit: 'year' },
-            { id: 'medium', name: 'medium', label: 'Medium', type: 'text', required: false },
-            { id: 'dimensions', name: 'dimensions', label: 'Dimensions', type: 'text', required: false },
-            { id: 'provenance', name: 'provenance', label: 'Provenance', type: 'textarea', required: false },
-            { id: 'movement', name: 'movement', label: 'Art Movement', type: 'text', required: false },
+            { id: 'qrSize', name: 'qrSize', label: 'QR Code Size', type: 'text', required: false },
+            { id: 'placement', name: 'placement', label: 'Placement Notes', type: 'textarea', required: false },
+            { id: 'shortCode', name: 'shortCode', label: 'Short URL Code', type: 'text', required: false },
         ]),
     },
     {
-        name: 'Artifact',
-        description: 'For historical and archaeological museums. Includes fields for era, origin, and historical context.',
-        icon: '🏺',
+        name: 'GPS / Lat-Long',
+        description: 'For outdoor exhibits, sculpture gardens, and archaeological sites. Uses device GPS with geofencing.',
+        icon: '📍',
         builtIn: true,
         customFields: JSON.stringify([
-            { id: 'era', name: 'era', label: 'Era/Period', type: 'text', required: true },
-            { id: 'origin', name: 'origin', label: 'Place of Origin', type: 'text', required: true },
-            { id: 'material', name: 'material', label: 'Material', type: 'text', required: false },
-            { id: 'discovered', name: 'discovered', label: 'Date Discovered', type: 'date', required: false },
-            { id: 'context', name: 'context', label: 'Historical Context', type: 'richtext', required: false },
+            { id: 'latitude', name: 'latitude', label: 'Latitude', type: 'number', required: true },
+            { id: 'longitude', name: 'longitude', label: 'Longitude', type: 'number', required: true },
+            { id: 'radius', name: 'radius', label: 'Trigger Radius (meters)', type: 'number', required: true, unit: 'm' },
+            { id: 'elevation', name: 'elevation', label: 'Elevation', type: 'number', required: false, unit: 'm' },
         ]),
     },
     {
-        name: 'Natural History',
-        description: 'For natural history and science museums. Includes fields for species, habitat, and conservation status.',
-        icon: '🦖',
+        name: 'BLE Beacon',
+        description: 'Indoor positioning using Bluetooth Low Energy beacons. ±1.5-3 meter accuracy with triangulation.',
+        icon: '📶',
         builtIn: true,
         customFields: JSON.stringify([
-            { id: 'species', name: 'species', label: 'Species Name', type: 'text', required: true },
-            { id: 'scientificName', name: 'scientificName', label: 'Scientific Name', type: 'text', required: true },
-            { id: 'habitat', name: 'habitat', label: 'Habitat', type: 'text', required: false },
-            { id: 'conservationStatus', name: 'conservationStatus', label: 'Conservation Status', type: 'text', required: false },
-            { id: 'funFacts', name: 'funFacts', label: 'Fun Facts', type: 'list', required: false },
+            { id: 'uuid', name: 'uuid', label: 'Beacon UUID', type: 'text', required: true },
+            { id: 'major', name: 'major', label: 'Major Value', type: 'number', required: true },
+            { id: 'minor', name: 'minor', label: 'Minor Value', type: 'number', required: true },
+            { id: 'txPower', name: 'txPower', label: 'TX Power', type: 'number', required: false },
+            { id: 'triggerRadius', name: 'triggerRadius', label: 'Trigger Radius (m)', type: 'number', required: false, unit: 'm' },
         ]),
     },
     {
-        name: 'Interactive Science',
-        description: 'For science centers with hands-on exhibits. Includes fields for experiments and learning objectives.',
-        icon: '🔬',
+        name: 'NFC',
+        description: 'Tap-to-trigger with Near Field Communication. Ultra-short range, no battery required, very cost-effective.',
+        icon: '📲',
         builtIn: true,
         customFields: JSON.stringify([
-            { id: 'concept', name: 'concept', label: 'Scientific Concept', type: 'text', required: true },
-            { id: 'instructions', name: 'instructions', label: 'How to Use', type: 'richtext', required: true },
-            { id: 'learningObjectives', name: 'learningObjectives', label: 'Learning Objectives', type: 'list', required: false },
-            { id: 'ageRange', name: 'ageRange', label: 'Recommended Age', type: 'text', required: false },
-            { id: 'quiz', name: 'quiz', label: 'Quiz Question', type: 'quiz', required: false },
+            { id: 'tagId', name: 'tagId', label: 'NFC Tag ID', type: 'text', required: true },
+            { id: 'tagType', name: 'tagType', label: 'Tag Type', type: 'text', required: false },
+            { id: 'tapInstructions', name: 'tapInstructions', label: 'Tap Instructions', type: 'textarea', required: false },
         ]),
     },
     {
-        name: 'Historic Site',
-        description: 'For outdoor historic sites and walking tours. Includes GPS and historical event fields.',
-        icon: '🏛️',
+        name: 'RFID',
+        description: 'Radio Frequency Identification for medium-range tracking. Great for artifact tracking + visitor triggers.',
+        icon: '🔖',
         builtIn: true,
         customFields: JSON.stringify([
-            { id: 'historicalEvent', name: 'historicalEvent', label: 'Historical Event', type: 'text', required: false },
-            { id: 'date', name: 'date', label: 'Date', type: 'text', required: false },
-            { id: 'significance', name: 'significance', label: 'Historical Significance', type: 'richtext', required: true },
-            { id: 'thenAndNow', name: 'thenAndNow', label: 'Then & Now', type: 'textarea', required: false },
+            { id: 'tagId', name: 'tagId', label: 'RFID Tag ID', type: 'text', required: true },
+            { id: 'frequency', name: 'frequency', label: 'Frequency (LF/HF/UHF)', type: 'text', required: false },
+            { id: 'isActive', name: 'isActive', label: 'Active Tag?', type: 'text', required: false },
         ]),
     },
     {
-        name: 'Botanical Garden',
-        description: 'For botanical gardens and arboretums. Includes fields for plant species and care information.',
-        icon: '🌿',
+        name: 'WiFi Positioning',
+        description: 'Uses existing WiFi infrastructure for triangulation. 5-15 meter accuracy, lower cost if WiFi installed.',
+        icon: '📡',
         builtIn: true,
         customFields: JSON.stringify([
-            { id: 'commonName', name: 'commonName', label: 'Common Name', type: 'text', required: true },
-            { id: 'scientificName', name: 'scientificName', label: 'Scientific Name', type: 'text', required: true },
-            { id: 'family', name: 'family', label: 'Plant Family', type: 'text', required: false },
-            { id: 'nativeRegion', name: 'nativeRegion', label: 'Native Region', type: 'text', required: false },
-            { id: 'bloomingSeason', name: 'bloomingSeason', label: 'Blooming Season', type: 'text', required: false },
-            { id: 'careInfo', name: 'careInfo', label: 'Care Information', type: 'textarea', required: false },
+            { id: 'accessPoints', name: 'accessPoints', label: 'Access Point BSSIDs', type: 'textarea', required: true },
+            { id: 'signalThreshold', name: 'signalThreshold', label: 'Signal Threshold (dBm)', type: 'number', required: false },
+        ]),
+    },
+    {
+        name: 'Ultra-Wideband (UWB)',
+        description: 'Highest accuracy at ±10-50cm. Real-time positioning for premium installations.',
+        icon: '🎯',
+        builtIn: true,
+        customFields: JSON.stringify([
+            { id: 'anchorId', name: 'anchorId', label: 'UWB Anchor ID', type: 'text', required: true },
+            { id: 'xCoord', name: 'xCoord', label: 'X Coordinate', type: 'number', required: true },
+            { id: 'yCoord', name: 'yCoord', label: 'Y Coordinate', type: 'number', required: true },
+            { id: 'zCoord', name: 'zCoord', label: 'Z Coordinate', type: 'number', required: false },
+            { id: 'radius', name: 'radius', label: 'Trigger Radius (cm)', type: 'number', required: false, unit: 'cm' },
         ]),
     },
 ];
 
 async function main() {
-    console.log('🌱 Seeding database with built-in templates...');
+    console.log('🌱 Seeding database with technology-based templates...');
 
     for (const template of builtInTemplates) {
         const existing = await prisma.template.findFirst({
