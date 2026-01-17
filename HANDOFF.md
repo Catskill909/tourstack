@@ -48,16 +48,19 @@ This approach lets you build QR Code first to establish patterns for languages, 
 
 ## 🔜 Next Steps
 
-### Enhance Stop Manager
-1. **Stop Editor** - Edit stop details (title, description, media)
-2. **Multilingual Content** - Title/description per language
-3. **Media Library** - Upload images/audio per stop
-4. **Preview Mode** - Simulate visitor experience
+### Phase 4: Multilingual & AI (Next)
+- [ ] AI-Powered "Magic Translate" in Stop Manager
+- [ ] i18next integration for app UI
+- [ ] Multilingual content storage (Tour/Stop)
+- [ ] Language switching UI
 
-### Then Apply to Other Technologies
-- GPS: Add map picker, geofence visualization
-- BLE: UUID/Major/Minor config, signal testing
-- NFC: Tag ID generator, tap instructions
+## 🔜 Next Steps
+
+### Build AI Translation (Phase 4)
+1. **i18next Setup** - Core infrastructure for language handling
+2. **Magic Translate Button** - One-click translation for curators
+3. **Translation Service** - Bridge to LibreTranslate/OpenAI
+4. **Media Library** - Connect with Collections for stop media
 
 ---
 

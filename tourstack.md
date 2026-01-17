@@ -659,38 +659,16 @@ Human Review	$1,800+	Days-Weeks	95-99%	Final polish, legal accuracy
 Hybrid (AI + Human)	$800-1,200	3-7 days	92-97%	Balanced quality/cost
 Community Translation	Free	Variable	70-90%	Budget projects, volunteer networks
 2.2 AI Translation Integration
-Supported Services (Museums Choose):
+**"Magic Translate" Strategy:**
+To simplify the workflow for curators, the system provides a one-click translation experience.
 
-Budget Tier - AI Translation Services:
-
-Google Cloud Translation API
-Cost: ~$20 per 1M characters
-133 languages supported
-Neural Machine Translation (NMT)
-Batch processing support
-Best for: High-volume, cost-sensitive projects
-Amazon Translate
-Cost: ~$15 per 1M characters
-75 languages
-Custom terminology support
-Active custom translation (learns from corrections)
-Best for: Museums using AWS infrastructure
-DeepL
-Cost: ~$25 per 1M characters
-31 languages (European focus)
-Highest quality for European languages
-Context-aware translation
-Best for: European museums, quality-first approach
-Translation Features:
-
-One-click translation to 20+ languages
-Custom terminology dictionaries (e.g., "amphora" never becomes "water jug")
-Context preservation for museum-specific terms
-Side-by-side comparison editor
-Translation memory (reuse previous translations)
-Quality scoring (flag low-confidence translations)
-Batch translation (entire tour at once)
-Version control per language
+- **Infrastructure**: React-i18next for UI labels and routing.
+- **Workflow**: 
+    1. Curator writes in Primary Language (e.g., English).
+    2. Curator clicks "✨ Magic Translate".
+    3. Backend calls AI Service (LibreTranslate/OpenAI).
+    4. All selected target languages are populated instantly.
+- **Verification**: Curators can manually override AI suggestions in the localized editor.
 2.3 Audio Generation System
 Text-to-Speech (TTS) Services:
 
