@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: January 17, 2026  
-**Session Status**: Tours Page + Tech-Based Templates Complete ✅
+**Session Status**: Stop Manager + Collections Complete ✅
 
 ---
 
@@ -38,16 +38,21 @@ This approach lets you build QR Code first to establish patterns for languages, 
 - [x] Search/filter, keyboard shortcuts (⌘N)
 - [x] Technology-based templates (7 types)
 
+### Phase 3: Stop Manager & Collections
+- [x] Collections tab for reusable galleries
+- [x] Stop Manager with add/delete/reorder
+- [x] QR Code generator per stop
+- [x] Tour Detail page (`/tours/:id`)
+
 ---
 
 ## 🔜 Next Steps
 
-### Build QR Code Template Features
-1. **Stop Manager** - Add/edit/reorder stops within tours
-2. **QR Code Generator** - Generate printable QR sheets per stop
-3. **Multilingual Content** - Title/description per language
-4. **Media Library** - Upload images/audio per stop
-5. **Preview Mode** - Simulate visitor experience
+### Enhance Stop Manager
+1. **Stop Editor** - Edit stop details (title, description, media)
+2. **Multilingual Content** - Title/description per language
+3. **Media Library** - Upload images/audio per stop
+4. **Preview Mode** - Simulate visitor experience
 
 ### Then Apply to Other Technologies
 - GPS: Add map picker, geofence visualization

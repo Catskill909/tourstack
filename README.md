@@ -45,6 +45,7 @@ TourStack/
 | Stop | Tour stops with positioning configs |
 | AppSettings | API keys and preferences |
 | Media | Media library assets |
+| Collection | Reusable content galleries/datasets |
 
 **npm scripts:**
 - `npm run db:migrate` - Run database migrations

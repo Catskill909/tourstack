@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     MoreHorizontal,
     Edit3,
@@ -33,6 +34,7 @@ const statusConfig: Record<TourStatus, { label: string; color: string; bg: strin
 };
 
 export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStatusChange }: TourCardProps) {
+    const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -47,6 +49,12 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const handleCardClick = (e: React.MouseEvent) => {
+        // Don't navigate if clicking on menu area
+        if (menuRef.current?.contains(e.target as Node)) return;
+        navigate(`/tours/${tour.id}`);
+    };
+
     const title = typeof tour.title === 'object' ? tour.title[tour.primaryLanguage] || tour.title.en || 'Untitled' : tour.title;
     const description = typeof tour.description === 'object'
         ? tour.description[tour.primaryLanguage] || tour.description.en || ''
@@ -55,7 +63,10 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
     const stopCount = tour.stops?.length || 0;
 
     return (
-        <div className="group relative bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl p-5 hover:border-[var(--color-border-hover)] hover:shadow-lg transition-all duration-200">
+        <div
+            onClick={handleCardClick}
+            className="group relative bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl p-5 hover:border-[var(--color-border-hover)] hover:shadow-lg transition-all duration-200 cursor-pointer"
+        >
             {/* Template Icon & Title */}
             <div className="flex items-start gap-3 mb-3">
                 <div className="w-12 h-12 rounded-lg bg-[var(--color-bg-elevated)] flex items-center justify-center text-2xl flex-shrink-0">

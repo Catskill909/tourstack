@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { Dashboard } from './pages/Dashboard';
 import { Tours } from './pages/Tours';
+import { TourDetail } from './pages/TourDetail';
+import { Collections } from './pages/Collections';
+import { CollectionDetail } from './pages/CollectionDetail';
 import { Settings } from './pages/Settings';
 import './index.css';
 
@@ -12,6 +15,9 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/tours" element={<Tours />} />
+          <Route path="/tours/:id" element={<TourDetail />} />
+          <Route path="/collections" element={<Collections />} />
+          <Route path="/collections/:id" element={<CollectionDetail />} />
           <Route path="/templates" element={<ComingSoon title="Templates" />} />
           <Route path="/media" element={<ComingSoon title="Media Library" />} />
           <Route path="/languages" element={<ComingSoon title="Languages" />} />

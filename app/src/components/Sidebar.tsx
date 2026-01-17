@@ -8,12 +8,14 @@ import {
     Layers,
     Globe,
     BarChart3,
-    QrCode
+    QrCode,
+    LayoutGrid
 } from 'lucide-react';
 
 const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/tours', icon: MapPin, label: 'Tours' },
+    { to: '/collections', icon: LayoutGrid, label: 'Collections' },
     { to: '/templates', icon: Layers, label: 'Templates' },
     { to: '/media', icon: FolderOpen, label: 'Media Library' },
     { to: '/languages', icon: Globe, label: 'Languages' },
