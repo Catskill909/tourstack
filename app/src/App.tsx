@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { Dashboard } from './pages/Dashboard';
+import { Tours } from './pages/Tours';
 import { Settings } from './pages/Settings';
 import './index.css';
 
@@ -10,7 +11,7 @@ function App() {
       <MainLayout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/tours" element={<ComingSoon title="Tours" />} />
+          <Route path="/tours" element={<Tours />} />
           <Route path="/templates" element={<ComingSoon title="Templates" />} />
           <Route path="/media" element={<ComingSoon title="Media Library" />} />
           <Route path="/languages" element={<ComingSoon title="Languages" />} />

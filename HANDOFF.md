@@ -31,19 +31,19 @@
 ### Phase 2: Core Features
 
 #### 1. Build Tours Page with CRUD Operations
-- [ ] Create `Tours.tsx` page component
-- [ ] List existing tours from database
-- [ ] Create Tour modal/form with template selection
-- [ ] Edit tour functionality
-- [ ] Delete tour with confirmation
-- [ ] Tour status management (draft/published/archived)
+- [x] Create `Tours.tsx` page component
+- [x] List existing tours from database
+- [x] Create Tour modal/form with template selection
+- [x] Delete tour with confirmation
+- [x] Tour status management (draft/published/archived)
+- [ ] Edit tour functionality (TODO)
 
 #### 2. Create Tour Wizard with Template Selection
-- [ ] Step 1: Select template from built-in options
-- [ ] Step 2: Basic info (title, description, languages)
-- [ ] Step 3: Positioning technology selection
-- [ ] Step 4: Accessibility settings
-- [ ] Step 5: Review and create
+- [x] Step 1: Select template from built-in options
+- [x] Step 2: Basic info (title, description, languages)
+- [x] Step 3: Review and create
+- [ ] Positioning technology selection (Phase 3)
+- [ ] Accessibility settings (Phase 3)
 
 #### 3. Implement Stop/Beacon Positioning Configuration
 - [ ] Stop list within tour
