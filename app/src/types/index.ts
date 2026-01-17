@@ -19,17 +19,17 @@ export interface Museum {
 // =============================================================================
 // TEMPLATES
 // =============================================================================
-export type FieldType = 
-  | 'text' 
-  | 'textarea' 
-  | 'richtext' 
-  | 'number' 
-  | 'date' 
-  | 'image' 
-  | 'audio' 
-  | 'video' 
-  | 'url' 
-  | 'list' 
+export type FieldType =
+  | 'text'
+  | 'textarea'
+  | 'richtext'
+  | 'number'
+  | 'date'
+  | 'image'
+  | 'audio'
+  | 'video'
+  | 'url'
+  | 'list'
   | 'tags'
   | 'quiz';
 
@@ -60,7 +60,7 @@ export interface Template {
 // =============================================================================
 // POSITIONING / TRIGGERS
 // =============================================================================
-export type PositioningMethod = 
+export type PositioningMethod =
   | 'qr_code'
   | 'gps'
   | 'ble_beacon'
@@ -145,15 +145,15 @@ export interface ManualConfig {
   instructions?: string;
 }
 
-export type PositioningConfig = 
-  | QRCodeConfig 
-  | GPSConfig 
-  | BLEBeaconConfig 
-  | NFCConfig 
-  | RFIDConfig 
-  | WiFiConfig 
-  | UWBConfig 
-  | ImageRecognitionConfig 
+export type PositioningConfig =
+  | QRCodeConfig
+  | GPSConfig
+  | BLEBeaconConfig
+  | NFCConfig
+  | RFIDConfig
+  | WiFiConfig
+  | UWBConfig
+  | ImageRecognitionConfig
   | AudioWatermarkConfig
   | ManualConfig;
 
@@ -220,26 +220,26 @@ export interface Stop {
   tourId: string;
   order: number;
   type: StopType;
-  
+
   // Base Template Fields (REQUIRED)
   title: { [lang: string]: string };
   image: string;
   description: { [lang: string]: string };
-  
+
   // Custom Fields from Template
   customFieldValues: { [fieldId: string]: unknown };
-  
+
   // Positioning
   primaryPositioning: PositioningConfig;
   backupPositioning?: PositioningConfig;
   triggers: TriggerSettings;
-  
+
   // Content
   content: LocalizedContent;
-  
+
   // Interactive
   interactive?: InteractiveElements;
-  
+
   // Links
   links: Array<{
     label: string;
@@ -247,7 +247,7 @@ export interface Stop {
     type: 'website' | 'shop' | 'booking' | 'donation' | 'social';
     openInApp: boolean;
   }>;
-  
+
   // Accessibility
   accessibility: {
     audioDescription?: string;
@@ -255,14 +255,14 @@ export interface Stop {
     largePrintAvailable: boolean;
     seatingNearby: boolean;
   };
-  
+
   // Analytics (populated later)
   analytics?: {
     avgDwellTime: number;
     visitCount: number;
     interactionRate: number;
   };
-  
+
   createdAt: string;
   updatedAt: string;
 }
@@ -278,22 +278,22 @@ export interface Tour {
   museumId: string;
   templateId: string;
   status: TourStatus;
-  
+
   // Base Template Fields (REQUIRED for all tours)
   title: { [lang: string]: string };
   heroImage: string;
   description: { [lang: string]: string };
-  
+
   // Tour Settings
   languages: string[];
   primaryLanguage: string;
   duration: number; // minutes
   difficulty: Difficulty;
-  
+
   // Positioning
   primaryPositioningMethod: PositioningMethod;
   backupPositioningMethod?: PositioningMethod;
-  
+
   // Accessibility
   accessibility: {
     wheelchairAccessible: boolean;
@@ -302,15 +302,15 @@ export interface Tour {
     tactileElements: boolean;
     quietSpaceFriendly: boolean;
   };
-  
+
   // Stops
   stops: string[]; // Stop IDs in order
-  
+
   // Publishing
   publishedAt?: string;
   scheduledPublishAt?: string;
   version: number;
-  
+
   // Analytics
   analytics?: {
     totalVisitors: number;
@@ -318,7 +318,7 @@ export interface Tour {
     avgDuration: number;
     rating: number;
   };
-  
+
   createdAt: string;
   updatedAt: string;
 }
@@ -333,4 +333,47 @@ export interface AppState {
   templates: Template[];
   isLoading: boolean;
   error: string | null;
+}
+
+// =============================================================================
+// APP SETTINGS
+// =============================================================================
+export interface MapAPISettings {
+  googleMapsApiKey?: string;
+  googleMapsEnabled: boolean;
+  openStreetMapEnabled: boolean; // No API key needed for OSM
+  defaultMapProvider: 'google' | 'openstreetmap';
+}
+
+export interface PositioningProviderSettings {
+  estimoteApiKey?: string;
+  kontaktApiKey?: string;
+  customBleEnabled: boolean;
+}
+
+export interface MediaSettings {
+  cloudinaryCloudName?: string;
+  cloudinaryApiKey?: string;
+  maxUploadSizeMb: number;
+}
+
+export interface AppSettings {
+  id: string;
+  museumId: string;
+
+  // Map APIs
+  maps: MapAPISettings;
+
+  // Positioning Provider APIs (optional for advanced setups)
+  positioning: PositioningProviderSettings;
+
+  // Media Storage
+  media: MediaSettings;
+
+  // General Settings
+  defaultLanguage: string;
+  supportedLanguages: string[];
+  analyticsEnabled: boolean;
+
+  updatedAt: string;
 }

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { Dashboard } from './pages/Dashboard';
+import { Settings } from './pages/Settings';
 import './index.css';
 
 function App() {
@@ -15,7 +16,7 @@ function App() {
           <Route path="/languages" element={<ComingSoon title="Languages" />} />
           <Route path="/analytics" element={<ComingSoon title="Analytics" />} />
           <Route path="/tools" element={<ComingSoon title="Tools" />} />
-          <Route path="/settings" element={<ComingSoon title="Settings" />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/help" element={<ComingSoon title="Help" />} />
         </Routes>
       </MainLayout>
