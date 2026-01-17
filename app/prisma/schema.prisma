@@ -1,0 +1,181 @@
+// TourStack Database Schema
+// Learn more at: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// =============================================================================
+// MUSEUM
+// =============================================================================
+model Museum {
+  id        String   @id @default(cuid())
+  name      String
+  location  String?
+  logo      String?
+  
+  // Branding stored as JSON
+  branding  String?  // JSON: { primaryColor, secondaryColor }
+  
+  tours     Tour[]
+  templates Template[]
+  settings  AppSettings?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// =============================================================================
+// TEMPLATE
+// =============================================================================
+model Template {
+  id          String   @id @default(cuid())
+  museumId    String?
+  museum      Museum?  @relation(fields: [museumId], references: [id])
+  
+  name        String
+  description String
+  icon        String
+  builtIn     Boolean  @default(false)
+  
+  // Custom fields stored as JSON array
+  customFields String  // JSON: CustomField[]
+  
+  tours       Tour[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// =============================================================================
+// TOUR
+// =============================================================================
+model Tour {
+  id         String   @id @default(cuid())
+  museumId   String
+  museum     Museum   @relation(fields: [museumId], references: [id])
+  templateId String
+  template   Template @relation(fields: [templateId], references: [id])
+  
+  status     String   @default("draft") // draft, review, testing, scheduled, published, paused, archived
+  
+  // Multilingual fields stored as JSON
+  title       String  // JSON: { [lang]: string }
+  heroImage   String
+  description String  // JSON: { [lang]: string }
+  
+  // Settings
+  languages        String  // JSON: string[]
+  primaryLanguage  String  @default("en")
+  duration         Int     // minutes
+  difficulty       String  @default("general") // accessible, family, general, academic, children
+  
+  // Positioning
+  primaryPositioningMethod String  // qr_code, gps, ble_beacon, etc.
+  backupPositioningMethod  String?
+  
+  // Accessibility stored as JSON
+  accessibility String  // JSON: { wheelchairAccessible, audioDescriptions, etc. }
+  
+  // Publishing
+  publishedAt          DateTime?
+  scheduledPublishAt   DateTime?
+  version              Int       @default(1)
+  
+  stops     Stop[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// =============================================================================
+// STOP
+// =============================================================================
+model Stop {
+  id      String @id @default(cuid())
+  tourId  String
+  tour    Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  
+  order   Int
+  type    String @default("mandatory") // mandatory, optional, bonus, secret
+  
+  // Multilingual base fields
+  title       String  // JSON: { [lang]: string }
+  image       String
+  description String  // JSON: { [lang]: string }
+  
+  // Custom field values
+  customFieldValues String  // JSON: { [fieldId]: value }
+  
+  // Positioning configs stored as JSON
+  primaryPositioning String   // JSON: PositioningConfig
+  backupPositioning  String?  // JSON: PositioningConfig
+  triggers           String   // JSON: TriggerSettings
+  
+  // Content stored as JSON
+  content String  // JSON: LocalizedContent
+  
+  // Interactive elements
+  interactive String?  // JSON: InteractiveElements
+  
+  // Links
+  links String  // JSON: Array<{ label, url, type, openInApp }>
+  
+  // Accessibility
+  accessibility String  // JSON: accessibility options
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([tourId])
+}
+
+// =============================================================================
+// APP SETTINGS
+// =============================================================================
+model AppSettings {
+  id        String  @id @default(cuid())
+  museumId  String  @unique
+  museum    Museum  @relation(fields: [museumId], references: [id])
+  
+  // Map settings as JSON
+  maps String  // JSON: { googleMapsApiKey, googleMapsEnabled, openStreetMapEnabled, defaultMapProvider }
+  
+  // Positioning provider settings as JSON
+  positioning String  // JSON: { estimoteApiKey, kontaktApiKey, customBleEnabled }
+  
+  // Media settings as JSON
+  media String  // JSON: { cloudinaryCloudName, cloudinaryApiKey, maxUploadSizeMb }
+  
+  // General settings
+  defaultLanguage    String @default("en")
+  supportedLanguages String // JSON: string[]
+  analyticsEnabled   Boolean @default(true)
+  
+  updatedAt DateTime @updatedAt
+}
+
+// =============================================================================
+// MEDIA LIBRARY
+// =============================================================================
+model Media {
+  id        String   @id @default(cuid())
+  
+  filename  String
+  mimeType  String
+  size      Int      // bytes
+  url       String
+  
+  // Metadata
+  alt       String?
+  caption   String?
+  tags      String?  // JSON: string[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
