@@ -1,85 +1,199 @@
-# TourStack Handoff Document 📋
+ # TourStack Handoff Document 📋
 
-**Last Updated**: January 17, 2026  
-**Session Status**: Stop Manager + Collections Complete ✅
-
----
-
-## 🎯 Key Concept: Technology-Based Templates
-
-Templates are now organized by **positioning technology**, not content type:
-
-| Icon | Template | Use Case |
-|------|----------|----------|
-| 📱 | **QR Code** | Zero cost, scan-based - perfect to start |
-| 📍 | **GPS / Lat-Long** | Outdoor exhibits, sculpture gardens |
-| 📶 | **BLE Beacon** | Indoor triangulation, ±1.5-3m accuracy |
-| 📲 | **NFC** | Tap-to-trigger, no battery required |
-| 🔖 | **RFID** | Medium-range artifact tracking |
-| 📡 | **WiFi Positioning** | Uses existing infrastructure |
-| 🎯 | **UWB** | Premium precision at ±10-50cm |
-| 🔀 | **Hybrid** | Mix multiple tech *(Phase 4)* |
-
-This approach lets you build QR Code first to establish patterns for languages, media, and stops - then apply those to other technologies.
+**Last Updated**: January 18, 2026  
+**Session Status**: Architectural Ground Plan Complete ✅
 
 ---
 
-## ✅ Work Completed
+## 🏗️ Architecture Overview
+
+TourStack uses a **modular content block system** where tours and stops are composed of reusable, typed blocks. This enables:
+- **Simple stops**: Just title + description + QR code
+- **Rich stops**: Galleries, audio, video, collections, timelines
+
+### Core Principles
+1. **Modular Blocks**: All content is typed blocks with consistent schemas
+2. **JSON-First**: Clean export/import for backup, mobile apps, API
+3. **Translation-Ready**: All text fields are `{ [lang]: value }` objects
+4. **Positioning-Agnostic**: Support QR, GPS, BLE, NFC, RFID, WiFi, UWB
+
+---
+
+## ✅ Completed Work
 
 ### Phase 1: Foundation
 - [x] Git repo → [GitHub](https://github.com/Catskill909/tourstack)
-- [x] Settings page with API key configuration
+- [x] Vite + React 19 + TypeScript
+- [x] Tailwind CSS v4, Dark Mode Material Design
 - [x] SQLite database with Prisma 7
+- [x] Zustand state management
+- [x] Settings page with API key configuration
 
-### Phase 2: Tours Page
+### Phase 2: Tours Management
 - [x] Tours page with CRUD operations
 - [x] 3-step create wizard (Template → Info → Review)
 - [x] Tour cards with status badges, action menus
 - [x] Search/filter, keyboard shortcuts (⌘N)
-- [x] Technology-based templates (7 types)
+- [x] 7 technology-based templates (QR, GPS, BLE, NFC, RFID, WiFi, UWB)
 
-### Phase 3: Stop Manager & Collections
-- [x] Collections tab for reusable galleries
-- [x] Stop Manager with add/delete/reorder
-- [x] QR Code generator per stop
-- [x] Tour Detail page (`/tours/:id`)
+### Phase 3: Tour Editing & Images
+- [x] Edit Tour modal with all fields (title, description, duration)
+- [x] ImageUpload component (drag-and-drop + click)
+- [x] Hero images on tour cards
+- [x] Duplicate and delete tour functionality
+
+### Phase 4: Architecture Planning
+- [x] Deep audit of codebase and documentation
+- [x] Content Block System design (9 block types)
+- [x] JSON Export Schema specification
+- [x] Translation Infrastructure plan (i18next + AI)
+- [x] Phased development roadmap
 
 ---
 
-## 🔜 Next Steps
+## 🔜 Development Phases
 
-### Phase 4: Multilingual & AI (Next)
-- [ ] AI-Powered "Magic Translate" in Stop Manager
-- [ ] i18next integration for app UI
-- [ ] Multilingual content storage (Tour/Stop)
-- [ ] Language switching UI
+### Phase 5: Content Block System (NEXT)
+**Goal**: Build modular stop editor with content blocks
 
-## 🔜 Next Steps
+1. **Update Types** (`types/index.ts`)
+   - Add `ContentBlock` discriminated union
+   - Add block-specific data types (TextBlock, ImageBlock, etc.)
+   
+2. **Build Block Renderer** (`StopContentBlock.tsx`)
+   - Render blocks based on type
+   - Support edit/view modes
+   
+3. **Build Stop Editor** (`StopEditor.tsx`)
+   - Basic info section (title, hero, description)
+   - Content blocks section with add/edit/delete/reorder
+   - Positioning section (QR generator already exists)
+   
+4. **Build Stop List** (`StopList.tsx`)
+   - Display stops with drag-and-drop
+   - Quick actions (edit, duplicate, delete)
 
-### Build AI Translation (Phase 4)
-1. **i18next Setup** - Core infrastructure for language handling
-2. **Magic Translate Button** - One-click translation for curators
-3. **Translation Service** - Bridge to LibreTranslate/OpenAI
-4. **Media Library** - Connect with Collections for stop media
+**Blocks to implement (priority order)**:
+- [ ] Text Block (rich text, multilingual)
+- [ ] Image Block (single image with caption)
+- [ ] Gallery Block (multiple images, layouts)
+- [ ] Audio Block (player with transcript)
+- [ ] Positioning Block (QR, GPS, etc.)
+- [ ] Video Block (embed or upload)
+- [ ] Collection Block (link to collections)
+
+---
+
+### Phase 6: Translation Infrastructure
+**Goal**: Multilingual support from the ground up
+
+1. **i18next Setup**
+   - Install react-i18next
+   - Create locale files (en, es, fr)
+   - Language switcher component
+   
+2. **Content Translation**
+   - "Magic Translate" button in stop editor
+   - Translation service abstraction (LibreTranslate/OpenAI)
+   - Manual override for AI translations
+   
+3. **Audio Generation**
+   - TTS service integration (Google Cloud TTS)
+   - Per-language audio file generation
+   - Batch generation for entire tour
+
+---
+
+### Phase 7: JSON Export/Import
+**Goal**: Portable tour data
+
+1. **Export Service**
+   - Full export (includes base64 images)
+   - Lightweight export (media as URLs)
+   - Mobile app format
+   
+2. **Import Service**
+   - Validate JSON schema
+   - Handle version migrations
+   - Conflict resolution
+
+---
+
+### Phase 8: Polish & Advanced Features
+- Interactive elements (quiz, poll)
+- Analytics dashboard
+- Beacon testing tools
+- Multi-museum support
 
 ---
 
 ## 📁 Key Files
 
-| Purpose | File |
+| Purpose | Path |
 |---------|------|
+| **Pages** | |
 | Tours Page | `app/src/pages/Tours.tsx` |
+| Dashboard | `app/src/pages/Dashboard.tsx` |
+| Settings | `app/src/pages/Settings.tsx` |
+| **Components** | |
+| Tour Card | `app/src/components/TourCard.tsx` |
+| Create Tour Modal | `app/src/components/CreateTourModal.tsx` |
+| Edit Tour Modal | `app/src/components/EditTourModal.tsx` |
+| Image Upload | `app/src/components/ImageUpload.tsx` |
+| **Services** | |
 | Tour Service | `app/src/lib/tourService.ts` |
-| Templates (7 types) | `app/prisma/seed.ts` |
-| Zustand Store | `app/src/stores/useToursStore.ts` |
-| Scope Document | `tourstack.md` |
+| Database | `app/src/lib/db.ts` |
+| **Schema** | |
+| Prisma Schema | `app/prisma/schema.prisma` |
+| TypeScript Types | `app/src/types/index.ts` |
+| **Stores** | |
+| Tours Store | `app/src/stores/useToursStore.ts` |
+
+---
+
+## 🗄️ Database Models
+
+| Model | Purpose |
+|-------|---------|
+| Museum | Organization with branding |
+| Template | Tour templates (7 positioning types) |
+| Tour | Tours with multilingual content |
+| Stop | Tour stops with content blocks |
+| Collection | Reusable content galleries |
+| Media | Media library assets |
+| AppSettings | API keys and preferences |
 
 ---
 
 ## 🔧 Commands
 
 ```bash
+cd app
+npm install           # Install dependencies
 npm run dev           # Start dev server (localhost:5173)
 npm run build         # Build for production
-npm run db:seed       # Seed technology templates
+npm run db:migrate    # Run database migrations
+npm run db:seed       # Seed templates
+npm run db:studio     # Open Prisma Studio
 ```
+
+---
+
+## 📖 Documentation
+
+| Document | Purpose |
+|----------|---------|
+| `README.md` | Quick start and overview |
+| `HANDOFF.md` | This file - dev handoff |
+| `tourstack.md` | Full scope document (reference) |
+| `docs/ARCHITECTURE.md` | Content block system design |
+
+---
+
+## 💡 Key Decisions
+
+1. **Content Blocks over Flat Fields**: Flexible, extensible stop content
+2. **Base64 for Local Dev**: Simple image storage during development
+3. **JSON Export**: Primary persistence and portability method
+4. **Translation-First**: All text is `{ lang: value }` from day one
+5. **Technology Templates**: Tours organized by positioning method

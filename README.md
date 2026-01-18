@@ -1,92 +1,69 @@
 # TourStack 🏛️
 
-**Museum tour builder platform with Swiss Army Knife positioning technologies**
+**Museum tour builder with modular content blocks and Swiss Army Knife positioning**
 
-A modern SaaS application for museums to create interactive tours with multiple positioning technologies (QR, GPS, BLE, NFC, RFID, WiFi, UWB, computer vision, and more).
+Build interactive tours with QR codes, GPS, Bluetooth beacons, NFC, and more. Support for multilingual content, audio guides, image galleries, and rich media.
 
 ## 🚀 Quick Start
 
 ```bash
 cd app
 npm install
-npm run dev           # Start dev server at http://localhost:5173
-npm run db:studio     # Open Prisma Studio GUI
+npm run dev           # http://localhost:5173
+npm run db:studio     # Open database GUI
 ```
+
+## 🎯 Key Features
+
+- **7 Positioning Technologies**: QR Code, GPS, BLE Beacon, NFC, RFID, WiFi, UWB
+- **Modular Content Blocks**: Text, images, galleries, audio, video, collections
+- **Multilingual**: All content supports multiple languages
+- **JSON Export**: Portable tour data for mobile apps and backup
 
 ## 📁 Project Structure
 
 ```
 TourStack/
-├── app/                      # Main application (Vite + React + TypeScript)
-│   ├── prisma/
-│   │   ├── schema.prisma     # Database schema (6 models)
-│   │   ├── seed.ts           # Built-in templates seeding
-│   │   └── migrations/       # Database migrations
+├── app/                    # Main application
+│   ├── prisma/             # Database schema + seed
 │   ├── src/
-│   │   ├── components/       # React components
-│   │   ├── pages/            # Page components
-│   │   ├── layouts/          # Layout components
-│   │   ├── types/            # TypeScript types
-│   │   ├── lib/              # Utilities (db.ts)
-│   │   └── generated/        # Prisma client (gitignored)
+│   │   ├── components/     # React components
+│   │   ├── pages/          # Page components
+│   │   ├── lib/            # Services + utilities
+│   │   ├── stores/         # Zustand stores
+│   │   └── types/          # TypeScript types
 │   └── package.json
-└── tourstack.md              # Comprehensive scope document
+├── docs/                   # Documentation
+│   └── ARCHITECTURE.md     # Content block system
+├── HANDOFF.md              # Development handoff
+└── tourstack.md            # Full scope document
 ```
-
-## 🗄️ Database
-
-**SQLite with Prisma 7** - 6 models:
-
-| Model | Purpose |
-|-------|---------|
-| Museum | Organization with branding |
-| Template | Tour templates with custom fields |
-| Tour | Tours with multilingual content |
-| Stop | Tour stops with positioning configs |
-| AppSettings | API keys and preferences |
-| Media | Media library assets |
-| Collection | Reusable content galleries/datasets |
-
-**npm scripts:**
-- `npm run db:migrate` - Run database migrations
-- `npm run db:seed` - Seed 6 built-in templates
-- `npm run db:studio` - Open Prisma Studio GUI
-
-## 🎯 Technology-Based Templates
-
-Tours are organized by **positioning technology**:
-
-| Icon | Template | Accuracy | Best For |
-|------|----------|----------|----------|
-| 📱 | **QR Code** | Scan-based | Zero cost, easy start |
-| 📍 | **GPS / Lat-Long** | ±5-15m | Outdoor exhibits |
-| 📶 | **BLE Beacon** | ±1.5-3m | Indoor triangulation |
-| 📲 | **NFC** | Contact | Tap-to-trigger |
-| 🔖 | **RFID** | ±1-30m | Artifact tracking |
-| 📡 | **WiFi** | ±5-15m | Existing infrastructure |
-| 🎯 | **UWB** | ±10-50cm | Premium precision |
-| 🔀 | **Hybrid** | Mixed | Multi-tech *(coming soon)* |
-
-## 📍 Positioning Technologies
-
-The platform supports 11 positioning methods:
-- QR Code, GPS, BLE Beacon, BLE Virtual
-- NFC, RFID, WiFi Fingerprinting
-- Ultra-Wideband (UWB), Image Recognition
-- Audio Watermarking, Manual, Hybrid
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Vite, React 19, TypeScript
-- **Styling**: Tailwind CSS v4, Dark Mode Material Design
-- **Database**: SQLite via Prisma 7 with better-sqlite3 adapter
-- **State**: Zustand, TanStack Query
-- **Icons**: Lucide React
+| Layer | Technology |
+|-------|------------|
+| Frontend | Vite, React 19, TypeScript |
+| Styling | Tailwind CSS v4, Dark Mode |
+| Database | SQLite + Prisma 7 |
+| State | Zustand |
+| Icons | Lucide React |
 
-## 📄 Documentation
+## 📖 Documentation
 
-- [tourstack.md](./tourstack.md) - Comprehensive scope document
-- [HANDOFF.md](./HANDOFF.md) - Session handoff and next steps
+| Doc | Purpose |
+|-----|---------|
+| [HANDOFF.md](./HANDOFF.md) | Development status & phases |
+| [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Content block system |
+| [tourstack.md](./tourstack.md) | Full scope reference |
+
+## 🔧 Database Commands
+
+```bash
+npm run db:migrate    # Run migrations
+npm run db:seed       # Seed templates
+npm run db:studio     # Prisma Studio GUI
+```
 
 ---
 
