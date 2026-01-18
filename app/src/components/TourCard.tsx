@@ -67,11 +67,24 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
             onClick={handleCardClick}
             className="group relative bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl p-5 hover:border-[var(--color-border-hover)] hover:shadow-lg transition-all duration-200 cursor-pointer"
         >
+            {/* Hero Image or Template Icon */}
+            {tour.heroImage ? (
+                <div className="w-full h-32 rounded-lg overflow-hidden mb-3">
+                    <img
+                        src={tour.heroImage}
+                        alt={title}
+                        className="w-full h-full object-cover"
+                    />
+                </div>
+            ) : null}
+
             {/* Template Icon & Title */}
             <div className="flex items-start gap-3 mb-3">
-                <div className="w-12 h-12 rounded-lg bg-[var(--color-bg-elevated)] flex items-center justify-center text-2xl flex-shrink-0">
-                    {template?.icon || '📍'}
-                </div>
+                {!tour.heroImage && (
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[var(--color-accent-primary)]/20 to-[var(--color-accent-secondary)]/20 flex items-center justify-center text-2xl flex-shrink-0">
+                        {template?.icon || '📍'}
+                    </div>
+                )}
                 <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-[var(--color-text-primary)] truncate" title={title}>
                         {title}

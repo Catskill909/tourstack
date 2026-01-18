@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, ChevronRight, ChevronLeft, Check, Loader2 } from 'lucide-react';
 import type { Template, Tour } from '../types';
+import { ImageUpload } from './ImageUpload';
 
 interface CreateTourModalProps {
     isOpen: boolean;
@@ -42,6 +43,8 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
     const [description, setDescription] = useState('');
     const [primaryLanguage, setPrimaryLanguage] = useState('en');
     const [duration, setDuration] = useState(30);
+    const [heroImage, setHeroImage] = useState<string>('');
+    const [_imageFile, setImageFile] = useState<File | null>(null);
 
     // Reset form when modal opens
     useEffect(() => {
@@ -52,6 +55,8 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
             setDescription('');
             setPrimaryLanguage('en');
             setDuration(30);
+            setHeroImage('');
+            setImageFile(null);
         }
     }, [isOpen]);
 
@@ -90,6 +95,7 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                 primaryLanguage,
                 languages: [primaryLanguage],
                 duration,
+                heroImage: heroImage || '',
             });
             onClose();
         } catch (error) {
@@ -142,8 +148,8 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                         <div
                             key={s}
                             className={`h-1.5 flex-1 rounded-full transition-colors ${['template', 'info', 'review'].indexOf(step) >= i
-                                    ? 'bg-[var(--color-accent-primary)]'
-                                    : 'bg-[var(--color-bg-hover)]'
+                                ? 'bg-[var(--color-accent-primary)]'
+                                : 'bg-[var(--color-bg-hover)]'
                                 }`}
                         />
                     ))}
@@ -159,8 +165,8 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                                     key={template.id}
                                     onClick={() => setSelectedTemplate(template)}
                                     className={`p-4 rounded-xl border-2 text-left transition-all hover:scale-[1.02] ${selectedTemplate?.id === template.id
-                                            ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10'
-                                            : 'border-[var(--color-border-default)] hover:border-[var(--color-border-hover)]'
+                                        ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10'
+                                        : 'border-[var(--color-border-default)] hover:border-[var(--color-border-hover)]'
                                         }`}
                                 >
                                     <div className="text-3xl mb-2">{template.icon}</div>
@@ -207,6 +213,14 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                                     className="w-full px-4 py-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-accent-primary)] focus:outline-none transition-colors resize-none"
                                 />
                             </div>
+
+                            <ImageUpload
+                                value={heroImage}
+                                onChange={setImageFile}
+                                onUrlChange={setHeroImage}
+                                label="Tour Hero Image (Optional)"
+                                helpText="Drag & drop or click to upload. Supports JPG, PNG, WebP."
+                            />
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>

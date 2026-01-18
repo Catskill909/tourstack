@@ -3,6 +3,7 @@ import { Plus, Search, Filter, Sparkles, MapPin } from 'lucide-react';
 import { useToursStore } from '../stores/useToursStore';
 import { TourCard } from '../components/TourCard';
 import { CreateTourModal } from '../components/CreateTourModal';
+import { EditTourModal } from '../components/EditTourModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
 import type { Tour, TourStatus } from '../types';
 
@@ -14,6 +15,7 @@ export function Tours() {
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [tourToEdit, setTourToEdit] = useState<Tour | null>(null);
     const [tourToDelete, setTourToDelete] = useState<Tour | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -61,8 +63,7 @@ export function Tours() {
     };
 
     const handleEditTour = (tour: Tour) => {
-        // TODO: Open edit modal
-        console.log('Edit tour:', tour.id);
+        setTourToEdit(tour);
     };
 
     const handleDuplicateTour = async (tour: Tour) => {
@@ -239,6 +240,15 @@ export function Tours() {
                 onClose={() => setIsCreateModalOpen(false)}
                 onCreate={handleCreateTour}
                 templates={templates}
+            />
+
+            {/* Edit Tour Modal */}
+            <EditTourModal
+                isOpen={tourToEdit !== null}
+                tour={tourToEdit}
+                template={tourToEdit ? getTemplate(tourToEdit.templateId) : undefined}
+                onClose={() => setTourToEdit(null)}
+                onSave={updateTour}
             />
 
             {/* Delete Confirmation Modal */}
