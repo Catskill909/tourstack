@@ -219,6 +219,7 @@ export type ContentBlockType =
   | 'text'
   | 'image'
   | 'gallery'
+  | 'timelineGallery'
   | 'audio'
   | 'video'
   | 'quote'
@@ -242,12 +243,34 @@ export interface ImageBlockData {
 
 export interface GalleryBlockData {
   images: Array<{
+    id?: string;                        // Unique image ID
     url: string;
     alt: { [lang: string]: string };
-    caption?: { [lang: string]: string };
+    caption: { [lang: string]: string }; // Required for museum context
+    credit?: { [lang: string]: string }; // Image credit/attribution
   }>;
   layout: 'carousel' | 'grid' | 'masonry';
   itemsPerRow?: number;
+
+  // Sequential gallery controls
+  crossfadeDuration?: number;          // Crossfade duration in ms (default 500)
+  autoAdvance?: boolean;               // Auto-advance to next image
+  autoAdvanceInterval?: number;        // Auto-advance interval in seconds
+}
+
+// Timeline Gallery - audio-synced slideshow for museum narration
+export interface TimelineGalleryBlockData {
+  images: Array<{
+    id?: string;
+    url: string;
+    alt: { [lang: string]: string };
+    caption: { [lang: string]: string };
+    credit?: { [lang: string]: string };
+    timestamp: number;                  // Seconds into audio when image appears
+  }>;
+  audioUrl: string;                     // Audio file URL
+  audioDuration: number;                // Total duration in seconds
+  crossfadeDuration?: number;           // Crossfade duration in ms (default 500)
 }
 
 export interface AudioBlockData {
@@ -313,6 +336,7 @@ export type ContentBlockData =
   | TextBlockData
   | ImageBlockData
   | GalleryBlockData
+  | TimelineGalleryBlockData
   | AudioBlockData
   | VideoBlockData
   | QuoteBlockData

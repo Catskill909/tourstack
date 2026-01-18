@@ -1,6 +1,8 @@
 import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData } from '../../types';
+import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData } from '../../types';
+import { GalleryPreview } from './GalleryPreview';
+import { TimelineGalleryPreview } from './TimelineGalleryPreview';
 
 interface StopContentBlockProps {
     block: ContentBlock;
@@ -15,6 +17,7 @@ const BLOCK_ICONS: Record<ContentBlockType, LucideIcon> = {
     text: Type,
     image: Image,
     gallery: Images,
+    timelineGallery: Music,
     audio: Music,
     video: Video,
     quote: Quote,
@@ -27,6 +30,7 @@ const BLOCK_LABELS: Record<ContentBlockType, string> = {
     text: 'Text',
     image: 'Image',
     gallery: 'Gallery',
+    timelineGallery: 'Timeline Gallery',
     audio: 'Audio',
     video: 'Video',
     quote: 'Quote',
@@ -75,29 +79,11 @@ export function StopContentBlock({ block, mode, language, onEdit, onDelete }: St
     }
 
     function renderGalleryBlock(data: GalleryBlockData) {
-        if (!data.images || data.images.length === 0) {
-            return (
-                <div className="bg-[var(--color-bg-hover)] rounded-lg p-8 text-center text-[var(--color-text-muted)]">
-                    <Images className="w-12 h-12 mx-auto mb-2" />
-                    <p>No images in gallery</p>
-                </div>
-            );
-        }
-        const gridCols = data.layout === 'grid' ? `grid-cols-${data.itemsPerRow || 3}` : 'grid-cols-3';
-        return (
-            <div className={`grid ${gridCols} gap-3`}>
-                {data.images.map((img, idx) => (
-                    <figure key={idx}>
-                        <img src={img.url} alt={img.alt[language] || img.alt.en || ''} className="rounded-lg w-full aspect-square object-cover" />
-                        {img.caption && (
-                            <figcaption className="text-xs text-[var(--color-text-muted)] mt-1">
-                                {img.caption[language] || img.caption.en}
-                            </figcaption>
-                        )}
-                    </figure>
-                ))}
-            </div>
-        );
+        return <GalleryPreview data={data} language={language} />;
+    }
+
+    function renderTimelineGalleryBlock(data: TimelineGalleryBlockData) {
+        return <TimelineGalleryPreview data={data} language={language} />;
     }
 
     function renderAudioBlock(data: AudioBlockData) {
@@ -207,6 +193,8 @@ export function StopContentBlock({ block, mode, language, onEdit, onDelete }: St
                 return renderVideoBlock(block.data as VideoBlockData);
             case 'quote':
                 return renderQuoteBlock(block.data as QuoteBlockData);
+            case 'timelineGallery':
+                return renderTimelineGalleryBlock(block.data as TimelineGalleryBlockData);
             case 'positioning':
                 return renderPositioningBlock(block.data as PositioningBlockData);
             default:

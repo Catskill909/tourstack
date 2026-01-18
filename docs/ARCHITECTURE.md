@@ -25,7 +25,7 @@ This ground plan aligns our database schema, TypeScript types, UI components, an
 | Text Block Editor | ✅ Complete | `blocks/TextBlockEditor.tsx` |
 | Image Block Editor | ✅ Complete | `blocks/ImageBlockEditor.tsx` |
 | Audio Block Editor | ✅ Complete | `blocks/AudioBlockEditor.tsx` |
-| Gallery Block Editor | ⏳ Pending | - |
+| Gallery Block Editor | ✅ Complete | `blocks/GalleryBlockEditor.tsx` |
 | Video Block Editor | ⏳ Pending | - |
 | Stop Editor | ✅ Complete | `StopEditor.tsx` |
 | QR Code Editor | ✅ Complete | `QRCodeEditorModal.tsx` |
@@ -177,14 +177,32 @@ interface ImageBlockData {
 ```typescript
 interface GalleryBlockData {
   images: Array<{
+    id?: string;                        // Unique image ID
     url: string;
     alt: { [lang: string]: string };
     caption?: { [lang: string]: string };
+    timestamp?: number;                 // For timeline mode: seconds into audio
   }>;
   layout: 'carousel' | 'grid' | 'masonry';
-  itemsPerRow?: number;  // For grid layout
+  itemsPerRow?: number;                 // For grid layout (2-6)
+  
+  // Timeline Gallery specific (optional)
+  timelineMode?: boolean;               // Enable timeline gallery
+  audioUrl?: string;                    // Audio file URL
+  audioDuration?: number;               // Total duration in seconds
 }
 ```
+
+**Timeline Gallery Mode (DEV Feature)**:
+When `timelineMode` is enabled, images can be placed at specific timestamps in an audio file, creating an audio-synced slideshow. Perfect for guided narration where each image appears as the narrator describes it.
+
+| Feature | Description |
+|---------|-------------|
+| Audio Upload | Upload MP3/WAV audio file for timeline |
+| Timeline Markers | Visual markers showing image positions |
+| Draggable Placement | Drag images along the timeline |
+| Synchronized Playback | Images auto-advance with audio |
+| Preview Mode | Test timeline playback in editor |
 
 #### Audio Block
 ```typescript

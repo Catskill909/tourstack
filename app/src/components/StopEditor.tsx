@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
-import { StopContentBlock, BLOCK_ICONS, BLOCK_LABELS } from './blocks/StopContentBlock';
+import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { BLOCK_ICONS, BLOCK_LABELS } from './blocks/StopContentBlock';
 import { TextBlockEditor } from './blocks/TextBlockEditor';
 import { ImageBlockEditor } from './blocks/ImageBlockEditor';
 import { AudioBlockEditor } from './blocks/AudioBlockEditor';
+import { GalleryBlockEditor } from './blocks/GalleryBlockEditor';
+import { TimelineGalleryBlockEditor } from './blocks/TimelineGalleryBlockEditor';
 import { PositioningBlockEditor } from './blocks/PositioningBlockEditor';
-import type { Stop, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, AudioBlockData, PositioningBlockData } from '../types';
+import { StopPreviewModal } from './StopPreviewModal';
+import type { Stop, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData } from '../types';
 
 interface StopEditorProps {
     stop: Stop;
@@ -23,6 +26,10 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
             return { content: { en: '' }, style: 'normal' } as TextBlockData;
         case 'image':
             return { url: '', alt: { en: '' }, size: 'medium' } as ImageBlockData;
+        case 'gallery':
+            return { images: [], layout: 'carousel', crossfadeDuration: 500 } as GalleryBlockData;
+        case 'timelineGallery':
+            return { images: [], audioUrl: '', audioDuration: 0, crossfadeDuration: 500 } as TimelineGalleryBlockData;
         case 'audio':
             return { audioFiles: {}, title: { en: '' }, duration: 0, autoplay: false, showTranscript: false } as AudioBlockData;
         case 'positioning':
@@ -37,7 +44,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
         ...stop,
         contentBlocks: stop.contentBlocks || [],
     });
-    const [mode, setMode] = useState<'edit' | 'preview'>('edit');
+    const [showPreview, setShowPreview] = useState(false);
     const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
     const [showAddBlock, setShowAddBlock] = useState(false);
     const language = 'en'; // Default language for editing
@@ -138,11 +145,8 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                     />
                     <div className="flex items-center gap-2 ml-4">
                         <button
-                            onClick={() => setMode(mode === 'edit' ? 'preview' : 'edit')}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${mode === 'preview'
-                                ? 'bg-[var(--color-accent-primary)] text-white border-[var(--color-accent-primary)]'
-                                : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
-                                }`}
+                            onClick={() => setShowPreview(true)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors"
                         >
                             <Eye className="w-4 h-4" />
                             <span>Preview</span>
@@ -250,35 +254,9 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                         )}
                     </div>
 
-                    {/* Block editor / Preview */}
+                    {/* Block editor */}
                     <div className="w-1/2 overflow-y-auto p-6 bg-[var(--color-bg-base)]">
-                        {mode === 'preview' ? (
-                            <div className="space-y-4">
-                                <h2 className="text-xl font-bold text-[var(--color-text-primary)]">{getStopTitle()}</h2>
-                                {editedStop.description?.en && (
-                                    <p className="text-[var(--color-text-secondary)]">{editedStop.description.en}</p>
-                                )}
-                                {blocks.map((block) => (
-                                    <div
-                                        key={block.id}
-                                        onClick={() => { setEditingBlockId(block.id); setMode('edit'); }}
-                                        className="cursor-pointer group relative"
-                                    >
-                                        <div className="absolute -left-2 top-0 bottom-0 w-1 bg-transparent group-hover:bg-[var(--color-accent-primary)] rounded transition-colors" />
-                                        <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-1.5 bg-[var(--color-accent-primary)] text-white rounded-lg shadow-lg">
-                                                <Pencil className="w-3 h-3" />
-                                            </button>
-                                        </div>
-                                        <StopContentBlock
-                                            block={block}
-                                            mode="view"
-                                            language={language}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        ) : editingBlock ? (
+                        {editingBlock ? (
                             <div>
                                 <h3 className="font-medium text-[var(--color-text-primary)] mb-4">
                                     Edit {BLOCK_LABELS[editingBlock.type]} Block
@@ -297,9 +275,23 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                                         onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
                                     />
                                 )}
+                                {editingBlock.type === 'gallery' && (
+                                    <GalleryBlockEditor
+                                        data={editingBlock.data as GalleryBlockData}
+                                        language={language}
+                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
+                                    />
+                                )}
                                 {editingBlock.type === 'audio' && (
                                     <AudioBlockEditor
                                         data={editingBlock.data as AudioBlockData}
+                                        language={language}
+                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
+                                    />
+                                )}
+                                {editingBlock.type === 'timelineGallery' && (
+                                    <TimelineGalleryBlockEditor
+                                        data={editingBlock.data as TimelineGalleryBlockData}
                                         language={language}
                                         onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
                                     />
@@ -329,7 +321,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                     <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6 w-full max-w-md shadow-xl">
                         <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">Add Content Block</h3>
                         <div className="grid grid-cols-3 gap-3">
-                            {(['text', 'image', 'audio'] as ContentBlockType[]).map((type) => {
+                            {(['text', 'image', 'gallery', 'timelineGallery', 'audio'] as ContentBlockType[]).map((type) => {
                                 const Icon = BLOCK_ICONS[type];
                                 return (
                                     <button
@@ -351,6 +343,14 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                         </button>
                     </div>
                 </div>
+            )}
+
+            {/* Device Preview Modal */}
+            {showPreview && (
+                <StopPreviewModal
+                    stop={editedStop}
+                    onClose={() => setShowPreview(false)}
+                />
             )}
         </div>
     );

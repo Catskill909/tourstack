@@ -83,9 +83,9 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] Text Block (rich text, multilingual)
 - [x] Image Block (single image with caption)
 - [x] Audio Block (player with transcript)
+- [x] Gallery Block (multiple images, carousel/grid/masonry, timeline mode)
 
 **Remaining for Phase 5**:
-- [ ] Gallery Block (multiple images, layouts)
 - [ ] Video Block (embed or upload)
 - [ ] Collection Block (link to collections)
 
@@ -154,6 +154,7 @@ TourStack uses a **modular content block system** where tours and stops are comp
 | Text Block | `app/src/components/blocks/TextBlockEditor.tsx` |
 | Image Block | `app/src/components/blocks/ImageBlockEditor.tsx` |
 | Audio Block | `app/src/components/blocks/AudioBlockEditor.tsx` |
+| Gallery Block | `app/src/components/blocks/GalleryBlockEditor.tsx` |
 | **Services** | |
 | Tour Service | `app/src/lib/tourService.ts` |
 | Database | `app/src/lib/db.ts` |
