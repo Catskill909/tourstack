@@ -1,7 +1,7 @@
  # TourStack Handoff Document 📋
 
 **Last Updated**: January 18, 2026  
-**Session Status**: Architectural Ground Plan Complete ✅
+**Session Status**: Phase 5 Content Block System Core Complete ✅
 
 ---
 
@@ -53,32 +53,39 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 ## 🔜 Development Phases
 
-### Phase 5: Content Block System (NEXT)
+### Phase 5: Content Block System (CORE COMPLETE ✅)
 **Goal**: Build modular stop editor with content blocks
 
-1. **Update Types** (`types/index.ts`)
-   - Add `ContentBlock` discriminated union
-   - Add block-specific data types (TextBlock, ImageBlock, etc.)
+1. **Update Types** (`types/index.ts`) ✅
+   - Added `ContentBlock` discriminated union
+   - Added block-specific data types (TextBlock, ImageBlock, etc.)
    
-2. **Build Block Renderer** (`StopContentBlock.tsx`)
-   - Render blocks based on type
-   - Support edit/view modes
+2. **Build Block Renderer** (`StopContentBlock.tsx`) ✅
+   - Renders blocks based on type
+   - Supports edit/view modes with clickable preview
    
-3. **Build Stop Editor** (`StopEditor.tsx`)
-   - Basic info section (title, hero, description)
-   - Content blocks section with add/edit/delete/reorder
-   - Positioning section (QR generator already exists)
+3. **Build Stop Editor** (`StopEditor.tsx`) ✅
+   - Basic info section (title, description)
+   - Content blocks: add/edit/delete/reorder
+   - Preview mode toggle
    
-4. **Build Stop List** (`StopList.tsx`)
-   - Display stops with drag-and-drop
-   - Quick actions (edit, duplicate, delete)
+4. **Build Stop List** (`TourDetail.tsx`) ✅
+   - Display stops with actions
+   - Edit button opens StopEditor
+   - QR icon opens QR Code Editor Modal
 
-**Blocks to implement (priority order)**:
-- [ ] Text Block (rich text, multilingual)
-- [ ] Image Block (single image with caption)
+5. **QR Code Editor** (`QRCodeEditorModal.tsx`) ✅
+   - Editable target URL and short code
+   - QR regeneration and download
+   - Stop-level config (not content block)
+
+**Content Blocks implemented**:
+- [x] Text Block (rich text, multilingual)
+- [x] Image Block (single image with caption)
+- [x] Audio Block (player with transcript)
+
+**Remaining for Phase 5**:
 - [ ] Gallery Block (multiple images, layouts)
-- [ ] Audio Block (player with transcript)
-- [ ] Positioning Block (QR, GPS, etc.)
 - [ ] Video Block (embed or upload)
 - [ ] Collection Block (link to collections)
 
@@ -140,6 +147,13 @@ TourStack uses a **modular content block system** where tours and stops are comp
 | Create Tour Modal | `app/src/components/CreateTourModal.tsx` |
 | Edit Tour Modal | `app/src/components/EditTourModal.tsx` |
 | Image Upload | `app/src/components/ImageUpload.tsx` |
+| Stop Editor | `app/src/components/StopEditor.tsx` |
+| QR Code Modal | `app/src/components/QRCodeEditorModal.tsx` |
+| **Block Editors** | |
+| Block Renderer | `app/src/components/blocks/StopContentBlock.tsx` |
+| Text Block | `app/src/components/blocks/TextBlockEditor.tsx` |
+| Image Block | `app/src/components/blocks/ImageBlockEditor.tsx` |
+| Audio Block | `app/src/components/blocks/AudioBlockEditor.tsx` |
 | **Services** | |
 | Tour Service | `app/src/lib/tourService.ts` |
 | Database | `app/src/lib/db.ts` |

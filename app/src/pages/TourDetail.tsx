@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
 import { useToursStore } from '../stores/useToursStore';
+import { StopEditor } from '../components/StopEditor';
+import { QRCodeEditorModal } from '../components/QRCodeEditorModal';
 import type { Stop, Tour, PositioningConfig } from '../types';
 
 // Stop service using localStorage
@@ -35,6 +37,7 @@ export function TourDetail() {
     const [showAddStop, setShowAddStop] = useState(false);
     const [newStopTitle, setNewStopTitle] = useState('');
     const [showQRModal, setShowQRModal] = useState<string | null>(null);
+    const [editingStop, setEditingStop] = useState<Stop | null>(null);
 
     useEffect(() => {
         fetchTours();
@@ -133,11 +136,34 @@ export function TourDetail() {
         setStops(newStops);
     }
 
-    function generateQRCode(stop: Stop): string {
-        // Generate a simple QR code URL via a public API
-        const baseUrl = window.location.origin;
-        const stopUrl = `${baseUrl}/visitor/stop/${stop.id}`;
-        return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(stopUrl)}`;
+    function handleEditStop(stop: Stop) {
+        setEditingStop(stop);
+    }
+
+    function handleSaveStop(updatedStop: Stop) {
+        // Update in local state
+        const updatedStops = stops.map(s => s.id === updatedStop.id ? updatedStop : s);
+        setStops(updatedStops);
+
+        // Save to localStorage
+        const allStops = loadStops();
+        const otherStops = allStops.filter(s => s.id !== updatedStop.id);
+        saveStops([...otherStops, updatedStop]);
+
+        setEditingStop(null);
+    }
+
+    function handleSaveQRSettings(updatedStop: Stop) {
+        // Update in local state
+        const updatedStops = stops.map(s => s.id === updatedStop.id ? updatedStop : s);
+        setStops(updatedStops);
+
+        // Save to localStorage
+        const allStops = loadStops();
+        const otherStops = allStops.filter(s => s.id !== updatedStop.id);
+        saveStops([...otherStops, updatedStop]);
+
+        setShowQRModal(null);
     }
 
     if (isLoading) {
@@ -246,6 +272,13 @@ export function TourDetail() {
                                     <QrCode className="w-4 h-4" />
                                 </button>
                                 <button
+                                    onClick={() => handleEditStop(stop)}
+                                    className="p-2 hover:bg-[var(--color-accent-primary)]/10 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-accent-primary)]"
+                                    title="Edit"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
                                     onClick={() => handleDeleteStop(stop.id)}
                                     className="p-2 hover:bg-red-500/10 rounded-lg text-[var(--color-text-muted)] hover:text-red-500"
                                     title="Delete"
@@ -296,38 +329,23 @@ export function TourDetail() {
                 </div>
             )}
 
-            {/* QR Code Modal */}
+            {/* QR Code Editor Modal */}
             {showQRModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] w-full max-w-sm p-6 shadow-xl text-center">
-                        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">QR Code</h2>
-                        <div className="bg-white p-4 rounded-lg inline-block mb-4">
-                            <img
-                                src={generateQRCode(stops.find(s => s.id === showQRModal)!)}
-                                alt="QR Code"
-                                className="w-48 h-48"
-                            />
-                        </div>
-                        <p className="text-sm text-[var(--color-text-muted)] mb-4">
-                            {getStopTitle(stops.find(s => s.id === showQRModal)!)}
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowQRModal(null)}
-                                className="flex-1 px-4 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-lg hover:bg-[var(--color-bg-hover)]"
-                            >
-                                Close
-                            </button>
-                            <a
-                                href={generateQRCode(stops.find(s => s.id === showQRModal)!)}
-                                download={`qr-${showQRModal}.png`}
-                                className="flex-1 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 text-center"
-                            >
-                                Download
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <QRCodeEditorModal
+                    stop={stops.find(s => s.id === showQRModal)!}
+                    tourId={tour.id}
+                    onSave={handleSaveQRSettings}
+                    onClose={() => setShowQRModal(null)}
+                />
+            )}
+
+            {/* Stop Editor Modal */}
+            {editingStop && (
+                <StopEditor
+                    stop={editingStop}
+                    onSave={handleSaveStop}
+                    onClose={() => setEditingStop(null)}
+                />
             )}
         </div>
     );

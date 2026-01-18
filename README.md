@@ -16,7 +16,8 @@ npm run db:studio     # Open database GUI
 ## 🎯 Key Features
 
 - **7 Positioning Technologies**: QR Code, GPS, BLE Beacon, NFC, RFID, WiFi, UWB
-- **Modular Content Blocks**: Text, images, galleries, audio, video, collections
+- **Modular Content Blocks**: Text, images, galleries, audio with block-based editing
+- **Stop Editor**: Split-pane editor with live preview mode
 - **Multilingual**: All content supports multiple languages
 - **JSON Export**: Portable tour data for mobile apps and backup
 
@@ -28,6 +29,7 @@ TourStack/
 │   ├── prisma/             # Database schema + seed
 │   ├── src/
 │   │   ├── components/     # React components
+│   │   │   └── blocks/     # Block editors (Text, Image, Audio)
 │   │   ├── pages/          # Page components
 │   │   ├── lib/            # Services + utilities
 │   │   ├── stores/         # Zustand stores

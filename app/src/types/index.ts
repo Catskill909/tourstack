@@ -211,6 +211,126 @@ export interface InteractiveElements {
 }
 
 // =============================================================================
+// CONTENT BLOCKS (Modular Stop Content)
+// =============================================================================
+
+// All supported block types
+export type ContentBlockType =
+  | 'text'
+  | 'image'
+  | 'gallery'
+  | 'audio'
+  | 'video'
+  | 'quote'
+  | 'timeline'
+  | 'comparison'
+  | 'positioning';
+
+// Block data interfaces
+export interface TextBlockData {
+  content: { [lang: string]: string }; // Multilingual rich text (HTML)
+  style: 'normal' | 'callout' | 'sidebar';
+}
+
+export interface ImageBlockData {
+  url: string;
+  alt: { [lang: string]: string };
+  caption?: { [lang: string]: string };
+  size: 'small' | 'medium' | 'large' | 'full';
+  aspectRatio?: '16:9' | '4:3' | '1:1' | 'auto';
+}
+
+export interface GalleryBlockData {
+  images: Array<{
+    url: string;
+    alt: { [lang: string]: string };
+    caption?: { [lang: string]: string };
+  }>;
+  layout: 'carousel' | 'grid' | 'masonry';
+  itemsPerRow?: number;
+}
+
+export interface AudioBlockData {
+  audioFiles: { [lang: string]: string }; // Per-language audio URLs
+  title: { [lang: string]: string };
+  duration: number; // Seconds
+  transcript?: { [lang: string]: string };
+  autoplay: boolean;
+  showTranscript: boolean;
+}
+
+export interface VideoBlockData {
+  videoUrl: string;
+  provider: 'youtube' | 'vimeo' | 'direct';
+  title: { [lang: string]: string };
+  description?: { [lang: string]: string };
+  subtitles?: { [lang: string]: string }; // VTT/SRT URLs
+  thumbnail?: string;
+  autoplay: boolean;
+  controls: boolean;
+}
+
+export interface QuoteBlockData {
+  quote: { [lang: string]: string };
+  author?: { [lang: string]: string };
+  source?: { [lang: string]: string };
+  style: 'default' | 'highlighted' | 'sidebar';
+}
+
+export interface TimelineBlockData {
+  events: Array<{
+    date: string; // ISO 8601 or year
+    title: { [lang: string]: string };
+    description?: { [lang: string]: string };
+    image?: string;
+  }>;
+  orientation: 'vertical' | 'horizontal';
+}
+
+export interface ComparisonBlockData {
+  leftImage: {
+    url: string;
+    label: { [lang: string]: string };
+    caption?: { [lang: string]: string };
+  };
+  rightImage: {
+    url: string;
+    label: { [lang: string]: string };
+    caption?: { [lang: string]: string };
+  };
+  mode: 'side-by-side' | 'slider';
+}
+
+export interface PositioningBlockData {
+  method: PositioningMethod;
+  config: PositioningConfig;
+  qrCodeDataUrl?: string;
+  instructions?: { [lang: string]: string };
+}
+
+// Discriminated union for type safety
+export type ContentBlockData =
+  | TextBlockData
+  | ImageBlockData
+  | GalleryBlockData
+  | AudioBlockData
+  | VideoBlockData
+  | QuoteBlockData
+  | TimelineBlockData
+  | ComparisonBlockData
+  | PositioningBlockData;
+
+// Base content block interface
+export interface ContentBlock {
+  id: string;
+  type: ContentBlockType;
+  order: number;
+  data: ContentBlockData;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// =============================================================================
 // STOP / BEACON
 // =============================================================================
 export type StopType = 'mandatory' | 'optional' | 'bonus' | 'secret';
@@ -234,8 +354,11 @@ export interface Stop {
   backupPositioning?: PositioningConfig;
   triggers: TriggerSettings;
 
-  // Content
+  // Content (legacy format)
   content: LocalizedContent;
+
+  // Content Blocks (modular format - preferred)
+  contentBlocks?: ContentBlock[];
 
   // Interactive
   interactive?: InteractiveElements;
