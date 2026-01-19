@@ -49,8 +49,8 @@ COPY --from=builder /app/src/generated ./src/generated
 COPY --from=builder /app/scripts ./scripts
 RUN chmod +x ./scripts/start.sh
 
-# Create uploads directory
-RUN mkdir -p uploads/images uploads/audio uploads/documents
+# Create data and uploads directories
+RUN mkdir -p data uploads/images uploads/audio uploads/documents
 
 # Set environment
 ENV NODE_ENV=production

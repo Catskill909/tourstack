@@ -4,21 +4,29 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
-const dbPath = path.resolve(process.cwd(), 'dev.db');
+// Use data directory for Docker volume compatibility
+const dataDir = path.resolve(process.cwd(), 'data');
+const dbPath = path.resolve(dataDir, 'dev.db');
 
 console.log(`🔧 Initializing database at: ${dbPath}`);
 
+// Ensure data directory exists
+if (!fs.existsSync(dataDir)) {
+  console.log('📁 Creating data directory...');
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
 // Check if database already exists
 if (fs.existsSync(dbPath)) {
-    console.log('✅ Database file already exists');
+  console.log('✅ Database file already exists');
 } else {
-    console.log('📦 Creating new database file...');
+  console.log('📦 Creating new database file...');
 
-    // Create the database file using better-sqlite3 directly
-    const db = new Database(dbPath);
+  // Create the database file using better-sqlite3 directly
+  const db = new Database(dbPath);
 
-    // Create the tables directly (matching Prisma schema)
-    db.exec(`
+  // Create the tables directly (matching Prisma schema)
+  db.exec(`
     -- Museum table
     CREATE TABLE IF NOT EXISTS "Museum" (
       "id" TEXT PRIMARY KEY,
@@ -127,8 +135,8 @@ if (fs.existsSync(dbPath)) {
     );
   `);
 
-    db.close();
-    console.log('✅ Database tables created');
+  db.close();
+  console.log('✅ Database tables created');
 }
 
 console.log('🎉 Database initialization complete!');
