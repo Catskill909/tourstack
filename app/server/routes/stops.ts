@@ -16,11 +16,14 @@ interface IdParams {
 
 // Helper to parse stop JSON fields
 function parseStop(stop: Stop) {
+    const content = JSON.parse(stop.content);
     return {
         ...stop,
         title: JSON.parse(stop.title),
         description: JSON.parse(stop.description),
-        content: JSON.parse(stop.content),
+        content: content,
+        // Also return as contentBlocks for frontend compatibility
+        contentBlocks: content,
         customFieldValues: JSON.parse(stop.customFieldValues),
         primaryPositioning: JSON.parse(stop.primaryPositioning),
         backupPositioning: stop.backupPositioning ? JSON.parse(stop.backupPositioning) : null,
@@ -95,7 +98,9 @@ router.put('/:id', async (req: Request<IdParams>, res: Response) => {
         if (data.title !== undefined) updateData.title = JSON.stringify(data.title);
         if (data.image !== undefined) updateData.image = data.image;
         if (data.description !== undefined) updateData.description = JSON.stringify(data.description);
+        // Accept both 'content' and 'contentBlocks' from frontend
         if (data.content !== undefined) updateData.content = JSON.stringify(data.content);
+        if (data.contentBlocks !== undefined) updateData.content = JSON.stringify(data.contentBlocks);
         if (data.customFieldValues !== undefined) updateData.customFieldValues = JSON.stringify(data.customFieldValues);
         if (data.primaryPositioning !== undefined) updateData.primaryPositioning = JSON.stringify(data.primaryPositioning);
         if (data.backupPositioning !== undefined) updateData.backupPositioning = data.backupPositioning ? JSON.stringify(data.backupPositioning) : null;
