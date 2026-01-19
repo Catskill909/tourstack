@@ -1,9 +1,7 @@
 // Server-side Prisma client singleton
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+// Server-side Prisma client singleton
 import { PrismaClient } from '../src/generated/prisma/index.js';
 import path from 'path';
-
-import Database from 'better-sqlite3';
 
 // Path to database file - use data directory for Docker volume compatibility
 // Docker volumes can't mount to a file path, only directories
@@ -14,10 +12,16 @@ const globalForPrisma = globalThis as unknown as {
     prisma: PrismaClient | undefined;
 };
 
+// Create standard Prisma Client without adapters
+// We explicitly pass the URL to ensure it uses the volume path
 function createPrismaClient() {
-    const db = new Database(dbPath);
-    const adapter = new PrismaBetterSqlite3(db);
-    return new PrismaClient({ adapter });
+    return new PrismaClient({
+        datasources: {
+            db: {
+                url: `file:${dbPath}`,
+            },
+        },
+    });
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
