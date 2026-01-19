@@ -224,17 +224,22 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
         e.preventDefault();
         if (draggedIndex === null || draggedIndex === index) return;
 
-        // Reorder and redistribute timestamps
+        // Reorder the images array
         const newImages = [...images];
         const draggedImage = newImages[draggedIndex];
         newImages.splice(draggedIndex, 1);
         newImages.splice(index, 0, draggedImage);
 
-        // Redistribute timestamps based on new order
-        const interval = audioDuration / Math.max(newImages.length, 1);
+        // Get all existing timestamps and sort them
+        const sortedTimestamps = images
+            .map(img => img.timestamp)
+            .sort((a, b) => a - b);
+
+        // Assign the sorted timestamps to the new image order
+        // This preserves your manually set timing "beats" but changes which image is at which beat
         const retimedImages = newImages.map((img, i) => ({
             ...img,
-            timestamp: i * interval
+            timestamp: sortedTimestamps[i] || (i * (audioDuration / newImages.length)) // Fallback if something weird happens
         }));
 
         onChange({ ...data, images: retimedImages });
