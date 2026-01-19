@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy package files from app directory
 COPY app/package*.json ./
 
-# Install dependencies
+# Install ALL dependencies (including dev for build)
 RUN npm ci
 
 # Copy the rest of the app directory
@@ -23,18 +23,26 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Copy package files and install production deps
+# Install tsx globally for running TypeScript
+RUN npm install -g tsx
+
+# Copy package files
 COPY --from=builder /app/package*.json ./
+
+# Install production dependencies (Prisma needs its runtime)
 RUN npm ci --omit=dev
+
+# Re-generate Prisma client in production context
+COPY --from=builder /app/prisma ./prisma
+RUN npx prisma generate
 
 # Copy built frontend
 COPY --from=builder /app/dist ./dist
 
-# Copy server source (tsx runs TypeScript directly)
+# Copy server source
 COPY --from=builder /app/server ./server
 
-# Copy Prisma files
-COPY --from=builder /app/prisma ./prisma
+# Copy generated Prisma client
 COPY --from=builder /app/src/generated ./src/generated
 
 # Create uploads directory
@@ -48,4 +56,4 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Start the API server with tsx
-CMD ["npx", "tsx", "server/index.ts"]
+CMD ["tsx", "server/index.ts"]
