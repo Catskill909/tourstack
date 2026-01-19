@@ -1,15 +1,24 @@
 #!/bin/sh
 # Startup script for TourStack production container
 
+set -e  # Exit on any error
+
 echo "🚀 Starting TourStack..."
+echo "📂 Working directory: $(pwd)"
+echo "📄 Database path: $(pwd)/dev.db"
 
-# Run database migrations
-echo "📦 Running database migrations..."
-npx prisma migrate deploy 2>/dev/null || echo "No migrations to run or first time setup"
+# Check if database exists, if not create it via migration
+if [ ! -f ./dev.db ]; then
+  echo "📦 Database not found, running initial setup..."
+  npx prisma migrate deploy --schema=./prisma/schema.prisma || true
+fi
 
-# Seed database if templates don't exist
-echo "🌱 Checking if seed needed..."
-npx tsx prisma/seed.ts 2>/dev/null || echo "Seed already exists or completed"
+# Seed database with templates
+echo "🌱 Seeding database..."
+npx tsx prisma/seed.ts
+
+# Verify seed worked
+echo "✅ Database setup complete"
 
 # Start the server
 echo "🎯 Starting API server..."
