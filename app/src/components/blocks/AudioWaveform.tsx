@@ -178,10 +178,11 @@ export function AudioWaveform({
                 {/* Markers overlay */}
                 {isReady && (
                     <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
-                        {markers.map((marker) => {
+                        {markers.map((marker, index) => {
                             const position = (marker.timestamp / audioDuration) * 100;
                             // Clamp position to 0-100
                             const clampedPosition = Math.max(0, Math.min(100, position));
+                            const photoNumber = index + 1;
                             return (
                                 <div
                                     key={marker.id}
@@ -201,16 +202,20 @@ export function AudioWaveform({
                                     {/* Marker line - thicker for visibility */}
                                     <div className={`w-1 h-full ${draggingMarkerId === marker.id ? 'bg-yellow-300' : 'bg-yellow-400'} group-hover:bg-yellow-300 transition-colors shadow-lg`} />
 
-                                    {/* Marker handle - larger for touch */}
-                                    <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 border-white shadow-lg cursor-grab active:cursor-grabbing ${draggingMarkerId === marker.id ? 'bg-yellow-300 scale-125' : 'bg-yellow-400'} group-hover:scale-125 transition-transform`} />
+                                    {/* Top handle with photo number */}
+                                    <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full border-2 border-white shadow-lg cursor-grab active:cursor-grabbing flex items-center justify-center ${draggingMarkerId === marker.id ? 'bg-yellow-300 scale-125' : 'bg-yellow-400'} group-hover:scale-125 transition-transform`}>
+                                        <span className="text-[10px] font-bold text-black">{photoNumber}</span>
+                                    </div>
 
-                                    {/* Bottom handle too */}
-                                    <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full border-2 border-white shadow-lg ${draggingMarkerId === marker.id ? 'bg-yellow-300 scale-125' : 'bg-yellow-400'} group-hover:scale-125 transition-transform`} />
+                                    {/* Bottom handle with photo number */}
+                                    <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center ${draggingMarkerId === marker.id ? 'bg-yellow-300 scale-125' : 'bg-yellow-400'} group-hover:scale-125 transition-transform`}>
+                                        <span className="text-[10px] font-bold text-black">{photoNumber}</span>
+                                    </div>
 
                                     {/* Timestamp tooltip - always visible when dragging */}
                                     <div className={`absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap z-20 ${draggingMarkerId === marker.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
                                         <span className="px-2 py-1 bg-yellow-400 text-black text-xs font-bold rounded shadow-lg">
-                                            {formatTime(marker.timestamp)}
+                                            #{photoNumber} • {formatTime(marker.timestamp)}
                                         </span>
                                     </div>
                                 </div>

@@ -49,6 +49,8 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
     const [showAddBlock, setShowAddBlock] = useState(false);
     const [deleteBlockId, setDeleteBlockId] = useState<string | null>(null);
     const [showTimelineEditorId, setShowTimelineEditorId] = useState<string | null>(null);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
     const language = 'en'; // Default language for editing
 
     const blocks = editedStop.contentBlocks || [];
@@ -64,6 +66,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
             ...editedStop,
             title: { ...editedStop.title, en: value },
         });
+        setHasUnsavedChanges(true);
     }
 
     function handleDescriptionChange(value: string) {
@@ -71,6 +74,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
             ...editedStop,
             description: { ...editedStop.description, en: value },
         });
+        setHasUnsavedChanges(true);
     }
 
     function handleAddBlock(type: ContentBlockType) {
@@ -88,6 +92,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
         });
         setShowAddBlock(false);
         setEditingBlockId(newBlock.id);
+        setHasUnsavedChanges(true);
     }
 
     function handleUpdateBlock(blockId: string, data: ContentBlockData) {
@@ -97,6 +102,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                 b.id === blockId ? { ...b, data, updatedAt: new Date().toISOString() } : b
             ),
         });
+        setHasUnsavedChanges(true);
     }
 
     function handleDeleteBlock(blockId: string) {
@@ -113,6 +119,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
             setEditingBlockId(null);
         }
         setDeleteBlockId(null);
+        setHasUnsavedChanges(true);
     }
 
     function handleMoveBlock(blockId: string, direction: 'up' | 'down') {
@@ -127,6 +134,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
         newBlocks.forEach((b, i) => (b.order = i));
 
         setEditedStop({ ...editedStop, contentBlocks: newBlocks });
+        setHasUnsavedChanges(true);
     }
 
     function handleSave() {
@@ -134,6 +142,20 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
             ...editedStop,
             updatedAt: new Date().toISOString(),
         });
+        setHasUnsavedChanges(false);
+    }
+
+    function handleClose() {
+        if (hasUnsavedChanges) {
+            setShowUnsavedWarning(true);
+        } else {
+            onClose();
+        }
+    }
+
+    function confirmDiscardChanges() {
+        setShowUnsavedWarning(false);
+        onClose();
     }
 
     const editingBlock = editingBlockId ? blocks.find((b) => b.id === editingBlockId) : null;
@@ -151,6 +173,9 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                         placeholder="Stop Title"
                     />
                     <div className="flex items-center gap-2 ml-4">
+                        {hasUnsavedChanges && (
+                            <span className="text-xs text-yellow-500 font-medium">Unsaved changes</span>
+                        )}
                         <button
                             onClick={() => setShowPreview(true)}
                             className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors"
@@ -160,13 +185,16 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                         </button>
                         <button
                             onClick={handleSave}
-                            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90"
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${hasUnsavedChanges
+                                ? 'bg-yellow-500 hover:bg-yellow-600 text-black font-bold animate-pulse'
+                                : 'bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/90 text-white'
+                                }`}
                         >
                             <Save className="w-4 h-4" />
                             <span>Save</span>
                         </button>
                         <button
-                            onClick={onClose}
+                            onClick={handleClose}
                             className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)]"
                         >
                             <X className="w-5 h-5" />
@@ -438,6 +466,54 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                     />
                 );
             })()}
+
+            {/* Unsaved Changes Warning Modal */}
+            {showUnsavedWarning && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                    <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-yellow-500/50 p-6 w-full max-w-md shadow-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-3 rounded-full bg-yellow-500/10">
+                                <AlertTriangle className="w-8 h-8 text-yellow-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Unsaved Changes</h3>
+                                <p className="text-sm text-[var(--color-text-muted)]">
+                                    You have unsaved changes
+                                </p>
+                            </div>
+                        </div>
+
+                        <p className="text-[var(--color-text-secondary)] mb-6">
+                            Do you want to save your changes before closing?
+                        </p>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowUnsavedWarning(false)}
+                                className="flex-1 px-4 py-2.5 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDiscardChanges}
+                                className="flex-1 px-4 py-2.5 bg-red-500/10 text-red-500 border border-red-500/30 rounded-xl hover:bg-red-500/20 transition-colors font-medium"
+                            >
+                                Discard
+                            </button>
+                            <button
+                                onClick={() => {
+                                    handleSave();
+                                    setShowUnsavedWarning(false);
+                                }}
+                                className="flex-1 px-4 py-2.5 bg-[var(--color-accent-primary)] text-white rounded-xl hover:bg-[var(--color-accent-primary)]/90 transition-colors font-medium flex items-center justify-center gap-2"
+                            >
+                                <Save className="w-4 h-4" />
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
