@@ -29,3 +29,7 @@ dist-ssr
 .env
 *.db
 *.db-journal
+
+# Uploads - keep directories via .gitkeep but ignore uploaded files
+uploads/**/*
+!uploads/**/.gitkeep

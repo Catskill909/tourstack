@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle } from 'lucide-react';
 import { BLOCK_ICONS, BLOCK_LABELS } from './blocks/StopContentBlock';
 import { TextBlockEditor } from './blocks/TextBlockEditor';
 import { ImageBlockEditor } from './blocks/ImageBlockEditor';
@@ -47,6 +47,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
     const [showPreview, setShowPreview] = useState(false);
     const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
     const [showAddBlock, setShowAddBlock] = useState(false);
+    const [deleteBlockId, setDeleteBlockId] = useState<string | null>(null);
     const language = 'en'; // Default language for editing
 
     const blocks = editedStop.contentBlocks || [];
@@ -98,14 +99,19 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
     }
 
     function handleDeleteBlock(blockId: string) {
-        if (!confirm('Delete this block?')) return;
+        setDeleteBlockId(blockId);
+    }
+
+    function confirmDeleteBlock() {
+        if (!deleteBlockId) return;
         setEditedStop({
             ...editedStop,
-            contentBlocks: blocks.filter((b) => b.id !== blockId).map((b, i) => ({ ...b, order: i })),
+            contentBlocks: blocks.filter((b) => b.id !== deleteBlockId).map((b, i) => ({ ...b, order: i })),
         });
-        if (editingBlockId === blockId) {
+        if (editingBlockId === deleteBlockId) {
             setEditingBlockId(null);
         }
+        setDeleteBlockId(null);
     }
 
     function handleMoveBlock(blockId: string, direction: 'up' | 'down') {
@@ -351,6 +357,49 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                     stop={editedStop}
                     onClose={() => setShowPreview(false)}
                 />
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteBlockId && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                    <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] p-6 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-3 rounded-full bg-red-500/10">
+                                <AlertTriangle className="w-6 h-6 text-red-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Delete Block</h3>
+                                <p className="text-sm text-[var(--color-text-muted)]">
+                                    This action cannot be undone
+                                </p>
+                            </div>
+                        </div>
+
+                        <p className="text-[var(--color-text-secondary)] mb-6">
+                            Are you sure you want to delete this{' '}
+                            <span className="font-medium text-[var(--color-text-primary)]">
+                                {BLOCK_LABELS[blocks.find(b => b.id === deleteBlockId)?.type || 'text']}
+                            </span>
+                            {' '}block?
+                        </p>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setDeleteBlockId(null)}
+                                className="flex-1 px-4 py-2.5 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDeleteBlock}
+                                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium flex items-center justify-center gap-2"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

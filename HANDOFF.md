@@ -1,7 +1,7 @@
  # TourStack Handoff Document 📋
 
-**Last Updated**: January 18, 2026  
-**Session Status**: Phase 5 Content Block System Core Complete ✅
+**Last Updated**: January 19, 2026  
+**Session Status**: API Layer Complete ✅
 
 ---
 
@@ -48,6 +48,14 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] JSON Export Schema specification
 - [x] Translation Infrastructure plan (i18next + AI)
 - [x] Phased development roadmap
+
+### Phase 5.5: API Layer (NEW ✅)
+- [x] Express API server (`server/index.ts`)
+- [x] Tours, Stops, Templates, Media CRUD endpoints
+- [x] File upload with multer → `/uploads` folder
+- [x] SQLite persistence via Prisma (replaces localStorage)
+- [x] Vite proxy for development
+- [x] Dockerfile updated for production
 
 ---
 
@@ -138,6 +146,13 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 | Purpose | Path |
 |---------|------|
+| **API Server** | |
+| Express Server | `app/server/index.ts` |
+| Database Client | `app/server/db.ts` |
+| Tours API | `app/server/routes/tours.ts` |
+| Stops API | `app/server/routes/stops.ts` |
+| Templates API | `app/server/routes/templates.ts` |
+| Media API | `app/server/routes/media.ts` |
 | **Pages** | |
 | Tours Page | `app/src/pages/Tours.tsx` |
 | Dashboard | `app/src/pages/Dashboard.tsx` |
@@ -157,7 +172,6 @@ TourStack uses a **modular content block system** where tours and stops are comp
 | Gallery Block | `app/src/components/blocks/GalleryBlockEditor.tsx` |
 | **Services** | |
 | Tour Service | `app/src/lib/tourService.ts` |
-| Database | `app/src/lib/db.ts` |
 | **Schema** | |
 | Prisma Schema | `app/prisma/schema.prisma` |
 | TypeScript Types | `app/src/types/index.ts` |
@@ -185,7 +199,9 @@ TourStack uses a **modular content block system** where tours and stops are comp
 ```bash
 cd app
 npm install           # Install dependencies
-npm run dev           # Start dev server (localhost:5173)
+npm run dev           # Start Vite dev server (localhost:5173)
+npm run server        # Start Express API server (localhost:3000)
+npm run dev:all       # Run both Vite + Express concurrently
 npm run build         # Build for production
 npm run db:migrate    # Run database migrations
 npm run db:seed       # Seed templates
@@ -208,7 +224,21 @@ npm run db:studio     # Open Prisma Studio
 ## 💡 Key Decisions
 
 1. **Content Blocks over Flat Fields**: Flexible, extensible stop content
-2. **Base64 for Local Dev**: Simple image storage during development
+2. **File Storage over Base64**: Files saved to `/uploads`, URLs in database
 3. **JSON Export**: Primary persistence and portability method
 4. **Translation-First**: All text is `{ lang: value }` from day one
 5. **Technology Templates**: Tours organized by positioning method
+6. **Express API**: Backend for SQLite persistence and file uploads
+
+---
+
+## 🚀 Coolify Deployment
+
+Add persistent storage volumes in Coolify:
+
+| Container Path | Host Path |
+|---------------|-----------|
+| `/app/uploads` | `/data/tourstack/uploads` |
+| `/app/dev.db` | `/data/tourstack/dev.db` |
+
+The Dockerfile runs Express which serves both the API and React SPA.

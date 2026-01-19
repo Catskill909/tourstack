@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
+import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, ChevronUp, ChevronDown, Pencil, AlertTriangle, Database } from 'lucide-react';
 import { useToursStore } from '../stores/useToursStore';
 import { StopEditor } from '../components/StopEditor';
 import { QRCodeEditorModal } from '../components/QRCodeEditorModal';
 import type { Stop, Tour, PositioningConfig } from '../types';
 
 // Stop service using localStorage
+// NOTE: localStorage has ~5MB limit. Large base64 images/audio will exceed this.
+// For production, use IndexedDB or server-side storage.
 const STOPS_STORAGE_KEY = 'tourstack_stops';
 
 function loadStops(): Stop[] {
@@ -18,8 +20,21 @@ function loadStops(): Stop[] {
     }
 }
 
-function saveStops(stops: Stop[]): void {
-    localStorage.setItem(STOPS_STORAGE_KEY, JSON.stringify(stops));
+function saveStops(stops: Stop[]): boolean {
+    try {
+        localStorage.setItem(STOPS_STORAGE_KEY, JSON.stringify(stops));
+        return true;
+    } catch (error) {
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+            console.error('Storage quota exceeded. Data is too large for localStorage.');
+            return false;
+        }
+        throw error;
+    }
+}
+
+function clearAllStops(): void {
+    localStorage.removeItem(STOPS_STORAGE_KEY);
 }
 
 function generateId(): string {
@@ -38,6 +53,7 @@ export function TourDetail() {
     const [newStopTitle, setNewStopTitle] = useState('');
     const [showQRModal, setShowQRModal] = useState<string | null>(null);
     const [editingStop, setEditingStop] = useState<Stop | null>(null);
+    const [storageError, setStorageError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchTours();
@@ -148,9 +164,22 @@ export function TourDetail() {
         // Save to localStorage
         const allStops = loadStops();
         const otherStops = allStops.filter(s => s.id !== updatedStop.id);
-        saveStops([...otherStops, updatedStop]);
+        const success = saveStops([...otherStops, updatedStop]);
+
+        if (!success) {
+            setStorageError('Storage quota exceeded! Your images or audio files are too large for browser storage. Please use smaller files or clear existing data.');
+            return; // Don't close the editor
+        }
 
         setEditingStop(null);
+    }
+
+    function handleClearAllData() {
+        if (confirm('This will delete ALL stops. Are you sure?')) {
+            clearAllStops();
+            setStops([]);
+            setStorageError(null);
+        }
     }
 
     function handleSaveQRSettings(updatedStop: Stop) {
@@ -346,6 +375,56 @@ export function TourDetail() {
                     onSave={handleSaveStop}
                     onClose={() => setEditingStop(null)}
                 />
+            )}
+
+            {/* Storage Error Modal */}
+            {storageError && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                    <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-red-500/50 p-6 w-full max-w-md shadow-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-3 rounded-full bg-red-500/10">
+                                <AlertTriangle className="w-8 h-8 text-red-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Storage Full</h3>
+                                <p className="text-sm text-[var(--color-text-muted)]">
+                                    Browser storage limit reached
+                                </p>
+                            </div>
+                        </div>
+
+                        <p className="text-[var(--color-text-secondary)] mb-4">
+                            {storageError}
+                        </p>
+
+                        <div className="bg-[var(--color-bg-elevated)] rounded-xl p-4 mb-6">
+                            <h4 className="font-medium text-[var(--color-text-primary)] mb-2 flex items-center gap-2">
+                                <Database className="w-4 h-4" /> Solutions:
+                            </h4>
+                            <ul className="text-sm text-[var(--color-text-muted)] space-y-1 list-disc list-inside">
+                                <li>Use smaller/compressed images</li>
+                                <li>Use shorter audio clips for testing</li>
+                                <li>Clear existing data and start fresh</li>
+                            </ul>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setStorageError(null)}
+                                className="flex-1 px-4 py-2.5 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors font-medium"
+                            >
+                                Close
+                            </button>
+                            <button
+                                onClick={handleClearAllData}
+                                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium flex items-center justify-center gap-2"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Clear All Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
