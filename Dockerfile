@@ -23,8 +23,8 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install tsx globally for running TypeScript
-RUN npm install -g tsx
+# Install curl for healthchecks and tsx for running TypeScript
+RUN apk add --no-cache curl && npm install -g tsx
 
 # Copy package files
 COPY --from=builder /app/package*.json ./
@@ -54,6 +54,10 @@ ENV PORT=3000
 
 # Expose port 3000
 EXPOSE 3000
+
+# Healthcheck - Coolify uses this to verify container is running
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Start the API server with tsx
 CMD ["tsx", "server/index.ts"]
