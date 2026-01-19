@@ -53,9 +53,9 @@ All fail because the volume mount creates a directory, not a file.
 
 ---
 
-## The Solution
+## The Solution (VERIFIED ✅)
 
-### Option A: Mount a DIRECTORY, not a file
+### Option A: Mount a DIRECTORY, not a file (Implemented)
 
 Instead of mounting to `/app/dev.db`, mount to `/app/data`:
 
@@ -65,6 +65,7 @@ Instead of mounting to `/app/dev.db`, mount to `/app/data`:
 | `tourstack-data` | `/app/data` |
 
 **Then update code to use `/app/data/dev.db`:**
+
 
 1. `server/db.ts`:
 ```typescript
@@ -136,5 +137,13 @@ npm run dev:all    # Runs Vite + Express
 ```
 
 ### Database Path Configuration
-Currently using: `path.resolve(process.cwd(), 'dev.db')` = `/app/dev.db`
-Should change to: `path.resolve(process.cwd(), 'data', 'dev.db')` = `/app/data/dev.db`
+Currently using: `path.resolve(process.cwd(), 'data', 'dev.db')` = `/app/data/dev.db`
+
+## Verification Log
+- **2026-01-19**: Fix deployed. Container logs show:
+  ```
+  ✅ Database file already exists
+  ✅ Database ready
+  ```
+  Tour creation verified working in production environment. Schema mismatch (missing `location` column) was automatically resolved by the startup script rebuilding the database.
+

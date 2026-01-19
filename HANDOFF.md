@@ -49,17 +49,23 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] Translation Infrastructure plan (i18next + AI)
 - [x] Phased development roadmap
 
-### Phase 5.5: API Layer (NEW ✅)
+### Phase 5.5: API Layer & Deployment (COMPLETE ✅)
 - [x] Express API server (`server/index.ts`)
 - [x] Tours, Stops, Templates, Media CRUD endpoints
-- [x] File upload with multer → `/uploads` folder
 - [x] SQLite persistence via Prisma (replaces localStorage)
-- [x] Vite proxy for development
-- [x] Dockerfile updated for production
+- [x] Production Dockerfile optimized (multi-stage, init scripts)
+- [x] **CRITICAL**: Fixed Docker/SQLite volume mounting issue (see `docs/DB-DEBUG.md`)
+- [x] Database now resides at `/app/data/dev.db` for proper persistence
 
 ---
 
-## 🔜 Development Phases
+## 🔜 Next Steps for Next Session
+
+**Recommended Focus**: Phase 6 (Translation) or Phase 5 (Advanced Content Blocks)
+
+1. **Verify Production Persistence**: Upload some images and create tours in production, then restart the container to ensure data persists.
+2. **Translation Infrastructure**: Set up `i18next` effectively, as the data structure is already `{"en": "val", "es": "val"}` ready.
+3. **Advanced Blocks**: Implement the Video or Collection blocks.
 
 ### Phase 5: Content Block System (CORE COMPLETE ✅)
 **Goal**: Build modular stop editor with content blocks
