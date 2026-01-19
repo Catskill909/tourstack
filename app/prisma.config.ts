@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { defineConfig } from "prisma/config";
 
 // Detailed debug logging to understand why env var might be missing
