@@ -3,26 +3,17 @@
 
 echo "🚀 Starting TourStack..."
 echo "📂 Working directory: $(pwd)"
-echo "📄 Database path: $(pwd)/dev.db"
 
-# Create the database file if it doesn't exist
-# better-sqlite3 needs the file to exist
-if [ ! -f ./dev.db ]; then
-  echo "📦 Creating empty database file..."
-  touch ./dev.db
-  chmod 666 ./dev.db
-fi
+# Initialize database (creates file and tables if needed)
+echo "🔧 Initializing database..."
+npx tsx scripts/init-db.ts
 
 # Seed database with templates
 echo "🌱 Seeding database..."
-npx tsx prisma/seed.ts || echo "⚠️ Seed had issues, continuing..."
+npx tsx prisma/seed.ts
 
 # Verify database exists
-if [ -f ./dev.db ]; then
-  echo "✅ Database file exists: $(ls -la ./dev.db)"
-else
-  echo "❌ Database file missing!"
-fi
+ls -la ./dev.db 2>/dev/null && echo "✅ Database ready" || echo "❌ Database missing"
 
 # Start the server
 echo "🎯 Starting API server..."
