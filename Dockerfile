@@ -7,7 +7,7 @@ WORKDIR /app
 COPY app/package*.json ./
 
 # Install ALL dependencies (including dev for build)
-RUN npm ci
+RUN npm install
 
 # Copy the rest of the app directory
 COPY app/ ./
@@ -30,7 +30,7 @@ RUN apk add --no-cache curl sqlite && npm install -g tsx
 COPY --from=builder /app/package*.json ./
 
 # Install production dependencies
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 # Copy Prisma schema and generate client
 COPY --from=builder /app/prisma ./prisma
