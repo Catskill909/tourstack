@@ -23,8 +23,8 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Install curl for healthchecks and tsx for running TypeScript
-RUN apk add --no-cache curl && npm install -g tsx
+# Install curl for healthchecks and tsx for running TypeScript. Add sqlite for db tools.
+RUN apk add --no-cache curl sqlite && npm install -g tsx
 
 # Copy package files
 COPY --from=builder /app/package*.json ./

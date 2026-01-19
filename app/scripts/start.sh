@@ -7,23 +7,21 @@ echo "📂 Working directory: $(pwd)"
 # Ensure data directory exists
 mkdir -p data
 
-# Check if we need to reinitialize database (schema change)
-# Remove this check after first successful deploy
-if [ -f ./data/dev.db ]; then
-  echo "🔄 Checking database schema..."
-  # Check if Museum table has location column
-  sqlite3 ./data/dev.db "SELECT location FROM Museum LIMIT 1" 2>/dev/null
-  if [ $? -ne 0 ]; then
-    echo "⚠️ Database schema outdated, rebuilding..."
-    rm -f ./data/dev.db
-  fi
-fi
+# Ensure data directory exists
+mkdir -p data
 
-# Initialize database (creates file and tables if needed)
-echo "🔧 Initializing database..."
-npx tsx scripts/init-db.ts
+# Set DATABASE_URL to use the persistent volume
+# This ensures migrations and the app use the same file!
+export DATABASE_URL="file:/app/data/dev.db"
+echo "🔌 DATABASE_URL set to: $DATABASE_URL"
 
-# Seed database with templates
+# Initialize database (safe schema push)
+# We use db push instead of migrate deploy to avoid issues with migration history drift
+# --accept-data-loss is only for dev, but necessary if schema changed drastically
+echo "🔄 Syncing database schema..."
+npx prisma db push
+
+# Seed database with templates (idempotent - skips if exists)
 echo "🌱 Seeding database..."
 npx tsx prisma/seed.ts
 
