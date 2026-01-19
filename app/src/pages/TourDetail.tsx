@@ -147,7 +147,8 @@ export function TourDetail() {
                 exitTrigger: false,
                 notification: { sound: 'chime', vibration: 'short', visual: 'banner' }
             },
-            content: { en: { text: '', images: [] } },
+            content: [] as unknown as Stop['content'],  // MUST be array, not object!
+            contentBlocks: [],  // Also send as contentBlocks for compatibility
             links: [],
             accessibility: { largePrintAvailable: false, seatingNearby: false }
         });

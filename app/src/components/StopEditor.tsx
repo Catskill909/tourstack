@@ -40,9 +40,12 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
 }
 
 export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
+    // Ensure contentBlocks is always an array - defensive check
+    const safeContentBlocks = Array.isArray(stop.contentBlocks) ? stop.contentBlocks : [];
+
     const [editedStop, setEditedStop] = useState<Stop>({
         ...stop,
-        contentBlocks: stop.contentBlocks || [],
+        contentBlocks: safeContentBlocks,
     });
     const [showPreview, setShowPreview] = useState(false);
     const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
@@ -53,7 +56,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
     const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
     const language = 'en'; // Default language for editing
 
-    const blocks = editedStop.contentBlocks || [];
+    const blocks = Array.isArray(editedStop.contentBlocks) ? editedStop.contentBlocks : [];
 
     function getStopTitle(): string {
         return typeof editedStop.title === 'object'
