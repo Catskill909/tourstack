@@ -3,6 +3,8 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '../src/generated/prisma/index.js';
 import path from 'path';
 
+import Database from 'better-sqlite3';
+
 // Path to database file - use data directory for Docker volume compatibility
 // Docker volumes can't mount to a file path, only directories
 const dbPath = path.resolve(process.cwd(), 'data', 'dev.db');
@@ -13,7 +15,8 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-    const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
+    const db = new Database(dbPath);
+    const adapter = new PrismaBetterSqlite3(db);
     return new PrismaClient({ adapter });
 }
 
