@@ -45,6 +45,10 @@ COPY --from=builder /app/server ./server
 # Copy generated Prisma client
 COPY --from=builder /app/src/generated ./src/generated
 
+# Copy startup script
+COPY --from=builder /app/scripts ./scripts
+RUN chmod +x ./scripts/start.sh
+
 # Create uploads directory
 RUN mkdir -p uploads/images uploads/audio uploads/documents
 
@@ -56,8 +60,8 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Healthcheck - Coolify uses this to verify container is running
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD curl -f http://localhost:3000/api/health || exit 1
 
-# Start the API server with tsx
-CMD ["tsx", "server/index.ts"]
+# Start using the startup script (runs migrations, seed, then server)
+CMD ["sh", "./scripts/start.sh"]

@@ -1,9 +1,11 @@
 import 'dotenv/config';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '../src/generated/prisma';
+import path from 'path';
 
-// Set up SQLite connection with the adapter - path is relative to app root
-const adapter = new PrismaBetterSqlite3({ url: 'file:./dev.db' });
+// Set up SQLite connection with the adapter - use absolute path for Docker compatibility
+const dbPath = path.resolve(process.cwd(), 'dev.db');
+const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
 const prisma = new PrismaClient({ adapter });
 
 // Built-in templates based on positioning technology
