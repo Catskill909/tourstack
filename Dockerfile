@@ -29,10 +29,10 @@ RUN apk add --no-cache curl && npm install -g tsx
 # Copy package files
 COPY --from=builder /app/package*.json ./
 
-# Install production dependencies (Prisma needs its runtime)
+# Install production dependencies
 RUN npm ci --omit=dev
 
-# Re-generate Prisma client in production context
+# Copy Prisma schema and generate client
 COPY --from=builder /app/prisma ./prisma
 RUN npx prisma generate
 
