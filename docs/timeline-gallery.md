@@ -13,7 +13,7 @@ Transform the audio-synced image gallery into a powerful, cinematic storytelling
 - [x] `wavesurfer.js` waveform visualization
 - [x] Draggable markers for timestamp adjustment
 - [x] **Numbered markers** (photo numbers on handles)
-- [x] Touch support for marker dragging (tablets)
+- [x] **Touch support for tablets** (Markers + Drag & Drop Image Reordering)
 - [x] Basic audio controls (Play/Pause, Skip, Volume)
 - [x] Image upload with drag-and-drop
 - [x] Image reordering via drag-and-drop
