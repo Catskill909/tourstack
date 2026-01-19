@@ -1,0 +1,225 @@
+import { useState, useRef, useEffect } from 'react';
+import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward } from 'lucide-react';
+
+interface CustomAudioPlayerProps {
+    src: string;
+    title?: string;
+    autoplay?: boolean;
+    className?: string;
+}
+
+export function CustomAudioPlayer({ src, title, autoplay = false, className = '' }: CustomAudioPlayerProps) {
+    const audioRef = useRef<HTMLAudioElement>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [duration, setDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [volume, setVolume] = useState(1);
+    const [isMuted, setIsMuted] = useState(false);
+    const [playbackRate, setPlaybackRate] = useState(1);
+    const [isDragging, setIsDragging] = useState(false);
+
+    useEffect(() => {
+        if (autoplay && audioRef.current) {
+            audioRef.current.play().catch(() => {
+                // Autoplay was prevented
+                setIsPlaying(false);
+            });
+        }
+    }, [autoplay]);
+
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const updateTime = () => {
+            if (!isDragging) {
+                setCurrentTime(audio.currentTime);
+            }
+        };
+
+        const updateDuration = () => setDuration(audio.duration);
+        const onEnded = () => setIsPlaying(false);
+
+        audio.addEventListener('timeupdate', updateTime);
+        audio.addEventListener('loadedmetadata', updateDuration);
+        audio.addEventListener('ended', onEnded);
+
+        return () => {
+            audio.removeEventListener('timeupdate', updateTime);
+            audio.removeEventListener('loadedmetadata', updateDuration);
+            audio.removeEventListener('ended', onEnded);
+        };
+    }, [isDragging]);
+
+    const togglePlay = () => {
+        if (audioRef.current) {
+            if (isPlaying) {
+                audioRef.current.pause();
+            } else {
+                audioRef.current.play();
+            }
+            setIsPlaying(!isPlaying);
+        }
+    };
+
+    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const time = parseFloat(e.target.value);
+        setCurrentTime(time);
+        if (audioRef.current) {
+            audioRef.current.currentTime = time;
+        }
+    };
+
+    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = parseFloat(e.target.value);
+        setVolume(value);
+        if (audioRef.current) {
+            audioRef.current.volume = value;
+            setIsMuted(value === 0);
+        }
+    };
+
+    const toggleMute = () => {
+        if (audioRef.current) {
+            const newMuteState = !isMuted;
+            setIsMuted(newMuteState);
+            audioRef.current.muted = newMuteState;
+            if (newMuteState) {
+                setVolume(0);
+            } else {
+                setVolume(1);
+                audioRef.current.volume = 1;
+            }
+        }
+    };
+
+    const formatTime = (time: number) => {
+        const minutes = Math.floor(time / 60);
+        const seconds = Math.floor(time % 60);
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    const toggleSpeed = () => {
+        const speeds = [1, 1.25, 1.5, 2];
+        const nextSpeedIndex = (speeds.indexOf(playbackRate) + 1) % speeds.length;
+        const nextSpeed = speeds[nextSpeedIndex];
+        setPlaybackRate(nextSpeed);
+        if (audioRef.current) {
+            audioRef.current.playbackRate = nextSpeed;
+        }
+    };
+
+    const skipForward = () => {
+        if (audioRef.current) {
+            audioRef.current.currentTime = Math.min(audioRef.current.currentTime + 10, duration);
+        }
+    };
+
+    const skipBack = () => {
+        if (audioRef.current) {
+            audioRef.current.currentTime = Math.max(audioRef.current.currentTime - 10, 0);
+        }
+    };
+
+    return (
+        <div className={`bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl p-4 shadow-sm ${className}`}>
+            <audio ref={audioRef} src={src} preload="metadata" />
+
+            {title && (
+                <div className="mb-4">
+                    <h4 className="font-medium text-[var(--color-text-primary)] truncate">{title}</h4>
+                </div>
+            )}
+
+            {/* Main Controls */}
+            <div className="flex flex-col gap-4">
+                {/* Progress Bar */}
+                <div className="w-full group">
+                    <input
+                        type="range"
+                        min="0"
+                        max={duration || 100}
+                        value={currentTime}
+                        onChange={handleSeek}
+                        onMouseDown={() => setIsDragging(true)}
+                        onMouseUp={() => setIsDragging(false)}
+                        onTouchStart={() => setIsDragging(true)}
+                        onTouchEnd={() => setIsDragging(false)}
+                        className="w-full h-1 bg-[var(--color-bg-active)] rounded-lg appearance-none cursor-pointer accent-[var(--color-accent-primary)] hover:h-1.5 transition-all"
+                        style={{
+                            backgroundSize: `${(currentTime / duration) * 100}% 100%`,
+                        }}
+                    />
+                    <div className="flex justify-between mt-1 text-xs text-[var(--color-text-muted)] font-mono">
+                        <span>{formatTime(currentTime)}</span>
+                        <span>{formatTime(duration)}</span>
+                    </div>
+                </div>
+
+                {/* Playback Controls */}
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={toggleSpeed}
+                            className="px-2 py-1 text-xs font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] rounded transition-colors"
+                        >
+                            {playbackRate}x
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                        <button
+                            onClick={skipBack}
+                            className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-2"
+                        >
+                            <SkipBack className="w-5 h-5" />
+                        </button>
+
+                        <button
+                            onClick={togglePlay}
+                            className="w-12 h-12 flex items-center justify-center bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-white rounded-full shadow-md transition-all active:scale-95"
+                        >
+                            {isPlaying ? (
+                                <Pause className="w-5 h-5 fill-current" />
+                            ) : (
+                                <Play className="w-5 h-5 fill-current ml-0.5" />
+                            )}
+                        </button>
+
+                        <button
+                            onClick={skipForward}
+                            className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-2"
+                        >
+                            <SkipForward className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 group relative">
+                        <button
+                            onClick={toggleMute}
+                            className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-2"
+                        >
+                            {isMuted || volume === 0 ? (
+                                <VolumeX className="w-5 h-5" />
+                            ) : (
+                                <Volume2 className="w-5 h-5" />
+                            )}
+                        </button>
+                        {/* Volume slider (hidden on mobile, hover on desktop) */}
+                        <div className="hidden sm:block w-0 overflow-hidden group-hover:w-20 transition-all duration-300">
+                            <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={isMuted ? 0 : volume}
+                                onChange={handleVolumeChange}
+                                className="w-20 h-1 bg-[var(--color-bg-active)] rounded-lg appearance-none cursor-pointer accent-[var(--color-accent-primary)]"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

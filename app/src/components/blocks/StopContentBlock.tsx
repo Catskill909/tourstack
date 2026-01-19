@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData } from '../../types';
 import { GalleryPreview } from './GalleryPreview';
 import { TimelineGalleryPreview } from './TimelineGalleryPreview';
+import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
 
 interface StopContentBlockProps {
     block: ContentBlock;
@@ -92,16 +93,18 @@ export function StopContentBlock({ block, mode, language, onEdit, onDelete }: St
         const transcript = data.transcript?.[language] || data.transcript?.en;
         return (
             <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4">
-                <h4 className="font-medium text-[var(--color-text-primary)] mb-2">{title}</h4>
                 {audioUrl ? (
-                    <audio controls className="w-full" autoPlay={data.autoplay}>
-                        <source src={audioUrl} />
-                    </audio>
+                    <CustomAudioPlayer
+                        src={audioUrl}
+                        title={title}
+                        autoplay={data.autoplay}
+                        className="mb-4"
+                    />
                 ) : (
-                    <div className="text-[var(--color-text-muted)] text-sm">No audio file</div>
+                    <div className="text-[var(--color-text-muted)] text-sm mb-4">No audio file</div>
                 )}
                 {data.showTranscript && transcript && (
-                    <div className="mt-3 text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-surface)] p-3 rounded-lg max-h-32 overflow-y-auto">
+                    <div className="text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-surface)] p-3 rounded-lg max-h-32 overflow-y-auto border border-[var(--color-border-default)]">
                         {transcript}
                     </div>
                 )}

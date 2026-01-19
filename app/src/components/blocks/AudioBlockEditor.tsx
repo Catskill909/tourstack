@@ -1,4 +1,5 @@
 import type { AudioBlockData } from '../../types';
+import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
 
 interface AudioBlockEditorProps {
     data: AudioBlockData;
@@ -46,15 +47,17 @@ export function AudioBlockEditor({ data, language, onChange }: AudioBlockEditorP
                 <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                     Audio File ({language.toUpperCase()})
                 </label>
-                <div className="flex items-center gap-4">
-                    <label className="px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg cursor-pointer hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]">
-                        Choose File
+                <div className="space-y-4">
+                    <label className="inline-block px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg cursor-pointer hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] transition-colors">
+                        Choose Audio File
                         <input type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
                     </label>
                     {data.audioFiles[language] && (
-                        <audio controls className="flex-1">
-                            <source src={data.audioFiles[language]} />
-                        </audio>
+                        <CustomAudioPlayer
+                            src={data.audioFiles[language]!}
+                            title={data.title[language] || data.title.en}
+                            autoplay={false}
+                        />
                     )}
                 </div>
             </div>
