@@ -230,17 +230,18 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
         newImages.splice(draggedIndex, 1);
         newImages.splice(index, 0, draggedImage);
 
-        // Get all existing timestamps and sort them
-        const sortedTimestamps = images
-            .map(img => img.timestamp)
-            .sort((a, b) => a - b);
+        // Calculate new timestamp for the dragged image ONLY
+        // Place it halfway between previous and next images
+        // This preserves all other critical timing points!
+        const prevTime = index > 0 ? newImages[index - 1].timestamp : 0;
+        const nextTime = index < newImages.length - 1 ? newImages[index + 1].timestamp : audioDuration;
 
-        // Assign the sorted timestamps to the new image order
-        // This preserves your manually set timing "beats" but changes which image is at which beat
-        const retimedImages = newImages.map((img, i) => ({
-            ...img,
-            timestamp: sortedTimestamps[i] || (i * (audioDuration / newImages.length)) // Fallback if something weird happens
-        }));
+        // "A little before its next marker" -> Midpoint is safe and predictable
+        const newTimestamp = (prevTime + nextTime) / 2;
+
+        const retimedImages = newImages.map((img, i) =>
+            i === index ? { ...img, timestamp: newTimestamp } : img
+        );
 
         onChange({ ...data, images: retimedImages });
         setDraggedIndex(index);
