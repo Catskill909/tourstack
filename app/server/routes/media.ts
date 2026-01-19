@@ -144,6 +144,38 @@ router.post('/', upload.single('file'), async (req: Request, res: Response) => {
     }
 });
 
+// POST /api/media/upload - Quick upload that returns just the URL (for inline content)
+// This endpoint does NOT save to database - just stores the file and returns URL
+router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
+    try {
+        if (!req.file) {
+            res.status(400).json({ error: 'No file uploaded' });
+            return;
+        }
+
+        // Determine URL path based on destination folder
+        let urlPath: string;
+        if (req.file.destination.includes('images')) {
+            urlPath = `/uploads/images/${req.file.filename}`;
+        } else if (req.file.destination.includes('audio')) {
+            urlPath = `/uploads/audio/${req.file.filename}`;
+        } else {
+            urlPath = `/uploads/documents/${req.file.filename}`;
+        }
+
+        // Return just the URL for quick use
+        res.status(201).json({
+            url: urlPath,
+            filename: req.file.originalname,
+            mimeType: req.file.mimetype,
+            size: req.file.size
+        });
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        res.status(500).json({ error: 'Failed to upload file' });
+    }
+});
+
 // DELETE /api/media/:id - Delete file
 router.delete('/:id', async (req: Request<IdParams>, res: Response) => {
     try {

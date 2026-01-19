@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-    Upload, X, GripVertical, Pencil, Music,
-    Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Clock
+    Upload, X, GripVertical, Pencil, Music, Clock
 } from 'lucide-react';
+import { AudioWaveform } from './AudioWaveform';
 import type { TimelineGalleryBlockData } from '../../types';
 
 interface TimelineGalleryImage {
@@ -29,14 +29,11 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
     const [editingImageId, setEditingImageId] = useState<string | null>(null);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-    // Audio state
-    const [isPlaying, setIsPlaying] = useState(false);
+    // Audio/preview state
     const [currentTime, setCurrentTime] = useState(0);
-    const [isMuted, setIsMuted] = useState(false);
     const [previewIndex, setPreviewIndex] = useState(0);
     const [isFading, setIsFading] = useState(false);
 
-    const audioRef = useRef<HTMLAudioElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const crossfadeDuration = data.crossfadeDuration || 500;
@@ -54,9 +51,9 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
     // Sort images by timestamp for display
     const sortedImages = [...images].sort((a, b) => a.timestamp - b.timestamp);
 
-    // Auto-advance based on audio time
+    // Auto-advance based on audio time (triggered by onTimeUpdate from AudioWaveform)
     useEffect(() => {
-        if (!isPlaying || sortedImages.length === 0) return;
+        if (sortedImages.length === 0 || currentTime === 0) return;
 
         for (let i = sortedImages.length - 1; i >= 0; i--) {
             if (sortedImages[i].timestamp <= currentTime) {
@@ -67,7 +64,7 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
                 break;
             }
         }
-    }, [currentTime, isPlaying, sortedImages.length]);
+    }, [currentTime, sortedImages.length]);
 
     function triggerCrossfade(newIndex: number) {
         setIsFading(true);
@@ -174,30 +171,6 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
     }
     function handleDragEnd() { setDraggedIndex(null); }
 
-    // Audio controls
-    function togglePlayback() {
-        if (!audioRef.current) return;
-        if (isPlaying) {
-            audioRef.current.pause();
-        } else {
-            audioRef.current.play();
-        }
-        setIsPlaying(!isPlaying);
-    }
-
-    function handleTimeUpdate() {
-        if (audioRef.current) {
-            setCurrentTime(audioRef.current.currentTime);
-        }
-    }
-
-    function handleSeek(e: React.MouseEvent<HTMLDivElement>) {
-        if (!audioRef.current || !data.audioDuration) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const position = (e.clientX - rect.left) / rect.width;
-        audioRef.current.currentTime = position * data.audioDuration;
-    }
-
     function formatTime(seconds: number): string {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
@@ -217,93 +190,32 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
 
                 {data.audioUrl ? (
                     <div className="space-y-4">
-                        <audio
-                            ref={audioRef}
-                            src={data.audioUrl}
-                            onTimeUpdate={handleTimeUpdate}
-                            onEnded={() => setIsPlaying(false)}
-                            className="hidden"
+                        {/* Waveform Audio Player with Markers */}
+                        <AudioWaveform
+                            audioUrl={data.audioUrl}
+                            duration={data.audioDuration || 0}
+                            markers={images.map(img => ({
+                                id: img.id,
+                                timestamp: img.timestamp,
+                                label: img.caption[language] || img.alt[language]
+                            }))}
+                            onMarkerMove={(id, newTimestamp) => {
+                                onChange({
+                                    ...data,
+                                    images: images.map(img =>
+                                        img.id === id ? { ...img, timestamp: newTimestamp } : img
+                                    )
+                                });
+                            }}
+                            onTimeUpdate={(time) => {
+                                setCurrentTime(time);
+                            }}
+                            onReady={(audioDuration) => {
+                                if (audioDuration !== data.audioDuration) {
+                                    onChange({ ...data, audioDuration });
+                                }
+                            }}
                         />
-
-                        {/* Custom Audio Player */}
-                        <div className="bg-[var(--color-bg-surface)] rounded-xl p-4 space-y-3">
-                            {/* Progress bar with markers */}
-                            <div className="relative">
-                                <div
-                                    className="h-2 bg-[var(--color-bg-hover)] rounded-full cursor-pointer overflow-hidden"
-                                    onClick={handleSeek}
-                                >
-                                    <div
-                                        className="h-full bg-gradient-to-r from-[var(--color-accent-primary)] to-purple-500 rounded-full transition-all"
-                                        style={{ width: `${(currentTime / (data.audioDuration || 1)) * 100}%` }}
-                                    />
-                                </div>
-
-                                {/* Timeline markers */}
-                                <div className="relative h-4 mt-1">
-                                    {images.map((img) => (
-                                        <div
-                                            key={img.id}
-                                            className="absolute top-0 cursor-pointer group"
-                                            style={{ left: `${(img.timestamp / (data.audioDuration || 1)) * 100}%` }}
-                                        >
-                                            <div className="w-3 h-3 -ml-1.5 rounded-full bg-yellow-400 border-2 border-white shadow-lg transform group-hover:scale-125 transition-transform" />
-                                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                                <span className="px-2 py-1 bg-black/80 text-white text-xs rounded">
-                                                    {formatTime(img.timestamp)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Controls */}
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-[var(--color-text-muted)] font-mono">
-                                    {formatTime(currentTime)}
-                                </span>
-
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => { if (audioRef.current) audioRef.current.currentTime = Math.max(0, currentTime - 10); }}
-                                        className="p-2 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors"
-                                    >
-                                        <SkipBack className="w-5 h-5" />
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={togglePlayback}
-                                        className="p-4 rounded-full bg-gradient-to-r from-[var(--color-accent-primary)] to-purple-500 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
-                                    >
-                                        {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => { if (audioRef.current) audioRef.current.currentTime = Math.min(data.audioDuration || 0, currentTime + 10); }}
-                                        className="p-2 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors"
-                                    >
-                                        <SkipForward className="w-5 h-5" />
-                                    </button>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => { if (audioRef.current) { audioRef.current.muted = !isMuted; setIsMuted(!isMuted); } }}
-                                        className="p-2 rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors"
-                                    >
-                                        {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                                    </button>
-                                    <span className="text-sm text-[var(--color-text-muted)] font-mono">
-                                        {formatTime(data.audioDuration || 0)}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
 
                         <button
                             type="button"

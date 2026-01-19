@@ -1,45 +1,86 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, ChevronUp, ChevronDown, Pencil, AlertTriangle, Database } from 'lucide-react';
+import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
 import { useToursStore } from '../stores/useToursStore';
 import { StopEditor } from '../components/StopEditor';
 import { QRCodeEditorModal } from '../components/QRCodeEditorModal';
 import type { Stop, Tour, PositioningConfig } from '../types';
 
-// Stop service using localStorage
-// NOTE: localStorage has ~5MB limit. Large base64 images/audio will exceed this.
-// For production, use IndexedDB or server-side storage.
-const STOPS_STORAGE_KEY = 'tourstack_stops';
+// ============================================
+// STOPS API SERVICE - Uses database, not localStorage
+// ============================================
 
-function loadStops(): Stop[] {
+async function fetchStopsFromAPI(tourId: string): Promise<Stop[]> {
     try {
-        const stored = localStorage.getItem(STOPS_STORAGE_KEY);
-        return stored ? JSON.parse(stored) : [];
-    } catch {
+        const response = await fetch(`/api/stops/${tourId}`);
+        if (!response.ok) throw new Error('Failed to fetch stops');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching stops:', error);
         return [];
     }
 }
 
-function saveStops(stops: Stop[]): boolean {
+async function createStopAPI(stop: Omit<Stop, 'id' | 'createdAt' | 'updatedAt'>): Promise<Stop | null> {
     try {
-        localStorage.setItem(STOPS_STORAGE_KEY, JSON.stringify(stops));
-        return true;
+        const response = await fetch('/api/stops', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(stop)
+        });
+        if (!response.ok) throw new Error('Failed to create stop');
+        return await response.json();
     } catch (error) {
-        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-            console.error('Storage quota exceeded. Data is too large for localStorage.');
-            return false;
-        }
-        throw error;
+        console.error('Error creating stop:', error);
+        return null;
     }
 }
 
-function clearAllStops(): void {
-    localStorage.removeItem(STOPS_STORAGE_KEY);
+async function updateStopAPI(stop: Stop): Promise<Stop | null> {
+    try {
+        const response = await fetch(`/api/stops/${stop.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(stop)
+        });
+        if (!response.ok) throw new Error('Failed to update stop');
+        return await response.json();
+    } catch (error) {
+        console.error('Error updating stop:', error);
+        return null;
+    }
 }
 
-function generateId(): string {
-    return `stop_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+async function deleteStopAPI(stopId: string): Promise<boolean> {
+    try {
+        const response = await fetch(`/api/stops/${stopId}`, {
+            method: 'DELETE'
+        });
+        return response.ok;
+    } catch (error) {
+        console.error('Error deleting stop:', error);
+        return false;
+    }
 }
+
+async function reorderStopsAPI(tourId: string, stopIds: string[]): Promise<Stop[]> {
+    try {
+        const response = await fetch(`/api/stops/reorder/${tourId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stopIds })
+        });
+        if (!response.ok) throw new Error('Failed to reorder stops');
+        return await response.json();
+    } catch (error) {
+        console.error('Error reordering stops:', error);
+        return [];
+    }
+}
+
+// ============================================
+// COMPONENT
+// ============================================
 
 export function TourDetail() {
     const { id } = useParams();
@@ -49,27 +90,29 @@ export function TourDetail() {
     const [tour, setTour] = useState<Tour | null>(null);
     const [stops, setStops] = useState<Stop[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [, setIsSaving] = useState(false); // Used for loading states
     const [showAddStop, setShowAddStop] = useState(false);
     const [newStopTitle, setNewStopTitle] = useState('');
     const [showQRModal, setShowQRModal] = useState<string | null>(null);
     const [editingStop, setEditingStop] = useState<Stop | null>(null);
-    const [storageError, setStorageError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchTours();
     }, [fetchTours]);
 
     useEffect(() => {
-        if (id && tours.length > 0) {
-            const found = tours.find(t => t.id === id);
-            setTour(found || null);
+        async function loadData() {
+            if (id && tours.length > 0) {
+                const found = tours.find(t => t.id === id);
+                setTour(found || null);
 
-            // Load stops for this tour
-            const allStops = loadStops();
-            const tourStops = allStops.filter(s => s.tourId === id).sort((a, b) => a.order - b.order);
-            setStops(tourStops);
-            setIsLoading(false);
+                // Load stops from database API
+                const tourStops = await fetchStopsFromAPI(id);
+                setStops(tourStops);
+                setIsLoading(false);
+            }
         }
+        loadData();
     }, [id, tours]);
 
     function getTourTitle(): string {
@@ -85,12 +128,12 @@ export function TourDetail() {
             : String(stop.title);
     }
 
-    function handleAddStop(e: React.FormEvent) {
+    async function handleAddStop(e: React.FormEvent) {
         e.preventDefault();
         if (!tour || !newStopTitle.trim()) return;
 
-        const newStop: Stop = {
-            id: generateId(),
+        setIsSaving(true);
+        const newStop = await createStopAPI({
             tourId: tour.id,
             order: stops.length,
             type: 'mandatory',
@@ -106,33 +149,30 @@ export function TourDetail() {
             },
             content: { en: { text: '', images: [] } },
             links: [],
-            accessibility: { largePrintAvailable: false, seatingNearby: false },
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
+            accessibility: { largePrintAvailable: false, seatingNearby: false }
+        });
 
-        const allStops = loadStops();
-        allStops.push(newStop);
-        saveStops(allStops);
-        setStops([...stops, newStop]);
+        if (newStop) {
+            setStops([...stops, newStop]);
+        }
         setNewStopTitle('');
         setShowAddStop(false);
+        setIsSaving(false);
     }
 
-    function handleDeleteStop(stopId: string) {
+    async function handleDeleteStop(stopId: string) {
         if (!confirm('Delete this stop?')) return;
 
-        const allStops = loadStops();
-        const filtered = allStops.filter(s => s.id !== stopId);
-        saveStops(filtered);
-
-        const updatedTourStops = stops.filter(s => s.id !== stopId);
-        // Reorder
-        updatedTourStops.forEach((s, i) => s.order = i);
-        setStops(updatedTourStops);
+        setIsSaving(true);
+        const success = await deleteStopAPI(stopId);
+        if (success) {
+            setStops(stops.filter(s => s.id !== stopId));
+        }
+        setIsSaving(false);
     }
 
-    function handleMoveStop(stopId: string, direction: 'up' | 'down') {
+    async function handleMoveStop(stopId: string, direction: 'up' | 'down') {
+        if (!tour) return;
         const idx = stops.findIndex(s => s.id === stopId);
         if (idx === -1) return;
         if (direction === 'up' && idx === 0) return;
@@ -142,57 +182,40 @@ export function TourDetail() {
         const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
         [newStops[idx], newStops[swapIdx]] = [newStops[swapIdx], newStops[idx]];
 
-        // Update order
-        newStops.forEach((s, i) => s.order = i);
-
-        // Save all stops
-        const allStops = loadStops();
-        const otherStops = allStops.filter(s => s.tourId !== tour?.id);
-        saveStops([...otherStops, ...newStops]);
+        // Optimistic update
         setStops(newStops);
+
+        // Save to database
+        const stopIds = newStops.map(s => s.id);
+        await reorderStopsAPI(tour.id, stopIds);
     }
 
     function handleEditStop(stop: Stop) {
         setEditingStop(stop);
     }
 
-    function handleSaveStop(updatedStop: Stop) {
-        // Update in local state
-        const updatedStops = stops.map(s => s.id === updatedStop.id ? updatedStop : s);
-        setStops(updatedStops);
+    async function handleSaveStop(updatedStop: Stop) {
+        setIsSaving(true);
+        const saved = await updateStopAPI(updatedStop);
 
-        // Save to localStorage
-        const allStops = loadStops();
-        const otherStops = allStops.filter(s => s.id !== updatedStop.id);
-        const success = saveStops([...otherStops, updatedStop]);
-
-        if (!success) {
-            setStorageError('Storage quota exceeded! Your images or audio files are too large for browser storage. Please use smaller files or clear existing data.');
-            return; // Don't close the editor
+        if (saved) {
+            setStops(stops.map(s => s.id === saved.id ? saved : s));
+            setEditingStop(null);
+        } else {
+            alert('Failed to save stop. Please try again.');
         }
-
-        setEditingStop(null);
+        setIsSaving(false);
     }
 
-    function handleClearAllData() {
-        if (confirm('This will delete ALL stops. Are you sure?')) {
-            clearAllStops();
-            setStops([]);
-            setStorageError(null);
+    async function handleSaveQRSettings(updatedStop: Stop) {
+        setIsSaving(true);
+        const saved = await updateStopAPI(updatedStop);
+
+        if (saved) {
+            setStops(stops.map(s => s.id === saved.id ? saved : s));
         }
-    }
-
-    function handleSaveQRSettings(updatedStop: Stop) {
-        // Update in local state
-        const updatedStops = stops.map(s => s.id === updatedStop.id ? updatedStop : s);
-        setStops(updatedStops);
-
-        // Save to localStorage
-        const allStops = loadStops();
-        const otherStops = allStops.filter(s => s.id !== updatedStop.id);
-        saveStops([...otherStops, updatedStop]);
-
         setShowQRModal(null);
+        setIsSaving(false);
     }
 
     if (isLoading) {
@@ -377,55 +400,7 @@ export function TourDetail() {
                 />
             )}
 
-            {/* Storage Error Modal */}
-            {storageError && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-                    <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-red-500/50 p-6 w-full max-w-md shadow-2xl">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-3 rounded-full bg-red-500/10">
-                                <AlertTriangle className="w-8 h-8 text-red-500" />
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Storage Full</h3>
-                                <p className="text-sm text-[var(--color-text-muted)]">
-                                    Browser storage limit reached
-                                </p>
-                            </div>
-                        </div>
 
-                        <p className="text-[var(--color-text-secondary)] mb-4">
-                            {storageError}
-                        </p>
-
-                        <div className="bg-[var(--color-bg-elevated)] rounded-xl p-4 mb-6">
-                            <h4 className="font-medium text-[var(--color-text-primary)] mb-2 flex items-center gap-2">
-                                <Database className="w-4 h-4" /> Solutions:
-                            </h4>
-                            <ul className="text-sm text-[var(--color-text-muted)] space-y-1 list-disc list-inside">
-                                <li>Use smaller/compressed images</li>
-                                <li>Use shorter audio clips for testing</li>
-                                <li>Clear existing data and start fresh</li>
-                            </ul>
-                        </div>
-
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setStorageError(null)}
-                                className="flex-1 px-4 py-2.5 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors font-medium"
-                            >
-                                Close
-                            </button>
-                            <button
-                                onClick={handleClearAllData}
-                                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium flex items-center justify-center gap-2"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Clear All Data
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

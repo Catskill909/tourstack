@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle, Maximize2, Music } from 'lucide-react';
 import { BLOCK_ICONS, BLOCK_LABELS } from './blocks/StopContentBlock';
 import { TextBlockEditor } from './blocks/TextBlockEditor';
 import { ImageBlockEditor } from './blocks/ImageBlockEditor';
 import { AudioBlockEditor } from './blocks/AudioBlockEditor';
 import { GalleryBlockEditor } from './blocks/GalleryBlockEditor';
-import { TimelineGalleryBlockEditor } from './blocks/TimelineGalleryBlockEditor';
+import { TimelineGalleryEditorModal } from './blocks/TimelineGalleryEditorModal';
 import { PositioningBlockEditor } from './blocks/PositioningBlockEditor';
 import { StopPreviewModal } from './StopPreviewModal';
 import type { Stop, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData } from '../types';
@@ -48,6 +48,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
     const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
     const [showAddBlock, setShowAddBlock] = useState(false);
     const [deleteBlockId, setDeleteBlockId] = useState<string | null>(null);
+    const [showTimelineEditorId, setShowTimelineEditorId] = useState<string | null>(null);
     const language = 'en'; // Default language for editing
 
     const blocks = editedStop.contentBlocks || [];
@@ -296,11 +297,33 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                                     />
                                 )}
                                 {editingBlock.type === 'timelineGallery' && (
-                                    <TimelineGalleryBlockEditor
-                                        data={editingBlock.data as TimelineGalleryBlockData}
-                                        language={language}
-                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
-                                    />
+                                    <div className="space-y-4">
+                                        <div className="bg-gradient-to-br from-[var(--color-bg-elevated)] to-[var(--color-bg-surface)] rounded-xl p-6 border border-[var(--color-border-default)]">
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <div className="p-3 rounded-xl bg-gradient-to-br from-[var(--color-accent-primary)] to-purple-500">
+                                                    <Music className="w-6 h-6 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-medium text-[var(--color-text-primary)]">
+                                                        Timeline Gallery
+                                                    </h4>
+                                                    <p className="text-sm text-[var(--color-text-muted)]">
+                                                        {(editingBlock.data as TimelineGalleryBlockData).images?.length || 0} images synced to audio
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => setShowTimelineEditorId(editingBlock.id)}
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-[var(--color-accent-primary)] to-purple-500 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-[1.02] transition-all"
+                                            >
+                                                <Maximize2 className="w-5 h-5" />
+                                                Open Full Editor
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-[var(--color-text-muted)] text-center">
+                                            The Timeline Gallery editor opens in a full-screen view for precise audio-image synchronization
+                                        </p>
+                                    </div>
                                 )}
                                 {editingBlock.type === 'positioning' && (
                                     <PositioningBlockEditor
@@ -401,6 +424,20 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                     </div>
                 </div>
             )}
+
+            {/* Timeline Gallery Full Editor Modal */}
+            {showTimelineEditorId && (() => {
+                const timelineBlock = blocks.find(b => b.id === showTimelineEditorId);
+                if (!timelineBlock || timelineBlock.type !== 'timelineGallery') return null;
+                return (
+                    <TimelineGalleryEditorModal
+                        data={timelineBlock.data as TimelineGalleryBlockData}
+                        language={language}
+                        onChange={(data) => handleUpdateBlock(showTimelineEditorId, data)}
+                        onClose={() => setShowTimelineEditorId(null)}
+                    />
+                );
+            })()}
         </div>
     );
 }
