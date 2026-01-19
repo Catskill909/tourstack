@@ -250,7 +250,14 @@ Trigger notifications (sound, vibration, push notification)
 Content Types:
 
 Rich text editor with formatting
-Image gallery (multiple images per beacon)
+Image Gallery & Timeline:
+ - Multiple images per beacon
+ - Grid, Masonry, and Carousel layouts
+ - **Advanced Timeline Mode**: 
+   - Drag-and-drop ordering
+   - Custom transitions (fade, slide, zoom)
+   - Pan/Zoom effects (Ken Burns) for immersive storytelling
+   - Interactive scrubbing
 Audio guide (MP3 upload with playback controls)
 Video embeds (YouTube, Vimeo, or direct upload)
 3D model viewers (for photogrammetry/museum artifacts)

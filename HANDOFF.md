@@ -61,11 +61,18 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 ## 🔜 Next Steps for Next Session
 
-**Recommended Focus**: Phase 6 (Translation) or Phase 5 (Advanced Content Blocks)
+**Recommended Focus**: Phase 6 (Advanced Block Work) then Phase 7 (Translation)
 
-1. **Verify Production Persistence**: Upload some images and create tours in production, then restart the container to ensure data persists.
-2. **Translation Infrastructure**: Set up `i18next` effectively, as the data structure is already `{"en": "val", "es": "val"}` ready.
-3. **Advanced Blocks**: Implement the Video or Collection blocks.
+1. **Advanced Block Work & UI/UX**:
+   - **Timeline Gallery Enhancements**: Drag-and-drop into timeline, transition effects, zoom capabilities, and advanced gallery layouts.
+   - **New Blocks**: Video Block, Collection Block.
+   - **UI/UX Polish**: Refine the editor experience for richer content creation.
+
+2. **Translation Infrastructure** (On Deck):
+   - Set up `i18next` effectively (data structure is ready).
+   - Implement "Magic Translate" workflow.
+
+3. **Verify Production Persistence**: Upload images/create tours in production and restart container to ensure data persists.
 
 ### Phase 5: Content Block System (CORE COMPLETE ✅)
 **Goal**: Build modular stop editor with content blocks
@@ -97,7 +104,17 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] Text Block (rich text, multilingual)
 - [x] Image Block (single image with caption)
 - [x] Audio Block (player with transcript)
+- [x] Audio Block (player with transcript)
 - [x] Gallery Block (multiple images, carousel/grid/masonry, timeline mode)
+
+**Upcoming Advanced Block Features**:
+- [ ] **Timeline Gallery 2.0**: 
+  - Drag-and-drop media into timeline
+  - Custom transition effects between slides
+  - Zoom/pan effects for images (Ken Burns effect)
+  - Interactive timeline navigation
+- [ ] **Video Block**: Embeds and direct uploads
+- [ ] **Collection Block**: Link to existing collections
 
 **Remaining for Phase 5**:
 - [ ] Video Block (embed or upload)
