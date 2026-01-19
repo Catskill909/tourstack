@@ -31,7 +31,9 @@ if (fs.existsSync(dbPath)) {
     CREATE TABLE IF NOT EXISTS "Museum" (
       "id" TEXT PRIMARY KEY,
       "name" TEXT NOT NULL,
-      "branding" TEXT NOT NULL DEFAULT '{}',
+      "location" TEXT,
+      "logo" TEXT,
+      "branding" TEXT,
       "createdAt" DATETIME DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" DATETIME DEFAULT CURRENT_TIMESTAMP
     );
