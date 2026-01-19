@@ -16,14 +16,20 @@ export DATABASE_URL="file:/app/data/dev.db"
 echo "🔌 DATABASE_URL set to: $DATABASE_URL"
 
 # Initialize database (safe schema push)
-# We use db push instead of migrate deploy to avoid issues with migration history drift
-# --accept-data-loss is only for dev, but necessary if schema changed drastically
 echo "🔄 Syncing database schema..."
 npx prisma db push
+if [ $? -ne 0 ]; then
+  echo "❌ Database sync failed!"
+  exit 1
+fi
 
 # Seed database with templates (idempotent - skips if exists)
 echo "🌱 Seeding database..."
 npx tsx prisma/seed.ts
+if [ $? -ne 0 ]; then
+  echo "❌ Database seeding failed!"
+  exit 1
+fi
 
 # Verify database exists
 ls -la ./data/dev.db 2>/dev/null && echo "✅ Database ready" || echo "❌ Database missing"
