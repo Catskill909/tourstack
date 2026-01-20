@@ -4,10 +4,12 @@
 echo "🚀 Starting TourStack..."
 echo "📂 Working directory: $(pwd)"
 
-# Set DATABASE_URL to use the persistent volume
-# CRITICAL: This MUST match Coolify volume mount path!
-# Coolify mounts volume to /app/dev.db (not /app/data/dev.db)
-export DATABASE_URL="file:/app/dev.db"
+# Ensure data directory exists
+mkdir -p data
+
+# Set DATABASE_URL - Docker volumes must mount to DIRECTORIES
+# Coolify volume should be: /app/data (not /app/dev.db)
+export DATABASE_URL="file:/app/data/dev.db"
 echo "🔌 DATABASE_URL set to: $DATABASE_URL"
 
 # Initialize database (safe schema push)
