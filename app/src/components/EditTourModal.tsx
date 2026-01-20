@@ -39,6 +39,7 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [primaryLanguage, setPrimaryLanguage] = useState('en');
+    const [supportedLanguages, setSupportedLanguages] = useState<string[]>(['en']);
     const [duration, setDuration] = useState(30);
     const [heroImage, setHeroImage] = useState<string>('');
     const [_imageFile, setImageFile] = useState<File | null>(null);
@@ -56,6 +57,7 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
             setTitle(tourTitle);
             setDescription(tourDescription);
             setPrimaryLanguage(tour.primaryLanguage);
+            setSupportedLanguages(tour.languages || [tour.primaryLanguage]);
             setDuration(tour.duration);
             setHeroImage(tour.heroImage || '');
         }
@@ -84,6 +86,8 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
             await onSave(tour.id, {
                 title: { [primaryLanguage]: title.trim() },
                 description: { [primaryLanguage]: description.trim() },
+                languages: supportedLanguages,
+                primaryLanguage,
                 duration,
                 heroImage: heroImage || '',
             });
@@ -189,7 +193,13 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                             </label>
                             <select
                                 value={primaryLanguage}
-                                onChange={(e) => setPrimaryLanguage(e.target.value)}
+                                onChange={(e) => {
+                                    const newPrimary = e.target.value;
+                                    setPrimaryLanguage(newPrimary);
+                                    if (!supportedLanguages.includes(newPrimary)) {
+                                        setSupportedLanguages([...supportedLanguages, newPrimary]);
+                                    }
+                                }}
                                 className="w-full px-4 py-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none transition-colors"
                             >
                                 {languages.map((lang) => (
@@ -212,6 +222,64 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                                 ))}
                             </select>
                         </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                                Estimated Duration
+                            </label>
+                            <select
+                                value={duration}
+                                onChange={(e) => setDuration(Number(e.target.value))}
+                                className="w-full px-4 py-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none transition-colors"
+                            >
+                                {durations.map((d) => (
+                                    <option key={d.value} value={d.value}>{d.label}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Supported Languages */}
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+                            Supported Languages
+                        </label>
+                        <div className="grid grid-cols-3 gap-3">
+                            {languages.map((lang) => {
+                                const isSelected = supportedLanguages.includes(lang.code);
+                                const isPrimary = lang.code === primaryLanguage;
+                                return (
+                                    <label
+                                        key={lang.code}
+                                        className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-all ${isSelected
+                                            ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]'
+                                            : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:border-[var(--color-text-muted)]'
+                                            } ${isPrimary ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={(e) => {
+                                                if (isPrimary) return; // Cannot uncheck primary
+                                                if (e.target.checked) {
+                                                    setSupportedLanguages([...supportedLanguages, lang.code]);
+                                                } else {
+                                                    setSupportedLanguages(supportedLanguages.filter(l => l !== lang.code));
+                                                }
+                                            }}
+                                            disabled={isPrimary}
+                                            className="w-4 h-4 rounded border-[var(--color-border-default)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+                                        />
+                                        <span className={`text-sm ${isSelected ? 'font-medium text-[var(--color-accent-primary)]' : 'text-[var(--color-text-secondary)]'}`}>
+                                            {lang.name}
+                                        </span>
+                                    </label>
+                                );
+                            })}
+                        </div>
+                        <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                            Multi-language tours render translation tabs in the editor.
+                        </p>
                     </div>
                 </div>
 
