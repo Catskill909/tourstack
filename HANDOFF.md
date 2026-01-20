@@ -23,7 +23,7 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] Git repo → [GitHub](https://github.com/Catskill909/tourstack)
 - [x] Vite + React 19 + TypeScript
 - [x] Tailwind CSS v4, Dark Mode Material Design
-- [x] SQLite database with Prisma 7
+- [x] SQLite database with Prisma 5.21.1 (pinned for stability)
 - [x] Zustand state management
 
 ### Phase 2: Tours Management ✅
@@ -111,9 +111,28 @@ npm run dev:all       # Run both concurrently
 
 ## 🚀 Coolify Deployment
 
-**Required Volume Mounts:**
+> ⚠️ **CRITICAL**: Read [docs/COOLIFY-DEPLOYMENT.md](docs/COOLIFY-DEPLOYMENT.md) before deploying!
+
+### Required Volume Mounts (MUST BE CORRECT!)
 
 | Container Path | Purpose |
 |---------------|---------|
 | `/app/uploads` | Audio/image files |
 | `/app/data` | SQLite database |
+
+> 🚨 **NEVER mount to `/app/dev.db`** - Docker volumes create DIRECTORIES, not files!
+
+### Deployment Verification
+
+After deploying, check logs for:
+```
+✅ GOOD: "⏭ Template already exists: QR Code"
+❌ BAD:  "✓ Created template: QR Code"  ← Data was lost!
+```
+
+### Database Architecture
+
+- **Engine:** Prisma 5.21.1 (pinned version)
+- **File:** `/app/data/dev.db`
+- **Init:** `prisma db push` (safe, non-destructive)
+- **Seed:** Idempotent (skips existing data)
