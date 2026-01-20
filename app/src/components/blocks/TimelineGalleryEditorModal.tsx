@@ -359,7 +359,6 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                                     setEditingImage(img);
                                 }
                             }}
-                            onMarkerDelete={handleDeleteImage}
                             onAddImage={() => {
                                 // Trigger file input click
                                 const input = document.createElement('input');
