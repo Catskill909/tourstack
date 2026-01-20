@@ -370,49 +370,41 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
 
                 {/* Section 1: Preview Canvas */}
                 <div className="h-[50%] p-4 flex items-center justify-center bg-black shrink-0 overflow-hidden">
-                    {images.length > 0 ? (
-                        <div className="relative max-w-full max-h-full aspect-video overflow-hidden rounded-lg">
-                            {/* Previous image (for transitions) */}
+                    {images.length > 0 && currentImage ? (
+                        <div className="relative max-w-full max-h-full overflow-hidden rounded-lg">
+                            {/* Base layer - always shows current image to establish dimensions */}
+                            <img
+                                src={currentImage.url}
+                                alt={currentImage.alt[language] || ''}
+                                className={`max-w-full max-h-[calc(50vh-4rem)] object-contain rounded-lg ${getTransitionClasses(true)}`}
+                                style={{ transitionDuration: `${transitionDuration}ms` }}
+                            />
+
+                            {/* Previous image overlay (for transitions) */}
                             {isTransitioning && previousImage && transitionType !== 'cut' && (
                                 <div className="absolute inset-0 z-0">
                                     <img
                                         src={previousImage.url}
                                         alt={previousImage.alt[language] || ''}
-                                        className="w-full h-full object-contain"
+                                        className="w-full h-full object-contain opacity-100"
                                     />
                                 </div>
                             )}
 
-                            {/* Current image with transition */}
-                            <div
-                                className={`absolute inset-0 z-10 ${getTransitionClasses(true)}`}
-                                style={{ transitionDuration: `${transitionDuration}ms` }}
-                            >
-                                {currentImage && (
-                                    <img
-                                        src={currentImage.url}
-                                        alt={currentImage.alt[language] || ''}
-                                        className="w-full h-full object-contain"
-                                    />
-                                )}
-                            </div>
-
                             {/* Overlay badges */}
                             <div className="absolute inset-0 z-20 pointer-events-none">
                                 {/* Timestamp badge */}
-                                {currentImage && (
-                                    <div className="absolute top-3 left-3 px-2 py-1 rounded-full bg-yellow-500 text-black text-xs font-medium flex items-center gap-1">
-                                        <Clock className="w-3 h-3" />
-                                        {formatTime(currentImage.timestamp)}
-                                    </div>
-                                )}
+                                <div className="absolute top-3 left-3 px-2 py-1 rounded-full bg-yellow-500 text-black text-xs font-medium flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatTime(currentImage.timestamp)}
+                                </div>
                                 {/* Counter badge */}
                                 <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">
                                     {previewIndex + 1} / {images.length}
                                 </div>
                                 {/* Caption */}
-                                {currentImage?.caption[language] && (
-                                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                                {currentImage.caption[language] && (
+                                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent rounded-b-lg">
                                         <p className="text-white text-sm">{currentImage.caption[language]}</p>
                                     </div>
                                 )}
