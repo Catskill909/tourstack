@@ -9,15 +9,13 @@ Transform the audio-synced image gallery into a powerful, cinematic storytelling
 
 ### ✅ Completed - Production Ready
 - [x] Full-screen modal launcher
-- [x] 3-section layout (Preview, Waveform, Image Strip)
+- [x] 2-section layout (Preview, Waveform with Thumbnails)
 - [x] `wavesurfer.js` waveform visualization
-- [x] Draggable markers for timestamp adjustment
-- [x] **Numbered markers** (photo numbers on handles)
-- [x] **Touch support for tablets** (Markers + Drag & Drop Image Reordering)
+- [x] **Thumbnail markers** on timeline (click to edit, drag to move)
+- [x] **Touch support for tablets**
 - [x] Basic audio controls (Play/Pause, Skip, Volume)
-- [x] Image upload with drag-and-drop
-- [x] Image reordering via drag-and-drop
-- [x] Image edit modal (caption, alt text, credit)
+- [x] Image upload via + button
+- [x] Image edit modal (caption, alt text, credit, delete)
 - [x] Auto-distribution of timestamps
 - [x] **Server-side file storage** (100MB limit)
 - [x] **Database storage** for stops (no localStorage!)
@@ -29,11 +27,59 @@ Transform the audio-synced image gallery into a powerful, cinematic storytelling
 - [x] **Transition Duration** slider (0.1s - 1.5s)
 - [x] **AnimatePresence** for smooth enter/exit animations
 
-### 📋 Phase 2 - Remaining
+### ✅ Phase 3 - Thumbnail Markers UI (Jan 20, 2026)
+- [x] **Thumbnail markers** replace numbered circles + image strip
+- [x] **64px thumbnails** on waveform timeline
+- [x] **Click to edit** - opens caption/alt/credit modal
+- [x] **Drag to move** - changes timestamp
+- [x] **Delete in modal** - cleaner UX
+- [x] **Drag vs click detection** - `hasDraggedRef` prevents false clicks
+
+### 📋 Next Phase
 - [ ] Ken Burns Effect (Pan & Zoom) Editor
 - [ ] Slide Left/Right transitions (using Framer Motion variants)
-- [ ] Zoom transitions
+- [ ] Zoom transitions  
 - [ ] Closed Captioning editor
+
+---
+
+## 🖼️ Thumbnail Markers UI
+
+### Why Thumbnail Markers?
+The old UI had:
+- Numbered circles on waveform
+- Separate image strip at bottom
+- Confusion about which number matches which image
+
+The new UI has:
+- **Thumbnails directly on the timeline**
+- Images ARE the markers
+- Visual clarity - you SEE what plays when
+
+### Interactions
+| Action | Result |
+|--------|--------|
+| **Drag thumbnail** | Changes timestamp |
+| **Click thumbnail** | Opens edit modal |
+| **Edit modal Delete** | Removes image |
+| **+ button** | Add new image |
+
+### Technical Implementation
+```tsx
+// Drag vs click detection
+const hasDraggedRef = useRef(false);
+
+// In handleMouseMove:
+hasDraggedRef.current = true;
+
+// In handleMouseUp:
+setTimeout(() => { hasDraggedRef.current = false; }, 50);
+
+// In onClick:
+if (!hasDraggedRef.current) {
+    onMarkerClick?.(marker.id);
+}
+```
 
 ---
 
@@ -94,17 +140,19 @@ Transform the audio-synced image gallery into a powerful, cinematic storytelling
 
 ## 🎨 UI/UX Features
 
-### Waveform Timeline
-- Yellow numbered markers at top and bottom
-- Drag markers to adjust image timing
-- Tooltip shows `#N • timestamp` on hover
-- Touch support for tablets
+### Waveform Timeline with Thumbnails
+- 64px thumbnail images positioned above waveform
+- Drag thumbnails to adjust image timing
+- Click thumbnail to open edit modal
+- Connecting lines from thumbnail to waveform
+- Timestamp tooltip shown while dragging
 
-### Image Strip
-- Drag to reorder images
-- Click pencil to edit caption/alt/credit
-- Click trash to delete
-- Photo numbers match waveform markers
+### Edit Modal
+- Caption field (multilingual)
+- Alt text field (accessibility)
+- Credit/Attribution field
+- **Delete button** (red, with confirmation)
+- Done button to close
 
 ### Save Workflow
 - **Yellow pulsing Save button** when unsaved changes

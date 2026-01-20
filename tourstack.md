@@ -586,7 +586,7 @@ Target Users: Museum curators, tour designers, content managers, educators
 Primary Goal: Democratize museum tour creation with enterprise-grade features at accessible price points
 Key Differentiator: Multi-technology beacon support + AI-powered multilingual content generation
 
-1.  **PROJECT STATUS (Jan 19, 2026)**
+1.  **PROJECT STATUS (Jan 20, 2026)**
     - **Phase 1 (Foundation)**: COMPLETE ✅
     - **Phase 2 (Tours Page)**: COMPLETE ✅
     - **Phase 3 (Stop Manager & Collections)**: COMPLETE ✅
@@ -594,12 +594,18 @@ Key Differentiator: Multi-technology beacon support + AI-powered multilingual co
     - **Phase 5 (API Layer)**: COMPLETE ✅
     - **Phase 6 (Timeline Gallery)**: COMPLETE ✅ PRODUCTION READY
         - Full-screen editor modal with waveform
-        - Numbered draggable markers for timestamps
-        - **Drag-and-drop image reordering** with midpoint timestamp insertion
-        - **Touch support** for tablets (via mobile-drag-drop polyfill)
         - Server-side file storage (100MB limit)
         - Database API for stops (no localStorage)
         - Unsaved changes warning modal
+    - **Phase 7 (Framer Motion)**: COMPLETE ✅
+        - True crossfade transitions
+        - Transition duration slider (0.1s - 1.5s)
+        - AnimatePresence for smooth animations
+    - **Phase 8 (Thumbnail Markers UI)**: COMPLETE ✅
+        - Thumbnail markers replace numbered circles + image strip
+        - 64px thumbnails on waveform timeline
+        - Click to edit, drag to move
+        - Delete in modal (cleaner UX)
     - **Deployment**: Coolify/Docker with persistent volumes
         - Database: Prisma 5.21.1 (pinned for stability)
         - Volumes: `/app/data` (SQLite), `/app/uploads` (media)

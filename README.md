@@ -19,7 +19,7 @@ npm run db:studio     # Open database GUI
 - **7 Positioning Technologies**: QR Code, GPS, BLE Beacon, NFC, RFID, WiFi, UWB
 - **Modular Content Blocks**: Text, images, galleries, audio, timeline galleries
 - **Stop Editor**: Split-pane editor with live preview mode
-- **Timeline Gallery**: Audio-synced image galleries with waveform editing
+- **Timeline Gallery**: Audio-synced image galleries with **thumbnail markers** on waveform
 - **Multilingual**: All content supports multiple languages
 - **JSON Export**: Portable tour data for mobile apps and backup
 
@@ -54,9 +54,10 @@ TourStack/
 | Frontend | Vite, React 19, TypeScript |
 | Styling | Tailwind CSS v4, Dark Mode |
 | Backend | Express.js API server |
-| Database | SQLite + Prisma 7 |
+| Database | SQLite + Prisma 5 |
 | State | Zustand |
 | Audio | wavesurfer.js |
+| Animation | Framer Motion |
 | Icons | Lucide React |
 
 ## 📖 Documentation

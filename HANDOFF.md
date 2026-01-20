@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: January 19, 2026  
-**Session Status**: Timeline Gallery Production Ready ✅ (Deployed to Coolify)
+**Last Updated**: January 20, 2026  
+**Session Status**: Thumbnail Markers UI Complete ✅
 
 ---
 
@@ -50,11 +50,10 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] Production Dockerfile (multi-stage, init scripts)
 
 ### Phase 6: Timeline Gallery Editor ✅ PRODUCTION READY
-- [x] Full-screen modal with 3-section layout
+- [x] Full-screen modal with 2-section layout
 - [x] wavesurfer.js waveform visualization
-- [x] Draggable markers with **photo numbers**
 - [x] Touch support for tablets
-- [x] Image upload/reorder/edit
+- [x] Image upload/edit
 - [x] **Server-side file storage** (100MB limit)
 - [x] **Database API for stops** (no localStorage!)
 - [x] **Unsaved changes warning** modal
@@ -64,6 +63,13 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **True Crossfade** - simultaneous opacity transitions
 - [x] **Transition Duration** slider (0.1s - 1.5s)
 - [x] **AnimatePresence** for smooth enter/exit animations
+
+### Phase 8: Thumbnail Markers UI ✅ (Jan 20, 2026)
+- [x] **Thumbnail markers** replace numbered circles + image strip
+- [x] **64px thumbnails** on waveform timeline
+- [x] **Click to edit** - opens caption/alt/credit modal
+- [x] **Drag to move** - changes timestamp with `hasDraggedRef`
+- [x] **Delete in modal** - cleaner UX than inline delete
 
 ---
 
