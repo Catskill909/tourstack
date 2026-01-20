@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Images } from 'lucide-react';
-import type { TimelineGalleryBlockData } from '../../types';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Images, Loader } from 'lucide-react';
+import type { TimelineGalleryBlockData, TransitionType } from '../../types';
 
 interface TimelineGalleryPreviewProps {
     data: TimelineGalleryBlockData;
@@ -9,18 +9,49 @@ interface TimelineGalleryPreviewProps {
 
 export function TimelineGalleryPreview({ data, language }: TimelineGalleryPreviewProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isFading, setIsFading] = useState(false);
+    const [previousIndex, setPreviousIndex] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [isMuted, setIsMuted] = useState(false);
+    const [imagesLoaded, setImagesLoaded] = useState(false);
+    const [loadedCount, setLoadedCount] = useState(0);
 
     const audioRef = useRef<HTMLAudioElement>(null);
 
     const images = data.images || [];
-    const crossfadeDuration = data.crossfadeDuration || 500;
+    const transitionDuration = data.crossfadeDuration || 500;
+    const transitionType: TransitionType = data.transitionType || 'fade';
 
     // Sort images by timestamp
     const sortedImages = [...images].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+    // Preload all images on mount
+    useEffect(() => {
+        if (images.length === 0) return;
+
+        let loaded = 0;
+        const imageUrls = images.map(img => img.url);
+
+        imageUrls.forEach((url) => {
+            const img = new Image();
+            img.onload = () => {
+                loaded++;
+                setLoadedCount(loaded);
+                if (loaded === imageUrls.length) {
+                    setImagesLoaded(true);
+                }
+            };
+            img.onerror = () => {
+                loaded++;
+                setLoadedCount(loaded);
+                if (loaded === imageUrls.length) {
+                    setImagesLoaded(true);
+                }
+            };
+            img.src = url;
+        });
+    }, [images.length]);
 
     // Auto-advance based on audio time
     useEffect(() => {
@@ -29,8 +60,8 @@ export function TimelineGalleryPreview({ data, language }: TimelineGalleryPrevie
         for (let i = sortedImages.length - 1; i >= 0; i--) {
             if (sortedImages[i].timestamp <= currentTime) {
                 const newIndex = images.findIndex(img => img.id === sortedImages[i].id);
-                if (newIndex !== currentIndex) {
-                    triggerCrossfade(newIndex);
+                if (newIndex !== currentIndex && newIndex >= 0) {
+                    triggerTransition(newIndex);
                 }
                 break;
             }
@@ -55,12 +86,22 @@ export function TimelineGalleryPreview({ data, language }: TimelineGalleryPrevie
         );
     }
 
-    function triggerCrossfade(newIndex: number) {
-        setIsFading(true);
-        setTimeout(() => {
+    function triggerTransition(newIndex: number) {
+        if (transitionType === 'cut') {
+            // Instant cut - no transition
             setCurrentIndex(newIndex);
-            setTimeout(() => setIsFading(false), crossfadeDuration / 2);
-        }, crossfadeDuration / 2);
+            return;
+        }
+
+        // Start transition animation
+        setPreviousIndex(currentIndex);
+        setIsTransitioning(true);
+        setCurrentIndex(newIndex);
+
+        // End transition after duration
+        setTimeout(() => {
+            setIsTransitioning(false);
+        }, transitionDuration);
     }
 
     function togglePlayback() {
@@ -92,7 +133,30 @@ export function TimelineGalleryPreview({ data, language }: TimelineGalleryPrevie
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
 
+    // Get transition CSS classes based on type
+    function getTransitionClasses(isEntering: boolean): string {
+        const duration = `duration-[${transitionDuration}ms]`;
+
+        switch (transitionType) {
+            case 'fade':
+                return `transition-opacity ${duration} ${isTransitioning && !isEntering ? 'opacity-0' : 'opacity-100'}`;
+
+            case 'slideLeft':
+                return `transition-transform ${duration} ${isTransitioning && !isEntering ? '-translate-x-full' : 'translate-x-0'}`;
+
+            case 'slideRight':
+                return `transition-transform ${duration} ${isTransitioning && !isEntering ? 'translate-x-full' : 'translate-x-0'}`;
+
+            case 'zoom':
+                return `transition-all ${duration} ${isTransitioning && !isEntering ? 'scale-110 opacity-0' : 'scale-100 opacity-100'}`;
+
+            default:
+                return '';
+        }
+    }
+
     const currentImage = images[currentIndex];
+    const previousImage = images[previousIndex];
 
     return (
         <div className="bg-[var(--color-bg-surface)] rounded-2xl overflow-hidden border border-[var(--color-border-default)]">
@@ -103,13 +167,36 @@ export function TimelineGalleryPreview({ data, language }: TimelineGalleryPrevie
                 onTimeUpdate={handleTimeUpdate}
                 onEnded={() => setIsPlaying(false)}
                 className="hidden"
+                preload="auto"
             />
 
-            {/* Main Image with Crossfade */}
-            <div className="relative aspect-[4/3] bg-black">
+            {/* Main Image with Transitions */}
+            <div className="relative aspect-[4/3] bg-black overflow-hidden">
+                {/* Loading overlay */}
+                {!imagesLoaded && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-20">
+                        <Loader className="w-8 h-8 text-purple-500 animate-spin mb-2" />
+                        <p className="text-white text-sm">
+                            Loading images... {loadedCount}/{images.length}
+                        </p>
+                    </div>
+                )}
+
+                {/* Previous image (for transitions) */}
+                {isTransitioning && previousImage && transitionType !== 'cut' && (
+                    <div className="absolute inset-0 z-0">
+                        <img
+                            src={previousImage.url}
+                            alt={previousImage.alt[language] || previousImage.alt.en || ''}
+                            className="w-full h-full object-contain"
+                        />
+                    </div>
+                )}
+
+                {/* Current image with transition */}
                 <div
-                    className={`absolute inset-0 transition-opacity ${isFading ? 'opacity-0' : 'opacity-100'}`}
-                    style={{ transitionDuration: `${crossfadeDuration / 2}ms` }}
+                    className={`absolute inset-0 z-10 ${getTransitionClasses(true)}`}
+                    style={{ transitionDuration: `${transitionDuration}ms` }}
                 >
                     {currentImage && (
                         <img
@@ -168,7 +255,8 @@ export function TimelineGalleryPreview({ data, language }: TimelineGalleryPrevie
                         <button
                             type="button"
                             onClick={togglePlayback}
-                            className="p-4 rounded-full bg-gradient-to-r from-[var(--color-accent-primary)] to-purple-500 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                            disabled={!imagesLoaded}
+                            className="p-4 rounded-full bg-gradient-to-r from-[var(--color-accent-primary)] to-purple-500 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
                         </button>

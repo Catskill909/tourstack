@@ -258,6 +258,9 @@ export interface GalleryBlockData {
   autoAdvanceInterval?: number;        // Auto-advance interval in seconds
 }
 
+// Transition types for Timeline Gallery
+export type TransitionType = 'fade' | 'cut' | 'slideLeft' | 'slideRight' | 'zoom';
+
 // Timeline Gallery - audio-synced slideshow for museum narration
 export interface TimelineGalleryBlockData {
   images: Array<{
@@ -271,6 +274,7 @@ export interface TimelineGalleryBlockData {
   audioUrl: string;                     // Audio file URL
   audioDuration: number;                // Total duration in seconds
   crossfadeDuration?: number;           // Crossfade duration in ms (default 500)
+  transitionType?: TransitionType;      // Transition effect (default 'fade')
 }
 
 export interface AudioBlockData {

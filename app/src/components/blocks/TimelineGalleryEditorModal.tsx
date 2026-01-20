@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, Music, Images, Plus, Trash2, Clock, Pencil, GripVertical } from 'lucide-react';
+import { X, Music, Images, Plus, Trash2, Clock, Pencil, GripVertical, Sliders } from 'lucide-react';
 import { AudioWaveform } from './AudioWaveform';
-import type { TimelineGalleryBlockData } from '../../types';
+import type { TimelineGalleryBlockData, TransitionType } from '../../types';
 
 interface TimelineGalleryImage {
     id: string;
@@ -267,11 +267,51 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                         <p className="text-xs text-gray-400">Sync images to audio narration</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+
+                {/* Effects Controls - Modular section for future expansion */}
+                <div className="flex items-center gap-4">
+                    {/* Transition Type */}
+                    <div className="flex items-center gap-2">
+                        <Sliders className="w-4 h-4 text-gray-400" />
+                        <select
+                            value={data.transitionType || 'fade'}
+                            onChange={(e) => onChange({ ...data, transitionType: e.target.value as TransitionType })}
+                            className="bg-white/10 text-white text-sm rounded-lg px-3 py-1.5 border border-white/10 focus:border-purple-500 focus:outline-none appearance-none cursor-pointer"
+                        >
+                            <option value="fade">Fade</option>
+                            <option value="cut">Cut</option>
+                            <option value="slideLeft">Slide Left</option>
+                            <option value="slideRight">Slide Right</option>
+                            <option value="zoom">Zoom</option>
+                        </select>
+                    </div>
+
+                    {/* Transition Duration */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400">Duration</span>
+                        <input
+                            type="range"
+                            min="100"
+                            max="1500"
+                            step="100"
+                            value={data.crossfadeDuration || 500}
+                            onChange={(e) => onChange({ ...data, crossfadeDuration: parseInt(e.target.value) })}
+                            className="w-20 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                        />
+                        <span className="text-xs text-gray-300 font-mono w-12">
+                            {((data.crossfadeDuration || 500) / 1000).toFixed(1)}s
+                        </span>
+                    </div>
+
+                    {/* Divider */}
+                    <div className="h-6 w-px bg-white/10" />
+
+                    {/* Image count */}
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-sm">
                         <Images className="w-4 h-4 text-gray-400" />
                         <span className="text-gray-300">{images.length} images</span>
                     </div>
+
                     <button
                         onClick={onClose}
                         className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors"
