@@ -32,12 +32,9 @@ export function Sidebar() {
     return (
         <aside className="w-64 bg-[var(--color-bg-surface)] border-r border-[var(--color-border-default)] flex flex-col">
             {/* Logo */}
-            <div className="h-16 flex items-center px-6 border-b border-[var(--color-border-default)]">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--color-accent-primary)] to-[var(--color-accent-secondary)] flex items-center justify-center">
-                        <MapPin className="w-5 h-5 text-[var(--color-bg-primary)]" />
-                    </div>
-                    <span className="text-xl font-bold text-gradient">TourStack</span>
+            <div className="h-28 flex items-center px-6 border-b border-[var(--color-border-default)]">
+                <div className="flex items-center justify-center w-full">
+                    <img src="/tourstack-logo.png" alt="TourStack" className="h-24 w-auto" />
                 </div>
             </div>
 
