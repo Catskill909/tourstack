@@ -35,6 +35,7 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
     const [previewIndex, setPreviewIndex] = useState(0);
     const [previousIndex, setPreviousIndex] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
+    const [shouldFadeOut, setShouldFadeOut] = useState(false);
     const [editingImage, setEditingImage] = useState<TimelineGalleryImage | null>(null);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
@@ -57,6 +58,7 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
     const transitionDuration = data.crossfadeDuration || 500;
 
     // Trigger transition when changing images
+    // Two-phase: first render shows previous at full opacity, then fade out
     function triggerTransition(newIndex: number) {
         if (transitionType === 'cut') {
             setPreviewIndex(newIndex);
@@ -64,12 +66,21 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
         }
 
         setPreviousIndex(previewIndex);
-        setIsTransitioning(true);
         setPreviewIndex(newIndex);
+        setIsTransitioning(true);
+        setShouldFadeOut(false); // Start at full opacity
+
+        // Trigger fade-out after browser paints the initial state
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                setShouldFadeOut(true); // Now fade out
+            });
+        });
 
         setTimeout(() => {
             setIsTransitioning(false);
-        }, transitionDuration);
+            setShouldFadeOut(false);
+        }, transitionDuration + 50);
     }
 
     // Auto-advance preview based on time
@@ -101,22 +112,6 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
 
     const currentImage = images[previewIndex];
     const previousImage = images[previousIndex];
-
-    // Get transition CSS classes based on type
-    function getTransitionClasses(isEntering: boolean): string {
-        switch (transitionType) {
-            case 'fade':
-                return `transition-opacity ${isTransitioning && !isEntering ? 'opacity-0' : 'opacity-100'}`;
-            case 'slideLeft':
-                return `transition-transform ${isTransitioning && !isEntering ? '-translate-x-full' : 'translate-x-0'}`;
-            case 'slideRight':
-                return `transition-transform ${isTransitioning && !isEntering ? 'translate-x-full' : 'translate-x-0'}`;
-            case 'zoom':
-                return `transition-all ${isTransitioning && !isEntering ? 'scale-110 opacity-0' : 'scale-100 opacity-100'}`;
-            default:
-                return '';
-        }
-    }
 
     // Handle audio upload via server API
     async function handleAudioUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -372,21 +367,31 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                 <div className="h-[50%] p-4 flex items-center justify-center bg-black shrink-0 overflow-hidden">
                     {images.length > 0 && currentImage ? (
                         <div className="relative max-w-full max-h-full overflow-hidden rounded-lg">
-                            {/* Base layer - always shows current image to establish dimensions */}
+                            {/* Current image - always visible at bottom */}
                             <img
                                 src={currentImage.url}
                                 alt={currentImage.alt[language] || ''}
-                                className={`max-w-full max-h-[calc(50vh-4rem)] object-contain rounded-lg ${getTransitionClasses(true)}`}
-                                style={{ transitionDuration: `${transitionDuration}ms` }}
+                                className="max-w-full max-h-[calc(50vh-4rem)] object-contain rounded-lg"
                             />
 
-                            {/* Previous image overlay (for transitions) */}
+                            {/* Previous image overlay - fades/slides OUT on top */}
                             {isTransitioning && previousImage && transitionType !== 'cut' && (
-                                <div className="absolute inset-0 z-0">
+                                <div
+                                    className="absolute inset-0 z-10 transition-all"
+                                    style={{
+                                        transitionDuration: `${transitionDuration}ms`,
+                                        opacity: shouldFadeOut && (transitionType === 'fade' || transitionType === 'zoom') ? 0 : 1,
+                                        transform: shouldFadeOut
+                                            ? transitionType === 'slideLeft' ? 'translateX(-100%)'
+                                                : transitionType === 'slideRight' ? 'translateX(100%)'
+                                                    : transitionType === 'zoom' ? 'scale(1.1)' : 'none'
+                                            : 'none'
+                                    }}
+                                >
                                     <img
                                         src={previousImage.url}
                                         alt={previousImage.alt[language] || ''}
-                                        className="w-full h-full object-contain opacity-100"
+                                        className="w-full h-full object-contain"
                                     />
                                 </div>
                             )}
