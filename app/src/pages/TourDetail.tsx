@@ -300,11 +300,12 @@ export function TourDetail() {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {/* Actions */}
+                            <div className="flex items-center gap-1">
                                 <button
                                     onClick={() => handleMoveStop(stop.id, 'up')}
                                     disabled={index === 0}
-                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)] disabled:opacity-30"
+                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)] disabled:opacity-30"
                                     title="Move up"
                                 >
                                     <ChevronUp className="w-4 h-4" />
@@ -312,28 +313,28 @@ export function TourDetail() {
                                 <button
                                     onClick={() => handleMoveStop(stop.id, 'down')}
                                     disabled={index === stops.length - 1}
-                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)] disabled:opacity-30"
+                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)] disabled:opacity-30"
                                     title="Move down"
                                 >
                                     <ChevronDown className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => setShowQRModal(stop.id)}
-                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)]"
+                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)]"
                                     title="View QR Code"
                                 >
                                     <QrCode className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => handleEditStop(stop)}
-                                    className="p-2 hover:bg-[var(--color-accent-primary)]/10 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-accent-primary)]"
+                                    className="p-2 hover:bg-[var(--color-accent-primary)]/10 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-accent-primary)]"
                                     title="Edit"
                                 >
                                     <Pencil className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => handleDeleteStop(stop.id)}
-                                    className="p-2 hover:bg-red-500/10 rounded-lg text-[var(--color-text-muted)] hover:text-red-500"
+                                    className="p-2 hover:bg-red-500/10 rounded-lg text-[var(--color-text-secondary)] hover:text-red-500"
                                     title="Delete"
                                 >
                                     <Trash2 className="w-4 h-4" />
