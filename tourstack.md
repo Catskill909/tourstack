@@ -595,9 +595,15 @@ Key Differentiator: Multi-technology beacon support + AI-powered multilingual co
     - **Phase 6 (Timeline Gallery)**: COMPLETE ✅ PRODUCTION READY
         - Full-screen editor modal with waveform
         - Numbered draggable markers for timestamps
+        - **Drag-and-drop image reordering** with midpoint timestamp insertion
+        - **Touch support** for tablets (via mobile-drag-drop polyfill)
         - Server-side file storage (100MB limit)
         - Database API for stops (no localStorage)
         - Unsaved changes warning modal
+    - **Deployment**: Coolify/Docker with persistent volumes
+        - Database: Prisma 5.21.1 (pinned for stability)
+        - Volumes: `/app/data` (SQLite), `/app/uploads` (media)
+        - See `docs/COOLIFY-DEPLOYMENT.md` for configuration
     - **NEXT PHASE**: Translation Infrastructure (i18next, Magic Translate)
 
 ---
