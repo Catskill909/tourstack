@@ -7,9 +7,6 @@ echo "📂 Working directory: $(pwd)"
 # Ensure data directory exists
 mkdir -p data
 
-# Ensure data directory exists
-mkdir -p data
-
 # Set DATABASE_URL to use the persistent volume
 # This ensures migrations and the app use the same file!
 export DATABASE_URL="file:/app/data/dev.db"
