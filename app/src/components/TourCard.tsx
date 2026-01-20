@@ -132,7 +132,7 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
             <div className="absolute top-4 right-4" ref={menuRef}>
                 <button
                     onClick={() => setMenuOpen(!menuOpen)}
-                    className="p-2 rounded-full bg-black/80 opacity-0 group-hover:opacity-100 hover:bg-black transition-all shadow-lg"
+                    className="p-2 rounded-full bg-black/80 hover:bg-black transition-all shadow-lg"
                     aria-label="Tour actions"
                 >
                     <MoreHorizontal className="w-5 h-5 text-white" />
