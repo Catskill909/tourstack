@@ -291,7 +291,7 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
                 {/* Section 1: Preview Canvas */}
-                <div className="h-[40%] p-4 flex items-center justify-center bg-black shrink-0">
+                <div className="h-[50%] p-4 flex items-center justify-center bg-black shrink-0">
                     {currentImage ? (
                         <div className="relative max-w-full max-h-full aspect-video">
                             <img
@@ -355,7 +355,7 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                 </div>
 
                 {/* Section 3: Image Strip */}
-                <div className="h-[30%] p-4 bg-[#0d0d0d] border-t border-white/10 flex flex-col shrink-0">
+                <div className="h-[20%] p-3 bg-[#0d0d0d] border-t border-white/10 flex flex-col shrink-0">
                     <div className="flex items-center justify-between mb-3">
                         <h3 className="text-sm font-medium text-gray-300">Timeline Images</h3>
                         <span className="text-xs text-gray-500">Drag to reorder • Tap pencil to edit</span>
