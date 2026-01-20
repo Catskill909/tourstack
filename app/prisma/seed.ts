@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import 'dotenv/config';
 import { PrismaClient } from '../src/generated/prisma';
 import path from 'path';
