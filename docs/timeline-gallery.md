@@ -23,9 +23,11 @@ Transform the audio-synced image gallery into a powerful, cinematic storytelling
 - [x] **Database storage** for stops (no localStorage!)
 - [x] **Unsaved changes warning** modal
 
-### 📋 Planned Features (Phase 2)
+### 📋 Phase 2 - In Progress
+- [x] **Transition Types** (fade, cut, slideLeft, slideRight, zoom)
+- [x] **Transition Duration** slider (0.1s - 1.5s)
+- [x] **Image Preloading** with loading indicator
 - [ ] Ken Burns Effect (Pan & Zoom) Editor
-- [ ] Transition configurator (Fade, Cut, Slide)
 - [ ] Closed Captioning editor
 
 ---
