@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { X, Smartphone, Tablet } from 'lucide-react';
 import { StopContentBlock } from './blocks/StopContentBlock';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import type { Stop, ContentBlock } from '../types';
 
 interface StopPreviewModalProps {
     stop: Stop;
+    /** Available languages from tour */
+    availableLanguages?: string[];
     onClose: () => void;
 }
 
@@ -15,17 +18,26 @@ const DEVICE_SIZES = {
     tablet: { width: 768, height: 1024, label: 'Tablet', icon: Tablet },
 };
 
-export function StopPreviewModal({ stop, onClose }: StopPreviewModalProps) {
+export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }: StopPreviewModalProps) {
     const [deviceSize, setDeviceSize] = useState<DeviceSize>('phone');
-    const language = 'en';
+    const [previewLanguage, setPreviewLanguage] = useState(availableLanguages[0] || 'en');
 
     const device = DEVICE_SIZES[deviceSize];
     const blocks = stop.contentBlocks || [];
 
     function getStopTitle(): string {
-        return typeof stop.title === 'object'
-            ? stop.title.en || Object.values(stop.title)[0] || 'Untitled'
-            : String(stop.title);
+        if (typeof stop.title === 'object') {
+            return stop.title[previewLanguage] || stop.title.en || Object.values(stop.title)[0] || 'Untitled';
+        }
+        return String(stop.title);
+    }
+
+    function getStopDescription(): string | undefined {
+        if (!stop.description) return undefined;
+        if (typeof stop.description === 'object') {
+            return stop.description[previewLanguage] || stop.description.en || undefined;
+        }
+        return String(stop.description);
     }
 
     return (
@@ -48,8 +60,8 @@ export function StopPreviewModal({ stop, onClose }: StopPreviewModalProps) {
                                         type="button"
                                         onClick={() => setDeviceSize(size)}
                                         className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${deviceSize === size
-                                                ? 'bg-[var(--color-accent-primary)] text-white'
-                                                : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
+                                            ? 'bg-[var(--color-accent-primary)] text-white'
+                                            : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
                                             }`}
                                     >
                                         <Icon className="w-4 h-4" />
@@ -64,12 +76,24 @@ export function StopPreviewModal({ stop, onClose }: StopPreviewModalProps) {
                         </span>
                     </div>
 
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)]"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
+                    {/* Language Switcher + Close */}
+                    <div className="flex items-center gap-4">
+                        {availableLanguages.length > 1 && (
+                            <LanguageSwitcher
+                                availableLanguages={availableLanguages}
+                                activeLanguage={previewLanguage}
+                                onChange={setPreviewLanguage}
+                                size="sm"
+                                showStatus={false}
+                            />
+                        )}
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)]"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Device Frame */}
@@ -110,9 +134,9 @@ export function StopPreviewModal({ stop, onClose }: StopPreviewModalProps) {
                                         <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
                                             {getStopTitle()}
                                         </h1>
-                                        {stop.description?.en && (
+                                        {getStopDescription() && (
                                             <p className="text-[var(--color-text-secondary)]">
-                                                {stop.description.en}
+                                                {getStopDescription()}
                                             </p>
                                         )}
                                     </div>
@@ -129,7 +153,7 @@ export function StopPreviewModal({ stop, onClose }: StopPreviewModalProps) {
                                                     key={block.id}
                                                     block={block}
                                                     mode="view"
-                                                    language={language}
+                                                    language={previewLanguage}
                                                 />
                                             ))}
                                         </div>
@@ -145,7 +169,7 @@ export function StopPreviewModal({ stop, onClose }: StopPreviewModalProps) {
 
                 {/* Footer Hint */}
                 <div className="text-center py-3 text-xs text-[var(--color-text-muted)]">
-                    This is how visitors will see this stop on their {deviceSize}
+                    Previewing in {previewLanguage.toUpperCase()} · This is how visitors will see this stop
                 </div>
             </div>
         </div>

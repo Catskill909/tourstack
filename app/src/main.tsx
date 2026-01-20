@@ -4,6 +4,8 @@ import { polyfill } from 'mobile-drag-drop';
 import { scrollBehaviourDragImageTranslateOverride } from 'mobile-drag-drop/scroll-behaviour';
 import 'mobile-drag-drop/default.css';
 import './index.css'
+// Initialize i18n translations
+import './i18n/i18n'
 import App from './App.tsx'
 
 // Initialize drag and drop polyfill for touch devices

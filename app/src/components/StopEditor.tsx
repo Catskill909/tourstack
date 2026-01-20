@@ -12,6 +12,8 @@ import type { Stop, ContentBlock, ContentBlockType, ContentBlockData, TextBlockD
 
 interface StopEditorProps {
     stop: Stop;
+    /** Available languages from tour.languages */
+    availableLanguages?: string[];
     onSave: (stop: Stop) => void;
     onClose: () => void;
 }
@@ -39,7 +41,7 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
     }
 }
 
-export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
+export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose }: StopEditorProps) {
     // Ensure contentBlocks is always an array - defensive check
     const safeContentBlocks = Array.isArray(stop.contentBlocks) ? stop.contentBlocks : [];
 
@@ -54,7 +56,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
     const [showTimelineEditorId, setShowTimelineEditorId] = useState<string | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
-    const language = 'en'; // Default language for editing
+    const language = availableLanguages[0] || 'en'; // Primary language for editing
 
     const blocks = Array.isArray(editedStop.contentBlocks) ? editedStop.contentBlocks : [];
 
@@ -303,6 +305,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
                                     <TextBlockEditor
                                         data={editingBlock.data as TextBlockData}
                                         language={language}
+                                        availableLanguages={availableLanguages}
                                         onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
                                     />
                                 )}
@@ -409,6 +412,7 @@ export function StopEditor({ stop, onSave, onClose }: StopEditorProps) {
             {showPreview && (
                 <StopPreviewModal
                     stop={editedStop}
+                    availableLanguages={availableLanguages}
                     onClose={() => setShowPreview(false)}
                 />
             )}

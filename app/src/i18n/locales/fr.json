@@ -1,0 +1,68 @@
+{
+    "nav": {
+        "dashboard": "Tableau de Bord",
+        "tours": "Visites",
+        "settings": "Paramètres"
+    },
+    "stopEditor": {
+        "title": "Modifier l'Arrêt",
+        "description": "Description",
+        "descriptionPlaceholder": "Brève description de cet arrêt...",
+        "contentBlocks": "Blocs de Contenu",
+        "addBlock": "Ajouter un Bloc",
+        "addFirstBlock": "Ajouter le Premier Bloc",
+        "noBlocks": "Pas encore de blocs de contenu",
+        "save": "Enregistrer",
+        "preview": "Aperçu",
+        "unsavedChanges": "Modifications non enregistrées",
+        "selectBlock": "Sélectionnez un bloc à modifier ou ajoutez-en un nouveau",
+        "editBlock": "Modifier le Bloc {{type}}"
+    },
+    "blocks": {
+        "text": "Texte",
+        "image": "Image",
+        "gallery": "Galerie",
+        "audio": "Audio",
+        "video": "Vidéo",
+        "timelineGallery": "Galerie Chronologique",
+        "quote": "Citation",
+        "timeline": "Chronologie",
+        "comparison": "Comparaison",
+        "positioning": "Positionnement"
+    },
+    "textBlock": {
+        "content": "Contenu",
+        "style": "Style",
+        "normal": "Normal",
+        "callout": "Encadré",
+        "sidebar": "Latéral",
+        "htmlHint": "Le formatage HTML est pris en charge (ex., <b>, <i>, <p>)",
+        "placeholder": "Entrez le contenu texte..."
+    },
+    "translation": {
+        "translateAll": "Traduire en Tous",
+        "translating": "Traduction en cours...",
+        "translateSuccess": "Traduction terminée !",
+        "translateError": "Échec de la traduction",
+        "hasContent": "A du contenu",
+        "needsTranslation": "Nécessite une traduction",
+        "addLanguage": "Ajouter une Langue"
+    },
+    "common": {
+        "cancel": "Annuler",
+        "delete": "Supprimer",
+        "confirm": "Confirmer",
+        "close": "Fermer",
+        "discard": "Ignorer"
+    },
+    "deleteConfirm": {
+        "title": "Supprimer le Bloc",
+        "message": "Êtes-vous sûr de vouloir supprimer ce bloc de {{type}} ?",
+        "warning": "Cette action est irréversible"
+    },
+    "unsavedWarning": {
+        "title": "Modifications Non Enregistrées",
+        "message": "Voulez-vous enregistrer vos modifications avant de fermer ?",
+        "subtitle": "Vous avez des modifications non enregistrées"
+    }
+}

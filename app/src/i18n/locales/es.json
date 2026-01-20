@@ -1,0 +1,68 @@
+{
+    "nav": {
+        "dashboard": "Panel",
+        "tours": "Recorridos",
+        "settings": "Configuración"
+    },
+    "stopEditor": {
+        "title": "Editar Parada",
+        "description": "Descripción",
+        "descriptionPlaceholder": "Breve descripción de esta parada...",
+        "contentBlocks": "Bloques de Contenido",
+        "addBlock": "Añadir Bloque",
+        "addFirstBlock": "Añadir Primer Bloque",
+        "noBlocks": "Aún no hay bloques de contenido",
+        "save": "Guardar",
+        "preview": "Vista Previa",
+        "unsavedChanges": "Cambios sin guardar",
+        "selectBlock": "Selecciona un bloque para editar o añade uno nuevo",
+        "editBlock": "Editar Bloque {{type}}"
+    },
+    "blocks": {
+        "text": "Texto",
+        "image": "Imagen",
+        "gallery": "Galería",
+        "audio": "Audio",
+        "video": "Video",
+        "timelineGallery": "Galería Cronológica",
+        "quote": "Cita",
+        "timeline": "Línea de Tiempo",
+        "comparison": "Comparación",
+        "positioning": "Posicionamiento"
+    },
+    "textBlock": {
+        "content": "Contenido",
+        "style": "Estilo",
+        "normal": "Normal",
+        "callout": "Destacado",
+        "sidebar": "Lateral",
+        "htmlHint": "Se admite formato HTML (ej., <b>, <i>, <p>)",
+        "placeholder": "Ingrese contenido de texto..."
+    },
+    "translation": {
+        "translateAll": "Traducir a Todos",
+        "translating": "Traduciendo...",
+        "translateSuccess": "¡Traducción completa!",
+        "translateError": "Error en la traducción",
+        "hasContent": "Tiene contenido",
+        "needsTranslation": "Necesita traducción",
+        "addLanguage": "Añadir Idioma"
+    },
+    "common": {
+        "cancel": "Cancelar",
+        "delete": "Eliminar",
+        "confirm": "Confirmar",
+        "close": "Cerrar",
+        "discard": "Descartar"
+    },
+    "deleteConfirm": {
+        "title": "Eliminar Bloque",
+        "message": "¿Estás seguro de que quieres eliminar este bloque de {{type}}?",
+        "warning": "Esta acción no se puede deshacer"
+    },
+    "unsavedWarning": {
+        "title": "Cambios sin Guardar",
+        "message": "¿Quieres guardar tus cambios antes de cerrar?",
+        "subtitle": "Tienes cambios sin guardar"
+    }
+}

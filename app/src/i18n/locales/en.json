@@ -1,0 +1,68 @@
+{
+    "nav": {
+        "dashboard": "Dashboard",
+        "tours": "Tours",
+        "settings": "Settings"
+    },
+    "stopEditor": {
+        "title": "Edit Stop",
+        "description": "Description",
+        "descriptionPlaceholder": "Brief description of this stop...",
+        "contentBlocks": "Content Blocks",
+        "addBlock": "Add Block",
+        "addFirstBlock": "Add First Block",
+        "noBlocks": "No content blocks yet",
+        "save": "Save",
+        "preview": "Preview",
+        "unsavedChanges": "Unsaved changes",
+        "selectBlock": "Select a block to edit or add a new one",
+        "editBlock": "Edit {{type}} Block"
+    },
+    "blocks": {
+        "text": "Text",
+        "image": "Image",
+        "gallery": "Gallery",
+        "audio": "Audio",
+        "video": "Video",
+        "timelineGallery": "Timeline Gallery",
+        "quote": "Quote",
+        "timeline": "Timeline",
+        "comparison": "Comparison",
+        "positioning": "Positioning"
+    },
+    "textBlock": {
+        "content": "Content",
+        "style": "Style",
+        "normal": "Normal",
+        "callout": "Callout",
+        "sidebar": "Sidebar",
+        "htmlHint": "HTML formatting is supported (e.g., <b>, <i>, <p>)",
+        "placeholder": "Enter text content..."
+    },
+    "translation": {
+        "translateAll": "Translate to All",
+        "translating": "Translating...",
+        "translateSuccess": "Translation complete!",
+        "translateError": "Translation failed",
+        "hasContent": "Has content",
+        "needsTranslation": "Needs translation",
+        "addLanguage": "Add Language"
+    },
+    "common": {
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "confirm": "Confirm",
+        "close": "Close",
+        "discard": "Discard"
+    },
+    "deleteConfirm": {
+        "title": "Delete Block",
+        "message": "Are you sure you want to delete this {{type}} block?",
+        "warning": "This action cannot be undone"
+    },
+    "unsavedWarning": {
+        "title": "Unsaved Changes",
+        "message": "Do you want to save your changes before closing?",
+        "subtitle": "You have unsaved changes"
+    }
+}

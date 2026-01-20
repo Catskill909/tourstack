@@ -73,19 +73,22 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 ---
 
+### Phase 9: Translation Infrastructure ✅ (Jan 20, 2026)
+- [x] **i18next** - UI translations with language switcher
+- [x] **Magic Translate** - AI content translation via LibeTranslate
+- [x] **Server Proxy** - Secure API handling with CORS support
+- [x] **Stop Preview** - Multilingual preview support
+
+---
+
 ## 📋 Next Steps (Priority Order)
 
-### 1. 🟡 Translation Infrastructure
-- Set up `i18next` for UI translations
-- Implement "Magic Translate" workflow for content
-- Language switcher component
-
-### 2. 🟢 Timeline Gallery Enhancements
+### 1. 🟢 Timeline Gallery Enhancements
 - Ken Burns Effect (Pan & Zoom) - use Framer Motion `useDrag` for editor
 - Additional transitions (Slide, Zoom) - use Framer Motion variants
 - Closed captioning editor
 
-### 3. 🔵 JSON Export/Import
+### 2. 🔵 JSON Export/Import
 - Full export (includes media URLs)
 - Import with validation
 - Mobile app format

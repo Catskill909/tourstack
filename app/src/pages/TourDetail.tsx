@@ -397,6 +397,7 @@ export function TourDetail() {
             {editingStop && (
                 <StopEditor
                     stop={editingStop}
+                    availableLanguages={tour.languages || ['en']}
                     onSave={handleSaveStop}
                     onClose={() => setEditingStop(null)}
                 />
