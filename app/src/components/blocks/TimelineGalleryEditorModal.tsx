@@ -33,6 +33,8 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
     const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState(0);
     const [previewIndex, setPreviewIndex] = useState(0);
+    const [previousIndex, setPreviousIndex] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false);
     const [editingImage, setEditingImage] = useState<TimelineGalleryImage | null>(null);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
@@ -51,14 +53,33 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
     // Sort by timestamp for timeline display
     const sortedImages = [...images].sort((a, b) => a.timestamp - b.timestamp);
 
+    const transitionType = data.transitionType || 'fade';
+    const transitionDuration = data.crossfadeDuration || 500;
+
+    // Trigger transition when changing images
+    function triggerTransition(newIndex: number) {
+        if (transitionType === 'cut') {
+            setPreviewIndex(newIndex);
+            return;
+        }
+
+        setPreviousIndex(previewIndex);
+        setIsTransitioning(true);
+        setPreviewIndex(newIndex);
+
+        setTimeout(() => {
+            setIsTransitioning(false);
+        }, transitionDuration);
+    }
+
     // Auto-advance preview based on time
     useEffect(() => {
         if (sortedImages.length === 0) return;
         for (let i = sortedImages.length - 1; i >= 0; i--) {
             if (sortedImages[i].timestamp <= currentTime) {
                 const newIndex = images.findIndex(img => img.id === sortedImages[i].id);
-                if (newIndex !== previewIndex) {
-                    setPreviewIndex(newIndex);
+                if (newIndex !== previewIndex && newIndex >= 0) {
+                    triggerTransition(newIndex);
                 }
                 break;
             }
@@ -79,6 +100,23 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
     }, [audioDuration]);
 
     const currentImage = images[previewIndex];
+    const previousImage = images[previousIndex];
+
+    // Get transition CSS classes based on type
+    function getTransitionClasses(isEntering: boolean): string {
+        switch (transitionType) {
+            case 'fade':
+                return `transition-opacity ${isTransitioning && !isEntering ? 'opacity-0' : 'opacity-100'}`;
+            case 'slideLeft':
+                return `transition-transform ${isTransitioning && !isEntering ? '-translate-x-full' : 'translate-x-0'}`;
+            case 'slideRight':
+                return `transition-transform ${isTransitioning && !isEntering ? 'translate-x-full' : 'translate-x-0'}`;
+            case 'zoom':
+                return `transition-all ${isTransitioning && !isEntering ? 'scale-110 opacity-0' : 'scale-100 opacity-100'}`;
+            default:
+                return '';
+        }
+    }
 
     // Handle audio upload via server API
     async function handleAudioUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -331,29 +369,54 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
                 {/* Section 1: Preview Canvas */}
-                <div className="h-[50%] p-4 flex items-center justify-center bg-black shrink-0">
-                    {currentImage ? (
-                        <div className="relative max-w-full max-h-full aspect-video">
-                            <img
-                                src={currentImage.url}
-                                alt={currentImage.alt[language] || ''}
-                                className="w-full h-full object-contain rounded-lg"
-                            />
-                            {/* Timestamp badge */}
-                            <div className="absolute top-3 left-3 px-2 py-1 rounded-full bg-yellow-500 text-black text-xs font-medium flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {formatTime(currentImage.timestamp)}
-                            </div>
-                            {/* Counter badge */}
-                            <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">
-                                {previewIndex + 1} / {images.length}
-                            </div>
-                            {/* Caption */}
-                            {currentImage.caption[language] && (
-                                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
-                                    <p className="text-white text-sm">{currentImage.caption[language]}</p>
+                <div className="h-[50%] p-4 flex items-center justify-center bg-black shrink-0 overflow-hidden">
+                    {images.length > 0 ? (
+                        <div className="relative max-w-full max-h-full aspect-video overflow-hidden rounded-lg">
+                            {/* Previous image (for transitions) */}
+                            {isTransitioning && previousImage && transitionType !== 'cut' && (
+                                <div className="absolute inset-0 z-0">
+                                    <img
+                                        src={previousImage.url}
+                                        alt={previousImage.alt[language] || ''}
+                                        className="w-full h-full object-contain"
+                                    />
                                 </div>
                             )}
+
+                            {/* Current image with transition */}
+                            <div
+                                className={`absolute inset-0 z-10 ${getTransitionClasses(true)}`}
+                                style={{ transitionDuration: `${transitionDuration}ms` }}
+                            >
+                                {currentImage && (
+                                    <img
+                                        src={currentImage.url}
+                                        alt={currentImage.alt[language] || ''}
+                                        className="w-full h-full object-contain"
+                                    />
+                                )}
+                            </div>
+
+                            {/* Overlay badges */}
+                            <div className="absolute inset-0 z-20 pointer-events-none">
+                                {/* Timestamp badge */}
+                                {currentImage && (
+                                    <div className="absolute top-3 left-3 px-2 py-1 rounded-full bg-yellow-500 text-black text-xs font-medium flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {formatTime(currentImage.timestamp)}
+                                    </div>
+                                )}
+                                {/* Counter badge */}
+                                <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">
+                                    {previewIndex + 1} / {images.length}
+                                </div>
+                                {/* Caption */}
+                                {currentImage?.caption[language] && (
+                                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent">
+                                        <p className="text-white text-sm">{currentImage.caption[language]}</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     ) : (
                         <div className="text-center text-gray-500">
