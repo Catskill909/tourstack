@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, ChevronUp, ChevronDown, Pencil } from 'lucide-react';
+import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, ChevronUp, ChevronDown, Pencil, Settings } from 'lucide-react';
 import { useToursStore } from '../stores/useToursStore';
 import { StopEditor } from '../components/StopEditor';
 import { QRCodeEditorModal } from '../components/QRCodeEditorModal';
+import { EditTourModal } from '../components/EditTourModal';
 import type { Stop, Tour, PositioningConfig } from '../types';
 
 // ============================================
@@ -85,13 +86,14 @@ async function reorderStopsAPI(tourId: string, stopIds: string[]): Promise<Stop[
 export function TourDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { tours, fetchTours } = useToursStore();
+    const { tours, fetchTours, updateTour } = useToursStore();
 
     const [tour, setTour] = useState<Tour | null>(null);
     const [stops, setStops] = useState<Stop[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [, setIsSaving] = useState(false); // Used for loading states
     const [showAddStop, setShowAddStop] = useState(false);
+    const [showEditTour, setShowEditTour] = useState(false);
     const [newStopTitle, setNewStopTitle] = useState('');
     const [showQRModal, setShowQRModal] = useState<string | null>(null);
     const [editingStop, setEditingStop] = useState<Stop | null>(null);
@@ -219,6 +221,12 @@ export function TourDetail() {
         setIsSaving(false);
     }
 
+    async function handleUpdateTour(id: string, data: Partial<Tour>) {
+        await updateTour(id, data);
+        setTour(prev => prev ? { ...prev, ...data } : null);
+        setShowEditTour(false);
+    }
+
     if (isLoading) {
         return <div className="p-6 text-center text-[var(--color-text-muted)]">Loading...</div>;
     }
@@ -254,6 +262,13 @@ export function TourDetail() {
                 </div>
                 <div className="flex items-center gap-3">
                     <button
+                        onClick={() => setShowEditTour(true)}
+                        className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                        title="Tour Settings"
+                    >
+                        <Settings className="w-5 h-5" />
+                    </button>
+                    <button
                         onClick={() => setShowAddStop(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors"
                     >
@@ -264,6 +279,7 @@ export function TourDetail() {
             </div>
 
             {/* Stops List */}
+            {/* ... preserved list code ... */}
             <div className="space-y-3">
                 {stops.length === 0 ? (
                     <div className="text-center py-16 bg-[var(--color-bg-elevated)] rounded-xl border-2 border-dashed border-[var(--color-border-default)]">
@@ -299,7 +315,6 @@ export function TourDetail() {
                                 </p>
                             </div>
 
-                            {/* Actions */}
                             {/* Actions */}
                             <div className="flex items-center gap-1">
                                 <button
@@ -403,6 +418,17 @@ export function TourDetail() {
                 />
             )}
 
+            {/* Edit Tour Settings Modal */}
+            {tour && (
+                <EditTourModal
+                    isOpen={showEditTour}
+                    tour={tour}
+                    // Pass current template info structurally if needed, or just partial
+                    template={undefined}
+                    onClose={() => setShowEditTour(false)}
+                    onSave={handleUpdateTour}
+                />
+            )}
 
         </div>
     );
