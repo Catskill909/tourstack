@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import WaveSurfer from 'wavesurfer.js';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, X, Plus } from 'lucide-react';
 
 interface AudioWaveformProps {
     audioUrl: string;
@@ -9,8 +9,12 @@ interface AudioWaveformProps {
         id: string;
         timestamp: number;
         label?: string;
+        thumbnailUrl?: string; // Thumbnail image URL
     }>;
     onMarkerMove?: (id: string, newTimestamp: number) => void;
+    onMarkerClick?: (id: string) => void; // Click to edit
+    onMarkerDelete?: (id: string) => void; // Delete marker
+    onAddImage?: () => void; // Add new image
     onTimeUpdate?: (time: number) => void;
     onReady?: (duration: number) => void;
 }
@@ -20,6 +24,9 @@ export function AudioWaveform({
     duration,
     markers,
     onMarkerMove,
+    onMarkerClick,
+    onMarkerDelete,
+    onAddImage,
     onTimeUpdate,
     onReady
 }: AudioWaveformProps) {
@@ -175,52 +182,92 @@ export function AudioWaveform({
                     style={{ minHeight: '80px' }}
                 />
 
-                {/* Markers overlay */}
+                {/* Thumbnail markers overlay */}
                 {isReady && (
                     <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
-                        {markers.map((marker, index) => {
+                        {markers.map((marker) => {
                             const position = (marker.timestamp / audioDuration) * 100;
                             // Clamp position to 0-100
                             const clampedPosition = Math.max(0, Math.min(100, position));
-                            const photoNumber = index + 1;
+                            const isDragging = draggingMarkerId === marker.id;
                             return (
                                 <div
                                     key={marker.id}
-                                    className="absolute top-0 bottom-0 pointer-events-auto cursor-ew-resize group"
+                                    className="absolute pointer-events-auto group"
                                     style={{
                                         left: `${clampedPosition}%`,
                                         transform: 'translateX(-50%)',
-                                        padding: '0 8px', // Larger touch target
-                                        margin: '0 -8px'
-                                    }}
-                                    onMouseDown={(e) => handleMarkerMouseDown(marker.id, e)}
-                                    onTouchStart={(e) => {
-                                        e.preventDefault();
-                                        setDraggingMarkerId(marker.id);
+                                        top: '-48px',
+                                        bottom: '0'
                                     }}
                                 >
-                                    {/* Marker line - thicker for visibility */}
-                                    <div className={`w-1 h-full ${draggingMarkerId === marker.id ? 'bg-yellow-300' : 'bg-yellow-400'} group-hover:bg-yellow-300 transition-colors shadow-lg`} />
+                                    {/* Thumbnail image */}
+                                    <div
+                                        className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 shadow-lg cursor-grab active:cursor-grabbing transition-all ${isDragging
+                                                ? 'border-yellow-300 scale-110 ring-2 ring-yellow-400 ring-opacity-50'
+                                                : 'border-white hover:border-yellow-400 hover:scale-105'
+                                            }`}
+                                        onMouseDown={(e) => handleMarkerMouseDown(marker.id, e)}
+                                        onTouchStart={(e) => {
+                                            e.preventDefault();
+                                            setDraggingMarkerId(marker.id);
+                                        }}
+                                        onClick={(e) => {
+                                            if (!isDragging) {
+                                                e.stopPropagation();
+                                                onMarkerClick?.(marker.id);
+                                            }
+                                        }}
+                                    >
+                                        {marker.thumbnailUrl ? (
+                                            <img
+                                                src={marker.thumbnailUrl}
+                                                alt=""
+                                                className="w-full h-full object-cover"
+                                                draggable={false}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-gray-700 flex items-center justify-center">
+                                                <span className="text-gray-400 text-xs">?</span>
+                                            </div>
+                                        )}
 
-                                    {/* Top handle with photo number */}
-                                    <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full border-2 border-white shadow-lg cursor-grab active:cursor-grabbing flex items-center justify-center ${draggingMarkerId === marker.id ? 'bg-yellow-300 scale-125' : 'bg-yellow-400'} group-hover:scale-125 transition-transform`}>
-                                        <span className="text-[10px] font-bold text-black">{photoNumber}</span>
+                                        {/* Delete button on hover */}
+                                        <button
+                                            type="button"
+                                            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onMarkerDelete?.(marker.id);
+                                            }}
+                                        >
+                                            <X className="w-3 h-3 text-white" />
+                                        </button>
                                     </div>
 
-                                    {/* Bottom handle with photo number */}
-                                    <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center ${draggingMarkerId === marker.id ? 'bg-yellow-300 scale-125' : 'bg-yellow-400'} group-hover:scale-125 transition-transform`}>
-                                        <span className="text-[10px] font-bold text-black">{photoNumber}</span>
-                                    </div>
+                                    {/* Vertical line connecting to waveform */}
+                                    <div className={`w-0.5 mx-auto transition-colors ${isDragging ? 'bg-yellow-300' : 'bg-white/50 group-hover:bg-yellow-400'}`} style={{ height: 'calc(100% - 48px)' }} />
 
-                                    {/* Timestamp tooltip - always visible when dragging */}
-                                    <div className={`absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap z-20 ${draggingMarkerId === marker.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}>
+                                    {/* Timestamp tooltip - shown when dragging */}
+                                    <div className={`absolute top-14 left-1/2 -translate-x-1/2 whitespace-nowrap z-20 ${isDragging ? 'opacity-100' : 'opacity-0'} transition-opacity`}>
                                         <span className="px-2 py-1 bg-yellow-400 text-black text-xs font-bold rounded shadow-lg">
-                                            #{photoNumber} • {formatTime(marker.timestamp)}
+                                            {formatTime(marker.timestamp)}
                                         </span>
                                     </div>
                                 </div>
                             );
                         })}
+
+                        {/* Add image button */}
+                        {onAddImage && (
+                            <button
+                                type="button"
+                                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white shadow-lg pointer-events-auto transition-colors"
+                                onClick={onAddImage}
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

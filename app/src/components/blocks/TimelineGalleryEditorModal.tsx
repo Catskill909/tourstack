@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Music, Images, Plus, Trash2, Clock, Pencil, GripVertical, Sliders } from 'lucide-react';
+import { X, Music, Images, Clock, Sliders } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AudioWaveform } from './AudioWaveform';
 import type { TimelineGalleryBlockData, TransitionType } from '../../types';
@@ -31,11 +31,9 @@ function formatTime(seconds: number): string {
 }
 
 export function TimelineGalleryEditorModal({ data, language, onChange, onClose }: TimelineGalleryEditorModalProps) {
-    const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState(0);
     const [previewIndex, setPreviewIndex] = useState(0);
     const [editingImage, setEditingImage] = useState<TimelineGalleryImage | null>(null);
-    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
     const audioDuration = data.audioDuration || 0;
 
@@ -206,9 +204,6 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
             ...data,
             images: images.filter(img => img.id !== id)
         });
-        if (selectedImageId === id) {
-            setSelectedImageId(null);
-        }
     }
 
     // Handle image update (from edit modal)
@@ -219,42 +214,6 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                 img.id === id ? { ...img, ...updates } : img
             )
         });
-    }
-
-    // Drag and drop reordering
-    function handleDragStart(index: number) {
-        setDraggedIndex(index);
-    }
-
-    function handleDragOver(e: React.DragEvent, index: number) {
-        e.preventDefault();
-        if (draggedIndex === null || draggedIndex === index) return;
-
-        // Reorder the images array
-        const newImages = [...images];
-        const draggedImage = newImages[draggedIndex];
-        newImages.splice(draggedIndex, 1);
-        newImages.splice(index, 0, draggedImage);
-
-        // Calculate new timestamp for the dragged image ONLY
-        // Place it halfway between previous and next images
-        // This preserves all other critical timing points!
-        const prevTime = index > 0 ? newImages[index - 1].timestamp : 0;
-        const nextTime = index < newImages.length - 1 ? newImages[index + 1].timestamp : audioDuration;
-
-        // "A little before its next marker" -> Midpoint is safe and predictable
-        const newTimestamp = (prevTime + nextTime) / 2;
-
-        const retimedImages = newImages.map((img, i) =>
-            i === index ? { ...img, timestamp: newTimestamp } : img
-        );
-
-        onChange({ ...data, images: retimedImages });
-        setDraggedIndex(index);
-    }
-
-    function handleDragEnd() {
-        setDraggedIndex(null);
     }
 
     return (
@@ -337,7 +296,7 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
                 {/* Section 1: Preview Canvas */}
-                <div className="h-[50%] p-4 flex items-center justify-center bg-black shrink-0 overflow-hidden">
+                <div className="h-[55%] p-4 flex items-center justify-center bg-black shrink-0 overflow-hidden">
                     {images.length > 0 && currentImage ? (
                         <div className="relative w-full h-full flex items-center justify-center">
                             {/* Animated image with Framer Motion - simultaneous crossfade */}
@@ -381,18 +340,35 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                     )}
                 </div>
 
-                {/* Section 2: Waveform Timeline */}
-                <div className="h-[30%] p-4 bg-[#111] border-t border-white/10 shrink-0">
+                {/* Section 2: Waveform Timeline with Thumbnail Markers */}
+                <div className="h-[45%] pt-16 px-4 pb-4 bg-[#111] border-t border-white/10 shrink-0 overflow-visible">
                     {data.audioUrl ? (
                         <AudioWaveform
                             audioUrl={data.audioUrl}
                             duration={audioDuration}
-                            markers={images.map(img => ({
+                            markers={sortedImages.map(img => ({
                                 id: img.id,
                                 timestamp: Math.min(img.timestamp, audioDuration),
-                                label: img.caption[language] || img.alt[language]
+                                label: img.caption[language] || img.alt[language],
+                                thumbnailUrl: img.url
                             }))}
                             onMarkerMove={handleMarkerMove}
+                            onMarkerClick={(id) => {
+                                const img = images.find(i => i.id === id);
+                                if (img) {
+                                    setEditingImage(img);
+                                }
+                            }}
+                            onMarkerDelete={handleDeleteImage}
+                            onAddImage={() => {
+                                // Trigger file input click
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = 'image/*';
+                                input.multiple = true;
+                                input.onchange = (e) => handleImageUpload(e as unknown as React.ChangeEvent<HTMLInputElement>);
+                                input.click();
+                            }}
                             onTimeUpdate={(time) => setCurrentTime(time)}
                             onReady={(newDuration) => {
                                 if (newDuration !== audioDuration) {
@@ -410,90 +386,6 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                             <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
                         </label>
                     )}
-                </div>
-
-                {/* Section 3: Image Strip */}
-                <div className="h-[20%] p-3 bg-[#0d0d0d] border-t border-white/10 flex flex-col shrink-0">
-                    <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-medium text-gray-300">Timeline Images</h3>
-                        <span className="text-xs text-gray-500">Drag to reorder • Tap pencil to edit</span>
-                    </div>
-
-                    <div className="flex-1 overflow-x-auto overflow-y-hidden">
-                        <div className="flex gap-3 h-full pb-2">
-                            {/* Add Image Button */}
-                            <label className="shrink-0 w-24 h-full flex flex-col items-center justify-center border-2 border-dashed border-white/20 rounded-xl cursor-pointer hover:border-purple-500/50 hover:bg-purple-500/5 transition-all">
-                                <Plus className="w-6 h-6 text-gray-400 mb-1" />
-                                <span className="text-xs text-gray-500">Add</span>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    onChange={handleImageUpload}
-                                    className="hidden"
-                                />
-                            </label>
-
-                            {/* Image Thumbnails */}
-                            {sortedImages.map((img, index) => (
-                                <div
-                                    key={img.id}
-                                    draggable
-                                    onDragStart={() => handleDragStart(index)}
-                                    onDragOver={(e) => handleDragOver(e, index)}
-                                    onDragEnd={handleDragEnd}
-                                    onClick={() => {
-                                        setSelectedImageId(img.id);
-                                        setPreviewIndex(images.findIndex(i => i.id === img.id));
-                                    }}
-                                    className={`shrink-0 relative w-24 h-full rounded-xl overflow-hidden cursor-grab transition-all ${selectedImageId === img.id
-                                        ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-[#0d0d0d]'
-                                        : 'hover:ring-2 hover:ring-white/30'
-                                        } ${draggedIndex === index ? 'opacity-50 scale-95' : ''}`}
-                                >
-                                    <img
-                                        src={img.url}
-                                        alt=""
-                                        className="w-full h-full object-cover"
-                                    />
-                                    {/* Drag handle */}
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 hover:opacity-100 transition-opacity">
-                                        <GripVertical className="w-6 h-6 text-white drop-shadow-lg" />
-                                    </div>
-                                    {/* Timestamp */}
-                                    <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-gradient-to-t from-black/80 to-transparent">
-                                        <span className="text-white text-xs font-mono">
-                                            {formatTime(img.timestamp)}
-                                        </span>
-                                    </div>
-                                    {/* Edit button */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setEditingImage(img);
-                                        }}
-                                        className="absolute top-1 left-1 p-1 rounded-full bg-black/60 hover:bg-purple-500 text-white transition-colors"
-                                    >
-                                        <Pencil className="w-3 h-3" />
-                                    </button>
-                                    {/* Delete button */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteImage(img.id);
-                                        }}
-                                        className="absolute top-1 right-1 p-1 rounded-full bg-black/60 hover:bg-red-500 text-white transition-colors"
-                                    >
-                                        <Trash2 className="w-3 h-3" />
-                                    </button>
-                                    {/* Index badge */}
-                                    <div className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-yellow-500 text-black text-xs font-bold flex items-center justify-center">
-                                        {index + 1}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             </div>
 
