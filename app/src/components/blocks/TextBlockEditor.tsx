@@ -63,15 +63,17 @@ export function TextBlockEditor({
         <div className="space-y-4">
             {/* Language Controls */}
             {availableLanguages.length > 1 && (
-                <div className="flex items-center justify-between gap-3 pb-3 border-b border-[var(--color-border-default)]">
-                    <LanguageSwitcher
-                        availableLanguages={availableLanguages}
-                        activeLanguage={activeLanguage}
-                        onChange={setActiveLanguage}
-                        contentMap={data.content}
-                        size="sm"
-                        showStatus={true}
-                    />
+                <div className="flex flex-wrap items-center gap-3 pb-3 border-b border-[var(--color-border-default)]">
+                    <div className="flex-1 min-w-0">
+                        <LanguageSwitcher
+                            availableLanguages={availableLanguages}
+                            activeLanguage={activeLanguage}
+                            onChange={setActiveLanguage}
+                            contentMap={data.content}
+                            size="sm"
+                            showStatus={true}
+                        />
+                    </div>
                     <MagicTranslateButton
                         sourceText={primaryText}
                         sourceLang={primaryLang}
