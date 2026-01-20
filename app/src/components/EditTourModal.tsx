@@ -12,15 +12,15 @@ interface EditTourModalProps {
 }
 
 const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Español' },
-    { code: 'fr', name: 'Français' },
-    { code: 'de', name: 'Deutsch' },
-    { code: 'it', name: 'Italiano' },
-    { code: 'pt', name: 'Português' },
-    { code: 'zh', name: '中文' },
-    { code: 'ja', name: '日本語' },
-    { code: 'ko', name: '한국어' },
+    { code: 'en', name: 'English', hint: 'EN' },
+    { code: 'es', name: 'Español', hint: 'ES' },
+    { code: 'fr', name: 'Français', hint: 'FR' },
+    { code: 'de', name: 'Deutsch', hint: 'DE' },
+    { code: 'it', name: 'Italiano', hint: 'IT' },
+    { code: 'pt', name: 'Português', hint: 'PT' },
+    { code: 'zh', name: '中文', hint: 'ZH - Chinese' },
+    { code: 'ja', name: '日本語', hint: 'JA - Japanese' },
+    { code: 'ko', name: '한국어', hint: 'KO - Korean' },
 ];
 
 const durations = [
@@ -272,6 +272,9 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                                         />
                                         <span className={`text-sm ${isSelected ? 'font-medium text-[var(--color-accent-primary)]' : 'text-[var(--color-text-secondary)]'}`}>
                                             {lang.name}
+                                        </span>
+                                        <span className="text-xs text-[var(--color-text-muted)] ml-auto">
+                                            {lang.hint}
                                         </span>
                                     </label>
                                 );
