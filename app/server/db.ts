@@ -1,3 +1,4 @@
+/// <reference types="node" />
 // Server-side Prisma client singleton
 import { PrismaClient } from '../src/generated/prisma/index.js';
 import path from 'path';
