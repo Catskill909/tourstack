@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Music, Images, Clock, Sliders } from 'lucide-react';
+import { X, Music, Images, Clock, Sliders, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AudioWaveform } from './AudioWaveform';
 import type { TimelineGalleryBlockData, TransitionType } from '../../types';
@@ -341,7 +341,7 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                 </div>
 
                 {/* Section 2: Waveform Timeline with Thumbnail Markers */}
-                <div className="h-[45%] pt-16 px-4 pb-4 bg-[#111] border-t border-white/10 shrink-0 overflow-visible">
+                <div className="h-[45%] pt-20 px-4 pb-4 bg-[#111] border-t border-white/10 shrink-0 overflow-visible">
                     {data.audioUrl ? (
                         <AudioWaveform
                             audioUrl={data.audioUrl}
@@ -475,12 +475,24 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                             </div>
                         </div>
 
-                        <button
-                            onClick={() => setEditingImage(null)}
-                            className="w-full mt-6 px-4 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-medium transition-colors"
-                        >
-                            Done
-                        </button>
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={() => {
+                                    handleDeleteImage(editingImage.id);
+                                    setEditingImage(null);
+                                }}
+                                className="flex-1 px-4 py-3 bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/50 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Delete
+                            </button>
+                            <button
+                                onClick={() => setEditingImage(null)}
+                                className="flex-1 px-4 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-medium transition-colors"
+                            >
+                                Done
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
