@@ -1,11 +1,12 @@
 // Media API Routes - File upload and management
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import type { Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
-import { Media } from '../../src/generated/prisma/index.js';
+import type { Media } from '../../src/generated/prisma/index.js';
 import { prisma } from '../db.js';
 
 const __filename = fileURLToPath(import.meta.url);

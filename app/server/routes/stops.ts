@@ -1,6 +1,7 @@
 // Stops API Routes
-import { Router, Request, Response } from 'express';
-import { Stop } from '../../src/generated/prisma/index.js';
+import { Router } from 'express';
+import type { Request, Response } from 'express';
+import type { Stop } from '../../src/generated/prisma/index.js';
 import { prisma } from '../db.js';
 
 const router = Router();
