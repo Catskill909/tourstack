@@ -10,10 +10,10 @@
   --color-bg-hover: #2d2d2d;
   --color-bg-active: #333333;
   
-  /* Accent Colors - Material Purple/Teal */
-  --color-accent-primary: #BB86FC;
-  --color-accent-secondary: #03DAC6;
-  --color-accent-tertiary: #CF6679;
+  /* Accent Colors - Museum Warm Amber/Gold */
+  --color-accent-primary: #D4A574;
+  --color-accent-secondary: #7CB4B0;
+  --color-accent-tertiary: #E8B4A0;
   
   /* Text Colors */
   --color-text-primary: #FFFFFF;
@@ -30,7 +30,7 @@
   /* Border Colors */
   --color-border-default: #333333;
   --color-border-hover: #525252;
-  --color-border-focus: #BB86FC;
+  --color-border-focus: #D4A574;
   
   /* Font Families */
   --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
@@ -49,7 +49,7 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(187, 134, 252, 0.3);
+  --shadow-glow: 0 0 20px rgba(212, 165, 116, 0.3);
   
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -102,7 +102,7 @@ body {
 
 /* Selection */
 ::selection {
-  background-color: rgba(187, 134, 252, 0.3);
+  background-color: rgba(212, 165, 116, 0.3);
   color: var(--color-text-primary);
 }
 
@@ -123,10 +123,10 @@ body {
   }
   
   .glow-primary {
-    box-shadow: 0 0 20px rgba(187, 134, 252, 0.4);
+    box-shadow: 0 0 20px rgba(212, 165, 116, 0.4);
   }
   
   .glow-secondary {
-    box-shadow: 0 0 20px rgba(3, 218, 198, 0.4);
+    box-shadow: 0 0 20px rgba(124, 180, 176, 0.4);
   }
 }
