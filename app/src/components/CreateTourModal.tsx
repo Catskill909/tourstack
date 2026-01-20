@@ -42,6 +42,7 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [primaryLanguage, setPrimaryLanguage] = useState('en');
+    const [supportedLanguages, setSupportedLanguages] = useState<string[]>(['en']);
     const [duration, setDuration] = useState(30);
     const [heroImage, setHeroImage] = useState<string>('');
     const [_imageFile, setImageFile] = useState<File | null>(null);
@@ -54,6 +55,7 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
             setTitle('');
             setDescription('');
             setPrimaryLanguage('en');
+            setSupportedLanguages(['en']);
             setDuration(30);
             setHeroImage('');
             setImageFile(null);
@@ -93,7 +95,7 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                 title: { [primaryLanguage]: title.trim() },
                 description: { [primaryLanguage]: description.trim() },
                 primaryLanguage,
-                languages: [primaryLanguage],
+                languages: supportedLanguages,
                 duration,
                 heroImage: heroImage || '',
             });
@@ -229,7 +231,13 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                                     </label>
                                     <select
                                         value={primaryLanguage}
-                                        onChange={(e) => setPrimaryLanguage(e.target.value)}
+                                        onChange={(e) => {
+                                            const newPrimary = e.target.value;
+                                            setPrimaryLanguage(newPrimary);
+                                            if (!supportedLanguages.includes(newPrimary)) {
+                                                setSupportedLanguages([...supportedLanguages, newPrimary]);
+                                            }
+                                        }}
                                         className="w-full px-4 py-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none transition-colors"
                                     >
                                         {languages.map((lang) => (
@@ -253,6 +261,50 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                                     </select>
                                 </div>
                             </div>
+
+                            {/* Supported Languages */}
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+                                    Supported Languages
+                                </label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {languages.map((lang) => {
+                                        const isSelected = supportedLanguages.includes(lang.code);
+                                        const isPrimary = lang.code === primaryLanguage;
+                                        return (
+                                            <label
+                                                key={lang.code}
+                                                className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all text-sm ${
+                                                    isSelected
+                                                        ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]'
+                                                        : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:border-[var(--color-text-muted)]'
+                                                } ${isPrimary ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={(e) => {
+                                                        if (isPrimary) return;
+                                                        if (e.target.checked) {
+                                                            setSupportedLanguages([...supportedLanguages, lang.code]);
+                                                        } else {
+                                                            setSupportedLanguages(supportedLanguages.filter(l => l !== lang.code));
+                                                        }
+                                                    }}
+                                                    disabled={isPrimary}
+                                                    className="w-3.5 h-3.5 rounded border-[var(--color-border-default)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+                                                />
+                                                <span className={isSelected ? 'font-medium text-[var(--color-accent-primary)]' : 'text-[var(--color-text-secondary)]'}>
+                                                    {lang.name}
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                                <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                                    Select multiple languages to enable the "Translate to All" feature in content editors.
+                                </p>
+                            </div>
                         </div>
                     )}
 
@@ -270,10 +322,19 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                                         <div className="flex items-center gap-4 mt-3 text-sm text-[var(--color-text-muted)]">
                                             <span>Template: {selectedTemplate.name}</span>
                                             <span>•</span>
-                                            <span>{languages.find(l => l.code === primaryLanguage)?.name}</span>
+                                            <span>{supportedLanguages.length} language{supportedLanguages.length > 1 ? 's' : ''}</span>
                                             <span>•</span>
                                             <span>{duration} min</span>
                                         </div>
+                                        {supportedLanguages.length > 1 && (
+                                            <div className="flex flex-wrap gap-1.5 mt-2">
+                                                {supportedLanguages.map(code => (
+                                                    <span key={code} className="px-2 py-0.5 text-xs rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]">
+                                                        {languages.find(l => l.code === code)?.name || code.toUpperCase()}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
