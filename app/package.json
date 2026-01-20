@@ -20,6 +20,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "framer-motion": "^12.27.1",
     "lucide-react": "^0.562.0",
     "mobile-drag-drop": "^3.0.0-rc.0",
     "multer": "^2.0.2",

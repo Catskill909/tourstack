@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Music, Images, Plus, Trash2, Clock, Pencil, GripVertical, Sliders } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AudioWaveform } from './AudioWaveform';
 import type { TimelineGalleryBlockData, TransitionType } from '../../types';
 
@@ -33,9 +34,6 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
     const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
     const [currentTime, setCurrentTime] = useState(0);
     const [previewIndex, setPreviewIndex] = useState(0);
-    const [previousIndex, setPreviousIndex] = useState(0);
-    const [isTransitioning, setIsTransitioning] = useState(false);
-    const [shouldFadeOut, setShouldFadeOut] = useState(false);
     const [editingImage, setEditingImage] = useState<TimelineGalleryImage | null>(null);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
@@ -54,34 +52,10 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
     // Sort by timestamp for timeline display
     const sortedImages = [...images].sort((a, b) => a.timestamp - b.timestamp);
 
-    const transitionType = data.transitionType || 'fade';
-    const transitionDuration = data.crossfadeDuration || 500;
-
-    // Trigger transition when changing images
-    // Two-phase: first render shows previous at full opacity, then fade out
-    function triggerTransition(newIndex: number) {
-        if (transitionType === 'cut') {
-            setPreviewIndex(newIndex);
-            return;
-        }
-
-        setPreviousIndex(previewIndex);
-        setPreviewIndex(newIndex);
-        setIsTransitioning(true);
-        setShouldFadeOut(false); // Start at full opacity
-
-        // Trigger fade-out after browser paints the initial state
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                setShouldFadeOut(true); // Now fade out
-            });
-        });
-
-        setTimeout(() => {
-            setIsTransitioning(false);
-            setShouldFadeOut(false);
-        }, transitionDuration + 50);
-    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _transitionType = data.transitionType || 'fade'; // TODO: Use for slide/zoom variants
+    void _transitionType; // Suppress unused warning - planned for future transition variants
+    const transitionDuration = (data.crossfadeDuration || 500) / 1000; // Convert to seconds for Framer Motion
 
     // Auto-advance preview based on time
     useEffect(() => {
@@ -90,7 +64,7 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
             if (sortedImages[i].timestamp <= currentTime) {
                 const newIndex = images.findIndex(img => img.id === sortedImages[i].id);
                 if (newIndex !== previewIndex && newIndex >= 0) {
-                    triggerTransition(newIndex);
+                    setPreviewIndex(newIndex);
                 }
                 break;
             }
@@ -111,7 +85,6 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
     }, [audioDuration]);
 
     const currentImage = images[previewIndex];
-    const previousImage = images[previousIndex];
 
     // Handle audio upload via server API
     async function handleAudioUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -366,35 +339,20 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                 {/* Section 1: Preview Canvas */}
                 <div className="h-[50%] p-4 flex items-center justify-center bg-black shrink-0 overflow-hidden">
                     {images.length > 0 && currentImage ? (
-                        <div className="relative max-w-full max-h-full overflow-hidden rounded-lg">
-                            {/* Current image - always visible at bottom */}
-                            <img
-                                src={currentImage.url}
-                                alt={currentImage.alt[language] || ''}
-                                className="max-w-full max-h-[calc(50vh-4rem)] object-contain rounded-lg"
-                            />
-
-                            {/* Previous image overlay - fades/slides OUT on top */}
-                            {isTransitioning && previousImage && transitionType !== 'cut' && (
-                                <div
-                                    className="absolute inset-0 z-10 transition-all"
-                                    style={{
-                                        transitionDuration: `${transitionDuration}ms`,
-                                        opacity: shouldFadeOut && (transitionType === 'fade' || transitionType === 'zoom') ? 0 : 1,
-                                        transform: shouldFadeOut
-                                            ? transitionType === 'slideLeft' ? 'translateX(-100%)'
-                                                : transitionType === 'slideRight' ? 'translateX(100%)'
-                                                    : transitionType === 'zoom' ? 'scale(1.1)' : 'none'
-                                            : 'none'
-                                    }}
-                                >
-                                    <img
-                                        src={previousImage.url}
-                                        alt={previousImage.alt[language] || ''}
-                                        className="w-full h-full object-contain"
-                                    />
-                                </div>
-                            )}
+                        <div className="relative w-full h-full flex items-center justify-center">
+                            {/* Animated image with Framer Motion - simultaneous crossfade */}
+                            <AnimatePresence initial={false}>
+                                <motion.img
+                                    key={currentImage.id}
+                                    src={currentImage.url}
+                                    alt={currentImage.alt[language] || ''}
+                                    className="absolute max-w-full max-h-full object-contain rounded-lg"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: transitionDuration, ease: 'easeInOut' }}
+                                />
+                            </AnimatePresence>
 
                             {/* Overlay badges */}
                             <div className="absolute inset-0 z-20 pointer-events-none">

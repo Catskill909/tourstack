@@ -59,6 +59,12 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Database API for stops** (no localStorage!)
 - [x] **Unsaved changes warning** modal
 
+### Phase 7: Framer Motion Integration ✅ (Jan 19, 2026)
+- [x] **framer-motion** package added (~32KB)
+- [x] **True Crossfade** - simultaneous opacity transitions
+- [x] **Transition Duration** slider (0.1s - 1.5s)
+- [x] **AnimatePresence** for smooth enter/exit animations
+
 ---
 
 ## 📋 Next Steps (Priority Order)
@@ -69,8 +75,8 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - Language switcher component
 
 ### 2. 🟢 Timeline Gallery Enhancements
-- Ken Burns Effect (Pan & Zoom)
-- Transition configurator (Fade, Cut, Slide)
+- Ken Burns Effect (Pan & Zoom) - use Framer Motion `useDrag` for editor
+- Additional transitions (Slide, Zoom) - use Framer Motion variants
 - Closed captioning editor
 
 ### 3. 🔵 JSON Export/Import

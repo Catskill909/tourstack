@@ -23,12 +23,52 @@ Transform the audio-synced image gallery into a powerful, cinematic storytelling
 - [x] **Database storage** for stops (no localStorage!)
 - [x] **Unsaved changes warning** modal
 
-### 📋 Phase 2 - In Progress
-- [x] **Transition Types** (fade, cut, slideLeft, slideRight, zoom)
+### ✅ Phase 2 - Framer Motion Integration (Jan 19, 2026)
+- [x] **Framer Motion** added for professional animations
+- [x] **True Crossfade** - simultaneous opacity transitions
 - [x] **Transition Duration** slider (0.1s - 1.5s)
-- [x] **Image Preloading** with loading indicator
+- [x] **AnimatePresence** for smooth enter/exit animations
+
+### 📋 Phase 2 - Remaining
 - [ ] Ken Burns Effect (Pan & Zoom) Editor
+- [ ] Slide Left/Right transitions (using Framer Motion variants)
+- [ ] Zoom transitions
 - [ ] Closed Captioning editor
+
+---
+
+## 🎬 Framer Motion Integration
+
+### Why Framer Motion?
+- **React-first** - Declarative API designed for React
+- **AnimatePresence** - Handles exit animations gracefully
+- **Gesture Support** - Built-in drag, hover, tap (for Ken Burns editor)
+- **Layout Animations** - Smooth size/position changes
+
+### Current Implementation
+```tsx
+<AnimatePresence initial={false}>
+  <motion.img
+    key={currentImage.id}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: transitionDuration, ease: 'easeInOut' }}
+  />
+</AnimatePresence>
+```
+
+### Available Features for Future Development
+
+| Feature | Description | Use Case |
+|---------|-------------|----------|
+| **Variants** | Define animation states | Slide/Zoom transitions |
+| **useScroll** | Scroll-linked animations | Parallax Ken Burns |
+| **useDrag** | Draggable elements | Ken Burns editor handles |
+| **layoutId** | Shared element transitions | Gallery → Fullscreen |
+| **AnimatePresence** | Exit animations | Current crossfade |
+| **Stagger** | Cascading animations | Multi-image reveals |
+| **Spring** | Physics-based motion | Natural movements |
 
 ---
 
@@ -93,4 +133,5 @@ Transform the audio-synced image gallery into a powerful, cinematic storytelling
 
 ### Dependencies
 - `wavesurfer.js` - Audio waveform visualization
+- `framer-motion` - Professional animations (~32KB)
 - `multer` - File upload handling
