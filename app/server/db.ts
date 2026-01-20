@@ -3,9 +3,9 @@
 import { PrismaClient } from '../src/generated/prisma/index.js';
 import path from 'path';
 
-// Path to database file - use data directory for Docker volume compatibility
-// Docker volumes can't mount to a file path, only directories
-const dbPath = path.resolve(process.cwd(), 'data', 'dev.db');
+// Path to database file - MUST MATCH Coolify volume mount!
+// Coolify mounts to /app/dev.db (not /app/data/dev.db)
+const dbPath = path.resolve(process.cwd(), 'dev.db');
 console.log(`📂 Database path: ${dbPath}`);
 
 const globalForPrisma = globalThis as unknown as {

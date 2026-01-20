@@ -3,8 +3,8 @@ import 'dotenv/config';
 import { PrismaClient } from '../src/generated/prisma';
 import path from 'path';
 
-// Set up SQLite connection - use data directory for Docker compatibility
-const dbPath = path.resolve(process.cwd(), 'data', 'dev.db');
+// Set up SQLite connection - MUST MATCH Coolify volume mount!
+const dbPath = path.resolve(process.cwd(), 'dev.db');
 const prisma = new PrismaClient({
     datasources: {
         db: {
