@@ -311,8 +311,13 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
                                     </div>
                                 )}
 
-                                {/* Content */}
-                                <div className="px-5 py-4 space-y-5">
+                                {/* Content - with safe area padding when status bar is hidden */}
+                                <div 
+                                    className="px-5 space-y-5"
+                                    style={{
+                                        paddingTop: showStatusBar ? 16 : (deviceType === 'phone' ? 56 : 20),
+                                    }}
+                                >
                                     {/* Stop Header */}
                                     <div className="space-y-2">
                                         <h1 className="text-2xl font-bold text-[var(--color-text-primary)] leading-tight">
