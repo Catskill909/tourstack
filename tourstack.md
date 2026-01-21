@@ -18,6 +18,7 @@
 | Phase 7: Framer Motion Transitions | ✅ Complete |
 | Phase 8: Thumbnail Markers UI | ✅ Complete |
 | Phase 9: Translation Infrastructure | ✅ Complete |
+| Phase 10: Audio Player Size Variants | ✅ Complete |
 | **Next:** Custom Theming | 🔜 Planned |
 
 **Deployment:** Coolify/Docker with persistent volumes  
@@ -119,7 +120,12 @@ Image Gallery & Timeline:
    - Custom transitions (fade, slide, zoom)
    - Pan/Zoom effects (Ken Burns) for immersive storytelling
    - Interactive scrubbing
-Audio guide (MP3 upload with playback controls)
+Audio guide (MP3 upload with **3 size variants**):
+ - **Large**: Full player with title, progress, time, speed, skip ±10s, volume
+ - **Medium**: Compact inline - play + scrubber + time + volume
+ - **Small**: Icon-only play/pause button (44px phone, 56px tablet)
+ - **Show Title toggle** for large player (editor-only for large size)
+ - **Tablet scaling** - larger buttons/padding for medium/small sizes
 Video embeds (YouTube, Vimeo, or direct upload)
 3D model viewers (for photogrammetry/museum artifacts)
 AR content markers (placeholder for WebAR integration)
