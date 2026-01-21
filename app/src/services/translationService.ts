@@ -131,3 +131,77 @@ export const SUPPORTED_LANGUAGES = [
 export function isLanguageSupported(lang: string): boolean {
     return SUPPORTED_LANGUAGES.includes(lang.toLowerCase());
 }
+
+/**
+ * Supported file formats for import
+ */
+export const SUPPORTED_FILE_FORMATS = [
+    '.txt', '.odt', '.odp', '.docx', '.pptx', '.epub', '.html', '.srt', '.pdf'
+];
+
+/**
+ * Extract text content from a file
+ * Supports: .txt, .odt, .odp, .docx, .pptx, .epub, .html, .srt, .pdf
+ * 
+ * @param file - File to extract text from
+ * @returns Extracted text content
+ */
+export async function extractTextFromFile(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/translate/extract', {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to extract text from file');
+    }
+
+    const data = await response.json();
+    return data.text;
+}
+
+/**
+ * Import and translate a file to a target language
+ * 
+ * @param file - File to translate
+ * @param targetLang - Target language code
+ * @param sourceLang - Source language code (optional, defaults to auto-detect)
+ * @returns Translated text content
+ */
+export async function translateFile(
+    file: File,
+    targetLang: string,
+    sourceLang?: string
+): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('targetLang', targetLang);
+    if (sourceLang) {
+        formData.append('sourceLang', sourceLang);
+    }
+
+    const response = await fetch('/api/translate/file', {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to translate file');
+    }
+
+    const data = await response.json();
+    return data.translatedText;
+}
+
+/**
+ * Check if a file format is supported for import
+ */
+export function isFileFormatSupported(filename: string): boolean {
+    const ext = '.' + filename.split('.').pop()?.toLowerCase();
+    return SUPPORTED_FILE_FORMATS.includes(ext);
+}
