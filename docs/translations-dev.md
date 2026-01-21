@@ -177,8 +177,14 @@ Notes:
 3.  **To Translate**:
     -   Write content in the primary language (e.g., English)
     -   Click **✨ Translate to All**
+    -   A confirmation modal appears showing the number of languages being translated
     -   Review generated translations in other tabs
-4.  **Preview**:
+4.  **Save Your Work**:
+    -   Click **Save** to see a new confirmation dialog
+    -   Choose **Save & Continue Editing** to keep working
+    -   Or select **Save & Exit** to return to the stop list
+    -   Remember to save after translating for changes to appear in preview
+5.  **Preview**:
     -   Click "Preview" icon
     -   Use language pill toggle in modal header to verify visitor experience
 

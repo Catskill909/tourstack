@@ -28,6 +28,32 @@
 
 ---
 
+## UI/UX IMPROVEMENTS (v1.1)
+
+### Translation Workflow Enhancements
+
+#### 1. Translation Complete Notification
+- Added a clean, non-intrusive modal that appears after successful translation
+- Clearly indicates the number of languages translated
+- Reminds users to save changes for translations to appear in preview
+- Features a green checkmark icon and clear action button
+- Implemented in both Timeline Gallery and Audio Block editors
+
+#### 2. Flexible Save Options
+- Redesigned save flow with a confirmation modal
+- **Save & Continue Editing**: Saves changes and keeps editor open with fresh data
+- **Save & Exit**: Saves changes and returns to stop list
+- Clear visual distinction between save options (color-coded buttons with icons)
+- Maintains unsaved changes indicator in the UI
+
+#### 3. Improved Closed Captions
+- Fixed language switching in preview mode
+- Ensures captions show correct translated text for each language
+- Falls back to English word-level timestamps only when no translation exists
+- Consistent behavior across all media types (audio, video, timeline gallery)
+
+---
+
 ## CORE POSITIONING TECHNOLOGIES
 When creating a new tour, museums must select their positioning method:
 
