@@ -124,7 +124,16 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
 
     function handleTimeUpdate() {
         if (audioRef.current) {
-            setCurrentTime(audioRef.current.currentTime);
+            const time = audioRef.current.currentTime;
+            setCurrentTime(time);
+            
+            // Safety check: if we've reached the end, stop playing
+            // (onEnded may not fire in some edge cases)
+            if (data.audioDuration && time >= data.audioDuration - 0.1 && isPlaying) {
+                console.log('[TimelineGalleryPreview] Audio reached end, stopping playback');
+                audioRef.current.pause();
+                setIsPlaying(false);
+            }
         }
     }
 
