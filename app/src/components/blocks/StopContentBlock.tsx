@@ -47,7 +47,6 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
 
     // Font size scaling for tablets
     const isTablet = deviceType === 'tablet';
-    const textSizeClass = isTablet ? 'text-xl' : 'text-base';
     const proseSize = isTablet ? 'prose-lg' : 'prose-base';
 
     // Render functions for each block type

@@ -1,172 +1,33 @@
-ineed to create a prompt to build a modern dark mode virtual beacons beacons app for museum tours to build out tours with trigger text , links etc etc. It should have modern features a museum would need. They will build and upload to a db. They can title each tour and add beacon spots and triggers and save each tour into the db. Add the features you think would be best for this type of app
+# TourStack - Museum Virtual Tour Platform
 
-11:27 AM
-I'll create a comprehensive prompt for building a modern dark mode virtual beacons app for museum tours. This will include all the essential features a museum would need for creating, managing, and deploying location-based tour experiences.
+**Target Users:** Museum curators, tour designers, content managers, educators  
+**Key Differentiator:** Multi-technology positioning + AI-powered translation and audio generation
 
-PROMPT FOR MUSEUM VIRTUAL BEACONS TOUR BUILDER APP
+---
 
-Create a modern, dark mode web application for museum tour creation and management using virtual beacons. The app should be a single-page React application with the following specifications:
+## Project Status (January 2026)
 
-Core Functionality:
+| Phase | Status |
+|-------|--------|
+| Phase 1: Foundation | ✅ Complete |
+| Phase 2: Tours Page | ✅ Complete |
+| Phase 3: Stop Manager & Collections | ✅ Complete |
+| Phase 4: Content Block System | ✅ Complete |
+| Phase 5: API Layer | ✅ Complete |
+| Phase 6: Timeline Gallery | ✅ Complete |
+| Phase 7: Framer Motion Transitions | ✅ Complete |
+| Phase 8: Thumbnail Markers UI | ✅ Complete |
+| Phase 9: Translation Infrastructure | ✅ Complete |
+| **Next:** Custom Theming | 🔜 Planned |
 
-Tour Management Dashboard
-List all tours with preview cards showing title, beacon count, status (draft/published), and last modified date
-Search and filter tours by name, status, or creation date
-Quick actions: duplicate, archive, delete tours
-Analytics overview: total tours, active beacons, tour completion rates
-Tour Builder Interface
-Create new tours with title, description, estimated duration, and difficulty level
-Add multiple beacon points/stops to each tour
-Drag-and-drop reordering of beacon sequence
-Visual tour map/flowchart showing beacon connections
-Save drafts and publish tours
-Beacon/Stop Configuration Each beacon should support:
-Stop number and title
-Geofence trigger settings (proximity radius in meters)
-Rich text content editor for descriptions
-Multiple media types: images, audio clips, video embeds
-External links with custom labels
-Interactive quizzes or questions
-"Fun facts" or highlights section
-Estimated time at this stop
-AR content markers (placeholder for future AR integration)
-Accessibility features: audio descriptions, transcript text
-Multiple language support per beacon
-Trigger Management
-GPS-based triggers with customizable radius
-QR code generation for each beacon (backup trigger method)
-Time-based triggers (auto-advance after X minutes)
-Manual progression option
-Notification settings (sound, vibration, visual alert)
-Content Management
-Media library for uploading and organizing images, audio, video
-Template library for common beacon types (artwork, artifact, historical site, etc.)
-Rich text editor with formatting options
-Preview mode showing visitor-facing view
-Version history with rollback capability
-Database & Export Features
-Save tours to persistent storage
-Export tours as JSON for backup
-Import tours from JSON
-Bulk operations on beacons
-Tour cloning/templating
-Design Requirements:
+**Deployment:** Coolify/Docker with persistent volumes  
+- Database: Prisma + SQLite (`/app/data`)
+- Media: Server uploads (`/app/uploads`, 100MB limit)
+- See `docs/COOLIFY-DEPLOYMENT.md` for configuration
 
-Modern dark mode theme with high contrast for accessibility
-Glassmorphism effects and subtle animations
-Responsive layout (desktop-first, but mobile-compatible)
-Color-coded status indicators (draft/yellow, published/green, archived/gray)
-Toast notifications for save confirmations and errors
-Loading states for async operations
-Empty states with helpful onboarding messages
-Technical Stack:
+---
 
-React with hooks (useState, useEffect, useReducer)
-Tailwind CSS for styling
-Lucide React for icons
-In-memory state management (NO localStorage - use React state)
-Form validation for required fields
-Drag-and-drop functionality for reordering
-Additional Features:
-
-Preview mode simulating the visitor experience
-Beacon testing tools (simulate trigger activation)
-Tour statistics: average completion time, most popular stops
-Multi-user roles indicator (admin, editor, viewer)
-Help tooltips throughout the interface
-Keyboard shortcuts for power users
-Auto-save drafts every 30 seconds
-Dark/light mode toggle (defaulting to dark)
-Accessibility compliance (ARIA labels, keyboard navigation)
-Data Structure Example:
-
-json
-{
-  "tours": [{
-    "id": "tour_123",
-    "title": "Ancient Egypt Gallery",
-    "description": "Explore 3000 years of history",
-    "status": "published",
-    "duration": 45,
-    "difficulty": "beginner",
-    "beacons": [{
-      "id": "beacon_1",
-      "order": 1,
-      "title": "The Rosetta Stone",
-      "content": "...",
-      "media": [],
-      "triggers": {
-        "gps": {"lat": 0, "lng": 0, "radius": 5},
-        "qrCode": "qr_beacon_1"
-      },
-      "links": [],
-      "quiz": null
-    }]
-  }]
-}
-Build a fully functional prototype with sample data demonstrating all features. Include at least 2 example tours with 4-6 beacons each. Make the UI intuitive, beautiful, and production-ready.
-
-This prompt should give you a comprehensive virtual beacons tour builder with all the modern features a museum would need!
-
-i want to be able to choose when you crate a new tour if this is based on triangulation or long lat..etc etc .. Add avilaqble tech that the museums can use. Also they want virtual or real beacons. So add beaon scanning . lets do some reseraerch on musauems and their tour needs then apply this to our prompt
-
-11:31 AM
-
-1 step
-
-museum tour NFC RFID WiFi positioning technologies comparison
-10 results
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-museum analytics visitor tracking heatmaps dwell time
-10 results
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Perfect! Now I have comprehensive research on museum tour technologies and their needs. Let me create an enhanced, research-informed prompt for you.
-
-COMPREHENSIVE PROMPT FOR MUSEUM VIRTUAL BEACONS TOUR BUILDER APP
-Create a professional, dark mode web application for museum tour creation and management using virtual and physical beacon technologies. This should be a single-page React application with modern UX and comprehensive positioning technology support.
-
-CORE POSITIONING TECHNOLOGIES
+## CORE POSITIONING TECHNOLOGIES
 When creating a new tour, museums must select their positioning method:
 
 1. BLE Beacon Triangulation/Trilateration
@@ -521,72 +382,17 @@ Media library with sample assets
 Responsive, production-ready UI
 The app should feel like a professional SaaS platform that museums would actually pay for and use daily.
 
-This enhanced prompt incorporates all the research findings including the various positioning technologies museums actually use, the analytics they need for data-driven decisions, and the real-world requirements from museums worldwide!
+---
 
-we are also going to scope out mutilanguage with both audio , text and media and the cheap solustions for translastiopn and text coverstoin. This is becomeing more of a scope doc
+## MULTILINGUAL CONTENT SYSTEM
 
-6:59 PM
-
-1 step
-
-AI text to speech TTS cost comparison ElevenLabs Google Azure 2025
-10 results
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-museum audio guide speech to text transcription affordable solutions 2025
-10 results
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Perfect! Now I have comprehensive research on multilingual solutions, AI translation and TTS costs, and speech-to-text options. Let me create a detailed scope document for you that incorporates all this research.
-
-MUSEUM VIRTUAL BEACONS TOUR BUILDER - COMPREHENSIVE SCOPE DOCUMENT
-EXECUTIVE SUMMARY
 This document outlines the scope, features, and technical requirements for a modern museum virtual beacons tour management platform. The system enables museums to create, manage, and deploy location-based audio tours using multiple positioning technologies with affordable multilingual support powered by AI.
 
-Target Users: Museum curators, tour designers, content managers, educators
-Primary Goal: Democratize museum tour creation with enterprise-grade features at accessible price points
-Key Differentiator: Multi-technology beacon support + AI-powered multilingual content generation
+**Target Users:** Museum curators, tour designers, content managers, educators  
+**Primary Goal:** Democratize museum tour creation with enterprise-grade features at accessible price points  
+**Key Differentiator:** Multi-technology beacon support + AI-powered multilingual content generation
 
-1.  **PROJECT STATUS (Jan 20, 2026)**
+### PROJECT STATUS (Jan 20, 2026)
     - **Phase 1 (Foundation)**: COMPLETE ✅
     - **Phase 2 (Tours Page)**: COMPLETE ✅
     - **Phase 3 (Stop Manager & Collections)**: COMPLETE ✅
