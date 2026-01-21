@@ -9,6 +9,7 @@ interface StopContentBlockProps {
     block: ContentBlock;
     mode: 'view' | 'edit';
     language: string;
+    deviceType?: 'phone' | 'tablet';
     onEdit?: (block: ContentBlock) => void;
     onDelete?: (blockId: string) => void;
 }
@@ -40,15 +41,20 @@ const BLOCK_LABELS: Record<ContentBlockType, string> = {
     positioning: 'Positioning',
 };
 
-export function StopContentBlock({ block, mode, language, onEdit, onDelete }: StopContentBlockProps) {
+export function StopContentBlock({ block, mode, language, deviceType = 'phone', onEdit, onDelete }: StopContentBlockProps) {
     const Icon = BLOCK_ICONS[block.type];
     const label = BLOCK_LABELS[block.type];
+
+    // Font size scaling for tablets
+    const isTablet = deviceType === 'tablet';
+    const textSizeClass = isTablet ? 'text-xl' : 'text-base';
+    const proseSize = isTablet ? 'prose-lg' : 'prose-base';
 
     // Render functions for each block type
     function renderTextBlock(data: TextBlockData) {
         const content = data.content[language] || data.content.en || '';
         return (
-            <div className={`prose prose-invert max-w-none ${data.style === 'callout' ? 'bg-[var(--color-accent-primary)]/10 p-4 rounded-lg border-l-4 border-[var(--color-accent-primary)]' : ''} ${data.style === 'sidebar' ? 'bg-[var(--color-bg-elevated)] p-4 rounded-lg' : ''}`}>
+            <div className={`prose prose-invert max-w-none ${proseSize} ${data.style === 'callout' ? 'bg-[var(--color-accent-primary)]/10 p-4 rounded-lg border-l-4 border-[var(--color-accent-primary)]' : ''} ${data.style === 'sidebar' ? 'bg-[var(--color-bg-elevated)] p-4 rounded-lg' : ''}`}>
                 <div dangerouslySetInnerHTML={{ __html: content }} />
             </div>
         );

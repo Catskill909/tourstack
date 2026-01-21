@@ -1431,4 +1431,67 @@ json
         "results": {"0": 847, "1": 223, "2": 512}
       }
     },
-    "links":
+    "links": []
+  }
+}
+
+---
+
+## FUTURE DEVELOPMENT: Custom Layout, Fonts & Colors
+
+### Overview
+Future versions will allow museums to customize the visitor-facing tour experience with their own branding, typography, and color schemes. Currently, tablet devices display larger font sizes than phones (automatic scaling), but full customization is planned.
+
+### Planned Features
+
+#### 1. Device-Specific Typography
+| Device | Current | Future Customizable |
+|--------|---------|---------------------|
+| Phone | Base: 16px, Headers: 24px | Configurable per tour |
+| Tablet | Base: 20px, Headers: 40px | Configurable per tour |
+
+#### 2. Custom Font Families
+- Primary font (headers): Google Fonts or custom upload
+- Secondary font (body text): Google Fonts or custom upload
+- Monospace font (captions, metadata): Optional override
+
+#### 3. Color Theme Customization
+```typescript
+interface TourTheme {
+  // Background colors
+  bgPrimary: string;      // Main background
+  bgSecondary: string;    // Cards, elevated surfaces
+  bgAccent: string;       // Highlighted areas
+  
+  // Text colors
+  textPrimary: string;    // Main text
+  textSecondary: string;  // Muted text
+  textAccent: string;     // Links, highlights
+  
+  // Accent colors
+  accentPrimary: string;  // Buttons, active states
+  accentSecondary: string;// Secondary actions
+  
+  // Borders
+  borderDefault: string;
+  borderHover: string;
+}
+```
+
+#### 4. Layout Options
+- Content width: narrow / medium / wide / full
+- Image sizing: constrained / full-bleed
+- Block spacing: compact / comfortable / spacious
+- Header alignment: left / center
+
+#### 5. Per-Tour Overrides
+Each tour can optionally override the museum's default theme:
+- Special exhibition themes
+- Seasonal variations
+- Accessibility high-contrast mode
+
+### Implementation Notes
+- Theme settings stored in Tour model
+- CSS custom properties for runtime theming
+- Preview mode shows theme changes in real-time
+- Export includes theme for offline apps

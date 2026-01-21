@@ -313,18 +313,26 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
 
                                 {/* Content - with safe area padding when status bar is hidden */}
                                 <div 
-                                    className="px-5 space-y-5"
+                                    className={`space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`}
                                     style={{
                                         paddingTop: showStatusBar ? 16 : (deviceType === 'phone' ? 56 : 20),
+                                        // Scale up font sizes for tablets
+                                        fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem',
                                     }}
                                 >
                                     {/* Stop Header */}
-                                    <div className="space-y-2">
-                                        <h1 className="text-2xl font-bold text-[var(--color-text-primary)] leading-tight">
+                                    <div className="space-y-3">
+                                        <h1 
+                                            className="font-bold text-[var(--color-text-primary)] leading-tight"
+                                            style={{ fontSize: deviceType === 'tablet' ? '2.5rem' : '1.5rem' }}
+                                        >
                                             {getStopTitle()}
                                         </h1>
                                         {getStopDescription() && (
-                                            <p className="text-[var(--color-text-secondary)] text-base leading-relaxed">
+                                            <p 
+                                                className="text-[var(--color-text-secondary)] leading-relaxed"
+                                                style={{ fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem' }}
+                                            >
                                                 {getStopDescription()}
                                             </p>
                                         )}
@@ -347,6 +355,7 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
                                                     block={block}
                                                     mode="view"
                                                     language={previewLanguage}
+                                                    deviceType={deviceType}
                                                 />
                                             ))}
                                         </div>
