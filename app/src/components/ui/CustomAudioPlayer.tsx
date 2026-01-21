@@ -4,11 +4,14 @@ import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward } from 'lucide-rea
 interface CustomAudioPlayerProps {
     src: string;
     title?: string;
+    size?: 'large' | 'medium' | 'small';
+    deviceType?: 'phone' | 'tablet';
     autoplay?: boolean;
     className?: string;
 }
 
-export function CustomAudioPlayer({ src, title, autoplay = false, className = '' }: CustomAudioPlayerProps) {
+export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'phone', autoplay = false, className = '' }: CustomAudioPlayerProps) {
+    const isTablet = deviceType === 'tablet';
     const audioRef = useRef<HTMLAudioElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [duration, setDuration] = useState(0);
@@ -121,6 +124,84 @@ export function CustomAudioPlayer({ src, title, autoplay = false, className = ''
         }
     };
 
+    // Small size: just play/pause button
+    if (size === 'small') {
+        return (
+            <div className={`inline-flex ${className}`}>
+                <audio ref={audioRef} src={src} preload="metadata" />
+                <button
+                    onClick={togglePlay}
+                    className={`flex items-center justify-center bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-white rounded-full shadow-md transition-all active:scale-95 ${
+                        isTablet ? 'w-14 h-14' : 'w-11 h-11'
+                    }`}
+                >
+                    {isPlaying ? (
+                        <Pause className={isTablet ? 'w-6 h-6 fill-current' : 'w-5 h-5 fill-current'} />
+                    ) : (
+                        <Play className={`${isTablet ? 'w-6 h-6' : 'w-5 h-5'} fill-current ml-0.5`} />
+                    )}
+                </button>
+            </div>
+        );
+    }
+
+    // Medium size: inline play + scrubber + time + volume
+    if (size === 'medium') {
+        return (
+            <div className={`bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl shadow-sm ${className} ${
+                isTablet ? 'p-4' : 'p-3'
+            }`}>
+                <audio ref={audioRef} src={src} preload="metadata" />
+                <div className={`flex items-center ${isTablet ? 'gap-4' : 'gap-3'}`}>
+                    <button
+                        onClick={togglePlay}
+                        className={`flex-shrink-0 flex items-center justify-center bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-hover)] text-white rounded-full shadow-sm transition-all active:scale-95 ${
+                            isTablet ? 'w-12 h-12' : 'w-9 h-9'
+                        }`}
+                    >
+                        {isPlaying ? (
+                            <Pause className={isTablet ? 'w-5 h-5 fill-current' : 'w-4 h-4 fill-current'} />
+                        ) : (
+                            <Play className={`${isTablet ? 'w-5 h-5' : 'w-4 h-4'} fill-current ml-0.5`} />
+                        )}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                        <input
+                            type="range"
+                            min="0"
+                            max={duration || 100}
+                            value={currentTime}
+                            onChange={handleSeek}
+                            onMouseDown={() => setIsDragging(true)}
+                            onMouseUp={() => setIsDragging(false)}
+                            onTouchStart={() => setIsDragging(true)}
+                            onTouchEnd={() => setIsDragging(false)}
+                            className={`w-full bg-[var(--color-bg-active)] rounded-lg appearance-none cursor-pointer accent-[var(--color-accent-primary)] ${
+                                isTablet ? 'h-1.5' : 'h-1'
+                            }`}
+                        />
+                    </div>
+                    <span className={`text-[var(--color-text-muted)] font-mono flex-shrink-0 text-right ${
+                        isTablet ? 'text-sm w-12' : 'text-xs w-10'
+                    }`}>
+                        {formatTime(currentTime)}
+                    </span>
+                    <button
+                        onClick={toggleMute}
+                        className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors flex-shrink-0"
+                    >
+                        {isMuted || volume === 0 ? (
+                            <VolumeX className={isTablet ? 'w-5 h-5' : 'w-4 h-4'} />
+                        ) : (
+                            <Volume2 className={isTablet ? 'w-5 h-5' : 'w-4 h-4'} />
+                        )}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Large size: full player with title, progress, all controls
     return (
         <div className={`bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl p-4 shadow-sm ${className}`}>
             <audio ref={audioRef} src={src} preload="metadata" />

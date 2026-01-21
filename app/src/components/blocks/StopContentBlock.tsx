@@ -96,17 +96,20 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
         const audioUrl = data.audioFiles[language] || data.audioFiles.en || '';
         const title = data.title[language] || data.title.en || 'Audio';
         const transcript = data.transcript?.[language] || data.transcript?.en;
+        const size = data.size || 'large';
+        const showTitle = data.showTitle ?? true;
         return (
-            <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4">
+            <div className="space-y-3">
                 {audioUrl ? (
                     <CustomAudioPlayer
                         src={audioUrl}
-                        title={title}
+                        title={(size === 'large' && showTitle) ? title : undefined}
+                        size={size}
+                        deviceType={deviceType}
                         autoplay={data.autoplay}
-                        className="mb-4"
                     />
                 ) : (
-                    <div className="text-[var(--color-text-muted)] text-sm mb-4">No audio file</div>
+                    <div className="text-[var(--color-text-muted)] text-sm">No audio file</div>
                 )}
                 {data.showTranscript && transcript && (
                     <div className="text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-surface)] p-3 rounded-lg max-h-32 overflow-y-auto border border-[var(--color-border-default)]">

@@ -1,5 +1,12 @@
+import { Maximize2, Minus, Circle } from 'lucide-react';
 import type { AudioBlockData } from '../../types';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
+
+const SIZE_OPTIONS: { value: AudioBlockData['size']; label: string; icon: typeof Maximize2 }[] = [
+    { value: 'large', label: 'Large', icon: Maximize2 },
+    { value: 'medium', label: 'Medium', icon: Minus },
+    { value: 'small', label: 'Small', icon: Circle },
+];
 
 interface AudioBlockEditorProps {
     data: AudioBlockData;
@@ -48,32 +55,46 @@ export function AudioBlockEditor({ data, language, onChange }: AudioBlockEditorP
                     Audio File ({language.toUpperCase()})
                 </label>
                 <div className="space-y-4">
-                    <label className="inline-block px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg cursor-pointer hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] transition-colors">
-                        Choose Audio File
-                        <input type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
-                    </label>
+                    <div>
+                        <label className="inline-block px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg cursor-pointer hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] transition-colors">
+                            Choose Audio File
+                            <input type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
+                        </label>
+                    </div>
                     {data.audioFiles[language] && (
-                        <CustomAudioPlayer
-                            src={data.audioFiles[language]!}
-                            title={data.title[language] || data.title.en}
-                            autoplay={false}
-                        />
+                        <div>
+                            <CustomAudioPlayer
+                                src={data.audioFiles[language]!}
+                                title={(data.size === 'large' && (data.showTitle ?? true)) ? (data.title[language] || data.title.en) : undefined}
+                                size={data.size || 'large'}
+                                autoplay={false}
+                            />
+                        </div>
                     )}
                 </div>
             </div>
 
-            {/* Duration */}
+            {/* Player Size */}
             <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                    Duration (seconds)
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                    Player Size
                 </label>
-                <input
-                    type="number"
-                    value={data.duration || 0}
-                    onChange={(e) => onChange({ ...data, duration: parseInt(e.target.value) || 0 })}
-                    className="w-32 px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
-                    min={0}
-                />
+                <div className="inline-flex bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg p-1 gap-1">
+                    {SIZE_OPTIONS.map(({ value, label, icon: Icon }) => (
+                        <button
+                            key={value}
+                            onClick={() => onChange({ ...data, size: value })}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                                data.size === value
+                                    ? 'bg-[var(--color-accent-primary)] text-white shadow-sm'
+                                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
+                            }`}
+                        >
+                            <Icon className="w-3.5 h-3.5" />
+                            {label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Transcript */}
@@ -94,7 +115,18 @@ export function AudioBlockEditor({ data, language, onChange }: AudioBlockEditorP
             </div>
 
             {/* Options */}
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
+                {data.size === 'large' && (
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={data.showTitle ?? true}
+                            onChange={(e) => onChange({ ...data, showTitle: e.target.checked })}
+                            className="w-4 h-4 rounded border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+                        />
+                        <span className="text-sm text-[var(--color-text-secondary)]">Show Title</span>
+                    </label>
+                )}
                 <label className="flex items-center gap-2 cursor-pointer">
                     <input
                         type="checkbox"

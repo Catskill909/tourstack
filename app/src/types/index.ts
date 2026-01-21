@@ -280,7 +280,8 @@ export interface TimelineGalleryBlockData {
 export interface AudioBlockData {
   audioFiles: { [lang: string]: string }; // Per-language audio URLs
   title: { [lang: string]: string };
-  duration: number; // Seconds
+  size: 'large' | 'medium' | 'small'; // Player size variant
+  showTitle: boolean; // Show title in large player
   transcript?: { [lang: string]: string };
   autoplay: boolean;
   showTranscript: boolean;
