@@ -9,10 +9,16 @@ Build interactive tours with QR codes, GPS, Bluetooth beacons, NFC, and more. Su
 ```bash
 cd app
 npm install
-npm run dev           # Frontend at http://localhost:5173
-npm run server        # API server at http://localhost:3000
+npm run dev:all        # Frontend (5173) + API server (3000)
+# Or run separately:
+# npm run dev          # Frontend at http://localhost:5173
+# npm run server       # API server at http://localhost:3000
 npm run db:studio     # Open database GUI
 ```
+
+Notes:
+
+- **API calls** from the frontend go to `/api/*` and are proxied by Vite to `http://localhost:3000`.
 
 ## 🎯 Key Features
 

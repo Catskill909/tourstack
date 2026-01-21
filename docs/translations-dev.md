@@ -65,6 +65,54 @@ The translation service is configured via environment variables in the server.
 | `LIBRE_TRANSLATE_URL` | URL of the LibreTranslate instance | `https://translate.supersoul.top/translate` |
 | `LIBRE_TRANSLATE_API_KEY` | API Key (if required by instance) | `TranslateThisForMe26` |
 
+### Local Development (Important)
+
+In local development, the app runs as **two processes**:
+
+- **Vite dev server**: `http://localhost:5173`
+- **Express API server**: `http://localhost:3000`
+
+Vite proxies requests so the browser can call `/api/*` without CORS issues:
+
+- `/api/*` -> `http://localhost:3000/api/*`
+- `/uploads/*` -> `http://localhost:3000/uploads/*`
+
+Recommended command:
+
+```bash
+cd app
+npm run dev:all
+```
+
+If you only run `npm run dev` (Vite) and not the API server, you will see errors like:
+
+- `Cannot POST /api/translate/extract`
+- `Failed to load resource: the server responded with a status of 404`
+
+### Self-Hosting LibreTranslate: Loaded Languages (LT_LOAD_ONLY)
+
+LibreTranslate can be configured to load only a subset of language models via `LT_LOAD_ONLY`.
+
+If a tour enables a language that LibreTranslate did not load, "Magic Translate" may fail and the UI may fall back to English.
+
+Example configuration used in production:
+
+```bash
+LT_LOAD_ONLY=en,es,fr,de,ja,it,ko,zh,pt
+```
+
+Note: more languages/models increases memory usage.
+
+### Quick Verification (Curl)
+
+You can test a LibreTranslate instance directly:
+
+```bash
+curl -X POST https://translate.supersoul.top/translate \
+  -H "Content-Type: application/json" \
+  -d '{"q":"Hello world","source":"en","target":"zh","api_key":"TranslateThisForMe26"}'
+```
+
 ### Self-Hosting LibreTranslate
 
 For production use, we recommend self-hosting LibreTranslate to avoid rate limits and costs.
@@ -85,7 +133,34 @@ docker run -d \
 
 ---
 
-## 3. Usage Guide
+## 3. Importing Text From Files (Text Block)
+
+Text blocks support importing content from documents using the server-side translation proxy.
+
+- **UI**: Text block editor -> **Import File** button
+- **Server endpoints**:
+    - `POST /api/translate/extract` (extract text)
+    - `POST /api/translate/file` (translate a document)
+
+Supported formats:
+
+- `.txt`
+- `.odt`
+- `.odp`
+- `.docx`
+- `.pptx`
+- `.epub`
+- `.html`
+- `.srt`
+- `.pdf`
+
+Notes:
+
+- Some PDFs exported from macOS apps may not contain extractable text (e.g. image-based PDFs). If import fails, test with a `.txt` file first.
+
+---
+
+## 4. Usage Guide
 
 ### Enabling Languages for a Tour
 1.  Go to Tour Settings (or set via API)
@@ -102,15 +177,24 @@ docker run -d \
     -   Click "Preview" icon
     -   Use language pill toggle in modal header to verify visitor experience
 
+
 ---
 
-## 4. Troubleshooting
+## 5. Troubleshooting
 
 **"Translation Failed" Error:**
 -   Check browser console network tab for `/api/translate` response.
 -   If `500` error: Server cannot reach LibreTranslate. Check `LIBRE_TRANSLATE_URL`.
 -   If `400` error: Invalid API key or unsupported language pair.
 -   **Mock Mode**: If `LIBRE_TRANSLATE_URL=mock`, server returns bracketed text (e.g. `[ES] Hello`) for verification.
+
+**`Cannot POST /api/translate/extract` / 404 on `/api/translate/*`:**
+- Ensure the API server is running on `http://localhost:3000`.
+- Recommended: `npm run dev:all`.
+
+**File Import JSON parse error (`Unexpected token '<' ... is not valid JSON`):**
+- This usually means the client received an HTML error page instead of JSON.
+- Check that the API server is running and the Vite proxy is pointing to port `3000`.
 
 **CORS Errors:**
 -   Ensure client calls `/api/translate` (our proxy), NOT external URLs directly.

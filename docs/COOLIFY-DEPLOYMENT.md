@@ -34,7 +34,20 @@ Volume 2: /app/data
 **Verify both are set before first deployment!**
 
 ### 3. Environment Variables
-No environment variables needed - configuration is in the Dockerfile.
+TourStack does not require environment variables for core operation (configuration is in the Dockerfile).
+
+If you are running **LibreTranslate** as a separate Coolify service, it requires environment variables for which languages to load.
+
+Example:
+
+```
+LT_LOAD_ONLY=en,es,fr,de,ja,it,ko,zh,pt
+```
+
+Notes:
+
+- Loading more languages/models increases memory usage.
+- If a language is enabled in TourStack but not loaded in LibreTranslate, translations may fail (400) and appear to fall back to English.
 
 ---
 
