@@ -1,5 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, Captions } from 'lucide-react';
+import { ClosedCaptions } from './ClosedCaptions';
+
+interface TranscriptWord {
+    word: string;
+    start: number;
+    end: number;
+    confidence: number;
+}
 
 interface CustomAudioPlayerProps {
     src: string;
@@ -8,9 +16,12 @@ interface CustomAudioPlayerProps {
     deviceType?: 'phone' | 'tablet';
     autoplay?: boolean;
     className?: string;
+    transcriptWords?: TranscriptWord[];
+    showCaptions?: boolean;
+    onCaptionsToggle?: (show: boolean) => void;
 }
 
-export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'phone', autoplay = false, className = '' }: CustomAudioPlayerProps) {
+export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'phone', autoplay = false, className = '', transcriptWords, showCaptions = false, onCaptionsToggle }: CustomAudioPlayerProps) {
     const isTablet = deviceType === 'tablet';
     const audioRef = useRef<HTMLAudioElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -20,6 +31,16 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
     const [isMuted, setIsMuted] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [isDragging, setIsDragging] = useState(false);
+    const [localShowCaptions, setLocalShowCaptions] = useState(showCaptions);
+
+    const hasCaptions = transcriptWords && transcriptWords.length > 0;
+    const captionsVisible = localShowCaptions && hasCaptions;
+
+    const toggleCaptions = () => {
+        const newValue = !localShowCaptions;
+        setLocalShowCaptions(newValue);
+        onCaptionsToggle?.(newValue);
+    };
 
     useEffect(() => {
         if (autoplay && audioRef.current) {
@@ -212,6 +233,19 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
                 </div>
             )}
 
+            {/* Closed Captions Display */}
+            {captionsVisible && transcriptWords && (
+                <div className="mb-4">
+                    <ClosedCaptions
+                        words={transcriptWords}
+                        currentTime={currentTime}
+                        isVisible={true}
+                        maxWords={10}
+                        className="bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)]"
+                    />
+                </div>
+            )}
+
             {/* Main Controls */}
             <div className="flex flex-col gap-4">
                 {/* Progress Bar */}
@@ -276,6 +310,20 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
                     </div>
 
                     <div className="flex items-center gap-2 group relative">
+                        {/* CC Toggle Button */}
+                        {hasCaptions && (
+                            <button
+                                onClick={toggleCaptions}
+                                className={`p-2 rounded-full transition-colors ${
+                                    localShowCaptions
+                                        ? 'bg-yellow-500 text-black'
+                                        : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                                }`}
+                                title={localShowCaptions ? 'Hide captions' : 'Show captions'}
+                            >
+                                <Captions className="w-5 h-5" />
+                            </button>
+                        )}
                         <button
                             onClick={toggleMute}
                             className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-2"

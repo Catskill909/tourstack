@@ -35,7 +35,7 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
         case 'timelineGallery':
             return { images: [], audioUrl: '', audioDuration: 0, crossfadeDuration: 500 } as TimelineGalleryBlockData;
         case 'audio':
-            return { audioFiles: {}, title: { en: '' }, size: 'large', showTitle: true, autoplay: false, showTranscript: false } as AudioBlockData;
+            return { audioFiles: {}, title: { en: '' }, size: 'large', showTitle: false, autoplay: false, showTranscript: false } as AudioBlockData;
         case 'positioning':
             return { method: 'qr_code', config: { method: 'qr_code', url: '', shortCode: '' } } as PositioningBlockData;
         default:

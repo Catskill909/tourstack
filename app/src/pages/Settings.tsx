@@ -33,6 +33,18 @@ const CogIcon = () => (
     </svg>
 );
 
+const MicrophoneIcon = () => (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+    </svg>
+);
+
+const LanguageIcon = () => (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+    </svg>
+);
+
 const EyeIcon = () => (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -46,7 +58,7 @@ const EyeOffIcon = () => (
     </svg>
 );
 
-type TabId = 'maps' | 'positioning' | 'general';
+type TabId = 'maps' | 'positioning' | 'transcription' | 'translation' | 'general';
 
 interface Tab {
     id: TabId;
@@ -57,6 +69,8 @@ interface Tab {
 const tabs: Tab[] = [
     { id: 'maps', label: 'Maps & Location', icon: <MapIcon /> },
     { id: 'positioning', label: 'Positioning APIs', icon: <KeyIcon /> },
+    { id: 'transcription', label: 'Transcription', icon: <MicrophoneIcon /> },
+    { id: 'translation', label: 'Translation', icon: <LanguageIcon /> },
     { id: 'general', label: 'General', icon: <CogIcon /> },
 ];
 
@@ -81,13 +95,36 @@ export function Settings() {
     const [showEstimoteKey, setShowEstimoteKey] = useState(false);
     const [showKontaktKey, setShowKontaktKey] = useState(false);
 
+    // Transcription Settings (Speech-to-Text / ASR)
+    const [deepgramApiKey, setDeepgramApiKey] = useState('');
+    const [deepgramEnabled, setDeepgramEnabled] = useState(false);
+    const [showDeepgramKey, setShowDeepgramKey] = useState(false);
+    const [whisperEnabled, setWhisperEnabled] = useState(false);
+    const [whisperEndpoint, setWhisperEndpoint] = useState('');
+    const [elevenLabsApiKey, setElevenLabsApiKey] = useState('');
+    const [elevenLabsEnabled, setElevenLabsEnabled] = useState(false);
+    const [showElevenLabsKey, setShowElevenLabsKey] = useState(false);
+    const [defaultTranscriptionProvider, setDefaultTranscriptionProvider] = useState<'deepgram' | 'whisper' | 'none'>('none');
+
+    // Translation Settings (LibreTranslate)
+    const [libreTranslateUrl, setLibreTranslateUrl] = useState('https://translate.supersoul.top/translate');
+    const [libreTranslateApiKey, setLibreTranslateApiKey] = useState('');
+    const [showLibreTranslateKey, setShowLibreTranslateKey] = useState(false);
+    const [libreTranslateEnabled, setLibreTranslateEnabled] = useState(true);
+
     // General Settings
     const [defaultLanguage, setDefaultLanguage] = useState('en');
     const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
 
     const handleSave = () => {
         // TODO: Save to database/localStorage
-        console.log('Saving settings:', { mapSettings, estimoteKey, kontaktKey, defaultLanguage, analyticsEnabled });
+        console.log('Saving settings:', { 
+            mapSettings, estimoteKey, kontaktKey, 
+            deepgramApiKey, deepgramEnabled, whisperEnabled, whisperEndpoint,
+            elevenLabsApiKey, elevenLabsEnabled, defaultTranscriptionProvider,
+            libreTranslateUrl, libreTranslateApiKey, libreTranslateEnabled,
+            defaultLanguage, analyticsEnabled 
+        });
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
     };
@@ -359,6 +396,345 @@ export function Settings() {
                         <div className="p-4 bg-[var(--color-info)]/10 rounded-lg border border-[var(--color-info)]/20">
                             <p className="text-sm text-[var(--color-info)]">
                                 💡 <strong>Tip:</strong> These APIs are optional. You can manually configure beacons without connecting to these platforms.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Transcription Tab (Speech-to-Text / ASR) */}
+                {activeTab === 'transcription' && (
+                    <div className="space-y-6">
+                        <div className="border-b border-[var(--color-border-default)] pb-4 mb-6">
+                            <h2 className="text-xl font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
+                                <MicrophoneIcon />
+                                Transcription Services
+                            </h2>
+                            <p className="text-[var(--color-text-muted)] mt-1">
+                                Configure Speech-to-Text (STT) and Audio Transcription APIs for converting audio to text
+                            </p>
+                        </div>
+
+                        {/* Deepgram */}
+                        <div className="bg-[var(--color-bg-elevated)] rounded-xl p-5">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                        DG
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-[var(--color-text-primary)]">Deepgram</h3>
+                                        <p className="text-sm text-[var(--color-text-muted)]">Enterprise ASR • Real-time transcription • High accuracy</p>
+                                    </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={deepgramEnabled}
+                                        onChange={(e) => setDeepgramEnabled(e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-[var(--color-bg-hover)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-accent-primary)]/50 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent-secondary)]"></div>
+                                </label>
+                            </div>
+                            {deepgramEnabled && (
+                                <div className="mt-4 space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                                            Deepgram API Key
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type={showDeepgramKey ? 'text' : 'password'}
+                                                value={deepgramApiKey}
+                                                onChange={(e) => setDeepgramApiKey(e.target.value)}
+                                                placeholder="Enter your Deepgram API key..."
+                                                className="w-full px-4 py-3 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent-primary)] focus:ring-1 focus:ring-[var(--color-accent-primary)] transition-all pr-12"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowDeepgramKey(!showDeepgramKey)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                                            >
+                                                {showDeepgramKey ? <EyeOffIcon /> : <EyeIcon />}
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                                            Get your API key from{' '}
+                                            <a href="https://console.deepgram.com" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-primary)] hover:underline">
+                                                Deepgram Console
+                                            </a>
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Whisper (Self-hosted) */}
+                        <div className="bg-[var(--color-bg-elevated)] rounded-xl p-5">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 rounded-xl flex items-center justify-center text-white">
+                                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-[var(--color-text-primary)]">Whisper (Self-hosted)</h3>
+                                        <p className="text-sm text-[var(--color-text-muted)]">OpenAI Whisper • whisper.cpp • Local or custom endpoint</p>
+                                    </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={whisperEnabled}
+                                        onChange={(e) => setWhisperEnabled(e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-[var(--color-bg-hover)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-accent-primary)]/50 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent-secondary)]"></div>
+                                </label>
+                            </div>
+                            {whisperEnabled && (
+                                <div className="mt-4 space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                                            Whisper API Endpoint
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={whisperEndpoint}
+                                            onChange={(e) => setWhisperEndpoint(e.target.value)}
+                                            placeholder="http://localhost:8080/inference"
+                                            className="w-full px-4 py-3 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent-primary)] focus:ring-1 focus:ring-[var(--color-accent-primary)] transition-all"
+                                        />
+                                        <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                                            Self-host using{' '}
+                                            <a href="https://github.com/ggerganov/whisper.cpp" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-primary)] hover:underline">
+                                                whisper.cpp
+                                            </a>
+                                            {' '}or any OpenAI-compatible Whisper API
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* ElevenLabs (Text-to-Speech placeholder) */}
+                        <div className="bg-[var(--color-bg-elevated)] rounded-xl p-5">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                        XI
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-[var(--color-text-primary)]">ElevenLabs</h3>
+                                        <p className="text-sm text-[var(--color-text-muted)]">Text-to-Speech • Voice cloning • Audio generation</p>
+                                    </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={elevenLabsEnabled}
+                                        onChange={(e) => setElevenLabsEnabled(e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-[var(--color-bg-hover)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-accent-primary)]/50 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent-secondary)]"></div>
+                                </label>
+                            </div>
+                            {elevenLabsEnabled && (
+                                <div className="mt-4 space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                                            ElevenLabs API Key
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type={showElevenLabsKey ? 'text' : 'password'}
+                                                value={elevenLabsApiKey}
+                                                onChange={(e) => setElevenLabsApiKey(e.target.value)}
+                                                placeholder="Enter your ElevenLabs API key..."
+                                                className="w-full px-4 py-3 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent-primary)] focus:ring-1 focus:ring-[var(--color-accent-primary)] transition-all pr-12"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowElevenLabsKey(!showElevenLabsKey)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                                            >
+                                                {showElevenLabsKey ? <EyeOffIcon /> : <EyeIcon />}
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                                            Get your API key from{' '}
+                                            <a href="https://elevenlabs.io" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-primary)] hover:underline">
+                                                ElevenLabs
+                                            </a>
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Default Transcription Provider */}
+                        <div className="bg-[var(--color-bg-elevated)] rounded-xl p-5">
+                            <h3 className="font-semibold text-[var(--color-text-primary)] mb-3">Default Transcription Provider</h3>
+                            <div className="flex gap-3 flex-wrap">
+                                <button
+                                    onClick={() => setDefaultTranscriptionProvider('deepgram')}
+                                    disabled={!deepgramEnabled || !deepgramApiKey}
+                                    className={`
+                                        flex-1 min-w-[140px] p-4 rounded-xl border-2 transition-all
+                                        ${defaultTranscriptionProvider === 'deepgram'
+                                            ? 'border-[var(--color-accent-secondary)] bg-[var(--color-accent-secondary)]/10'
+                                            : 'border-[var(--color-border-default)] hover:border-[var(--color-border-hover)]'
+                                        }
+                                        ${(!deepgramEnabled || !deepgramApiKey) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                                    `}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${defaultTranscriptionProvider === 'deepgram' ? 'border-[var(--color-accent-secondary)]' : 'border-[var(--color-text-muted)]'}`}>
+                                            {defaultTranscriptionProvider === 'deepgram' && <div className="w-2 h-2 rounded-full bg-[var(--color-accent-secondary)]" />}
+                                        </div>
+                                        <span className="font-medium text-[var(--color-text-primary)]">Deepgram</span>
+                                    </div>
+                                </button>
+                                <button
+                                    onClick={() => setDefaultTranscriptionProvider('whisper')}
+                                    disabled={!whisperEnabled || !whisperEndpoint}
+                                    className={`
+                                        flex-1 min-w-[140px] p-4 rounded-xl border-2 transition-all
+                                        ${defaultTranscriptionProvider === 'whisper'
+                                            ? 'border-[var(--color-accent-secondary)] bg-[var(--color-accent-secondary)]/10'
+                                            : 'border-[var(--color-border-default)] hover:border-[var(--color-border-hover)]'
+                                        }
+                                        ${(!whisperEnabled || !whisperEndpoint) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                                    `}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${defaultTranscriptionProvider === 'whisper' ? 'border-[var(--color-accent-secondary)]' : 'border-[var(--color-text-muted)]'}`}>
+                                            {defaultTranscriptionProvider === 'whisper' && <div className="w-2 h-2 rounded-full bg-[var(--color-accent-secondary)]" />}
+                                        </div>
+                                        <span className="font-medium text-[var(--color-text-primary)]">Whisper</span>
+                                    </div>
+                                </button>
+                                <button
+                                    onClick={() => setDefaultTranscriptionProvider('none')}
+                                    className={`
+                                        flex-1 min-w-[140px] p-4 rounded-xl border-2 transition-all cursor-pointer
+                                        ${defaultTranscriptionProvider === 'none'
+                                            ? 'border-[var(--color-text-muted)] bg-[var(--color-bg-hover)]'
+                                            : 'border-[var(--color-border-default)] hover:border-[var(--color-border-hover)]'
+                                        }
+                                    `}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${defaultTranscriptionProvider === 'none' ? 'border-[var(--color-text-muted)]' : 'border-[var(--color-text-muted)]'}`}>
+                                            {defaultTranscriptionProvider === 'none' && <div className="w-2 h-2 rounded-full bg-[var(--color-text-muted)]" />}
+                                        </div>
+                                        <span className="font-medium text-[var(--color-text-primary)]">None</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-[var(--color-info)]/10 rounded-lg border border-[var(--color-info)]/20">
+                            <p className="text-sm text-[var(--color-info)]">
+                                💡 <strong>Tip:</strong> Transcription services convert spoken audio into text. Use Deepgram for cloud-based real-time transcription, or Whisper for self-hosted/offline processing.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Translation Tab */}
+                {activeTab === 'translation' && (
+                    <div className="space-y-6">
+                        <div className="border-b border-[var(--color-border-default)] pb-4 mb-6">
+                            <h2 className="text-xl font-semibold text-[var(--color-text-primary)] flex items-center gap-2">
+                                <LanguageIcon />
+                                Translation Services
+                            </h2>
+                            <p className="text-[var(--color-text-muted)] mt-1">
+                                Configure text translation APIs for multilingual content
+                            </p>
+                        </div>
+
+                        {/* LibreTranslate */}
+                        <div className="bg-[var(--color-bg-elevated)] rounded-xl p-5">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                        LT
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-[var(--color-text-primary)]">LibreTranslate</h3>
+                                        <p className="text-sm text-[var(--color-text-muted)]">Open-source machine translation • Self-hostable</p>
+                                    </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={libreTranslateEnabled}
+                                        onChange={(e) => setLibreTranslateEnabled(e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-[var(--color-bg-hover)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-accent-primary)]/50 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent-secondary)]"></div>
+                                </label>
+                            </div>
+                            {libreTranslateEnabled && (
+                                <div className="mt-4 p-3 bg-[var(--color-success)]/10 rounded-lg border border-[var(--color-success)]/20">
+                                    <p className="text-sm text-[var(--color-success)] flex items-center gap-2">
+                                        <CheckIcon />
+                                        LibreTranslate is configured and ready for Magic Translate
+                                    </p>
+                                </div>
+                            )}
+                            <div className="mt-4 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                                        LibreTranslate URL
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={libreTranslateUrl}
+                                        onChange={(e) => setLibreTranslateUrl(e.target.value)}
+                                        placeholder="https://translate.supersoul.top/translate"
+                                        className="w-full px-4 py-3 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent-primary)] focus:ring-1 focus:ring-[var(--color-accent-primary)] transition-all"
+                                    />
+                                    <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                                        Use the community mirror or{' '}
+                                        <a href="https://github.com/LibreTranslate/LibreTranslate" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-primary)] hover:underline">
+                                            self-host LibreTranslate
+                                        </a>
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                                        API Key (if required)
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type={showLibreTranslateKey ? 'text' : 'password'}
+                                            value={libreTranslateApiKey}
+                                            onChange={(e) => setLibreTranslateApiKey(e.target.value)}
+                                            placeholder="Enter API key if required by instance..."
+                                            className="w-full px-4 py-3 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent-primary)] focus:ring-1 focus:ring-[var(--color-accent-primary)] transition-all pr-12"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowLibreTranslateKey(!showLibreTranslateKey)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                                        >
+                                            {showLibreTranslateKey ? <EyeOffIcon /> : <EyeIcon />}
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                                        Some LibreTranslate instances require an API key for authentication
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-[var(--color-info)]/10 rounded-lg border border-[var(--color-info)]/20">
+                            <p className="text-sm text-[var(--color-info)]">
+                                💡 <strong>Tip:</strong> LibreTranslate powers the "Magic Translate" feature in the Stop Editor, enabling automatic translation of tour content to multiple languages.
                             </p>
                         </div>
                     </div>

@@ -130,10 +130,14 @@ The container should now be able to create `/app/data/dev.db` as a file.
 - Coolify deployment
 
 ### Working Local Setup
+
+> [!CAUTION]
+> **ALWAYS use `npm run dev:all`** - The app requires BOTH servers!
+
 ```bash
 cd app
 npm run db:seed    # Creates dev.db and seeds templates
-npm run dev:all    # Runs Vite + Express
+npm run dev:all    # ⭐ REQUIRED: Runs Vite + Express together
 ```
 
 ### Database Path Configuration

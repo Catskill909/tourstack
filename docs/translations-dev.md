@@ -67,6 +67,10 @@ The translation service is configured via environment variables in the server.
 
 ### Local Development (Important)
 
+> [!CAUTION]
+> **ALWAYS use `npm run dev:all`** to start development!  
+> The app requires BOTH the Vite frontend AND the Express API server.
+
 In local development, the app runs as **two processes**:
 
 - **Vite dev server**: `http://localhost:5173`
@@ -77,17 +81,18 @@ Vite proxies requests so the browser can call `/api/*` without CORS issues:
 - `/api/*` -> `http://localhost:3000/api/*`
 - `/uploads/*` -> `http://localhost:3000/uploads/*`
 
-Recommended command:
+**Required command:**
 
 ```bash
 cd app
-npm run dev:all
+npm run dev:all       # ⭐ REQUIRED: Starts BOTH servers
 ```
 
-If you only run `npm run dev` (Vite) and not the API server, you will see errors like:
-
-- `Cannot POST /api/translate/extract`
-- `Failed to load resource: the server responded with a status of 404`
+> [!WARNING]
+> If you only run `npm run dev` (Vite) and not the API server, you will see errors like:
+> - `Cannot POST /api/translate/extract`
+> - `Cannot POST /api/transcribe`
+> - `Failed to load resource: the server responded with a status of 404`
 
 ### Self-Hosting LibreTranslate: Loaded Languages (LT_LOAD_ONLY)
 
@@ -198,3 +203,175 @@ Notes:
 
 **CORS Errors:**
 -   Ensure client calls `/api/translate` (our proxy), NOT external URLs directly.
+
+---
+
+## 6. AI Services Integration Groundplan
+
+TourStack is building toward a unified AI services architecture supporting **Speech-to-Text (STT)**, **Text-to-Speech (TTS)**, **Translation**, and future AI capabilities.
+
+### Terminology Reference
+
+| Term | Also Known As | Description |
+|------|---------------|-------------|
+| **Speech-to-Text (STT)** | ASR, Transcription, Voice Recognition | Converts spoken audio into written text |
+| **Text-to-Speech (TTS)** | Voice Synthesis, Audio Generation | Converts written text into spoken audio |
+| **Translation** | Machine Translation, MT | Converts text from one language to another |
+
+### Current Services
+
+| Service | Type | Status | Configuration |
+|---------|------|--------|---------------|
+| **LibreTranslate** | Translation | ✅ Implemented | Settings → Translation tab |
+| **Deepgram** | STT (ASR) | ✅ Implemented | Settings → Transcription tab |
+| **Whisper** | STT (ASR) | 🚧 UI Ready | Settings → Transcription tab |
+| **ElevenLabs** | TTS | 🚧 UI Ready | Settings → Transcription tab |
+
+### Architecture: Provider Abstraction Pattern
+
+To support multiple services for the same capability, TourStack uses a **Provider Pattern**:
+
+```typescript
+// Example: Transcription Provider Interface
+interface TranscriptionProvider {
+  name: string;
+  transcribe(audio: Blob, options?: TranscriptionOptions): Promise<TranscriptionResult>;
+  isConfigured(): boolean;
+}
+
+// Implementations
+class DeepgramProvider implements TranscriptionProvider { ... }
+class WhisperProvider implements TranscriptionProvider { ... }
+
+// Factory
+function getTranscriptionProvider(name: 'deepgram' | 'whisper'): TranscriptionProvider;
+```
+
+### Phase 1: Deepgram Integration (STT)
+
+**Goal**: Enable audio blocks to transcribe spoken content into text.
+
+**Implementation Steps**:
+
+1. **Server Proxy Route** (`server/routes/transcribe.ts`)
+   - `POST /api/transcribe` - Proxy to Deepgram API
+   - Inject API key server-side (never expose to client)
+   - Handle audio file uploads (multipart/form-data)
+
+2. **Transcription Service** (`src/services/transcriptionService.ts`)
+   ```typescript
+   export async function transcribeAudio(
+     audioBlob: Blob, 
+     options?: { language?: string; model?: string }
+   ): Promise<{ text: string; confidence: number; words?: Word[] }>;
+   ```
+
+3. **Audio Block Integration**
+   - Add "Transcribe" button to Audio blocks
+   - Auto-populate Text block with transcription
+   - Support word-level timestamps for sync
+
+4. **Environment Variables**:
+   ```bash
+   DEEPGRAM_API_KEY=your_api_key_here
+   DEEPGRAM_MODEL=nova-2  # or whisper, enhanced, etc.
+   ```
+
+### Phase 2: Whisper Integration (Self-hosted STT)
+
+**Goal**: Provide offline/self-hosted transcription option.
+
+**Implementation**:
+- Same `TranscriptionProvider` interface
+- Configurable endpoint URL (whisper.cpp server, faster-whisper, etc.)
+- Useful for: air-gapped deployments, cost reduction, privacy
+
+**Docker Deployment**:
+```bash
+docker run -d -p 8080:8080 onerahmet/openai-whisper-asr-webservice
+```
+
+### Phase 3: ElevenLabs Integration (TTS)
+
+**Goal**: Generate audio narration from text content.
+
+**Use Cases**:
+- Auto-generate audio guides from Text blocks
+- Create multilingual audio from translated content
+- Voice cloning for consistent narrator
+
+**Implementation Steps**:
+
+1. **Server Proxy Route** (`server/routes/tts.ts`)
+   - `POST /api/tts/generate` - Generate speech from text
+   - `GET /api/tts/voices` - List available voices
+
+2. **TTS Service** (`src/services/ttsService.ts`)
+   ```typescript
+   export async function generateSpeech(
+     text: string,
+     options?: { voice?: string; language?: string }
+   ): Promise<Blob>;
+   ```
+
+3. **Text Block Integration**
+   - Add "Generate Audio" button to Text blocks
+   - Creates linked Audio block with generated speech
+
+### Phase 4: Future Services
+
+| Service | Type | Potential Use |
+|---------|------|---------------|
+| **OpenAI Whisper API** | STT | Cloud-based alternative |
+| **Google Cloud STT** | STT | Enterprise accuracy |
+| **Amazon Polly** | TTS | AWS ecosystem |
+| **Azure Cognitive** | STT/TTS | Microsoft ecosystem |
+| **Coqui TTS** | TTS | Self-hosted open-source |
+
+### Settings Storage
+
+API keys and configuration are stored:
+- **Development**: Environment variables (`.env`)
+- **Production**: Database `AppSettings` table (encrypted)
+- **UI**: Settings page (Transcription & Translation tabs)
+
+### Security Considerations
+
+1. **Never expose API keys to client** - All external API calls go through server proxy
+2. **Encrypt stored keys** - Use encryption at rest for database-stored keys
+3. **Rate limiting** - Implement per-user/per-tour rate limits
+4. **Audit logging** - Track API usage for billing and abuse detection
+
+### Block Integration Workflow
+
+```mermaid
+graph TD
+    A[Audio Block] -->|Upload audio| B[Transcribe Button]
+    B -->|POST /api/transcribe| C[Server Proxy]
+    C -->|Deepgram/Whisper| D[Transcription Result]
+    D -->|Create| E[Text Block with transcript]
+    
+    F[Text Block] -->|Click Generate Audio| G[TTS Button]
+    G -->|POST /api/tts/generate| H[Server Proxy]
+    H -->|ElevenLabs| I[Audio File]
+    I -->|Create| J[Audio Block with narration]
+    
+    E -->|Magic Translate| K[Translated Text Blocks]
+    K -->|Generate Audio| L[Multilingual Audio Blocks]
+```
+
+### Development Checklist
+
+- [x] Settings UI for Transcription services (Deepgram, Whisper, ElevenLabs)
+- [x] Settings UI for Translation services (LibreTranslate)
+- [x] Server proxy route for Deepgram (`/api/transcribe`) ✅ Jan 21, 2026
+- [x] `transcriptionService.ts` with provider pattern ✅ Jan 21, 2026
+- [x] Audio block "Transcribe with AI" button ✅ Jan 21, 2026
+- [x] Timeline Gallery "Transcribe" button ✅ Jan 21, 2026
+- [x] Closed Captions component with word-level timestamps ✅ Jan 21, 2026
+- [x] CC toggle in Timeline Gallery Editor and Preview ✅ Jan 21, 2026
+- [ ] Server proxy route for TTS (`/api/tts`)
+- [ ] `ttsService.ts` with provider pattern  
+- [ ] Text block "Generate Audio" button
+- [ ] Settings persistence to database
+- [ ] Integration tests for each provider

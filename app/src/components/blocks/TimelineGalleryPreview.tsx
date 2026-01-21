@@ -1,13 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Images, Loader } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Images, Loader, Captions } from 'lucide-react';
 import type { TimelineGalleryBlockData, TransitionType } from '../../types';
+import { ClosedCaptions } from '../ui/ClosedCaptions';
 
 interface TimelineGalleryPreviewProps {
     data: TimelineGalleryBlockData;
     language: string;
+    deviceType?: 'phone' | 'tablet';
 }
 
-export function TimelineGalleryPreview({ data, language }: TimelineGalleryPreviewProps) {
+export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }: TimelineGalleryPreviewProps) {
+    const isPhone = deviceType === 'phone';
     const [currentIndex, setCurrentIndex] = useState(0);
     const [previousIndex, setPreviousIndex] = useState(0);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -16,6 +19,7 @@ export function TimelineGalleryPreview({ data, language }: TimelineGalleryPrevie
     const [isMuted, setIsMuted] = useState(false);
     const [imagesLoaded, setImagesLoaded] = useState(false);
     const [loadedCount, setLoadedCount] = useState(0);
+    const [showCaptions, setShowCaptions] = useState(data.showCaptions ?? false);
 
     const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -206,7 +210,33 @@ export function TimelineGalleryPreview({ data, language }: TimelineGalleryPrevie
                         />
                     )}
                 </div>
+
+                {/* Closed Captions Overlay - tablet only (overlay on image) */}
+                {!isPhone && showCaptions && data.transcriptWords && data.transcriptWords.length > 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 pb-3 px-4 z-30">
+                        <ClosedCaptions
+                            words={data.transcriptWords}
+                            currentTime={currentTime}
+                            isVisible={true}
+                            maxWords={12}
+                        />
+                    </div>
+                )}
             </div>
+
+            {/* Closed Captions - phone only (below image, smaller text) */}
+            {isPhone && showCaptions && data.transcriptWords && data.transcriptWords.length > 0 && (
+                <div className="px-3 py-2 bg-[var(--color-bg-elevated)] border-b border-[var(--color-border-default)]">
+                    <ClosedCaptions
+                        words={data.transcriptWords}
+                        currentTime={currentTime}
+                        isVisible={true}
+                        maxWords={12}
+                        size="small"
+                        className="bg-transparent"
+                    />
+                </div>
+            )}
 
             {/* Caption and Credit */}
             <div className="p-4 bg-gradient-to-r from-[var(--color-bg-elevated)] to-[var(--color-bg-surface)] border-b border-[var(--color-border-default)]">
@@ -271,6 +301,21 @@ export function TimelineGalleryPreview({ data, language }: TimelineGalleryPrevie
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* CC Toggle Button */}
+                        {data.transcriptWords && data.transcriptWords.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => setShowCaptions(!showCaptions)}
+                                className={`p-2 rounded-full transition-colors ${
+                                    showCaptions
+                                        ? 'bg-yellow-500 text-black'
+                                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
+                                }`}
+                                title={showCaptions ? 'Hide captions' : 'Show captions'}
+                            >
+                                <Captions className="w-5 h-5" />
+                            </button>
+                        )}
                         <button
                             type="button"
                             onClick={() => { if (audioRef.current) { audioRef.current.muted = !isMuted; setIsMuted(!isMuted); } }}

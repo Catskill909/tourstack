@@ -275,6 +275,15 @@ export interface TimelineGalleryBlockData {
   audioDuration: number;                // Total duration in seconds
   crossfadeDuration?: number;           // Crossfade duration in ms (default 500)
   transitionType?: TransitionType;      // Transition effect (default 'fade')
+  // Closed Captions / Transcript
+  transcript?: { [lang: string]: string };  // Full transcript text
+  transcriptWords?: Array<{             // Word-level timestamps from Deepgram
+    word: string;
+    start: number;
+    end: number;
+    confidence: number;
+  }>;
+  showCaptions?: boolean;               // Display CC overlay during playback
 }
 
 export interface AudioBlockData {
@@ -283,8 +292,15 @@ export interface AudioBlockData {
   size: 'large' | 'medium' | 'small'; // Player size variant
   showTitle: boolean; // Show title in large player
   transcript?: { [lang: string]: string };
+  transcriptWords?: Array<{             // Word-level timestamps from Deepgram
+    word: string;
+    start: number;
+    end: number;
+    confidence: number;
+  }>;
   autoplay: boolean;
   showTranscript: boolean;
+  showCaptions?: boolean;               // Display CC during playback
 }
 
 export interface VideoBlockData {

@@ -89,7 +89,7 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
     }
 
     function renderTimelineGalleryBlock(data: TimelineGalleryBlockData) {
-        return <TimelineGalleryPreview data={data} language={language} />;
+        return <TimelineGalleryPreview data={data} language={language} deviceType={deviceType} />;
     }
 
     function renderAudioBlock(data: AudioBlockData) {
@@ -107,6 +107,8 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                         size={size}
                         deviceType={deviceType}
                         autoplay={data.autoplay}
+                        transcriptWords={data.transcriptWords}
+                        showCaptions={data.showCaptions}
                     />
                 ) : (
                     <div className="text-[var(--color-text-muted)] text-sm">No audio file</div>

@@ -5,6 +5,12 @@ Transform the audio-synced image gallery into a powerful, cinematic storytelling
 
 ---
 
+> [!CAUTION]
+> **Local Development**: ALWAYS use `npm run dev:all` to start both Vite + Express servers!  
+> Running only `npm run dev` will cause API errors like `Cannot POST /api/...`
+
+---
+
 ## 🚦 Implementation Status
 
 ### ✅ Completed - Production Ready
@@ -35,11 +41,17 @@ Transform the audio-synced image gallery into a powerful, cinematic storytelling
 - [x] **Delete in modal** - cleaner UX
 - [x] **Drag vs click detection** - `hasDraggedRef` prevents false clicks
 
+### ✅ Phase 4 - Transcription & Closed Captions (Jan 21, 2026)
+- [x] **Transcribe button** in Timeline Gallery Editor header
+- [x] **Deepgram integration** for word-level timestamps
+- [x] **ClosedCaptions component** with real-time word highlighting
+- [x] **CC toggle** in Editor and Preview player
+- [x] Word-level sync - current word highlighted in yellow
+
 ### 📋 Next Phase
 - [ ] Ken Burns Effect (Pan & Zoom) Editor
 - [ ] Slide Left/Right transitions (using Framer Motion variants)
-- [ ] Zoom transitions  
-- [ ] Closed Captioning editor
+- [ ] Zoom transitions
 
 ---
 

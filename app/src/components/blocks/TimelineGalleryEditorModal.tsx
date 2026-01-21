@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X, Music, Images, Clock, Sliders, Trash2 } from 'lucide-react';
+import { X, Music, Images, Clock, Sliders, Trash2, Mic, Loader2, Captions } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AudioWaveform } from './AudioWaveform';
 import type { TimelineGalleryBlockData, TransitionType } from '../../types';
+import { transcribeAudio } from '../../services/transcriptionService';
+import { ClosedCaptions } from '../ui/ClosedCaptions';
 
 interface TimelineGalleryImage {
     id: string;
@@ -34,6 +36,8 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
     const [currentTime, setCurrentTime] = useState(0);
     const [previewIndex, setPreviewIndex] = useState(0);
     const [editingImage, setEditingImage] = useState<TimelineGalleryImage | null>(null);
+    const [isTranscribing, setIsTranscribing] = useState(false);
+    const [transcribeError, setTranscribeError] = useState<string | null>(null);
 
     const audioDuration = data.audioDuration || 0;
 
@@ -216,6 +220,39 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
         });
     }
 
+    // Handle audio transcription with Deepgram
+    async function handleTranscribe() {
+        if (!data.audioUrl) return;
+
+        setIsTranscribing(true);
+        setTranscribeError(null);
+
+        try {
+            // Fetch the audio file
+            const response = await fetch(data.audioUrl);
+            const audioBlob = await response.blob();
+
+            // Transcribe using Deepgram
+            const result = await transcribeAudio(audioBlob, {
+                provider: 'deepgram',
+                language: language === 'en' ? 'en' : language,
+            });
+
+            // Update with transcript and word-level timestamps
+            onChange({
+                ...data,
+                transcript: { ...data.transcript, [language]: result.text },
+                transcriptWords: result.words,
+                showCaptions: true,
+            });
+        } catch (error) {
+            console.error('Transcription error:', error);
+            setTranscribeError(error instanceof Error ? error.message : 'Transcription failed');
+        } finally {
+            setIsTranscribing(false);
+        }
+    }
+
     return (
         <div
             className="fixed inset-0 z-[100] flex flex-col"
@@ -271,6 +308,47 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                     {/* Divider */}
                     <div className="h-6 w-px bg-white/10" />
 
+                    {/* Transcribe Button */}
+                    {data.audioUrl && (
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleTranscribe}
+                                disabled={isTranscribing}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                {isTranscribing ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Transcribing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Mic className="w-4 h-4" />
+                                        {data.transcript?.[language] ? 'Re-transcribe' : 'Transcribe'}
+                                    </>
+                                )}
+                            </button>
+                            {transcribeError && (
+                                <span className="text-xs text-red-400">{transcribeError}</span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* CC Toggle */}
+                    {data.transcript?.[language] && (
+                        <button
+                            onClick={() => onChange({ ...data, showCaptions: !data.showCaptions })}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                                data.showCaptions
+                                    ? 'bg-yellow-500 text-black'
+                                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
+                            }`}
+                        >
+                            <Captions className="w-4 h-4" />
+                            CC
+                        </button>
+                    )}
+
                     {/* Image count */}
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-sm">
                         <Images className="w-4 h-4 text-gray-400" />
@@ -324,8 +402,19 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                                 <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-black/60 text-white text-xs font-medium">
                                     {previewIndex + 1} / {images.length}
                                 </div>
-                                {/* Caption */}
-                                {currentImage.caption[language] && (
+                                {/* Closed Captions - aligned to bottom of image */}
+                                {data.showCaptions && data.transcriptWords && data.transcriptWords.length > 0 && (
+                                    <div className="absolute bottom-0 left-0 right-0 pb-3 px-4">
+                                        <ClosedCaptions
+                                            words={data.transcriptWords}
+                                            currentTime={currentTime}
+                                            isVisible={true}
+                                            maxWords={10}
+                                        />
+                                    </div>
+                                )}
+                                {/* Caption (show if no CC or CC disabled) */}
+                                {(!data.showCaptions || !data.transcriptWords) && currentImage.caption[language] && (
                                     <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent rounded-b-lg">
                                         <p className="text-white text-sm">{currentImage.caption[language]}</p>
                                     </div>

@@ -10,6 +10,7 @@ import stopsRouter from './routes/stops.js';
 import templatesRouter from './routes/templates.js';
 import mediaRouter from './routes/media.js';
 import translateRouter from './routes/translate.js';
+import transcribeRouter from './routes/transcribe.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,6 +31,7 @@ app.use('/api/stops', stopsRouter);
 app.use('/api/templates', templatesRouter);
 app.use('/api/media', mediaRouter);
 app.use('/api/translate', translateRouter);
+app.use('/api/transcribe', transcribeRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

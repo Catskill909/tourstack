@@ -127,12 +127,18 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 ## 🔧 Commands
 
+> [!CAUTION]
+> **ALWAYS use `npm run dev:all`** to start development!  
+> Running only `npm run dev` (Vite) will cause API errors like `Cannot POST /api/...`  
+> The app requires BOTH the Vite frontend AND the Express API server.
+
 ```bash
 cd app
 npm install           # Install dependencies
-npm run dev           # Start Vite dev server (localhost:5173)
-npm run server        # Start Express API (localhost:3000)
-npm run dev:all       # Run both concurrently
+npm run dev:all       # ⭐ REQUIRED: Run both Vite + Express concurrently
+# Individual commands (for debugging only):
+# npm run dev         # Vite dev server only (localhost:5173)
+# npm run server      # Express API only (localhost:3000)
 ```
 
 ---

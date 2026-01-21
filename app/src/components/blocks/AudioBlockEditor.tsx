@@ -1,6 +1,8 @@
-import { Maximize2, Minus, Circle } from 'lucide-react';
+import { useState } from 'react';
+import { Maximize2, Minus, Circle, Mic, Loader2 } from 'lucide-react';
 import type { AudioBlockData } from '../../types';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
+import { transcribeAudio } from '../../services/transcriptionService';
 
 const SIZE_OPTIONS: { value: AudioBlockData['size']; label: string; icon: typeof Maximize2 }[] = [
     { value: 'large', label: 'Large', icon: Maximize2 },
@@ -15,6 +17,43 @@ interface AudioBlockEditorProps {
 }
 
 export function AudioBlockEditor({ data, language, onChange }: AudioBlockEditorProps) {
+    const [isTranscribing, setIsTranscribing] = useState(false);
+    const [transcribeError, setTranscribeError] = useState<string | null>(null);
+
+    async function handleTranscribe() {
+        const audioUrl = data.audioFiles[language];
+        if (!audioUrl) return;
+
+        setIsTranscribing(true);
+        setTranscribeError(null);
+
+        try {
+            // Fetch the audio file
+            const response = await fetch(audioUrl);
+            const audioBlob = await response.blob();
+
+            // Transcribe using Deepgram
+            const result = await transcribeAudio(audioBlob, {
+                provider: 'deepgram',
+                language: language === 'en' ? 'en' : language,
+            });
+
+            // Update transcript with result and word timestamps
+            onChange({
+                ...data,
+                transcript: { ...data.transcript, [language]: result.text },
+                transcriptWords: result.words,
+                showTranscript: true,
+                showCaptions: true,
+            });
+        } catch (error) {
+            console.error('Transcription error:', error);
+            setTranscribeError(error instanceof Error ? error.message : 'Transcription failed');
+        } finally {
+            setIsTranscribing(false);
+        }
+    }
+
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
         if (file) {
@@ -68,6 +107,9 @@ export function AudioBlockEditor({ data, language, onChange }: AudioBlockEditorP
                                 title={(data.size === 'large' && (data.showTitle ?? true)) ? (data.title[language] || data.title.en) : undefined}
                                 size={data.size || 'large'}
                                 autoplay={false}
+                                transcriptWords={data.transcriptWords}
+                                showCaptions={data.showCaptions}
+                                onCaptionsToggle={(show) => onChange({ ...data, showCaptions: show })}
                             />
                         </div>
                     )}
@@ -99,9 +141,35 @@ export function AudioBlockEditor({ data, language, onChange }: AudioBlockEditorP
 
             {/* Transcript */}
             <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                    Transcript ({language.toUpperCase()}) <span className="text-[var(--color-text-muted)] font-normal">Optional</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
+                        Transcript ({language.toUpperCase()}) <span className="text-[var(--color-text-muted)] font-normal">Optional</span>
+                    </label>
+                    {data.audioFiles[language] && (
+                        <button
+                            onClick={handleTranscribe}
+                            disabled={isTranscribing}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            {isTranscribing ? (
+                                <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    Transcribing...
+                                </>
+                            ) : (
+                                <>
+                                    <Mic className="w-3.5 h-3.5" />
+                                    Transcribe with AI
+                                </>
+                            )}
+                        </button>
+                    )}
+                </div>
+                {transcribeError && (
+                    <div className="mb-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
+                        {transcribeError}
+                    </div>
+                )}
                 <textarea
                     value={data.transcript?.[language] || data.transcript?.en || ''}
                     onChange={(e) => onChange({

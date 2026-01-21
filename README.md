@@ -6,19 +6,21 @@ Build interactive tours with QR codes, GPS, Bluetooth beacons, NFC, and more. Su
 
 ## 🚀 Quick Start
 
+> [!CAUTION]
+> **ALWAYS use `npm run dev:all`** - The app requires BOTH servers!
+
 ```bash
 cd app
 npm install
-npm run dev:all        # Frontend (5173) + API server (3000)
-# Or run separately:
-# npm run dev          # Frontend at http://localhost:5173
-# npm run server       # API server at http://localhost:3000
-npm run db:studio     # Open database GUI
+npm run dev:all        # ⭐ REQUIRED: Frontend (5173) + API server (3000)
+npm run db:studio      # Open database GUI
 ```
 
-Notes:
+> [!WARNING]
+> Running only `npm run dev` will cause errors like `Cannot POST /api/translate`  
+> The Express API server (port 3000) must be running for any `/api/*` calls to work.
 
-- **API calls** from the frontend go to `/api/*` and are proxied by Vite to `http://localhost:3000`.
+**Architecture**: Vite proxies `/api/*` requests to `http://localhost:3000` (Express).
 
 ## 🎯 Key Features
 
@@ -77,16 +79,19 @@ TourStack/
 
 ## 🔧 Commands
 
+> [!CAUTION]
+> **ALWAYS use `npm run dev:all`** for local development!
+
 ```bash
 cd app
 npm install           # Install dependencies
-npm run dev           # Start Vite dev server (localhost:5173)
-npm run server        # Start Express API server (localhost:3000)
-npm run dev:all       # Run both Vite + Express concurrently
+npm run dev:all       # ⭐ REQUIRED: Run both Vite + Express
 npm run build         # Build for production
-npm run db:migrate    # Run database migrations
 npm run db:seed       # Seed templates
 npm run db:studio     # Open Prisma Studio
+# Debug only (not for normal development):
+# npm run dev         # Vite only - API calls will FAIL
+# npm run server      # Express only - no frontend
 ```
 
 ## 🚀 Deployment (Coolify)
