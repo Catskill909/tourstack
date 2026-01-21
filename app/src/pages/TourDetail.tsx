@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, ChevronUp, ChevronDown, Pencil, Settings } from 'lucide-react';
+import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, Pencil, Settings, Check, X, Languages, Loader2 } from 'lucide-react';
+import { translateWithLibre } from '../services/translationService';
 import { useToursStore } from '../stores/useToursStore';
 import { StopEditor } from '../components/StopEditor';
 import { QRCodeEditorModal } from '../components/QRCodeEditorModal';
@@ -97,6 +98,16 @@ export function TourDetail() {
     const [newStopTitle, setNewStopTitle] = useState('');
     const [showQRModal, setShowQRModal] = useState<string | null>(null);
     const [editingStop, setEditingStop] = useState<Stop | null>(null);
+    
+    // Drag and drop state
+    const [draggedStopId, setDraggedStopId] = useState<string | null>(null);
+    const [dragOverStopId, setDragOverStopId] = useState<string | null>(null);
+    
+    // Inline title editing state
+    const [editingTitleStopId, setEditingTitleStopId] = useState<string | null>(null);
+    const [editingTitleValue, setEditingTitleValue] = useState<{ [lang: string]: string }>({});
+    const [isTranslatingTitle, setIsTranslatingTitle] = useState(false);
+    const titleInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         fetchTours();
@@ -174,25 +185,6 @@ export function TourDetail() {
         setIsSaving(false);
     }
 
-    async function handleMoveStop(stopId: string, direction: 'up' | 'down') {
-        if (!tour) return;
-        const idx = stops.findIndex(s => s.id === stopId);
-        if (idx === -1) return;
-        if (direction === 'up' && idx === 0) return;
-        if (direction === 'down' && idx === stops.length - 1) return;
-
-        const newStops = [...stops];
-        const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-        [newStops[idx], newStops[swapIdx]] = [newStops[swapIdx], newStops[idx]];
-
-        // Optimistic update
-        setStops(newStops);
-
-        // Save to database
-        const stopIds = newStops.map(s => s.id);
-        await reorderStopsAPI(tour.id, stopIds);
-    }
-
     function handleEditStop(stop: Stop) {
         setEditingStop(stop);
     }
@@ -225,6 +217,139 @@ export function TourDetail() {
         await updateTour(id, data);
         setTour(prev => prev ? { ...prev, ...data } : null);
         setShowEditTour(false);
+    }
+
+    // ============================================
+    // DRAG AND DROP HANDLERS
+    // ============================================
+    
+    function handleDragStart(e: React.DragEvent, stopId: string) {
+        setDraggedStopId(stopId);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', stopId);
+        // Add visual feedback
+        if (e.currentTarget instanceof HTMLElement) {
+            e.currentTarget.style.opacity = '0.5';
+        }
+    }
+
+    function handleDragEnd(e: React.DragEvent) {
+        setDraggedStopId(null);
+        setDragOverStopId(null);
+        if (e.currentTarget instanceof HTMLElement) {
+            e.currentTarget.style.opacity = '1';
+        }
+    }
+
+    function handleDragOver(e: React.DragEvent, stopId: string) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (stopId !== draggedStopId) {
+            setDragOverStopId(stopId);
+        }
+    }
+
+    function handleDragLeave() {
+        setDragOverStopId(null);
+    }
+
+    async function handleDrop(e: React.DragEvent, targetStopId: string) {
+        e.preventDefault();
+        setDragOverStopId(null);
+        
+        if (!draggedStopId || !tour || draggedStopId === targetStopId) return;
+
+        const draggedIdx = stops.findIndex(s => s.id === draggedStopId);
+        const targetIdx = stops.findIndex(s => s.id === targetStopId);
+        
+        if (draggedIdx === -1 || targetIdx === -1) return;
+
+        // Reorder array
+        const newStops = [...stops];
+        const [removed] = newStops.splice(draggedIdx, 1);
+        newStops.splice(targetIdx, 0, removed);
+
+        // Optimistic update
+        setStops(newStops);
+        setDraggedStopId(null);
+
+        // Save to database
+        const stopIds = newStops.map(s => s.id);
+        await reorderStopsAPI(tour.id, stopIds);
+    }
+
+    // ============================================
+    // INLINE TITLE EDITING
+    // ============================================
+
+    function startEditingTitle(stop: Stop) {
+        const titleObj = typeof stop.title === 'object' ? stop.title : { en: String(stop.title) };
+        setEditingTitleValue(titleObj);
+        setEditingTitleStopId(stop.id);
+        // Focus input after render
+        setTimeout(() => titleInputRef.current?.focus(), 50);
+    }
+
+    function cancelEditingTitle() {
+        setEditingTitleStopId(null);
+        setEditingTitleValue({});
+    }
+
+    async function saveEditingTitle() {
+        if (!editingTitleStopId || !tour) return;
+        
+        const stop = stops.find(s => s.id === editingTitleStopId);
+        if (!stop) return;
+
+        setIsSaving(true);
+        const updatedStop = {
+            ...stop,
+            title: editingTitleValue,
+        };
+
+        const saved = await updateStopAPI(updatedStop);
+        if (saved) {
+            setStops(stops.map(s => s.id === saved.id ? saved : s));
+        }
+        
+        setEditingTitleStopId(null);
+        setEditingTitleValue({});
+        setIsSaving(false);
+    }
+
+    async function translateStopTitle() {
+        if (!editingTitleStopId || !tour) return;
+        
+        const primaryLang = tour.primaryLanguage || 'en';
+        const sourceText = editingTitleValue[primaryLang] || editingTitleValue['en'] || Object.values(editingTitleValue)[0];
+        
+        if (!sourceText?.trim()) return;
+
+        setIsTranslatingTitle(true);
+        const newTitleObj = { ...editingTitleValue };
+
+        // Translate to all tour languages
+        for (const lang of (tour.languages || ['en'])) {
+            if (lang === primaryLang) continue;
+            try {
+                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                newTitleObj[lang] = translated;
+            } catch (error) {
+                console.error(`Failed to translate title to ${lang}:`, error);
+            }
+        }
+
+        setEditingTitleValue(newTitleObj);
+        setIsTranslatingTitle(false);
+    }
+
+    function handleTitleKeyDown(e: React.KeyboardEvent) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveEditingTitle();
+        } else if (e.key === 'Escape') {
+            cancelEditingTitle();
+        }
     }
 
     if (isLoading) {
@@ -297,11 +422,23 @@ export function TourDetail() {
                     stops.map((stop, index) => (
                         <div
                             key={stop.id}
-                            className="flex items-center gap-4 p-4 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl hover:border-[var(--color-accent-primary)]/50 transition-colors group"
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, stop.id)}
+                            onDragEnd={handleDragEnd}
+                            onDragOver={(e) => handleDragOver(e, stop.id)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={(e) => handleDrop(e, stop.id)}
+                            className={`flex items-center gap-4 p-4 bg-[var(--color-bg-elevated)] border rounded-xl transition-all group ${
+                                dragOverStopId === stop.id
+                                    ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/5 scale-[1.02]'
+                                    : draggedStopId === stop.id
+                                    ? 'border-[var(--color-accent-primary)]/50 opacity-50'
+                                    : 'border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50'
+                            }`}
                         >
                             {/* Drag Handle & Order */}
                             <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
-                                <GripVertical className="w-5 h-5 cursor-grab" />
+                                <GripVertical className="w-5 h-5 cursor-grab active:cursor-grabbing" />
                                 <span className="w-6 h-6 flex items-center justify-center text-sm font-medium bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-full">
                                     {index + 1}
                                 </span>
@@ -309,7 +446,65 @@ export function TourDetail() {
 
                             {/* Stop Info */}
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-medium text-[var(--color-text-primary)] truncate">{getStopTitle(stop)}</h3>
+                                {editingTitleStopId === stop.id ? (
+                                    /* Edit mode - shown when pencil is clicked */
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            ref={titleInputRef}
+                                            type="text"
+                                            value={editingTitleValue[tour?.primaryLanguage || 'en'] || editingTitleValue['en'] || ''}
+                                            onChange={(e) => setEditingTitleValue({
+                                                ...editingTitleValue,
+                                                [tour?.primaryLanguage || 'en']: e.target.value
+                                            })}
+                                            onKeyDown={handleTitleKeyDown}
+                                            className="flex-1 px-2 py-1 bg-[var(--color-bg-surface)] border border-[var(--color-accent-primary)] rounded text-[var(--color-text-primary)] focus:outline-none text-sm font-medium"
+                                            placeholder="Stop title..."
+                                        />
+                                        {(tour?.languages?.length || 0) > 1 && (
+                                            <button
+                                                onClick={translateStopTitle}
+                                                disabled={isTranslatingTitle}
+                                                className="p-1.5 hover:bg-[var(--color-accent-primary)]/10 rounded text-[var(--color-accent-primary)] disabled:opacity-50"
+                                                title="Translate to all languages"
+                                            >
+                                                {isTranslatingTitle ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <Languages className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={saveEditingTitle}
+                                            className="p-1.5 hover:bg-green-500/10 rounded text-green-500"
+                                            title="Save (Enter)"
+                                        >
+                                            <Check className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={cancelEditingTitle}
+                                            className="p-1.5 hover:bg-red-500/10 rounded text-red-400"
+                                            title="Cancel (Esc)"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    /* Display mode - plain text with visible pencil icon */
+                                    <div className="flex items-center gap-2">
+                                        <h3 className="font-medium text-[var(--color-text-primary)] truncate">
+                                            {getStopTitle(stop)}
+                                        </h3>
+                                        <button
+                                            onClick={() => startEditingTitle(stop)}
+                                            className="p-1 hover:bg-[var(--color-bg-hover)] rounded text-[var(--color-text-muted)] hover:text-[var(--color-accent-primary)]"
+                                            title="Edit title"
+                                        >
+                                            <Pencil className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                )}
                                 <p className="text-sm text-[var(--color-text-muted)] truncate">
                                     {stop.type} • {stop.primaryPositioning.method.replace('_', ' ')}
                                 </p>
@@ -317,22 +512,6 @@ export function TourDetail() {
 
                             {/* Actions */}
                             <div className="flex items-center gap-1">
-                                <button
-                                    onClick={() => handleMoveStop(stop.id, 'up')}
-                                    disabled={index === 0}
-                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)] disabled:opacity-30"
-                                    title="Move up"
-                                >
-                                    <ChevronUp className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => handleMoveStop(stop.id, 'down')}
-                                    disabled={index === stops.length - 1}
-                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)] disabled:opacity-30"
-                                    title="Move down"
-                                >
-                                    <ChevronDown className="w-4 h-4" />
-                                </button>
                                 <button
                                     onClick={() => setShowQRModal(stop.id)}
                                     className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)]"
@@ -343,7 +522,7 @@ export function TourDetail() {
                                 <button
                                     onClick={() => handleEditStop(stop)}
                                     className="p-2 hover:bg-[var(--color-accent-primary)]/10 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-accent-primary)]"
-                                    title="Edit"
+                                    title="Edit Stop Content"
                                 >
                                     <Pencil className="w-4 h-4" />
                                 </button>

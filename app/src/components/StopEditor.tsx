@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle, Maximize2, Music } from 'lucide-react';
+import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle, Maximize2, Music, Languages, Loader2 } from 'lucide-react';
 import { BLOCK_ICONS, BLOCK_LABELS } from './blocks/StopContentBlock';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import { translateWithLibre } from '../services/translationService';
 import { TextBlockEditor } from './blocks/TextBlockEditor';
 import { ImageBlockEditor } from './blocks/ImageBlockEditor';
 import { AudioBlockEditor } from './blocks/AudioBlockEditor';
@@ -56,22 +58,56 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
     const [showTimelineEditorId, setShowTimelineEditorId] = useState<string | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+    const [activeTitleLang, setActiveTitleLang] = useState(availableLanguages[0] || 'en');
+    const [isTranslatingTitle, setIsTranslatingTitle] = useState(false);
     const language = availableLanguages[0] || 'en'; // Primary language for editing
 
     const blocks = Array.isArray(editedStop.contentBlocks) ? editedStop.contentBlocks : [];
 
     function getStopTitle(): string {
-        return typeof editedStop.title === 'object'
-            ? editedStop.title.en || Object.values(editedStop.title)[0] || 'Untitled'
-            : String(editedStop.title);
+        if (typeof editedStop.title === 'object') {
+            // Return the value for the active language, or empty string if not set
+            // Don't fall back to other languages or 'Untitled' - let the placeholder handle that
+            return editedStop.title[activeTitleLang] ?? '';
+        }
+        return String(editedStop.title);
     }
 
     function handleTitleChange(value: string) {
+        const currentTitle = typeof editedStop.title === 'object' ? editedStop.title : { en: String(editedStop.title) };
         setEditedStop({
             ...editedStop,
-            title: { ...editedStop.title, en: value },
+            title: { ...currentTitle, [activeTitleLang]: value },
         });
         setHasUnsavedChanges(true);
+    }
+
+    async function handleTranslateTitle() {
+        const titleObj = typeof editedStop.title === 'object' ? editedStop.title : { en: String(editedStop.title) };
+        const primaryLang = availableLanguages[0] || 'en';
+        const sourceText = titleObj[primaryLang] || titleObj['en'] || Object.values(titleObj)[0];
+        
+        if (!sourceText?.trim()) return;
+
+        setIsTranslatingTitle(true);
+        const newTitleObj = { ...titleObj };
+
+        for (const lang of availableLanguages) {
+            if (lang === primaryLang) continue;
+            try {
+                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                newTitleObj[lang] = translated;
+            } catch (error) {
+                console.error(`Failed to translate title to ${lang}:`, error);
+            }
+        }
+
+        setEditedStop({
+            ...editedStop,
+            title: newTitleObj,
+        });
+        setHasUnsavedChanges(true);
+        setIsTranslatingTitle(false);
     }
 
     function handleDescriptionChange(value: string) {
@@ -169,41 +205,72 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
         <div className="fixed inset-0 z-50 flex overflow-hidden bg-black/50 backdrop-blur-sm">
             <div className="flex-1 flex flex-col bg-[var(--color-bg-surface)] m-4 rounded-xl border border-[var(--color-border-default)] shadow-2xl overflow-hidden max-w-5xl mx-auto">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border-default)]">
-                    <input
-                        type="text"
-                        value={getStopTitle()}
-                        onChange={(e) => handleTitleChange(e.target.value)}
-                        className="text-xl font-bold bg-transparent text-[var(--color-text-primary)] border-none outline-none flex-1"
-                        placeholder="Stop Title"
-                    />
-                    <div className="flex items-center gap-2 ml-4">
-                        {hasUnsavedChanges && (
-                            <span className="text-xs text-yellow-500 font-medium">Unsaved changes</span>
-                        )}
-                        <button
-                            onClick={() => setShowPreview(true)}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors"
-                        >
-                            <Eye className="w-4 h-4" />
-                            <span>Preview</span>
-                        </button>
-                        <button
-                            onClick={handleSave}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${hasUnsavedChanges
-                                ? 'bg-yellow-500 hover:bg-yellow-600 text-black font-bold animate-pulse'
-                                : 'bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/90 text-white'
-                                }`}
-                        >
-                            <Save className="w-4 h-4" />
-                            <span>Save</span>
-                        </button>
-                        <button
-                            onClick={handleClose}
-                            className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)]"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
+                <div className="flex flex-col gap-3 px-6 py-4 border-b border-[var(--color-border-default)]">
+                    {/* Title Row with Language Tabs */}
+                    <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                            {/* Language tabs for title (only show if multiple languages) */}
+                            {availableLanguages.length > 1 && (
+                                <div className="flex items-center gap-2 mb-2">
+                                    <LanguageSwitcher
+                                        availableLanguages={availableLanguages}
+                                        activeLanguage={activeTitleLang}
+                                        onChange={setActiveTitleLang}
+                                        contentMap={typeof editedStop.title === 'object' ? editedStop.title : { en: String(editedStop.title) }}
+                                        size="sm"
+                                        showStatus={true}
+                                    />
+                                    <button
+                                        onClick={handleTranslateTitle}
+                                        disabled={isTranslatingTitle}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-lg hover:bg-[var(--color-accent-primary)]/20 disabled:opacity-50"
+                                        title="Translate title to all languages"
+                                    >
+                                        {isTranslatingTitle ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Languages className="w-4 h-4" />
+                                        )}
+                                        <span>Translate</span>
+                                    </button>
+                                </div>
+                            )}
+                            <input
+                                type="text"
+                                value={getStopTitle()}
+                                onChange={(e) => handleTitleChange(e.target.value)}
+                                className="w-full text-xl font-bold bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] rounded-lg px-4 py-2 focus:border-[var(--color-accent-primary)] focus:outline-none"
+                                placeholder="Stop Title"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {hasUnsavedChanges && (
+                                <span className="text-xs text-yellow-500 font-medium">Unsaved changes</span>
+                            )}
+                            <button
+                                onClick={() => setShowPreview(true)}
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors"
+                            >
+                                <Eye className="w-4 h-4" />
+                                <span>Preview</span>
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${hasUnsavedChanges
+                                    ? 'bg-yellow-500 hover:bg-yellow-600 text-black font-bold animate-pulse'
+                                    : 'bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/90 text-white'
+                                    }`}
+                            >
+                                <Save className="w-4 h-4" />
+                                <span>Save</span>
+                            </button>
+                            <button
+                                onClick={handleClose}
+                                className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)]"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
