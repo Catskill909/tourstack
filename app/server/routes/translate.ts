@@ -156,8 +156,8 @@ router.post('/file', fileUpload.single('file'), async (req, res) => {
 
         // Create FormData for LibreTranslate file API
         const formData = new FormData();
-        // Convert Buffer to Blob - use type assertion for Node.js Buffer compatibility
-        const fileBlob = new Blob([req.file.buffer as BlobPart]);
+        // Convert Buffer to Uint8Array for Blob compatibility (works in Node.js and browser)
+        const fileBlob = new Blob([new Uint8Array(req.file.buffer)]);
         formData.append('file', fileBlob, req.file.originalname);
         formData.append('source', sourceLang || 'auto');
         formData.append('target', targetLang);
@@ -228,7 +228,7 @@ router.post('/extract', fileUpload.single('file'), async (req, res) => {
         }
 
         const formData = new FormData();
-        const extractBlob = new Blob([req.file.buffer as BlobPart]);
+        const extractBlob = new Blob([new Uint8Array(req.file.buffer)]);
         formData.append('file', extractBlob, req.file.originalname);
         formData.append('source', 'auto');
         formData.append('target', 'en'); // Extract as English, user can translate after
