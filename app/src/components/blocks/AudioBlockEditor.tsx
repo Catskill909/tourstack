@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Maximize2, Minus, Circle, Mic, Loader2 } from 'lucide-react';
+import { Maximize2, Minus, Circle, Mic, Loader2, Languages } from 'lucide-react';
 import type { AudioBlockData } from '../../types';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
 import { transcribeAudio } from '../../services/transcriptionService';
+import { magicTranslate } from '../../services/translationService';
 
 const SIZE_OPTIONS: { value: AudioBlockData['size']; label: string; icon: typeof Maximize2 }[] = [
     { value: 'large', label: 'Large', icon: Maximize2 },
@@ -13,12 +14,18 @@ const SIZE_OPTIONS: { value: AudioBlockData['size']; label: string; icon: typeof
 interface AudioBlockEditorProps {
     data: AudioBlockData;
     language: string;
+    availableLanguages?: string[];
     onChange: (data: AudioBlockData) => void;
 }
 
-export function AudioBlockEditor({ data, language, onChange }: AudioBlockEditorProps) {
+export function AudioBlockEditor({ data, language, availableLanguages = ['en'], onChange }: AudioBlockEditorProps) {
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [transcribeError, setTranscribeError] = useState<string | null>(null);
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [showTranslationSuccess, setShowTranslationSuccess] = useState(false);
+
+    // Target languages for translation (all except current)
+    const targetLangs = availableLanguages.filter(l => l !== language);
 
     async function handleTranscribe() {
         const audioUrl = data.audioFiles[language];
@@ -51,6 +58,26 @@ export function AudioBlockEditor({ data, language, onChange }: AudioBlockEditorP
             setTranscribeError(error instanceof Error ? error.message : 'Transcription failed');
         } finally {
             setIsTranscribing(false);
+        }
+    }
+
+    // Handle transcript translation to all languages
+    async function handleTranslateTranscript() {
+        const sourceText = data.transcript?.[language];
+        if (!sourceText || targetLangs.length === 0) return;
+
+        setIsTranslating(true);
+        try {
+            const translations = await magicTranslate(sourceText, language, targetLangs);
+            onChange({
+                ...data,
+                transcript: { ...data.transcript, ...translations },
+            });
+            setShowTranslationSuccess(true);
+        } catch (error) {
+            console.error('Translation error:', error);
+        } finally {
+            setIsTranslating(false);
         }
     }
 
@@ -108,6 +135,7 @@ export function AudioBlockEditor({ data, language, onChange }: AudioBlockEditorP
                                 size={data.size || 'large'}
                                 autoplay={false}
                                 transcriptWords={data.transcriptWords}
+                                transcript={data.transcript?.[language]}
                                 showCaptions={data.showCaptions}
                                 onCaptionsToggle={(show) => onChange({ ...data, showCaptions: show })}
                             />
@@ -145,25 +173,48 @@ export function AudioBlockEditor({ data, language, onChange }: AudioBlockEditorP
                     <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
                         Transcript ({language.toUpperCase()}) <span className="text-[var(--color-text-muted)] font-normal">Optional</span>
                     </label>
-                    {data.audioFiles[language] && (
-                        <button
-                            onClick={handleTranscribe}
-                            disabled={isTranscribing}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                        >
-                            {isTranscribing ? (
-                                <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    Transcribing...
-                                </>
-                            ) : (
-                                <>
-                                    <Mic className="w-3.5 h-3.5" />
-                                    Transcribe with AI
-                                </>
-                            )}
-                        </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {/* Translate Button */}
+                        {data.transcript?.[language] && targetLangs.length > 0 && (
+                            <button
+                                onClick={handleTranslateTranscript}
+                                disabled={isTranslating}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                {isTranslating ? (
+                                    <>
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        Translating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Languages className="w-3.5 h-3.5" />
+                                        {targetLangs.some(lang => data.transcript?.[lang]) ? 'Re-Translate' : 'Translate'}
+                                    </>
+                                )}
+                            </button>
+                        )}
+                        {/* Transcribe Button */}
+                        {data.audioFiles[language] && (
+                            <button
+                                onClick={handleTranscribe}
+                                disabled={isTranscribing}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                {isTranscribing ? (
+                                    <>
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        Transcribing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Mic className="w-3.5 h-3.5" />
+                                        Transcribe
+                                    </>
+                                )}
+                            </button>
+                        )}
+                    </div>
                 </div>
                 {transcribeError && (
                     <div className="mb-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
@@ -214,6 +265,32 @@ export function AudioBlockEditor({ data, language, onChange }: AudioBlockEditorP
                     <span className="text-sm text-[var(--color-text-secondary)]">Show Transcript</span>
                 </label>
             </div>
+
+            {/* Translation Success Modal */}
+            {showTranslationSuccess && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                    <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-green-500/30 p-6 w-full max-w-sm shadow-2xl mx-4">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
+                                <Languages className="w-7 h-7 text-green-400" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
+                                Translation Complete
+                            </h3>
+                            <p className="text-[var(--color-text-secondary)] text-sm mb-6">
+                                Transcript translated to {targetLangs.length} language{targetLangs.length > 1 ? 's' : ''}. 
+                                Remember to <span className="text-yellow-400 font-medium">save your changes</span> for translations to appear in preview.
+                            </p>
+                            <button
+                                onClick={() => setShowTranslationSuccess(false)}
+                                className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-colors"
+                            >
+                                Got it
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

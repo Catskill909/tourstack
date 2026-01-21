@@ -16,7 +16,7 @@ interface StopEditorProps {
     stop: Stop;
     /** Available languages from tour.languages */
     availableLanguages?: string[];
-    onSave: (stop: Stop) => void;
+    onSave: (stop: Stop, shouldClose?: boolean) => void;
     onClose: () => void;
 }
 
@@ -58,6 +58,7 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
     const [showTimelineEditorId, setShowTimelineEditorId] = useState<string | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+    const [showSaveModal, setShowSaveModal] = useState(false);
     const [activeTitleLang, setActiveTitleLang] = useState(availableLanguages[0] || 'en');
     const [isTranslatingTitle, setIsTranslatingTitle] = useState(false);
     const language = availableLanguages[0] || 'en'; // Primary language for editing
@@ -178,11 +179,11 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
         setHasUnsavedChanges(true);
     }
 
-    function handleSave() {
+    function handleSave(shouldClose: boolean = false) {
         onSave({
             ...editedStop,
             updatedAt: new Date().toISOString(),
-        });
+        }, shouldClose);
         setHasUnsavedChanges(false);
     }
 
@@ -255,7 +256,7 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
                                 <span>Preview</span>
                             </button>
                             <button
-                                onClick={handleSave}
+                                onClick={() => setShowSaveModal(true)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${hasUnsavedChanges
                                     ? 'bg-yellow-500 hover:bg-yellow-600 text-black font-bold animate-pulse'
                                     : 'bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/90 text-white'
@@ -394,6 +395,7 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
                                     <AudioBlockEditor
                                         data={editingBlock.data as AudioBlockData}
                                         language={language}
+                                        availableLanguages={availableLanguages}
                                         onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
                                     />
                                 )}
@@ -535,6 +537,7 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
                     <TimelineGalleryEditorModal
                         data={timelineBlock.data as TimelineGalleryBlockData}
                         language={language}
+                        availableLanguages={availableLanguages}
                         onChange={(data) => handleUpdateBlock(showTimelineEditorId, data)}
                         onClose={() => setShowTimelineEditorId(null)}
                     />
@@ -584,6 +587,53 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
                                 <Save className="w-4 h-4" />
                                 Save
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Save Modal */}
+            {showSaveModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                    <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-accent-primary)]/30 p-6 w-full max-w-md shadow-2xl mx-4">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-14 h-14 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center mb-4">
+                                <Save className="w-7 h-7 text-[var(--color-accent-primary)]" />
+                            </div>
+                            <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
+                                Save Changes
+                            </h3>
+                            <p className="text-[var(--color-text-secondary)] text-sm mb-6">
+                                Your changes are ready to be saved. What would you like to do next?
+                            </p>
+                            <div className="w-full space-y-3">
+                                <button
+                                    onClick={() => {
+                                        handleSave(false);
+                                        setShowSaveModal(false);
+                                    }}
+                                    className="w-full px-4 py-3 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/90 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Save className="w-4 h-4" />
+                                    Save & Continue Editing
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handleSave(true);
+                                        setShowSaveModal(false);
+                                    }}
+                                    className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <X className="w-4 h-4" />
+                                    Save & Exit
+                                </button>
+                                <button
+                                    onClick={() => setShowSaveModal(false)}
+                                    className="w-full px-4 py-3 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors font-medium"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

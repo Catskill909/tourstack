@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X, Music, Images, Clock, Sliders, Trash2, Mic, Loader2, Captions } from 'lucide-react';
+import { X, Music, Images, Clock, Sliders, Trash2, Mic, Loader2, Captions, Languages } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AudioWaveform } from './AudioWaveform';
 import type { TimelineGalleryBlockData, TransitionType } from '../../types';
 import { transcribeAudio } from '../../services/transcriptionService';
+import { magicTranslate } from '../../services/translationService';
 import { ClosedCaptions } from '../ui/ClosedCaptions';
 
 interface TimelineGalleryImage {
@@ -18,6 +19,7 @@ interface TimelineGalleryImage {
 interface TimelineGalleryEditorModalProps {
     data: TimelineGalleryBlockData;
     language: string;
+    availableLanguages?: string[];
     onChange: (data: TimelineGalleryBlockData) => void;
     onClose: () => void;
 }
@@ -32,12 +34,17 @@ function formatTime(seconds: number): string {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function TimelineGalleryEditorModal({ data, language, onChange, onClose }: TimelineGalleryEditorModalProps) {
+export function TimelineGalleryEditorModal({ data, language, availableLanguages = ['en'], onChange, onClose }: TimelineGalleryEditorModalProps) {
     const [currentTime, setCurrentTime] = useState(0);
     const [previewIndex, setPreviewIndex] = useState(0);
     const [editingImage, setEditingImage] = useState<TimelineGalleryImage | null>(null);
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [transcribeError, setTranscribeError] = useState<string | null>(null);
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [showTranslationSuccess, setShowTranslationSuccess] = useState(false);
+
+    // Target languages for translation (all except current)
+    const targetLangs = availableLanguages.filter(l => l !== language);
 
     const audioDuration = data.audioDuration || 0;
 
@@ -253,6 +260,26 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
         }
     }
 
+    // Handle CC translation to all languages
+    async function handleTranslateCC() {
+        const sourceText = data.transcript?.[language];
+        if (!sourceText || targetLangs.length === 0) return;
+
+        setIsTranslating(true);
+        try {
+            const translations = await magicTranslate(sourceText, language, targetLangs);
+            onChange({
+                ...data,
+                transcript: { ...data.transcript, ...translations },
+            });
+            setShowTranslationSuccess(true);
+        } catch (error) {
+            console.error('Translation error:', error);
+        } finally {
+            setIsTranslating(false);
+        }
+    }
+
     return (
         <div
             className="fixed inset-0 z-[100] flex flex-col"
@@ -349,11 +376,26 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                         </button>
                     )}
 
-                    {/* Image count */}
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 text-sm">
-                        <Images className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-300">{images.length} images</span>
-                    </div>
+                    {/* Translate CC Button */}
+                    {data.transcript?.[language] && targetLangs.length > 0 && (
+                        <button
+                            onClick={handleTranslateCC}
+                            disabled={isTranslating}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        >
+                            {isTranslating ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Translating...
+                                </>
+                            ) : (
+                                <>
+                                    <Languages className="w-4 h-4" />
+                                    {targetLangs.some(lang => data.transcript?.[lang]) ? 'Re-Translate CC' : 'Translate CC'}
+                                </>
+                            )}
+                        </button>
+                    )}
 
                     <button
                         onClick={onClose}
@@ -403,11 +445,13 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                                     {previewIndex + 1} / {images.length}
                                 </div>
                                 {/* Closed Captions - aligned to bottom of image */}
-                                {data.showCaptions && data.transcriptWords && data.transcriptWords.length > 0 && (
+                                {data.showCaptions && ((data.transcriptWords?.length ?? 0) > 0 || data.transcript?.[language]) && (
                                     <div className="absolute bottom-0 left-0 right-0 pb-3 px-4">
                                         <ClosedCaptions
-                                            words={data.transcriptWords}
+                                            words={data.transcript?.[language] ? undefined : data.transcriptWords}
+                                            transcript={data.transcript?.[language]}
                                             currentTime={currentTime}
+                                            duration={data.audioDuration}
                                             isVisible={true}
                                             maxWords={10}
                                         />
@@ -579,6 +623,32 @@ export function TimelineGalleryEditorModal({ data, language, onChange, onClose }
                                 className="flex-1 px-4 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-xl font-medium transition-colors"
                             >
                                 Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Translation Success Modal */}
+            {showTranslationSuccess && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                    <div className="bg-[#1a1a1a] rounded-2xl border border-green-500/30 p-6 w-full max-w-sm shadow-2xl mx-4">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center mb-4">
+                                <Languages className="w-7 h-7 text-green-400" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-white mb-2">
+                                Translation Complete
+                            </h3>
+                            <p className="text-gray-400 text-sm mb-6">
+                                Captions have been translated to {targetLangs.length} language{targetLangs.length > 1 ? 's' : ''}. 
+                                Remember to <span className="text-yellow-400 font-medium">save your changes</span> for translations to appear in preview.
+                            </p>
+                            <button
+                                onClick={() => setShowTranslationSuccess(false)}
+                                className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium transition-colors"
+                            >
+                                Got it
                             </button>
                         </div>
                     </div>

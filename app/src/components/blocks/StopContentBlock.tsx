@@ -108,6 +108,7 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                         deviceType={deviceType}
                         autoplay={data.autoplay}
                         transcriptWords={data.transcriptWords}
+                        transcript={data.transcript?.[language]}
                         showCaptions={data.showCaptions}
                     />
                 ) : (

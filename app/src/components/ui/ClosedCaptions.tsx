@@ -8,8 +8,10 @@ interface TranscriptWord {
 }
 
 interface ClosedCaptionsProps {
-    words: TranscriptWord[];
+    words?: TranscriptWord[];
+    transcript?: string;  // Full transcript text for translated languages
     currentTime: number;
+    duration?: number;    // Audio duration for time-based display of translated text
     isVisible?: boolean;
     maxWords?: number;
     className?: string;
@@ -18,59 +20,83 @@ interface ClosedCaptionsProps {
 
 export function ClosedCaptions({
     words,
+    transcript,
     currentTime,
+    duration = 0,
     isVisible = true,
     maxWords = 12,
     className = '',
     size = 'normal',
 }: ClosedCaptionsProps) {
-    // Build sentences from words and find current sentence
+    // Build sentences from words (if available) or from transcript text
     const currentSentence = useMemo(() => {
-        if (!words || words.length === 0) return null;
-
-        // Build sentences by detecting sentence boundaries (., !, ?)
-        const sentences: { text: string; start: number; end: number }[] = [];
-        let currentSentenceWords: TranscriptWord[] = [];
-        
-        for (let i = 0; i < words.length; i++) {
-            currentSentenceWords.push(words[i]);
-            const word = words[i].word;
+        // If transcript is provided, prefer it (used for translated languages)
+        // Only use word-level timestamps if no transcript is provided
+        if (transcript && duration > 0) {
+            // Split transcript into sentences
+            const sentenceRegex = /[^.!?]*[.!?]+/g;
+            const sentences = transcript.match(sentenceRegex) || [transcript];
             
-            // Check if this word ends a sentence
-            const endsWithPunctuation = /[.!?]$/.test(word);
-            const isLastWord = i === words.length - 1;
-            const sentenceTooLong = currentSentenceWords.length >= maxWords;
+            if (sentences.length === 0) return null;
             
-            if (endsWithPunctuation || isLastWord || sentenceTooLong) {
-                sentences.push({
-                    text: currentSentenceWords.map(w => w.word).join(' '),
-                    start: currentSentenceWords[0].start,
-                    end: currentSentenceWords[currentSentenceWords.length - 1].end,
-                });
-                currentSentenceWords = [];
-            }
+            // Calculate which sentence to show based on time
+            const timePerSentence = duration / sentences.length;
+            const sentenceIndex = Math.min(
+                Math.floor(currentTime / timePerSentence),
+                sentences.length - 1
+            );
+            
+            return sentences[sentenceIndex]?.trim() || null;
         }
 
-        // Find the sentence that contains the current time
-        for (const sentence of sentences) {
-            if (currentTime >= sentence.start && currentTime <= sentence.end + 0.5) {
-                return sentence.text;
+        // Fallback: If we have word-level timestamps and no transcript, use them
+        if (words && words.length > 0) {
+            // Build sentences by detecting sentence boundaries (., !, ?)
+            const sentences: { text: string; start: number; end: number }[] = [];
+            let currentSentenceWords: TranscriptWord[] = [];
+            
+            for (let i = 0; i < words.length; i++) {
+                currentSentenceWords.push(words[i]);
+                const word = words[i].word;
+                
+                // Check if this word ends a sentence
+                const endsWithPunctuation = /[.!?]$/.test(word);
+                const isLastWord = i === words.length - 1;
+                const sentenceTooLong = currentSentenceWords.length >= maxWords;
+                
+                if (endsWithPunctuation || isLastWord || sentenceTooLong) {
+                    sentences.push({
+                        text: currentSentenceWords.map(w => w.word).join(' '),
+                        start: currentSentenceWords[0].start,
+                        end: currentSentenceWords[currentSentenceWords.length - 1].end,
+                    });
+                    currentSentenceWords = [];
+                }
             }
-        }
 
-        // If between sentences, show nothing or the upcoming one
-        for (const sentence of sentences) {
-            if (currentTime < sentence.start) {
-                // Show upcoming sentence if we're close (within 0.3s)
-                if (sentence.start - currentTime < 0.3) {
+            // Find the sentence that contains the current time
+            for (const sentence of sentences) {
+                if (currentTime >= sentence.start && currentTime <= sentence.end + 0.5) {
                     return sentence.text;
                 }
-                break;
             }
+
+            // If between sentences, show nothing or the upcoming one
+            for (const sentence of sentences) {
+                if (currentTime < sentence.start) {
+                    // Show upcoming sentence if we're close (within 0.3s)
+                    if (sentence.start - currentTime < 0.3) {
+                        return sentence.text;
+                    }
+                    break;
+                }
+            }
+
+            return null;
         }
 
         return null;
-    }, [words, currentTime, maxWords]);
+    }, [words, transcript, currentTime, duration, maxWords]);
 
     if (!isVisible || !currentSentence) return null;
 

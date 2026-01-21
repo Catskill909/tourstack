@@ -17,11 +17,12 @@ interface CustomAudioPlayerProps {
     autoplay?: boolean;
     className?: string;
     transcriptWords?: TranscriptWord[];
+    transcript?: string;  // Language-specific transcript text
     showCaptions?: boolean;
     onCaptionsToggle?: (show: boolean) => void;
 }
 
-export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'phone', autoplay = false, className = '', transcriptWords, showCaptions = false, onCaptionsToggle }: CustomAudioPlayerProps) {
+export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'phone', autoplay = false, className = '', transcriptWords, transcript, showCaptions = false, onCaptionsToggle }: CustomAudioPlayerProps) {
     const isTablet = deviceType === 'tablet';
     const audioRef = useRef<HTMLAudioElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -33,7 +34,7 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
     const [isDragging, setIsDragging] = useState(false);
     const [localShowCaptions, setLocalShowCaptions] = useState(showCaptions);
 
-    const hasCaptions = transcriptWords && transcriptWords.length > 0;
+    const hasCaptions = (transcriptWords && transcriptWords.length > 0) || !!transcript;
     const captionsVisible = localShowCaptions && hasCaptions;
 
     const toggleCaptions = () => {
@@ -234,11 +235,13 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
             )}
 
             {/* Closed Captions Display */}
-            {captionsVisible && transcriptWords && (
+            {captionsVisible && (
                 <div className="mb-4">
                     <ClosedCaptions
-                        words={transcriptWords}
+                        words={transcript ? undefined : transcriptWords}
+                        transcript={transcript}
                         currentTime={currentTime}
+                        duration={duration}
                         isVisible={true}
                         maxWords={10}
                         className="bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)]"

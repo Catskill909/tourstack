@@ -189,13 +189,18 @@ export function TourDetail() {
         setEditingStop(stop);
     }
 
-    async function handleSaveStop(updatedStop: Stop) {
+    async function handleSaveStop(updatedStop: Stop, shouldClose: boolean = true) {
         setIsSaving(true);
         const saved = await updateStopAPI(updatedStop);
 
         if (saved) {
             setStops(stops.map(s => s.id === saved.id ? saved : s));
-            setEditingStop(null);
+            // Update editingStop with saved data so editor has fresh state
+            if (shouldClose) {
+                setEditingStop(null);
+            } else {
+                setEditingStop(saved);
+            }
         } else {
             alert('Failed to save stop. Please try again.');
         }

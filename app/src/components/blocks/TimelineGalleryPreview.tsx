@@ -212,11 +212,13 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
                 </div>
 
                 {/* Closed Captions Overlay - tablet only (overlay on image) */}
-                {!isPhone && showCaptions && data.transcriptWords && data.transcriptWords.length > 0 && (
+                {!isPhone && showCaptions && ((data.transcriptWords?.length ?? 0) > 0 || data.transcript?.[language]) && (
                     <div className="absolute bottom-0 left-0 right-0 pb-3 px-4 z-30">
                         <ClosedCaptions
-                            words={data.transcriptWords}
+                            words={data.transcript?.[language] ? undefined : data.transcriptWords}
+                            transcript={data.transcript?.[language]}
                             currentTime={currentTime}
+                            duration={data.audioDuration}
                             isVisible={true}
                             maxWords={12}
                         />
@@ -225,11 +227,13 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
             </div>
 
             {/* Closed Captions - phone only (below image, smaller text) */}
-            {isPhone && showCaptions && data.transcriptWords && data.transcriptWords.length > 0 && (
+            {isPhone && showCaptions && ((data.transcriptWords?.length ?? 0) > 0 || data.transcript?.[language]) && (
                 <div className="px-3 py-2 bg-[var(--color-bg-elevated)] border-b border-[var(--color-border-default)]">
                     <ClosedCaptions
-                        words={data.transcriptWords}
+                        words={data.transcript?.[language] ? undefined : data.transcriptWords}
+                        transcript={data.transcript?.[language]}
                         currentTime={currentTime}
+                        duration={data.audioDuration}
                         isVisible={true}
                         maxWords={12}
                         size="small"
