@@ -26,7 +26,9 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
     const images = data.images || [];
     const transitionDurationMs = data.crossfadeDuration || 500;
     const transitionDuration = transitionDurationMs / 1000; // Convert ms to seconds for Framer Motion
-    const transitionType: TransitionType = data.transitionType || 'fade';
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _transitionType: TransitionType = data.transitionType || 'fade'; // TODO: Use for slide/zoom variants
+    void _transitionType; // Suppress unused warning - planned for future transition variants
 
     // Sort images by timestamp
     const sortedImages = [...images].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
