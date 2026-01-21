@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Images, Loader, Captions } from 'lucide-react';
+import { motion } from 'framer-motion';
 import type { TimelineGalleryBlockData, TransitionType } from '../../types';
 import { ClosedCaptions } from '../ui/ClosedCaptions';
 
@@ -12,8 +13,7 @@ interface TimelineGalleryPreviewProps {
 export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }: TimelineGalleryPreviewProps) {
     const isPhone = deviceType === 'phone';
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [previousIndex, setPreviousIndex] = useState(0);
-    const [isTransitioning, setIsTransitioning] = useState(false);
+    const [previousIndex, setPreviousIndex] = useState<number | null>(null); // For true crossfade
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [isMuted, setIsMuted] = useState(false);
@@ -24,7 +24,8 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
     const audioRef = useRef<HTMLAudioElement>(null);
 
     const images = data.images || [];
-    const transitionDuration = data.crossfadeDuration || 500;
+    const transitionDurationMs = data.crossfadeDuration || 500;
+    const transitionDuration = transitionDurationMs / 1000; // Convert ms to seconds for Framer Motion
     const transitionType: TransitionType = data.transitionType || 'fade';
 
     // Sort images by timestamp
@@ -91,22 +92,23 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
     }
 
     function triggerTransition(newIndex: number) {
-        if (transitionType === 'cut') {
-            // Instant cut - no transition
-            setCurrentIndex(newIndex);
-            return;
+        // Store previous index for crossfade
+        if (newIndex !== currentIndex) {
+            console.log(`[CROSSFADE] Transitioning ${currentIndex} → ${newIndex}, duration: ${transitionDuration}s`);
+            setPreviousIndex(currentIndex);
         }
-
-        // Start transition animation
-        setPreviousIndex(currentIndex);
-        setIsTransitioning(true);
         setCurrentIndex(newIndex);
-
-        // End transition after duration
-        setTimeout(() => {
-            setIsTransitioning(false);
-        }, transitionDuration);
     }
+
+    // Clear previous image after crossfade transition completes
+    useEffect(() => {
+        if (previousIndex !== null) {
+            const timer = setTimeout(() => {
+                setPreviousIndex(null);
+            }, transitionDuration * 1000); // Convert seconds to ms
+            return () => clearTimeout(timer);
+        }
+    }, [previousIndex, transitionDuration]);
 
     function togglePlayback() {
         if (!audioRef.current) return;
@@ -137,30 +139,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
 
-    // Get transition CSS classes based on type
-    function getTransitionClasses(isEntering: boolean): string {
-        const duration = `duration-[${transitionDuration}ms]`;
-
-        switch (transitionType) {
-            case 'fade':
-                return `transition-opacity ${duration} ${isTransitioning && !isEntering ? 'opacity-0' : 'opacity-100'}`;
-
-            case 'slideLeft':
-                return `transition-transform ${duration} ${isTransitioning && !isEntering ? '-translate-x-full' : 'translate-x-0'}`;
-
-            case 'slideRight':
-                return `transition-transform ${duration} ${isTransitioning && !isEntering ? 'translate-x-full' : 'translate-x-0'}`;
-
-            case 'zoom':
-                return `transition-all ${duration} ${isTransitioning && !isEntering ? 'scale-110 opacity-0' : 'scale-100 opacity-100'}`;
-
-            default:
-                return '';
-        }
-    }
-
     const currentImage = images[currentIndex];
-    const previousImage = images[previousIndex];
 
     return (
         <div className="bg-[var(--color-bg-surface)] rounded-2xl overflow-hidden border border-[var(--color-border-default)]">
@@ -186,30 +165,39 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
                     </div>
                 )}
 
-                {/* Previous image (for transitions) */}
-                {isTransitioning && previousImage && transitionType !== 'cut' && (
-                    <div className="absolute inset-0 z-0">
+                {/* True crossfade: render both previous and current images simultaneously */}
+                {/* Previous image - fading OUT */}
+                {previousIndex !== null && images[previousIndex] && (
+                    <motion.div
+                        key={`prev-${images[previousIndex].id || previousIndex}`}
+                        className="absolute inset-0 z-10 flex items-center justify-center"
+                        initial={{ opacity: 1 }}
+                        animate={{ opacity: 0 }}
+                        transition={{ duration: transitionDuration, ease: 'easeInOut' }}
+                    >
                         <img
-                            src={previousImage.url}
-                            alt={previousImage.alt[language] || previousImage.alt.en || ''}
+                            src={images[previousIndex].url}
+                            alt={images[previousIndex].alt[language] || images[previousIndex].alt.en || ''}
                             className="w-full h-full object-contain"
                         />
-                    </div>
+                    </motion.div>
                 )}
-
-                {/* Current image with transition */}
-                <div
-                    className={`absolute inset-0 z-10 ${getTransitionClasses(true)}`}
-                    style={{ transitionDuration: `${transitionDuration}ms` }}
-                >
-                    {currentImage && (
+                {/* Current image - fading IN */}
+                {currentImage && (
+                    <motion.div
+                        key={`curr-${currentImage.id || currentIndex}`}
+                        className="absolute inset-0 z-10 flex items-center justify-center"
+                        initial={{ opacity: previousIndex !== null ? 0 : 1 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: transitionDuration, ease: 'easeInOut' }}
+                    >
                         <img
                             src={currentImage.url}
                             alt={currentImage.alt[language] || currentImage.alt.en || ''}
                             className="w-full h-full object-contain"
                         />
-                    )}
-                </div>
+                    </motion.div>
+                )}
 
                 {/* Closed Captions Overlay - tablet only (overlay on image) */}
                 {!isPhone && showCaptions && ((data.transcriptWords?.length ?? 0) > 0 || data.transcript?.[language]) && (

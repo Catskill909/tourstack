@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Plus } from 'lucide-react';
 
@@ -18,7 +18,12 @@ interface AudioWaveformProps {
     onReady?: (duration: number) => void;
 }
 
-export function AudioWaveform({
+export interface AudioWaveformHandle {
+    stop: () => void;
+    pause: () => void;
+}
+
+export const AudioWaveform = forwardRef<AudioWaveformHandle, AudioWaveformProps>(function AudioWaveform({
     audioUrl,
     duration,
     markers,
@@ -27,7 +32,7 @@ export function AudioWaveform({
     onAddImage,
     onTimeUpdate,
     onReady
-}: AudioWaveformProps) {
+}, ref) {
     const containerRef = useRef<HTMLDivElement>(null);
     const wavesurferRef = useRef<WaveSurfer | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -82,9 +87,29 @@ export function AudioWaveform({
         wavesurferRef.current = wavesurfer;
 
         return () => {
-            wavesurfer.destroy();
+            try {
+                wavesurfer.destroy();
+            } catch {
+                // Ignore abort errors during cleanup
+            }
         };
     }, [audioUrl]);
+
+    // Expose stop/pause methods to parent via ref
+    useImperativeHandle(ref, () => ({
+        stop: () => {
+            if (wavesurferRef.current) {
+                wavesurferRef.current.stop();
+                setIsPlaying(false);
+            }
+        },
+        pause: () => {
+            if (wavesurferRef.current) {
+                wavesurferRef.current.pause();
+                setIsPlaying(false);
+            }
+        }
+    }), []);
 
     const togglePlayback = useCallback(() => {
         wavesurferRef.current?.playPause();
@@ -324,4 +349,4 @@ export function AudioWaveform({
             )}
         </div>
     );
-}
+});

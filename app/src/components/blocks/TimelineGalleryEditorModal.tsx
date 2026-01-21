@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Music, Images, Clock, Sliders, Trash2, Mic, Loader2, Captions, Languages } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AudioWaveform } from './AudioWaveform';
+import { motion } from 'framer-motion';
+import { AudioWaveform, type AudioWaveformHandle } from './AudioWaveform';
 import type { TimelineGalleryBlockData, TransitionType } from '../../types';
 import { transcribeAudio } from '../../services/transcriptionService';
 import { magicTranslate } from '../../services/translationService';
@@ -37,11 +37,21 @@ function formatTime(seconds: number): string {
 export function TimelineGalleryEditorModal({ data, language, availableLanguages = ['en'], onChange, onClose }: TimelineGalleryEditorModalProps) {
     const [currentTime, setCurrentTime] = useState(0);
     const [previewIndex, setPreviewIndex] = useState(0);
+    const [previousIndex, setPreviousIndex] = useState<number | null>(null); // For true crossfade
     const [editingImage, setEditingImage] = useState<TimelineGalleryImage | null>(null);
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [transcribeError, setTranscribeError] = useState<string | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
     const [showTranslationSuccess, setShowTranslationSuccess] = useState(false);
+
+    // Ref to control AudioWaveform playback
+    const audioWaveformRef = useRef<AudioWaveformHandle>(null);
+
+    // Handle closing the modal - stop audio first
+    function handleClose() {
+        audioWaveformRef.current?.stop();
+        onClose();
+    }
 
     // Target languages for translation (all except current)
     const targetLangs = availableLanguages.filter(l => l !== language);
@@ -64,7 +74,7 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _transitionType = data.transitionType || 'fade'; // TODO: Use for slide/zoom variants
     void _transitionType; // Suppress unused warning - planned for future transition variants
-    const transitionDuration = (data.crossfadeDuration || 500) / 1000; // Convert to seconds for Framer Motion
+    const transitionDuration = (data.crossfadeDuration || 500) / 1000; // Convert ms to seconds for Framer Motion
 
     // Auto-advance preview based on time
     useEffect(() => {
@@ -73,12 +83,24 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
             if (sortedImages[i].timestamp <= currentTime) {
                 const newIndex = images.findIndex(img => img.id === sortedImages[i].id);
                 if (newIndex !== previewIndex && newIndex >= 0) {
+                    // Store previous index for crossfade
+                    setPreviousIndex(previewIndex);
                     setPreviewIndex(newIndex);
                 }
                 break;
             }
         }
     }, [currentTime, sortedImages.length]);
+
+    // Clear previous image after crossfade transition completes
+    useEffect(() => {
+        if (previousIndex !== null) {
+            const timer = setTimeout(() => {
+                setPreviousIndex(null);
+            }, transitionDuration * 1000); // Convert seconds to ms
+            return () => clearTimeout(timer);
+        }
+    }, [previousIndex, transitionDuration]);
 
     // Auto-clamp existing images when audio duration changes
     useEffect(() => {
@@ -321,7 +343,7 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                         <input
                             type="range"
                             min="100"
-                            max="1500"
+                            max="5000"
                             step="100"
                             value={data.crossfadeDuration || 500}
                             onChange={(e) => onChange({ ...data, crossfadeDuration: parseInt(e.target.value) })}
@@ -398,13 +420,13 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                     )}
 
                     <button
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors"
                     >
                         Done
                     </button>
                     <button
-                        onClick={onClose}
+                        onClick={handleClose}
                         className="p-2 hover:bg-white/10 rounded-lg text-gray-400"
                     >
                         <X className="w-5 h-5" />
@@ -419,19 +441,29 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                 <div className="h-[55%] p-4 flex items-center justify-center bg-black shrink-0 overflow-hidden">
                     {images.length > 0 && currentImage ? (
                         <div className="relative w-full h-full flex items-center justify-center">
-                            {/* Animated image with Framer Motion - simultaneous crossfade */}
-                            <AnimatePresence initial={false}>
+                            {/* True crossfade: render both previous and current images simultaneously */}
+                            {/* Previous image - fading OUT */}
+                            {previousIndex !== null && images[previousIndex] && (
                                 <motion.img
-                                    key={currentImage.id}
-                                    src={currentImage.url}
-                                    alt={currentImage.alt[language] || ''}
+                                    key={`prev-${images[previousIndex].id}`}
+                                    src={images[previousIndex].url}
+                                    alt={images[previousIndex].alt[language] || ''}
                                     className="absolute max-w-full max-h-full object-contain rounded-lg"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
+                                    initial={{ opacity: 1 }}
+                                    animate={{ opacity: 0 }}
                                     transition={{ duration: transitionDuration, ease: 'easeInOut' }}
                                 />
-                            </AnimatePresence>
+                            )}
+                            {/* Current image - fading IN */}
+                            <motion.img
+                                key={`curr-${currentImage.id}`}
+                                src={currentImage.url}
+                                alt={currentImage.alt[language] || ''}
+                                className="absolute max-w-full max-h-full object-contain rounded-lg"
+                                initial={{ opacity: previousIndex !== null ? 0 : 1 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: transitionDuration, ease: 'easeInOut' }}
+                            />
 
                             {/* Overlay badges */}
                             <div className="absolute inset-0 z-20 pointer-events-none">
@@ -477,6 +509,7 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                 <div className="h-[45%] pt-20 px-4 pb-4 bg-[#111] border-t border-white/10 shrink-0 overflow-visible">
                     {data.audioUrl ? (
                         <AudioWaveform
+                            ref={audioWaveformRef}
                             audioUrl={data.audioUrl}
                             duration={audioDuration}
                             markers={sortedImages.map(img => ({
