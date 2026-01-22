@@ -93,52 +93,73 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
         // Add tile layer
         updateTileLayer(map, L, data.style || 'standard');
 
+        // Store refs BEFORE adding click handler
+        mapInstanceRef.current = map;
+        leafletRef.current = L;
+
         // Add click handler to place marker
         map.on('click', (e: L.LeafletMouseEvent) => {
-          console.log('Map click event fired:', e.latlng);
           const clickLat = Math.round(e.latlng.lat * 1000000) / 1000000;
           const clickLng = Math.round(e.latlng.lng * 1000000) / 1000000;
           
           setLatInput(clickLat.toString());
           setLngInput(clickLng.toString());
           
-          // Add or update marker
+          // Remove existing marker if any
           if (markerRef.current) {
-            markerRef.current.setLatLng([clickLat, clickLng]);
-          } else {
-            markerRef.current = L.marker([clickLat, clickLng], { draggable: true }).addTo(map);
-            markerRef.current.on('dragend', () => {
-              const pos = markerRef.current!.getLatLng();
-              const dragLat = Math.round(pos.lat * 1000000) / 1000000;
-              const dragLng = Math.round(pos.lng * 1000000) / 1000000;
-              setLatInput(dragLat.toString());
-              setLngInput(dragLng.toString());
-              onChangeRef.current({
-                ...dataRef.current,
-                latitude: dragLat,
-                longitude: dragLng,
-                showMarker: true,
-              });
+            map.removeLayer(markerRef.current);
+            markerRef.current = null;
+          }
+          
+          // Create custom icon to ensure visibility
+          const customIcon = L.icon({
+            iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+            iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+          });
+          
+          // Create new marker with explicit icon
+          const marker = L.marker([clickLat, clickLng], { 
+            draggable: true,
+            icon: customIcon
+          }).addTo(map);
+          
+          marker.on('dragend', () => {
+            const pos = marker.getLatLng();
+            const dragLat = Math.round(pos.lat * 1000000) / 1000000;
+            const dragLng = Math.round(pos.lng * 1000000) / 1000000;
+            setLatInput(dragLat.toString());
+            setLngInput(dragLng.toString());
+            onChangeRef.current({
+              ...dataRef.current,
+              latitude: dragLat,
+              longitude: dragLng,
+              showMarker: true,
             });
+          });
+          markerRef.current = marker;
+          
+          // Remove existing circle if any
+          if (circleRef.current) {
+            map.removeLayer(circleRef.current);
+            circleRef.current = null;
           }
           
           // Update trigger zone if enabled
           const currentData = dataRef.current;
           if (currentData.showTriggerZone && currentData.triggerRadius) {
-            if (circleRef.current) {
-              circleRef.current.setLatLng([clickLat, clickLng]);
-            } else {
-              circleRef.current = L.circle([clickLat, clickLng], {
-                radius: currentData.triggerRadius,
-                color: '#8b5cf6',
-                fillColor: '#8b5cf6',
-                fillOpacity: 0.15,
-                weight: 2,
-              }).addTo(map);
-            }
+            circleRef.current = L.circle([clickLat, clickLng], {
+              radius: currentData.triggerRadius,
+              color: '#8b5cf6',
+              fillColor: '#8b5cf6',
+              fillOpacity: 0.15,
+              weight: 2,
+            }).addTo(map);
           }
-          
-          map.panTo([clickLat, clickLng]);
           
           onChangeRef.current({
             ...currentData,
@@ -146,7 +167,6 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
             longitude: clickLng,
             showMarker: true,
           });
-          console.log('Marker placed at:', clickLat, clickLng);
         });
 
         // Track zoom changes
@@ -155,8 +175,6 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
           setZoomInput(newZoom.toString());
           onChange({ ...data, zoom: newZoom });
         });
-
-        mapInstanceRef.current = map;
 
         // Add initial marker if coordinates exist
         if (data.latitude && data.longitude) {
@@ -208,17 +226,34 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
     L.tileLayer(tileUrl, { attribution }).addTo(map);
   }
 
-  // Add/update marker
+  // Add/update marker with explicit icon
   function addMarker(L: typeof import('leaflet'), map: LeafletMap, lat: number, lng: number) {
+    // Remove existing marker
     if (markerRef.current) {
-      markerRef.current.setLatLng([lat, lng]);
-    } else {
-      markerRef.current = L.marker([lat, lng], { draggable: true }).addTo(map);
-      markerRef.current.on('dragend', () => {
-        const pos = markerRef.current.getLatLng();
-        updateMarkerPosition(pos.lat, pos.lng, false);
-      });
+      map.removeLayer(markerRef.current);
+      markerRef.current = null;
     }
+    
+    // Create custom icon to ensure visibility
+    const customIcon = L.icon({
+      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+      iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+    
+    markerRef.current = L.marker([lat, lng], { 
+      draggable: true,
+      icon: customIcon
+    }).addTo(map);
+    
+    markerRef.current.on('dragend', () => {
+      const pos = markerRef.current.getLatLng();
+      updateMarkerPosition(pos.lat, pos.lng, false);
+    });
   }
 
   // Add/update trigger zone circle
