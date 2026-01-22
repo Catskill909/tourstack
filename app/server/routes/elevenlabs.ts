@@ -218,7 +218,13 @@ router.get('/status', async (_req: Request, res: Response) => {
             });
         }
 
-        const subscription = await response.json();
+        const subscription = await response.json() as {
+            tier: string;
+            character_count: number;
+            character_limit: number;
+            can_use_instant_voice_cloning: boolean;
+            can_use_professional_voice_cloning: boolean;
+        };
         
         return res.json({
             configured: true,
@@ -287,7 +293,7 @@ router.get('/voices', async (req: Request, res: Response) => {
             });
         }
 
-        const data = await response.json();
+        const data = await response.json() as { voices?: any[] };
         
         // Transform shared voices to our format
         const voices = (data.voices || []).map((voice: any) => ({
