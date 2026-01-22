@@ -22,8 +22,19 @@ import {
 import { translateText } from '../services/translationService';
 
 // Languages supported by LibreTranslate for auto-translation
-const TRANSLATION_SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'ja', 'ko', 'pt', 'zh'];
-// Note: Dutch (nl) is NOT supported by LibreTranslate
+// Maps ElevenLabs language codes to LibreTranslate codes
+const TRANSLATION_LANGUAGE_MAP: Record<string, string> = {
+    'en': 'en',
+    'es': 'es',
+    'fr': 'fr',
+    'de': 'de',
+    'it': 'it',
+    'ja': 'ja',
+    'ko': 'ko',
+    'pt': 'pt',
+    'zh': 'zh-Hans', // LibreTranslate uses zh-Hans for Chinese
+};
+// Note: Dutch (nl), Arabic (ar), Russian (ru), etc. are NOT supported by LibreTranslate
 
 import {
     getVoices,
@@ -239,7 +250,7 @@ export function Audio() {
             let textToSpeak = text.trim();
 
             // Auto-translate if enabled, not English, and language is supported
-            if (autoTranslate && selectedLanguage !== 'en' && TRANSLATION_SUPPORTED_LANGUAGES.includes(selectedLanguage)) {
+            if (autoTranslate && selectedLanguage !== 'en' && selectedLanguage in TRANSLATION_LANGUAGE_MAP) {
                 setIsTranslating(true);
                 try {
                     const response = await fetch('/api/translate', {
@@ -730,7 +741,7 @@ function DeepgramTab({
 
                 {/* Auto-Translate Toggle */}
                 {selectedLanguage !== 'en' && (
-                    TRANSLATION_SUPPORTED_LANGUAGES.includes(selectedLanguage) ? (
+                    (selectedLanguage in TRANSLATION_LANGUAGE_MAP) ? (
                         <div className="flex items-center justify-between p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
@@ -1214,10 +1225,11 @@ function ElevenLabsTab({
             
             // Auto-translate if target language is different from English
             // and the language is supported by LibreTranslate
-            if (selectedLanguage !== 'en' && TRANSLATION_SUPPORTED_LANGUAGES.includes(selectedLanguage)) {
+            if (selectedLanguage !== 'en' && selectedLanguage in TRANSLATION_LANGUAGE_MAP) {
                 try {
-                    console.log(`Translating text from English to ${selectedLanguage}...`);
-                    textToSpeak = await translateText(text.trim(), 'en', selectedLanguage);
+                    const targetLang = TRANSLATION_LANGUAGE_MAP[selectedLanguage];
+                    console.log(`Translating text from English to ${targetLang}...`);
+                    textToSpeak = await translateText(text.trim(), 'en', targetLang);
                     console.log('Translated text:', textToSpeak);
                 } catch (translateErr) {
                     console.warn('Translation failed, using original text:', translateErr);
@@ -1645,33 +1657,49 @@ function ElevenLabsTab({
                 )}
             </div>
 
-            {/* Generated Files */}
+            {/* Generated Files - Matching Deepgram Style */}
             <div ref={generatedFilesRef} className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">Generated Audio</h3>
+                    <div>
+                        <h2 className="font-semibold text-[var(--color-text-primary)]">Generated Audio Files</h2>
+                        <p className="text-sm text-[var(--color-text-muted)]">
+                            {audioFiles.length} file{audioFiles.length !== 1 ? 's' : ''}
+                        </p>
+                    </div>
                     <button
                         onClick={handleRefresh}
                         className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
+                        title="Refresh"
                     >
                         <RefreshCw className="w-4 h-4 text-[var(--color-text-muted)]" />
                     </button>
                 </div>
 
                 {audioFiles.length === 0 ? (
-                    <div className="text-center py-8 text-[var(--color-text-muted)]">
-                        <Volume2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                        <p>No ElevenLabs audio files generated yet</p>
+                    <div className="text-center py-12">
+                        <Volume2 className="w-12 h-12 mx-auto text-[var(--color-text-muted)] mb-3" />
+                        <p className="text-[var(--color-text-muted)]">No audio files generated yet</p>
+                        <p className="text-sm text-[var(--color-text-muted)]">
+                            Use the generator above to create your first audio file
+                        </p>
                     </div>
                 ) : (
                     <div className="space-y-2">
-                        {audioFiles.map((file) => (
+                        {audioFiles.map((file) => {
+                            // Extract format info from outputFormat (e.g., "mp3_44100_128")
+                            const formatParts = file.outputFormat?.split('_') || [];
+                            const encoding = formatParts[0]?.toUpperCase() || 'MP3';
+                            const sampleRate = formatParts[1] ? `${parseInt(formatParts[1]) / 1000}kHz` : '';
+                            
+                            return (
                             <div
                                 key={file.id}
-                                className="flex items-center gap-3 p-3 bg-[var(--color-bg-elevated)] rounded-lg"
+                                className="flex items-center gap-4 p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]"
                             >
+                                {/* Play button */}
                                 <button
                                     onClick={() => handlePlayFile(file)}
-                                    className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600 text-white rounded-full hover:opacity-80 transition-opacity"
+                                    className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-[var(--color-accent-primary)] text-white rounded-full hover:bg-[var(--color-accent-primary)]/80 transition-colors"
                                 >
                                     {playingId === file.id ? (
                                         <Pause className="w-4 h-4" />
@@ -1679,31 +1707,58 @@ function ElevenLabsTab({
                                         <Play className="w-4 h-4 ml-0.5" />
                                     )}
                                 </button>
+
+                                {/* File info */}
                                 <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-[var(--color-text-primary)] truncate">{file.name}</p>
-                                    <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-                                        <span>{file.voiceName}</span>
-                                        <span>•</span>
-                                        <span>{file.modelName}</span>
-                                        <span>•</span>
-                                        <span>{elevenlabsService.formatFileSize(file.fileSize)}</span>
+                                    <p className="font-medium text-[var(--color-text-primary)] truncate">
+                                        {file.name}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-500/20 text-purple-400">
+                                            {encoding}
+                                        </span>
+                                        {sampleRate && (
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-emerald-500/20 text-emerald-400">
+                                                {sampleRate}
+                                            </span>
+                                        )}
+                                        <span className="text-xs text-[var(--color-text-muted)]">
+                                            {elevenlabsService.formatFileSize(file.fileSize)}
+                                        </span>
                                     </div>
+                                    <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                                        Voice: {file.voiceName}
+                                    </p>
                                 </div>
-                                <a
-                                    href={file.fileUrl}
-                                    download
-                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
-                                >
-                                    <Download className="w-4 h-4 text-[var(--color-text-muted)]" />
-                                </a>
-                                <button
-                                    onClick={() => handleDeleteFile(file.id)}
-                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
-                                >
-                                    <Trash2 className="w-4 h-4 text-[var(--color-text-muted)]" />
-                                </button>
+
+                                {/* Text preview */}
+                                <div className="hidden lg:block flex-1 max-w-md">
+                                    <p className="text-sm text-[var(--color-text-muted)] truncate italic">
+                                        "{file.text}"
+                                    </p>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center gap-2">
+                                    <a
+                                        href={file.fileUrl}
+                                        download
+                                        className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
+                                        title="Download"
+                                    >
+                                        <Download className="w-4 h-4 text-[var(--color-text-muted)]" />
+                                    </a>
+                                    <button
+                                        onClick={() => handleDeleteFile(file.id)}
+                                        className="p-2 hover:bg-[var(--color-error)]/10 rounded-lg transition-colors"
+                                        title="Delete"
+                                    >
+                                        <Trash2 className="w-4 h-4 text-[var(--color-error)]" />
+                                    </button>
+                                </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

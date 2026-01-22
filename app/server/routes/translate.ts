@@ -44,6 +44,11 @@ function mockTranslate(text: string, targetLang: string): string {
     return (prefixes[targetLang] || `[${targetLang.toUpperCase()}] `) + text;
 }
 
+// Map common language codes to LibreTranslate codes
+const LANGUAGE_CODE_MAP: Record<string, string> = {
+    'zh': 'zh-Hans', // Chinese simplified
+};
+
 // Translate text using LibreTranslate
 async function translateWithLibreTranslate(
     text: string,
@@ -51,10 +56,14 @@ async function translateWithLibreTranslate(
     targetLang: string,
     apiKey?: string
 ): Promise<string> {
+    // Map language codes to LibreTranslate format
+    const mappedSource = LANGUAGE_CODE_MAP[sourceLang] || sourceLang;
+    const mappedTarget = LANGUAGE_CODE_MAP[targetLang] || targetLang;
+    
     const body: Record<string, string> = {
         q: text,
-        source: sourceLang,
-        target: targetLang,
+        source: mappedSource,
+        target: mappedTarget,
         format: 'text',
     };
 
