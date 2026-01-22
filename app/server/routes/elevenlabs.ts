@@ -12,8 +12,31 @@ const __dirname = path.dirname(__filename);
 const router = Router();
 
 // ElevenLabs API configuration
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY || '';
 const ELEVENLABS_API_URL = 'https://api.elevenlabs.io/v1';
+
+// Settings file path (same as settings.ts)
+const SETTINGS_FILE = path.join(__dirname, '../../data/settings.json');
+
+// Get ElevenLabs API key from settings or environment
+function getApiKey(): string {
+    // Environment variable takes priority
+    if (process.env.ELEVENLABS_API_KEY) {
+        return process.env.ELEVENLABS_API_KEY;
+    }
+    
+    // Fall back to settings file
+    try {
+        if (fs.existsSync(SETTINGS_FILE)) {
+            const data = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+            const settings = JSON.parse(data);
+            return settings?.transcription?.elevenLabsApiKey || '';
+        }
+    } catch (error) {
+        console.error('Error reading settings for ElevenLabs API key:', error);
+    }
+    
+    return '';
+}
 
 // Audio storage paths (shared with Deepgram)
 const UPLOAD_BASE = path.join(__dirname, '../../uploads');
@@ -55,14 +78,56 @@ export const ELEVENLABS_MODELS = [
     },
 ];
 
-// Audio output formats
+// Audio output formats (more options including lower quality)
 export const ELEVENLABS_FORMATS = [
-    { id: 'mp3_44100_128', name: 'MP3 44.1kHz 128kbps', mimeType: 'audio/mpeg', extension: '.mp3' },
-    { id: 'mp3_44100_192', name: 'MP3 44.1kHz 192kbps', mimeType: 'audio/mpeg', extension: '.mp3' },
-    { id: 'pcm_16000', name: 'PCM 16kHz', mimeType: 'audio/pcm', extension: '.pcm' },
-    { id: 'pcm_22050', name: 'PCM 22.05kHz', mimeType: 'audio/pcm', extension: '.pcm' },
-    { id: 'pcm_24000', name: 'PCM 24kHz', mimeType: 'audio/pcm', extension: '.pcm' },
-    { id: 'pcm_44100', name: 'PCM 44.1kHz', mimeType: 'audio/pcm', extension: '.pcm' },
+    // MP3 formats (various quality levels)
+    { id: 'mp3_22050_32', name: 'MP3 22kHz 32kbps (Low)', mimeType: 'audio/mpeg', extension: '.mp3', quality: 'low' },
+    { id: 'mp3_44100_64', name: 'MP3 44kHz 64kbps (Medium)', mimeType: 'audio/mpeg', extension: '.mp3', quality: 'medium' },
+    { id: 'mp3_44100_128', name: 'MP3 44kHz 128kbps (Standard)', mimeType: 'audio/mpeg', extension: '.mp3', quality: 'standard' },
+    { id: 'mp3_44100_192', name: 'MP3 44kHz 192kbps (High)', mimeType: 'audio/mpeg', extension: '.mp3', quality: 'high' },
+    // PCM formats
+    { id: 'pcm_16000', name: 'PCM 16kHz (Compact)', mimeType: 'audio/pcm', extension: '.pcm', quality: 'low' },
+    { id: 'pcm_22050', name: 'PCM 22kHz', mimeType: 'audio/pcm', extension: '.pcm', quality: 'medium' },
+    { id: 'pcm_24000', name: 'PCM 24kHz', mimeType: 'audio/pcm', extension: '.pcm', quality: 'standard' },
+    { id: 'pcm_44100', name: 'PCM 44kHz (High Quality)', mimeType: 'audio/pcm', extension: '.pcm', quality: 'high' },
+    // μ-law format for telephony
+    { id: 'ulaw_8000', name: 'μ-law 8kHz (Telephony)', mimeType: 'audio/basic', extension: '.ulaw', quality: 'telephony' },
+];
+
+// ElevenLabs supported languages (Multilingual v2 supports 29, Flash/Turbo support 32)
+export const ELEVENLABS_LANGUAGES = [
+    { code: 'en', name: 'English', voices: 'many' },
+    { code: 'es', name: 'Spanish', voices: 'many' },
+    { code: 'fr', name: 'French', voices: 'many' },
+    { code: 'de', name: 'German', voices: 'many' },
+    { code: 'it', name: 'Italian', voices: 'many' },
+    { code: 'pt', name: 'Portuguese', voices: 'many' },
+    { code: 'pl', name: 'Polish', voices: 'some' },
+    { code: 'nl', name: 'Dutch', voices: 'some' },
+    { code: 'sv', name: 'Swedish', voices: 'some' },
+    { code: 'da', name: 'Danish', voices: 'some' },
+    { code: 'fi', name: 'Finnish', voices: 'some' },
+    { code: 'no', name: 'Norwegian', voices: 'some' },
+    { code: 'cs', name: 'Czech', voices: 'some' },
+    { code: 'ro', name: 'Romanian', voices: 'some' },
+    { code: 'el', name: 'Greek', voices: 'some' },
+    { code: 'tr', name: 'Turkish', voices: 'some' },
+    { code: 'ru', name: 'Russian', voices: 'some' },
+    { code: 'uk', name: 'Ukrainian', voices: 'some' },
+    { code: 'hu', name: 'Hungarian', voices: 'some' },
+    { code: 'bg', name: 'Bulgarian', voices: 'some' },
+    { code: 'hr', name: 'Croatian', voices: 'some' },
+    { code: 'sk', name: 'Slovak', voices: 'some' },
+    { code: 'id', name: 'Indonesian', voices: 'some' },
+    { code: 'ms', name: 'Malay', voices: 'some' },
+    { code: 'vi', name: 'Vietnamese', voices: 'some' },
+    { code: 'th', name: 'Thai', voices: 'some' },
+    { code: 'zh', name: 'Chinese', voices: 'many' },
+    { code: 'ja', name: 'Japanese', voices: 'many' },
+    { code: 'ko', name: 'Korean', voices: 'many' },
+    { code: 'hi', name: 'Hindi', voices: 'some' },
+    { code: 'ar', name: 'Arabic', voices: 'some' },
+    { code: 'he', name: 'Hebrew', voices: 'some' },
 ];
 
 // Voice settings defaults
@@ -129,11 +194,11 @@ loadMetadata();
 
 // GET /api/elevenlabs/status - Check API status and key
 router.get('/status', async (_req: Request, res: Response) => {
-    if (!ELEVENLABS_API_KEY) {
+    if (!getApiKey()) {
         return res.json({
             configured: false,
             error: 'ElevenLabs API key not configured',
-            hint: 'Set ELEVENLABS_API_KEY environment variable',
+            hint: 'Set ELEVENLABS_API_KEY environment variable or configure in Settings',
         });
     }
 
@@ -141,7 +206,7 @@ router.get('/status', async (_req: Request, res: Response) => {
         // Check subscription/user info
         const response = await fetch(`${ELEVENLABS_API_URL}/user/subscription`, {
             headers: {
-                'xi-api-key': ELEVENLABS_API_KEY,
+                'xi-api-key': getApiKey(),
             },
         });
 
@@ -185,9 +250,14 @@ router.get('/formats', (_req: Request, res: Response) => {
     return res.json(ELEVENLABS_FORMATS);
 });
 
+// GET /api/elevenlabs/languages - Get supported languages
+router.get('/languages', (_req: Request, res: Response) => {
+    return res.json(ELEVENLABS_LANGUAGES);
+});
+
 // GET /api/elevenlabs/voices - Get available voices
 router.get('/voices', async (_req: Request, res: Response) => {
-    if (!ELEVENLABS_API_KEY) {
+    if (!getApiKey()) {
         return res.status(500).json({
             error: 'ElevenLabs API key not configured',
         });
@@ -196,7 +266,7 @@ router.get('/voices', async (_req: Request, res: Response) => {
     try {
         const response = await fetch(`${ELEVENLABS_API_URL}/voices`, {
             headers: {
-                'xi-api-key': ELEVENLABS_API_KEY,
+                'xi-api-key': getApiKey(),
             },
         });
 
@@ -255,10 +325,10 @@ router.post('/generate', async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Voice ID is required' });
         }
 
-        if (!ELEVENLABS_API_KEY) {
+        if (!getApiKey()) {
             return res.status(500).json({
                 error: 'ElevenLabs API key not configured',
-                hint: 'Set ELEVENLABS_API_KEY environment variable',
+                hint: 'Set ELEVENLABS_API_KEY environment variable or configure in Settings',
             });
         }
 
@@ -280,7 +350,7 @@ router.post('/generate', async (req: Request, res: Response) => {
             {
                 method: 'POST',
                 headers: {
-                    'xi-api-key': ELEVENLABS_API_KEY,
+                    'xi-api-key': getApiKey(),
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(requestBody),
@@ -409,7 +479,7 @@ router.post('/preview', async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'Voice ID is required' });
         }
 
-        if (!ELEVENLABS_API_KEY) {
+        if (!getApiKey()) {
             return res.status(500).json({
                 error: 'ElevenLabs API key not configured',
             });
@@ -420,7 +490,7 @@ router.post('/preview', async (req: Request, res: Response) => {
             {
                 method: 'POST',
                 headers: {
-                    'xi-api-key': ELEVENLABS_API_KEY,
+                    'xi-api-key': getApiKey(),
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({

@@ -14,6 +14,13 @@ export interface ElevenLabsFormat {
     name: string;
     mimeType: string;
     extension: string;
+    quality?: string;
+}
+
+export interface ElevenLabsLanguage {
+    code: string;
+    name: string;
+    voices: string;
 }
 
 export interface ElevenLabsVoice {
@@ -92,6 +99,15 @@ export async function getFormats(): Promise<ElevenLabsFormat[]> {
     const response = await fetch('/api/elevenlabs/formats');
     if (!response.ok) {
         throw new Error('Failed to get ElevenLabs formats');
+    }
+    return response.json();
+}
+
+// Get supported languages
+export async function getLanguages(): Promise<ElevenLabsLanguage[]> {
+    const response = await fetch('/api/elevenlabs/languages');
+    if (!response.ok) {
+        throw new Error('Failed to get ElevenLabs languages');
     }
     return response.json();
 }

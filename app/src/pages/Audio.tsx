@@ -115,12 +115,14 @@ export function Audio() {
     const [elVoices, setElVoices] = useState<elevenlabsService.ElevenLabsVoice[]>([]);
     const [elModels, setElModels] = useState<elevenlabsService.ElevenLabsModel[]>([]);
     const [elFormats, setElFormats] = useState<elevenlabsService.ElevenLabsFormat[]>([]);
+    const [elLanguages, setElLanguages] = useState<elevenlabsService.ElevenLabsLanguage[]>([]);
     const [elAudioFiles, setElAudioFiles] = useState<elevenlabsService.GeneratedAudio[]>([]);
     const [elText, setElText] = useState('');
     const [elSelectedVoice, setElSelectedVoice] = useState<string>('');
     const [elSelectedVoiceName, setElSelectedVoiceName] = useState<string>('');
     const [elSelectedModel, setElSelectedModel] = useState('eleven_multilingual_v2');
     const [elSelectedFormat, setElSelectedFormat] = useState('mp3_44100_128');
+    const [elSelectedLanguage, setElSelectedLanguage] = useState('en');
     const [elStability, setElStability] = useState(0.5);
     const [elSimilarityBoost, setElSimilarityBoost] = useState(0.75);
     const [elIsGenerating, setElIsGenerating] = useState(false);
@@ -150,17 +152,19 @@ export function Audio() {
 
                 // Load ElevenLabs data (don't fail if not configured)
                 try {
-                    const [elStatusData, elVoicesData, elModelsData, elFormatsData, elFilesData] = await Promise.all([
+                    const [elStatusData, elVoicesData, elModelsData, elFormatsData, elLanguagesData, elFilesData] = await Promise.all([
                         elevenlabsService.getStatus(),
                         elevenlabsService.getVoices().catch(() => ({ voices: [] })),
                         elevenlabsService.getModels(),
                         elevenlabsService.getFormats(),
+                        elevenlabsService.getLanguages(),
                         elevenlabsService.getAudioFiles(),
                     ]);
                     setElStatus(elStatusData);
                     setElVoices(elVoicesData.voices);
                     setElModels(elModelsData);
                     setElFormats(elFormatsData);
+                    setElLanguages(elLanguagesData);
                     setElAudioFiles(elFilesData);
                     // Set default voice if available
                     if (elVoicesData.voices.length > 0) {
@@ -464,6 +468,7 @@ export function Audio() {
                         voices={elVoices}
                         models={elModels}
                         formats={elFormats}
+                        languages={elLanguages}
                         audioFiles={elAudioFiles}
                         text={elText}
                         setText={setElText}
@@ -475,6 +480,8 @@ export function Audio() {
                         setSelectedModel={setElSelectedModel}
                         selectedFormat={elSelectedFormat}
                         setSelectedFormat={setElSelectedFormat}
+                        selectedLanguage={elSelectedLanguage}
+                        setSelectedLanguage={setElSelectedLanguage}
                         stability={elStability}
                         setStability={setElStability}
                         similarityBoost={elSimilarityBoost}
@@ -1084,6 +1091,7 @@ interface ElevenLabsTabProps {
     voices: elevenlabsService.ElevenLabsVoice[];
     models: elevenlabsService.ElevenLabsModel[];
     formats: elevenlabsService.ElevenLabsFormat[];
+    languages: elevenlabsService.ElevenLabsLanguage[];
     audioFiles: elevenlabsService.GeneratedAudio[];
     text: string;
     setText: (text: string) => void;
@@ -1095,6 +1103,8 @@ interface ElevenLabsTabProps {
     setSelectedModel: (model: string) => void;
     selectedFormat: string;
     setSelectedFormat: (format: string) => void;
+    selectedLanguage: string;
+    setSelectedLanguage: (language: string) => void;
     stability: number;
     setStability: (value: number) => void;
     similarityBoost: number;
@@ -1120,6 +1130,7 @@ function ElevenLabsTab({
     voices,
     models,
     formats,
+    languages,
     audioFiles,
     text,
     setText,
@@ -1131,6 +1142,8 @@ function ElevenLabsTab({
     setSelectedModel,
     selectedFormat,
     setSelectedFormat,
+    selectedLanguage,
+    setSelectedLanguage,
     stability,
     setStability,
     similarityBoost,
@@ -1151,6 +1164,12 @@ function ElevenLabsTab({
     generatedFilesRef,
 }: ElevenLabsTabProps) {
     const isConfigured = status?.configured && status?.valid;
+
+    // Filter voices by selected language (ElevenLabs voices have language in labels)
+    const filteredVoices = voices.filter(voice => {
+        const voiceLang = voice.labels?.language || 'en';
+        return voiceLang === selectedLanguage || selectedLanguage === 'en'; // Show all for English as default
+    });
 
     // Handle voice selection
     const handleVoiceSelect = (voice: elevenlabsService.ElevenLabsVoice) => {
@@ -1191,19 +1210,34 @@ function ElevenLabsTab({
         }
     };
 
-    // Handle preview
+    // Handle preview - use the pre-hosted preview_url from ElevenLabs (no API auth needed)
     const handlePreviewVoice = async (voiceId: string) => {
         try {
             setPreviewingVoice(voiceId);
-            const audioBlob = await elevenlabsService.previewVoice(voiceId);
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = document.createElement('audio');
-            audio.src = audioUrl;
-            audio.play();
-            audio.onended = () => {
-                setPreviewingVoice(null);
-                URL.revokeObjectURL(audioUrl);
-            };
+            
+            // Find the voice and use its preview_url (pre-hosted by ElevenLabs)
+            const voice = voices.find(v => v.id === voiceId);
+            if (voice?.preview_url) {
+                const audio = document.createElement('audio');
+                audio.src = voice.preview_url;
+                audio.play();
+                audio.onended = () => setPreviewingVoice(null);
+                audio.onerror = () => {
+                    console.error('Preview audio failed to load');
+                    setPreviewingVoice(null);
+                };
+            } else {
+                // Fallback to API if no preview_url (shouldn't happen normally)
+                const audioBlob = await elevenlabsService.previewVoice(voiceId);
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = document.createElement('audio');
+                audio.src = audioUrl;
+                audio.play();
+                audio.onended = () => {
+                    setPreviewingVoice(null);
+                    URL.revokeObjectURL(audioUrl);
+                };
+            }
         } catch (err) {
             console.error('Preview error:', err);
             setPreviewingVoice(null);
@@ -1353,8 +1387,28 @@ function ElevenLabsTab({
                     <span>Max: {(selectedModelInfo?.charLimit || 10000).toLocaleString()}</span>
                 </div>
 
-                {/* Settings */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                {/* Settings Row 1 - Language, Model, Format */}
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                    {/* Language */}
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Language</label>
+                        <div className="relative">
+                            <select
+                                value={selectedLanguage}
+                                onChange={(e) => setSelectedLanguage(e.target.value)}
+                                className="w-full appearance-none p-3 pr-10 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]"
+                            >
+                                {languages.map((lang) => (
+                                    <option key={lang.code} value={lang.code}>
+                                        {lang.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
+                        </div>
+                        <p className="text-xs text-[var(--color-text-muted)] mt-1">{languages.length} languages supported</p>
+                    </div>
+
                     {/* Model */}
                     <div>
                         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Model</label>
@@ -1377,7 +1431,7 @@ function ElevenLabsTab({
 
                     {/* Format */}
                     <div>
-                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Format</label>
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Format / Quality</label>
                         <div className="relative">
                             <select
                                 value={selectedFormat}
@@ -1470,30 +1524,78 @@ function ElevenLabsTab({
                 )}
             </div>
 
-            {/* Voice Gallery */}
+            {/* Voice Gallery - Matching Deepgram Style */}
             <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">Voice Library</h3>
-                    <span className="text-sm text-[var(--color-text-muted)]">{voices.length} voices</span>
+                <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">Voice Gallery</h3>
+                    <p className="text-sm text-[var(--color-text-muted)]">
+                        {filteredVoices.length} voices available in {languages.find(l => l.code === selectedLanguage)?.name || 'English'}
+                    </p>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-64 overflow-y-auto">
-                    {voices.map((voice) => (
-                        <button
-                            key={voice.id}
-                            onClick={() => handleVoiceSelect(voice)}
-                            className={`p-3 rounded-lg border transition-all text-left ${
-                                selectedVoice === voice.id
-                                    ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10'
-                                    : 'border-transparent bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)]'
-                            }`}
-                        >
-                            <div className="flex items-center gap-2 mb-1">
-                                <User className="w-4 h-4 text-[var(--color-text-muted)]" />
-                                <span className="text-sm font-medium text-[var(--color-text-primary)] truncate">{voice.name}</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-96 overflow-y-auto p-1">
+                    {filteredVoices.map((voice) => {
+                        const isFeatured = voice.category === 'premade';
+                        const gender = voice.labels?.gender || 'neutral';
+                        
+                        return (
+                            <div
+                                key={voice.id}
+                                onClick={() => handleVoiceSelect(voice)}
+                                className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                                    selectedVoice === voice.id
+                                        ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 shadow-lg'
+                                        : 'border-transparent bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] hover:shadow-md'
+                                }`}
+                            >
+                                {/* Featured Badge */}
+                                {isFeatured && (
+                                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
+                                        Featured
+                                    </span>
+                                )}
+                                
+                                <div className="flex flex-col items-center text-center pt-1">
+                                    {/* Avatar */}
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
+                                        gender === 'female' 
+                                            ? 'bg-gradient-to-br from-pink-400 to-rose-500' 
+                                            : gender === 'male'
+                                            ? 'bg-gradient-to-br from-blue-400 to-indigo-500'
+                                            : 'bg-gradient-to-br from-purple-400 to-violet-500'
+                                    }`}>
+                                        <User className="w-6 h-6 text-white" />
+                                    </div>
+                                    
+                                    {/* Name */}
+                                    <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate w-full mb-0.5">
+                                        {voice.name.split(' - ')[0]}
+                                    </span>
+                                    
+                                    {/* Gender */}
+                                    <span className="text-xs text-[var(--color-text-muted)] capitalize mb-2">
+                                        {gender}
+                                    </span>
+                                    
+                                    {/* Preview Button */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handlePreviewVoice(voice.id);
+                                        }}
+                                        disabled={previewingVoice === voice.id}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-all disabled:opacity-50"
+                                    >
+                                        {previewingVoice === voice.id ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Play className="w-3 h-3" />
+                                        )}
+                                        Preview
+                                    </button>
+                                </div>
                             </div>
-                            <span className="text-xs text-[var(--color-text-muted)] capitalize">{voice.category}</span>
-                        </button>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 
