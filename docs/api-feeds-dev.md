@@ -2,21 +2,53 @@
 
 ## Overview
 
-The **API & Feeds** section will be a full-featured management interface for TourStack's API endpoints and JSON feeds. This section enables tour creators to manage, test, and configure the data feeds that power mobile apps and external integrations.
+The **API & Feeds** section is a full-featured management interface for TourStack's API endpoints and JSON feeds. This section enables tour creators to manage, test, and configure the data feeds that power mobile apps and external integrations.
 
 **Target Users:** Tour developers, mobile app integrators, museum IT teams  
 **Primary Goal:** Provide a comprehensive interface for managing and testing tour data exports
 
 ---
 
+## ✅ Implementation Status (January 22, 2026)
+
+| Phase | Status |
+|-------|--------|
+| Phase 1: API Dashboard & Feeds | ✅ Complete |
+| Phase 2: Query Parameters | ✅ Complete |
+| Phase 3: API Keys | 🔜 Coming Soon |
+| Phase 4: Webhooks | 🔜 Coming Soon |
+| Phase 5: Testing Interface | 🔜 Coming Soon |
+
+### Implemented Features
+
+**API & Feeds Page:**
+- ✅ Tabbed interface (Overview, Feeds, API Keys, Webhooks, Testing)
+- ✅ Overview tab with API status, stats, quick actions
+- ✅ Feeds tab with feed listing and JSON preview modal
+- ✅ Copy URL and download functionality
+
+**Feed Endpoints:**
+- ✅ `GET /api/feeds/tours` - All tours feed
+- ✅ `GET /api/feeds/tours/:id` - Single tour feed
+- ✅ `GET /api/feeds/tours/:id/stops` - Tour stops only
+
+**Query Parameters:**
+- ✅ `?lang=es` - Filter content to specific language
+- ✅ `?format=full|compact|minimal` - Control output verbosity
+- ✅ `?status=published` - Filter by tour status
+- ✅ `?include_stops=false` - Exclude stops from response
+
+---
+
 ## Current State Audit
 
-### Existing API Structure
+### API Structure
 
 ```
 app/server/routes/
 ├── audio.ts          # Deepgram TTS generation
 ├── elevenlabs.ts     # ElevenLabs TTS generation
+├── feeds.ts          # Tour JSON feeds (NEW)
 ├── media.ts          # File uploads (images, audio)
 ├── settings.ts       # App settings CRUD
 ├── stops.ts          # Stop CRUD operations
@@ -40,15 +72,16 @@ app/server/routes/
 | `/api/audio/*` | Various | Deepgram TTS |
 | `/api/elevenlabs/*` | Various | ElevenLabs TTS |
 | `/api/translate` | POST | Text translation |
+| `/api/feeds/tours` | GET | All tours JSON feed |
+| `/api/feeds/tours/:id` | GET | Single tour JSON feed |
+| `/api/feeds/tours/:id/stops` | GET | Tour stops JSON feed |
 
-### Current Data Export
+### Remaining Features (Coming Soon)
 
-Currently, tours can be exported as JSON via the UI, but there's no:
-- Public API for mobile apps
-- Feed management interface
 - API key authentication
 - Rate limiting
 - Webhook support
+- API testing interface
 
 ---
 
