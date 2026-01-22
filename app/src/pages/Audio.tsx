@@ -40,6 +40,8 @@ import {
     type Voice
 } from '../services/audioService';
 
+import * as elevenlabsService from '../services/elevenlabsService';
+
 type TabId = 'deepgram' | 'whisper' | 'elevenlabs';
 
 interface Tab {
@@ -69,7 +71,7 @@ const tabs: Tab[] = [
         id: 'elevenlabs',
         name: 'ElevenLabs',
         icon: Volume2,
-        status: 'coming_soon',
+        status: 'active',
         description: 'Premium voice cloning and synthesis'
     },
 ];
@@ -108,11 +110,33 @@ export function Audio() {
     // Ref for scrolling to generated files
     const generatedFilesRef = useRef<HTMLDivElement>(null);
 
+    // ElevenLabs state
+    const [elStatus, setElStatus] = useState<elevenlabsService.ElevenLabsStatus | null>(null);
+    const [elVoices, setElVoices] = useState<elevenlabsService.ElevenLabsVoice[]>([]);
+    const [elModels, setElModels] = useState<elevenlabsService.ElevenLabsModel[]>([]);
+    const [elFormats, setElFormats] = useState<elevenlabsService.ElevenLabsFormat[]>([]);
+    const [elAudioFiles, setElAudioFiles] = useState<elevenlabsService.GeneratedAudio[]>([]);
+    const [elText, setElText] = useState('');
+    const [elSelectedVoice, setElSelectedVoice] = useState<string>('');
+    const [elSelectedVoiceName, setElSelectedVoiceName] = useState<string>('');
+    const [elSelectedModel, setElSelectedModel] = useState('eleven_multilingual_v2');
+    const [elSelectedFormat, setElSelectedFormat] = useState('mp3_44100_128');
+    const [elStability, setElStability] = useState(0.5);
+    const [elSimilarityBoost, setElSimilarityBoost] = useState(0.75);
+    const [elIsGenerating, setElIsGenerating] = useState(false);
+    const [elGenerateError, setElGenerateError] = useState<string | null>(null);
+    const [elPreviewingVoice, setElPreviewingVoice] = useState<string | null>(null);
+    const [elPlayingId, setElPlayingId] = useState<string | null>(null);
+    const [elPlayerAudio, setElPlayerAudio] = useState<HTMLAudioElement | null>(null);
+    const [elSuccessModal, setElSuccessModal] = useState<elevenlabsService.GeneratedAudio | null>(null);
+    const elGeneratedFilesRef = useRef<HTMLDivElement>(null);
+
     // Load initial data
     useEffect(() => {
         async function loadData() {
             try {
                 setIsLoading(true);
+                // Load Deepgram data
                 const [statusData, voicesData, formatsData, filesData] = await Promise.all([
                     getStatus(),
                     getVoices(),
@@ -123,6 +147,29 @@ export function Audio() {
                 setVoices(voicesData);
                 setFormats(formatsData);
                 setAudioFiles(filesData);
+
+                // Load ElevenLabs data (don't fail if not configured)
+                try {
+                    const [elStatusData, elVoicesData, elModelsData, elFormatsData, elFilesData] = await Promise.all([
+                        elevenlabsService.getStatus(),
+                        elevenlabsService.getVoices().catch(() => ({ voices: [] })),
+                        elevenlabsService.getModels(),
+                        elevenlabsService.getFormats(),
+                        elevenlabsService.getAudioFiles(),
+                    ]);
+                    setElStatus(elStatusData);
+                    setElVoices(elVoicesData.voices);
+                    setElModels(elModelsData);
+                    setElFormats(elFormatsData);
+                    setElAudioFiles(elFilesData);
+                    // Set default voice if available
+                    if (elVoicesData.voices.length > 0) {
+                        setElSelectedVoice(elVoicesData.voices[0].id);
+                        setElSelectedVoiceName(elVoicesData.voices[0].name);
+                    }
+                } catch (elErr) {
+                    console.log('ElevenLabs not configured or error:', elErr);
+                }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to load audio data');
             } finally {
@@ -410,6 +457,42 @@ export function Audio() {
                         autoTranslate={autoTranslate}
                         setAutoTranslate={setAutoTranslate}
                         isTranslating={isTranslating}
+                    />
+                ) : activeTab === 'elevenlabs' ? (
+                    <ElevenLabsTab
+                        status={elStatus}
+                        voices={elVoices}
+                        models={elModels}
+                        formats={elFormats}
+                        audioFiles={elAudioFiles}
+                        text={elText}
+                        setText={setElText}
+                        selectedVoice={elSelectedVoice}
+                        setSelectedVoice={setElSelectedVoice}
+                        selectedVoiceName={elSelectedVoiceName}
+                        setSelectedVoiceName={setElSelectedVoiceName}
+                        selectedModel={elSelectedModel}
+                        setSelectedModel={setElSelectedModel}
+                        selectedFormat={elSelectedFormat}
+                        setSelectedFormat={setElSelectedFormat}
+                        stability={elStability}
+                        setStability={setElStability}
+                        similarityBoost={elSimilarityBoost}
+                        setSimilarityBoost={setElSimilarityBoost}
+                        isGenerating={elIsGenerating}
+                        setIsGenerating={setElIsGenerating}
+                        generateError={elGenerateError}
+                        setGenerateError={setElGenerateError}
+                        previewingVoice={elPreviewingVoice}
+                        setPreviewingVoice={setElPreviewingVoice}
+                        playingId={elPlayingId}
+                        setPlayingId={setElPlayingId}
+                        playerAudio={elPlayerAudio}
+                        setPlayerAudio={setElPlayerAudio}
+                        successModal={elSuccessModal}
+                        setSuccessModal={setElSuccessModal}
+                        setAudioFiles={setElAudioFiles}
+                        generatedFilesRef={elGeneratedFilesRef}
                     />
                 ) : (
                     <ComingSoonTab tab={tabs.find(t => t.id === activeTab)!} />
@@ -990,6 +1073,491 @@ function SuccessModal({ audio, voices, onClose, onPlay, isPlaying }: SuccessModa
                         View All Files
                     </button>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+// ElevenLabs Tab Component
+interface ElevenLabsTabProps {
+    status: elevenlabsService.ElevenLabsStatus | null;
+    voices: elevenlabsService.ElevenLabsVoice[];
+    models: elevenlabsService.ElevenLabsModel[];
+    formats: elevenlabsService.ElevenLabsFormat[];
+    audioFiles: elevenlabsService.GeneratedAudio[];
+    text: string;
+    setText: (text: string) => void;
+    selectedVoice: string;
+    setSelectedVoice: (voice: string) => void;
+    selectedVoiceName: string;
+    setSelectedVoiceName: (name: string) => void;
+    selectedModel: string;
+    setSelectedModel: (model: string) => void;
+    selectedFormat: string;
+    setSelectedFormat: (format: string) => void;
+    stability: number;
+    setStability: (value: number) => void;
+    similarityBoost: number;
+    setSimilarityBoost: (value: number) => void;
+    isGenerating: boolean;
+    setIsGenerating: (value: boolean) => void;
+    generateError: string | null;
+    setGenerateError: (error: string | null) => void;
+    previewingVoice: string | null;
+    setPreviewingVoice: (voice: string | null) => void;
+    playingId: string | null;
+    setPlayingId: (id: string | null) => void;
+    playerAudio: HTMLAudioElement | null;
+    setPlayerAudio: (audio: HTMLAudioElement | null) => void;
+    successModal: elevenlabsService.GeneratedAudio | null;
+    setSuccessModal: (audio: elevenlabsService.GeneratedAudio | null) => void;
+    setAudioFiles: React.Dispatch<React.SetStateAction<elevenlabsService.GeneratedAudio[]>>;
+    generatedFilesRef: React.RefObject<HTMLDivElement | null>;
+}
+
+function ElevenLabsTab({
+    status,
+    voices,
+    models,
+    formats,
+    audioFiles,
+    text,
+    setText,
+    selectedVoice,
+    setSelectedVoice,
+    selectedVoiceName,
+    setSelectedVoiceName,
+    selectedModel,
+    setSelectedModel,
+    selectedFormat,
+    setSelectedFormat,
+    stability,
+    setStability,
+    similarityBoost,
+    setSimilarityBoost,
+    isGenerating,
+    setIsGenerating,
+    generateError,
+    setGenerateError,
+    previewingVoice,
+    setPreviewingVoice,
+    playingId,
+    setPlayingId,
+    playerAudio,
+    setPlayerAudio,
+    successModal,
+    setSuccessModal,
+    setAudioFiles,
+    generatedFilesRef,
+}: ElevenLabsTabProps) {
+    const isConfigured = status?.configured && status?.valid;
+
+    // Handle voice selection
+    const handleVoiceSelect = (voice: elevenlabsService.ElevenLabsVoice) => {
+        setSelectedVoice(voice.id);
+        setSelectedVoiceName(voice.name);
+    };
+
+    // Handle generate
+    const handleGenerate = async () => {
+        if (!text.trim() || !selectedVoice) return;
+
+        try {
+            setIsGenerating(true);
+            setGenerateError(null);
+
+            const result = await elevenlabsService.generateAudio({
+                text: text.trim(),
+                voiceId: selectedVoice,
+                voiceName: selectedVoiceName,
+                modelId: selectedModel,
+                outputFormat: selectedFormat,
+                stability,
+                similarityBoost,
+            });
+
+            setAudioFiles(prev => [result, ...prev]);
+            setText('');
+            setSuccessModal(result);
+
+            // Scroll to files
+            setTimeout(() => {
+                generatedFilesRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, 300);
+        } catch (err) {
+            setGenerateError(err instanceof Error ? err.message : 'Generation failed');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    // Handle preview
+    const handlePreviewVoice = async (voiceId: string) => {
+        try {
+            setPreviewingVoice(voiceId);
+            const audioBlob = await elevenlabsService.previewVoice(voiceId);
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = document.createElement('audio');
+            audio.src = audioUrl;
+            audio.play();
+            audio.onended = () => {
+                setPreviewingVoice(null);
+                URL.revokeObjectURL(audioUrl);
+            };
+        } catch (err) {
+            console.error('Preview error:', err);
+            setPreviewingVoice(null);
+        }
+    };
+
+    // Handle play file
+    const handlePlayFile = (file: elevenlabsService.GeneratedAudio) => {
+        if (playerAudio) {
+            playerAudio.pause();
+        }
+
+        if (playingId === file.id) {
+            setPlayingId(null);
+            return;
+        }
+
+        const audio = document.createElement('audio');
+        audio.src = file.fileUrl;
+        audio.play();
+        audio.onended = () => setPlayingId(null);
+        setPlayerAudio(audio);
+        setPlayingId(file.id);
+    };
+
+    // Handle delete
+    const handleDeleteFile = async (id: string) => {
+        try {
+            await elevenlabsService.deleteAudioFile(id);
+            setAudioFiles(prev => prev.filter(f => f.id !== id));
+        } catch (err) {
+            console.error('Delete error:', err);
+        }
+    };
+
+    // Handle refresh
+    const handleRefresh = async () => {
+        try {
+            const files = await elevenlabsService.getAudioFiles();
+            setAudioFiles(files);
+        } catch (err) {
+            console.error('Refresh error:', err);
+        }
+    };
+
+    if (!isConfigured) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <Settings2 className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
+                    ElevenLabs Not Configured
+                </h2>
+                <p className="text-[var(--color-text-muted)] text-center max-w-md">
+                    {status?.error || 'To use ElevenLabs premium text-to-speech, you need to configure your API key.'}
+                </p>
+                <p className="text-sm text-[var(--color-text-muted)]">
+                    Set <code className="px-1.5 py-0.5 bg-[var(--color-bg-elevated)] rounded">ELEVENLABS_API_KEY</code> environment variable
+                </p>
+            </div>
+        );
+    }
+
+    const selectedModelInfo = models.find(m => m.id === selectedModel);
+
+    return (
+        <div className="space-y-6">
+            {/* Success Modal */}
+            {successModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] shadow-2xl max-w-md w-full p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                                <CheckCircle2 className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Audio Generated!</h2>
+                                <p className="text-sm text-[var(--color-text-muted)]">via ElevenLabs</p>
+                            </div>
+                        </div>
+                        <div className="space-y-2 text-sm mb-4">
+                            <div className="flex justify-between py-2 border-b border-[var(--color-border-default)]">
+                                <span className="text-[var(--color-text-muted)]">Voice</span>
+                                <span className="text-[var(--color-text-primary)] font-medium">{successModal.voiceName}</span>
+                            </div>
+                            <div className="flex justify-between py-2 border-b border-[var(--color-border-default)]">
+                                <span className="text-[var(--color-text-muted)]">Model</span>
+                                <span className="text-[var(--color-text-primary)] font-medium">{successModal.modelName}</span>
+                            </div>
+                            <div className="flex justify-between py-2">
+                                <span className="text-[var(--color-text-muted)]">Size</span>
+                                <span className="text-[var(--color-text-primary)] font-medium">{elevenlabsService.formatFileSize(successModal.fileSize)}</span>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <a
+                                href={successModal.fileUrl}
+                                download
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors font-medium"
+                            >
+                                <Download className="w-4 h-4" />
+                                Download
+                            </a>
+                            <button
+                                onClick={() => setSuccessModal(null)}
+                                className="flex-1 px-4 py-2.5 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors font-medium"
+                            >
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Generator */}
+            <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                        <Volume2 className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">ElevenLabs TTS</h2>
+                        <p className="text-sm text-[var(--color-text-muted)]">Premium voice synthesis</p>
+                    </div>
+                    {status?.subscription && (
+                        <div className="ml-auto text-right">
+                            <p className="text-xs text-[var(--color-text-muted)]">Characters used</p>
+                            <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                                {status.subscription.character_count.toLocaleString()} / {status.subscription.character_limit.toLocaleString()}
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Text Input */}
+                <textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="Enter text to convert to speech..."
+                    rows={4}
+                    maxLength={selectedModelInfo?.charLimit || 10000}
+                    className="w-full p-4 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)] resize-none mb-4"
+                />
+                <div className="flex justify-between text-xs text-[var(--color-text-muted)] mb-4">
+                    <span>{text.length} characters</span>
+                    <span>Max: {(selectedModelInfo?.charLimit || 10000).toLocaleString()}</span>
+                </div>
+
+                {/* Settings */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    {/* Model */}
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Model</label>
+                        <div className="relative">
+                            <select
+                                value={selectedModel}
+                                onChange={(e) => setSelectedModel(e.target.value)}
+                                className="w-full appearance-none p-3 pr-10 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]"
+                            >
+                                {models.map((model) => (
+                                    <option key={model.id} value={model.id}>
+                                        {model.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
+                        </div>
+                        <p className="text-xs text-[var(--color-text-muted)] mt-1">{selectedModelInfo?.description}</p>
+                    </div>
+
+                    {/* Format */}
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Format</label>
+                        <div className="relative">
+                            <select
+                                value={selectedFormat}
+                                onChange={(e) => setSelectedFormat(e.target.value)}
+                                className="w-full appearance-none p-3 pr-10 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]"
+                            >
+                                {formats.map((format) => (
+                                    <option key={format.id} value={format.id}>
+                                        {format.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Voice Settings Sliders */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                            Stability: {stability.toFixed(2)}
+                        </label>
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={stability}
+                            onChange={(e) => setStability(parseFloat(e.target.value))}
+                            className="w-full accent-[var(--color-accent-primary)]"
+                        />
+                        <p className="text-xs text-[var(--color-text-muted)] mt-1">Lower = more expressive, Higher = more consistent</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                            Similarity: {similarityBoost.toFixed(2)}
+                        </label>
+                        <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={similarityBoost}
+                            onChange={(e) => setSimilarityBoost(parseFloat(e.target.value))}
+                            className="w-full accent-[var(--color-accent-primary)]"
+                        />
+                        <p className="text-xs text-[var(--color-text-muted)] mt-1">Higher = more similar to original voice</p>
+                    </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => selectedVoice && handlePreviewVoice(selectedVoice)}
+                        disabled={!selectedVoice || previewingVoice === selectedVoice}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors disabled:opacity-50"
+                    >
+                        {previewingVoice === selectedVoice ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Play className="w-4 h-4" />
+                        )}
+                        Preview Voice
+                    </button>
+                    <button
+                        onClick={handleGenerate}
+                        disabled={!text.trim() || !selectedVoice || isGenerating}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                    >
+                        {isGenerating ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Generating...
+                            </>
+                        ) : (
+                            <>
+                                <Volume2 className="w-4 h-4" />
+                                Generate Audio
+                            </>
+                        )}
+                    </button>
+                </div>
+
+                {generateError && (
+                    <div className="mt-4 p-3 bg-[var(--color-error)]/10 border border-[var(--color-error)]/20 rounded-lg flex items-center gap-2 text-[var(--color-error)]">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <p className="text-sm">{generateError}</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Voice Gallery */}
+            <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">Voice Library</h3>
+                    <span className="text-sm text-[var(--color-text-muted)]">{voices.length} voices</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-64 overflow-y-auto">
+                    {voices.map((voice) => (
+                        <button
+                            key={voice.id}
+                            onClick={() => handleVoiceSelect(voice)}
+                            className={`p-3 rounded-lg border transition-all text-left ${
+                                selectedVoice === voice.id
+                                    ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10'
+                                    : 'border-transparent bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)]'
+                            }`}
+                        >
+                            <div className="flex items-center gap-2 mb-1">
+                                <User className="w-4 h-4 text-[var(--color-text-muted)]" />
+                                <span className="text-sm font-medium text-[var(--color-text-primary)] truncate">{voice.name}</span>
+                            </div>
+                            <span className="text-xs text-[var(--color-text-muted)] capitalize">{voice.category}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Generated Files */}
+            <div ref={generatedFilesRef} className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">Generated Audio</h3>
+                    <button
+                        onClick={handleRefresh}
+                        className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
+                    >
+                        <RefreshCw className="w-4 h-4 text-[var(--color-text-muted)]" />
+                    </button>
+                </div>
+
+                {audioFiles.length === 0 ? (
+                    <div className="text-center py-8 text-[var(--color-text-muted)]">
+                        <Volume2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                        <p>No ElevenLabs audio files generated yet</p>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {audioFiles.map((file) => (
+                            <div
+                                key={file.id}
+                                className="flex items-center gap-3 p-3 bg-[var(--color-bg-elevated)] rounded-lg"
+                            >
+                                <button
+                                    onClick={() => handlePlayFile(file)}
+                                    className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-purple-500 to-pink-600 text-white rounded-full hover:opacity-80 transition-opacity"
+                                >
+                                    {playingId === file.id ? (
+                                        <Pause className="w-4 h-4" />
+                                    ) : (
+                                        <Play className="w-4 h-4 ml-0.5" />
+                                    )}
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-[var(--color-text-primary)] truncate">{file.name}</p>
+                                    <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                                        <span>{file.voiceName}</span>
+                                        <span>•</span>
+                                        <span>{file.modelName}</span>
+                                        <span>•</span>
+                                        <span>{elevenlabsService.formatFileSize(file.fileSize)}</span>
+                                    </div>
+                                </div>
+                                <a
+                                    href={file.fileUrl}
+                                    download
+                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
+                                >
+                                    <Download className="w-4 h-4 text-[var(--color-text-muted)]" />
+                                </a>
+                                <button
+                                    onClick={() => handleDeleteFile(file.id)}
+                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4 text-[var(--color-text-muted)]" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

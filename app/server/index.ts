@@ -13,6 +13,7 @@ import translateRouter from './routes/translate.js';
 import transcribeRouter from './routes/transcribe.js';
 import settingsRouter from './routes/settings.js';
 import audioRouter from './routes/audio.js';
+import elevenlabsRouter from './routes/elevenlabs.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +37,7 @@ app.use('/api/translate', translateRouter);
 app.use('/api/transcribe', transcribeRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/audio', audioRouter);
+app.use('/api/elevenlabs', elevenlabsRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {
