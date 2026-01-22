@@ -112,6 +112,20 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Auto-Scroll** - Scrolls to generated files after creation
 - [x] **Persistent Storage** - Files saved to `/app/uploads/audio/generated/`
 
+### Phase 13: ElevenLabs Integration ✅ (Jan 22, 2026)
+- [x] **ElevenLabs TTS** - Premium multilingual text-to-speech
+- [x] **32+ Languages** - Full ElevenLabs language support
+- [x] **Native Language Voices** - Italian voices for Italian, Chinese for Chinese, etc.
+- [x] **Shared Voice Library** - Access to 3,000+ community voices
+- [x] **Voice Preview** - Pre-hosted preview URLs (no API auth needed)
+- [x] **Auto-Translate** - English → target language via LibreTranslate
+- [x] **Language Availability Modal** - Explains which languages have translation configured
+- [x] **Availability Indicators** - ✓ badge on supported languages in dropdown
+- [x] **Voice Settings** - Stability and similarity boost sliders
+- [x] **Model Selection** - Multilingual v2, Flash v2.5, Turbo v2.5
+- [x] **Format Options** - MP3 (44.1kHz), PCM, Opus
+- [x] **UI Matching** - Generated audio styling matches Deepgram (badges, text preview)
+
 ---
 
 ## 📋 Next Steps (Priority Order)
@@ -154,8 +168,13 @@ TourStack uses a **modular content block system** where tours and stops are comp
 | Settings API | `app/server/routes/settings.ts` |
 | **Audio TTS** | |
 | Audio Page | `app/src/pages/Audio.tsx` |
-| Audio API Routes | `app/server/routes/audio.ts` |
-| Audio Service | `app/src/services/audioService.ts` |
+| Deepgram API Routes | `app/server/routes/audio.ts` |
+| Deepgram Service | `app/src/services/audioService.ts` |
+| **ElevenLabs TTS** | |
+| ElevenLabs API Routes | `app/server/routes/elevenlabs.ts` |
+| ElevenLabs Service | `app/src/services/elevenlabsService.ts` |
+| Translation API | `app/server/routes/translate.ts` |
+| Translation Service | `app/src/services/translationService.ts` |
 
 ---
 

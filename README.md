@@ -125,9 +125,10 @@ Add these in Coolify's **Environment Variables** section:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | `file:./data/dev.db` |
-| `DEEPGRAM_API_KEY` | Optional | Deepgram TTS (text-to-speech) |
-| `ELEVENLABS_API_KEY` | Optional | ElevenLabs premium TTS |
+| `DEEPGRAM_API_KEY` | Optional | Deepgram Aura-2 TTS (7 languages, 40+ voices) |
+| `ELEVENLABS_API_KEY` | Optional | ElevenLabs premium TTS (32+ languages, 3000+ voices) |
 | `GOOGLE_MAPS_API_KEY` | Optional | Google Maps for premium maps |
+| `LT_LOAD_ONLY` | Optional | LibreTranslate languages (default: en,es,fr,de,ja,it,ko,zh,pt) |
 
 **To set up Google Maps:**
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)

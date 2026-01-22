@@ -4,20 +4,23 @@
 
 The **Audio** section in TourStack's side navigation provides a centralized hub for creating and managing text-to-speech (TTS) audio files for tours. **Phase 1 is now complete** with full Deepgram Aura-2 integration.
 
-### ✅ Implementation Status (January 22, 2026)
+### Implementation Status (January 22, 2026)
 
 | Feature | Status |
 |---------|--------|
-| Deepgram Aura-2 TTS | ✅ Complete |
-| 7 Languages Support | ✅ Complete |
-| 40+ Voice Models | ✅ Complete |
-| Auto-Translate (LibreTranslate) | ✅ Complete |
-| Voice Preview | ✅ Complete |
-| Multiple Output Formats | ✅ Complete |
-| Success Modal | ✅ Complete |
-| File Metadata Display | ✅ Complete |
-| Whisper Integration | 🔜 Coming Soon |
-| ElevenLabs Integration | 🔜 Coming Soon |
+| Deepgram Aura-2 TTS | Complete |
+| 7 Languages Support | Complete |
+| 40+ Voice Models | Complete |
+| Auto-Translate (LibreTranslate) | Complete |
+| Voice Preview | Complete |
+| Multiple Output Formats | Complete |
+| Success Modal | Complete |
+| File Metadata Display | Complete |
+| ElevenLabs Integration | Complete |
+| ElevenLabs Native Voices | Complete |
+| ElevenLabs Auto-Translate | Complete |
+| Language Availability Modal | Complete |
+| Whisper Integration | Coming Soon |
 
 ---
 
@@ -48,9 +51,9 @@ The Audio page will have 3 provider tabs:
 
 | Tab | Status | Provider |
 |-----|--------|----------|
-| **Deepgram** | ✅ Active | Current TTS provider |
-| **Whisper** | 🔜 Coming Soon | Testing soon |
-| **ElevenLabs** | 🔜 Coming Soon | Future integration |
+| **Deepgram** | ✅ Active | Aura-2 TTS with 40+ voices |
+| **ElevenLabs** | ✅ Active | Premium multilingual TTS |
+| **Whisper** | 🔜 Coming Soon | Speech-to-text |
 
 ---
 
@@ -167,9 +170,9 @@ When selecting a non-English language, an auto-translate toggle appears (enabled
 - [ ] Normalize volume
 - [ ] Concatenate multiple clips
 
-### Phase 4: ElevenLabs Integration 🔜 NEXT
+### Phase 4: ElevenLabs Integration ✅ COMPLETE
 
-> **Status:** Planning Complete - Ready for Implementation
+> **Status:** Fully Implemented (January 22, 2026)
 
 #### 4.1 ElevenLabs Overview
 
@@ -206,39 +209,40 @@ ElevenLabs provides premium text-to-speech with:
 3. **Cloned Voices** - Instant (30s sample) or Professional
 4. **Designed Voices** - AI-generated from text descriptions
 
-#### 4.5 ElevenLabs Tab Features (Planned)
+#### 4.5 ElevenLabs Tab Features ✅ IMPLEMENTED
 
 **Core TTS Generation:**
-- [ ] Text input with character count (model-specific limits)
-- [ ] Model selector (v3, Multilingual v2, Flash v2.5, Turbo v2.5)
-- [ ] Voice selector with categories (Default, Community, My Voices)
-- [ ] Voice preview player
-- [ ] Output format selector (MP3, PCM, Opus)
-- [ ] Sample rate selector
-- [ ] Generate button with progress
-- [ ] Audio player and download
+- [x] Text input with character count (model-specific limits)
+- [x] Model selector (Multilingual v2, Flash v2.5, Turbo v2.5)
+- [x] Native language voice gallery (Italian voices for Italian, etc.)
+- [x] Voice preview player using pre-hosted URLs
+- [x] Output format selector (MP3 44.1kHz, PCM, Opus)
+- [x] Generate button with progress indicator
+- [x] Audio player and download
+- [x] Auto-translate toggle for non-English languages
 
 **Voice Settings:**
-- [ ] Stability slider (0-1) - consistency vs expressiveness
-- [ ] Similarity boost slider (0-1) - voice matching
-- [ ] Style slider (0-1) - expressiveness (v2+ models)
-- [ ] Speaker boost toggle - clarity enhancement
+- [x] Stability slider (0-1) - consistency vs expressiveness
+- [x] Similarity boost slider (0-1) - voice matching
 
-**Advanced Features:**
+**Language Availability:**
+- [x] Languages with auto-translation show ✓ in dropdown
+- [x] Styled modal for unavailable languages explaining configuration
+- [x] Supported: en, es, fr, de, it, pt, ja, ko, zh (via LibreTranslate)
+
+**Generated Audio Display:**
+- [x] Format badges (MP3, 44kHz)
+- [x] File size display
+- [x] Voice name
+- [x] Text preview
+- [x] Play/pause controls
+- [x] Download and delete buttons
+
+**Future Enhancements:**
 - [ ] Voice search in community library
 - [ ] Voice favorites/bookmarks
-- [ ] Pronunciation dictionary support
-- [ ] SSML-like controls via text markup
-
-**Voice Cloning (Premium):**
-- [ ] Instant voice clone from audio upload
-- [ ] Voice verification workflow
-- [ ] Clone management (rename, delete)
-
-**Voice Design:**
-- [ ] Text-to-voice description input
-- [ ] Generate voice previews
-- [ ] Save designed voice to library
+- [ ] Voice cloning (Premium tier)
+- [ ] Voice design from text descriptions
 
 #### 4.6 ElevenLabs API Endpoints
 

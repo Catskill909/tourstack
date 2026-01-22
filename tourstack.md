@@ -21,7 +21,8 @@
 | Phase 10: Audio Player Size Variants | ✅ Complete |
 | Phase 11: Map Block | ✅ Complete |
 | Phase 12: Audio TTS Section | ✅ Complete |
-| **Next:** Tour Audio Integration | 🔜 Planned |
+| Phase 13: ElevenLabs Integration | ✅ Complete |
+| **Next:** API & Feeds Section | 🔜 Planned |
 
 **Deployment:** Coolify/Docker with persistent volumes  
 - Database: Prisma + SQLite (`/app/data`)
@@ -162,13 +163,22 @@ Audio guide (MP3 upload with **3 size variants**):
  - **Small**: Icon-only play/pause button (44px phone, 56px tablet)
  - **Show Title toggle** for large player (editor-only for large size)
  - **Tablet scaling** - larger buttons/padding for medium/small sizes
-**Audio TTS Section** (Phase 12):
- - Deepgram Aura-2 text-to-speech integration
- - 7 languages: English, Spanish, German, French, Dutch, Italian, Japanese
- - 40+ voices with gender indicators and preview
- - Auto-translate toggle for non-English languages (via LibreTranslate)
- - Multiple output formats: MP3, WAV, OGG, FLAC
- - Sample rates: 8kHz, 16kHz, 24kHz, 48kHz
+**Audio TTS Section** (Phase 12-13):
+ - **Deepgram Aura-2** text-to-speech integration
+   - 7 languages: English, Spanish, German, French, Dutch, Italian, Japanese
+   - 40+ voices with gender indicators and preview
+   - Multiple output formats: MP3, WAV, OGG, FLAC
+   - Sample rates: 8kHz, 16kHz, 24kHz, 48kHz
+ - **ElevenLabs** premium multilingual TTS
+   - 32+ languages with native voice support
+   - 3,000+ community voices via shared voice library
+   - Native language voices (Italian voices for Italian, etc.)
+   - Models: Multilingual v2, Flash v2.5, Turbo v2.5
+   - Voice settings: Stability and similarity boost sliders
+ - **Auto-Translation** (LibreTranslate)
+   - Supported: en, es, fr, de, it, pt, ja, ko, zh
+   - Language availability indicators (✓) in dropdowns
+   - Styled modal for unavailable languages
  - Success modal with generation settings summary
  - File metadata display: language badges, format, sample rate, file size
  - Persistent storage in `/app/uploads/audio/generated/`
