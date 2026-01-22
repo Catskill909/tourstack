@@ -314,6 +314,43 @@ function FeedsTab({ tours }: { tours: Tour[] }) {
 
     return (
         <div className="space-y-6">
+            {/* Query Parameters Info */}
+            <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6">
+                <h2 className="text-lg font-semibold text-[var(--color-text-primary)] mb-4">Query Parameters</h2>
+                <p className="text-sm text-[var(--color-text-muted)] mb-4">
+                    All feed endpoints support the following query parameters:
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4">
+                        <code className="text-sm text-blue-400">?lang=es</code>
+                        <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                            Filter content to a specific language (e.g., es, fr, de)
+                        </p>
+                    </div>
+                    <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4">
+                        <code className="text-sm text-purple-400">?format=compact</code>
+                        <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                            Output format: full (default), compact, or minimal
+                        </p>
+                    </div>
+                    <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4">
+                        <code className="text-sm text-emerald-400">?status=published</code>
+                        <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                            Filter by tour status (published, draft, archived)
+                        </p>
+                    </div>
+                    <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4">
+                        <code className="text-sm text-amber-400">?include_stops=false</code>
+                        <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                            Exclude stops from response (default: true)
+                        </p>
+                    </div>
+                </div>
+                <p className="text-xs text-[var(--color-text-muted)] mt-4">
+                    Example: <code className="text-[var(--color-text-secondary)]">/api/feeds/tours?lang=es&format=compact&status=published</code>
+                </p>
+            </div>
+
             {/* Feed List */}
             <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6">
                 <div className="flex items-center justify-between mb-4">
