@@ -19,6 +19,7 @@ import {
     X,
     AlertTriangle,
 } from 'lucide-react';
+import { translateText } from '../services/translationService';
 
 // Languages supported by LibreTranslate for auto-translation
 const TRANSLATION_SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'ja', 'ko', 'pt', 'zh'];
@@ -1201,7 +1202,7 @@ function ElevenLabsTab({
         setSelectedVoiceName(voice.name);
     };
 
-    // Handle generate
+    // Handle generate with auto-translation
     const handleGenerate = async () => {
         if (!text.trim() || !selectedVoice) return;
 
@@ -1209,8 +1210,23 @@ function ElevenLabsTab({
             setIsGenerating(true);
             setGenerateError(null);
 
+            let textToSpeak = text.trim();
+            
+            // Auto-translate if target language is different from English
+            // and the language is supported by LibreTranslate
+            if (selectedLanguage !== 'en' && TRANSLATION_SUPPORTED_LANGUAGES.includes(selectedLanguage)) {
+                try {
+                    console.log(`Translating text from English to ${selectedLanguage}...`);
+                    textToSpeak = await translateText(text.trim(), 'en', selectedLanguage);
+                    console.log('Translated text:', textToSpeak);
+                } catch (translateErr) {
+                    console.warn('Translation failed, using original text:', translateErr);
+                    // Continue with original text if translation fails
+                }
+            }
+
             const result = await elevenlabsService.generateAudio({
-                text: text.trim(),
+                text: textToSpeak,
                 voiceId: selectedVoice,
                 voiceName: selectedVoiceName,
                 modelId: selectedModel,
