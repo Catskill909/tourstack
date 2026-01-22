@@ -10,7 +10,8 @@ import {
     BarChart3,
     QrCode,
     LayoutGrid,
-    Volume2
+    Volume2,
+    Plug
 } from 'lucide-react';
 
 const navItems = [
@@ -22,6 +23,7 @@ const navItems = [
     { to: '/languages', icon: Globe, label: 'Languages' },
     { to: '/audio', icon: Volume2, label: 'Audio' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/api', icon: Plug, label: 'API & Feeds' },
     { to: '/tools', icon: QrCode, label: 'Tools' },
 ];
 

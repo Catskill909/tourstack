@@ -7,6 +7,7 @@ import { Collections } from './pages/Collections';
 import { CollectionDetail } from './pages/CollectionDetail';
 import { Settings } from './pages/Settings';
 import { Audio } from './pages/Audio';
+import { ApiFeeds } from './pages/ApiFeeds';
 import './index.css';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
           <Route path="/languages" element={<ComingSoon title="Languages" />} />
           <Route path="/audio" element={<Audio />} />
           <Route path="/analytics" element={<ComingSoon title="Analytics" />} />
+          <Route path="/api" element={<ApiFeeds />} />
           <Route path="/tools" element={<ComingSoon title="Tools" />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/help" element={<ComingSoon title="Help" />} />
