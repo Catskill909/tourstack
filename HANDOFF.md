@@ -177,6 +177,40 @@ npm run dev:all       # ⭐ REQUIRED: Run both Vite + Express concurrently
 
 ---
 
+## 🛡️ Deployment Guardrails (CRITICAL!)
+
+> [!IMPORTANT]
+> **ALWAYS run `npm run typecheck` before committing!**  
+> TypeScript errors will fail the Coolify build. Catch them locally first.
+
+### Pre-Commit Hook (Automatic)
+A Git pre-commit hook automatically runs TypeScript checks before every commit:
+- Located at `.git/hooks/pre-commit`
+- Blocks commits if TypeScript errors exist
+- To bypass (NOT RECOMMENDED): `git commit --no-verify`
+
+### Available Scripts
+```bash
+cd app
+npm run typecheck     # ⭐ Run TypeScript check (no emit)
+npm run precommit     # TypeScript + ESLint check
+npm run build         # Full build (includes typecheck via prebuild)
+```
+
+### Before Every Deployment
+1. **Run `npm run typecheck`** - Catches TS errors
+2. **Run `npm run build`** - Verifies full build works
+3. **Commit and push** - Pre-commit hook provides safety net
+
+### Common TypeScript Errors
+| Error | Fix |
+|-------|-----|
+| `TS6133: declared but never read` | Remove unused variable or prefix with `_` |
+| `TS2304: Cannot find name` | Add missing import |
+| `TS2345: Argument type mismatch` | Fix type or add type assertion |
+
+---
+
 ## 🚀 Coolify Deployment
 
 > ⚠️ **CRITICAL**: Read [docs/COOLIFY-DEPLOYMENT.md](docs/COOLIFY-DEPLOYMENT.md) before deploying!

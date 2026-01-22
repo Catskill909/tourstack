@@ -86,6 +86,7 @@ TourStack/
 cd app
 npm install           # Install dependencies
 npm run dev:all       # ⭐ REQUIRED: Run both Vite + Express
+npm run typecheck     # ⭐ Check TypeScript BEFORE committing
 npm run build         # Build for production
 npm run db:seed       # Seed templates
 npm run db:studio     # Open Prisma Studio
@@ -93,6 +94,20 @@ npm run db:studio     # Open Prisma Studio
 # npm run dev         # Vite only - API calls will FAIL
 # npm run server      # Express only - no frontend
 ```
+
+## 🛡️ Deployment Guardrails
+
+> [!IMPORTANT]
+> **ALWAYS run `npm run typecheck` before pushing!**  
+> TypeScript errors will fail the Coolify build. A pre-commit hook catches these automatically.
+
+```bash
+cd app
+npm run typecheck     # ⭐ REQUIRED before every commit
+npm run build         # Verify full build works locally
+```
+
+**Pre-commit hook** (`.git/hooks/pre-commit`) automatically blocks commits with TS errors.
 
 ## 🚀 Deployment (Coolify)
 
