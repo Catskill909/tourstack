@@ -33,3 +33,6 @@ dist-ssr
 # Uploads - keep directories via .gitkeep but ignore uploaded files
 uploads/**/*
 !uploads/**/.gitkeep
+
+# Settings file (contains API keys)
+data/settings.json

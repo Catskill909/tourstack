@@ -116,6 +116,7 @@ export function Settings() {
     const [defaultLanguage, setDefaultLanguage] = useState('en');
     const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
+    void isLoading; // Used for future loading states
 
     // Load settings on mount
     useEffect(() => {
