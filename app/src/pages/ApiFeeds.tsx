@@ -19,15 +19,42 @@ import {
 } from 'lucide-react';
 
 // Types
+interface LocalizedText {
+    [key: string]: string;
+}
+
 interface Tour {
     id: string;
-    title: string;
-    description: string | null;
+    title: LocalizedText | string;
+    description: LocalizedText | string | null;
     status: string;
-    languages: string[];
+    languages: string[] | string;
     createdAt: string;
     updatedAt: string;
     stops?: Stop[];
+}
+
+// Helper to get display title from localized object or string
+function getDisplayTitle(title: LocalizedText | string): string {
+    if (typeof title === 'string') {
+        try {
+            const parsed = JSON.parse(title);
+            return parsed.en || parsed[Object.keys(parsed)[0]] || 'Untitled';
+        } catch {
+            return title || 'Untitled';
+        }
+    }
+    return title.en || title[Object.keys(title)[0]] || 'Untitled';
+}
+
+// Helper to parse languages array
+function getLanguagesArray(languages: string[] | string): string[] {
+    if (Array.isArray(languages)) return languages;
+    try {
+        return JSON.parse(languages);
+    } catch {
+        return ['en'];
+    }
 }
 
 interface Stop {
@@ -97,7 +124,8 @@ export function ApiFeeds() {
                 const languages = new Set<string>();
                 let totalStops = 0;
                 toursData.forEach((tour: Tour) => {
-                    tour.languages?.forEach(lang => languages.add(lang));
+                    const tourLangs = getLanguagesArray(tour.languages);
+                    tourLangs.forEach((lang: string) => languages.add(lang));
                     totalStops += tour.stops?.length || 0;
                 });
 
@@ -254,9 +282,9 @@ function OverviewTab({ stats, tours }: { stats: ApiStats | null; tours: Tour[] }
                                         tour.status === 'published' ? 'bg-emerald-500' : 'bg-amber-500'
                                     }`} />
                                     <div>
-                                        <p className="font-medium text-[var(--color-text-primary)]">{tour.title}</p>
+                                        <p className="font-medium text-[var(--color-text-primary)]">{getDisplayTitle(tour.title)}</p>
                                         <p className="text-xs text-[var(--color-text-muted)]">
-                                            {tour.stops?.length || 0} stops • {tour.languages?.join(', ') || 'en'}
+                                            {tour.stops?.length || 0} stops • {getLanguagesArray(tour.languages).join(', ') || 'en'}
                                         </p>
                                     </div>
                                 </div>
@@ -288,12 +316,12 @@ function FeedsTab({ tours }: { tours: Tour[] }) {
         },
         ...tours.map(tour => ({
             id: tour.id,
-            name: tour.title,
+            name: getDisplayTitle(tour.title),
             url: `${baseUrl}/api/feeds/tours/${tour.id}`,
             type: 'single-tour' as const,
             tourId: tour.id,
             stopCount: tour.stops?.length || 0,
-            languages: tour.languages,
+            languages: getLanguagesArray(tour.languages),
             lastUpdated: tour.updatedAt,
         })),
     ];

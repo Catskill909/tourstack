@@ -160,6 +160,31 @@ function parseJsonArray(field: string | null): string[] {
     }
 }
 
+// Helper: Convert image field to proper URL
+// Base64 data URIs are NOT included in feeds - they bloat the response
+// In production, images should be stored as file URLs
+function formatImageUrl(imageField: string | null, baseUrl?: string): string | null {
+    if (!imageField) return null;
+    
+    // If it's a base64 data URI, return a placeholder or null
+    // Base64 images should NOT be in API feeds - they're too large
+    if (imageField.startsWith('data:')) {
+        return null; // Omit base64 images from feed
+    }
+    
+    // If it's already a full URL, return as-is
+    if (imageField.startsWith('http://') || imageField.startsWith('https://')) {
+        return imageField;
+    }
+    
+    // If it's a relative path (e.g., /uploads/...), prepend base URL
+    if (imageField.startsWith('/')) {
+        return baseUrl ? `${baseUrl}${imageField}` : imageField;
+    }
+    
+    return imageField;
+}
+
 // Helper: Format tour for feed output
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatTourForFeed(tour: any, lang?: string, format: string = 'full') {
@@ -186,7 +211,7 @@ function formatTourForFeed(tour: any, lang?: string, format: string = 'full') {
             id: tour.id,
             title: localizedTitle,
             description: localizedDescription,
-            hero_image: tour.heroImage,
+            hero_image: formatImageUrl(tour.heroImage),
             status: tour.status,
             languages: parseJsonArray(tour.languages),
             estimated_duration: tour.duration || tour.estimatedDuration,
@@ -201,7 +226,7 @@ function formatTourForFeed(tour: any, lang?: string, format: string = 'full') {
         id: tour.id,
         title: localizedTitle,
         description: localizedDescription,
-        hero_image: tour.heroImage,
+        hero_image: formatImageUrl(tour.heroImage),
         status: tour.status,
         languages: parseJsonArray(tour.languages),
         estimated_duration: tour.duration || tour.estimatedDuration,
@@ -214,6 +239,44 @@ function formatTourForFeed(tour: any, lang?: string, format: string = 'full') {
     };
 }
 
+// Helper: Clean base64 data from content blocks
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function cleanContentBlocks(blocks: any[]): any[] {
+    return blocks.map(block => {
+        const cleaned = { ...block };
+        
+        // Clean image fields in various block types
+        if (cleaned.image && typeof cleaned.image === 'string' && cleaned.image.startsWith('data:')) {
+            cleaned.image = null;
+        }
+        if (cleaned.src && typeof cleaned.src === 'string' && cleaned.src.startsWith('data:')) {
+            cleaned.src = null;
+        }
+        if (cleaned.url && typeof cleaned.url === 'string' && cleaned.url.startsWith('data:')) {
+            cleaned.url = null;
+        }
+        
+        // Clean images array (for gallery blocks)
+        if (cleaned.images && Array.isArray(cleaned.images)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            cleaned.images = cleaned.images.map((img: any) => {
+                if (typeof img === 'string') {
+                    return img.startsWith('data:') ? null : img;
+                }
+                if (img && img.src && typeof img.src === 'string' && img.src.startsWith('data:')) {
+                    return { ...img, src: null };
+                }
+                if (img && img.url && typeof img.url === 'string' && img.url.startsWith('data:')) {
+                    return { ...img, url: null };
+                }
+                return img;
+            }).filter(Boolean);
+        }
+        
+        return cleaned;
+    });
+}
+
 // Helper: Format stop for feed output
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatStopForFeed(stop: any, lang?: string) {
@@ -222,7 +285,8 @@ function formatStopForFeed(stop: any, lang?: string) {
 
     let contentBlocks = [];
     try {
-        contentBlocks = stop.content ? JSON.parse(stop.content) : [];
+        const parsed = stop.content ? JSON.parse(stop.content) : [];
+        contentBlocks = cleanContentBlocks(parsed);
     } catch {
         contentBlocks = [];
     }
