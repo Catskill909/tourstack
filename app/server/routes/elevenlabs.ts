@@ -255,23 +255,32 @@ router.get('/languages', (_req: Request, res: Response) => {
     return res.json(ELEVENLABS_LANGUAGES);
 });
 
-// GET /api/elevenlabs/voices - Get available voices
-router.get('/voices', async (_req: Request, res: Response) => {
+// GET /api/elevenlabs/voices - Get available voices for a language
+// Uses the Shared Voice Library API to get native language voices
+router.get('/voices', async (req: Request, res: Response) => {
     if (!getApiKey()) {
         return res.status(500).json({
             error: 'ElevenLabs API key not configured',
         });
     }
 
+    const language = req.query.language as string || 'en';
+    
     try {
-        const response = await fetch(`${ELEVENLABS_API_URL}/voices`, {
-            headers: {
-                'xi-api-key': getApiKey(),
-            },
-        });
+        // Use the shared-voices API to get native language voices
+        // This gives us Italian voices for Italian, Chinese for Chinese, etc.
+        const response = await fetch(
+            `${ELEVENLABS_API_URL}/shared-voices?page_size=50&language=${language}&sort=trending`,
+            {
+                headers: {
+                    'xi-api-key': getApiKey(),
+                },
+            }
+        );
 
         if (!response.ok) {
             const errorText = await response.text();
+            console.error('ElevenLabs shared-voices error:', response.status, errorText);
             return res.status(response.status).json({
                 error: 'Failed to fetch voices',
                 details: errorText,
@@ -280,18 +289,27 @@ router.get('/voices', async (_req: Request, res: Response) => {
 
         const data = await response.json();
         
-        // Transform voices to a simpler format
-        const voices = data.voices.map((voice: any) => ({
+        // Transform shared voices to our format
+        const voices = (data.voices || []).map((voice: any) => ({
             id: voice.voice_id,
             name: voice.name,
-            category: voice.category || 'premade',
+            category: voice.category || 'shared',
             description: voice.description,
-            labels: voice.labels || {},
+            labels: {
+                gender: voice.gender,
+                age: voice.age,
+                accent: voice.accent,
+                language: voice.language,
+                use_case: voice.use_case,
+                descriptive: voice.descriptive,
+            },
             preview_url: voice.preview_url,
-            available_for_tiers: voice.available_for_tiers,
+            available_for_tiers: [],
+            verified_languages: voice.verified_languages || [],
+            free_users_allowed: voice.free_users_allowed,
         }));
 
-        return res.json({ voices });
+        return res.json({ voices, language });
     } catch (error) {
         console.error('Error fetching ElevenLabs voices:', error);
         return res.status(500).json({

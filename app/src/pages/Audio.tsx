@@ -154,7 +154,7 @@ export function Audio() {
                 try {
                     const [elStatusData, elVoicesData, elModelsData, elFormatsData, elLanguagesData, elFilesData] = await Promise.all([
                         elevenlabsService.getStatus(),
-                        elevenlabsService.getVoices().catch(() => ({ voices: [] })),
+                        elevenlabsService.getVoices('en').catch(() => ({ voices: [], language: 'en' })),
                         elevenlabsService.getModels(),
                         elevenlabsService.getFormats(),
                         elevenlabsService.getLanguages(),
@@ -466,6 +466,7 @@ export function Audio() {
                     <ElevenLabsTab
                         status={elStatus}
                         voices={elVoices}
+                        setVoices={setElVoices}
                         models={elModels}
                         formats={elFormats}
                         languages={elLanguages}
@@ -1089,6 +1090,7 @@ function SuccessModal({ audio, voices, onClose, onPlay, isPlaying }: SuccessModa
 interface ElevenLabsTabProps {
     status: elevenlabsService.ElevenLabsStatus | null;
     voices: elevenlabsService.ElevenLabsVoice[];
+    setVoices: React.Dispatch<React.SetStateAction<elevenlabsService.ElevenLabsVoice[]>>;
     models: elevenlabsService.ElevenLabsModel[];
     formats: elevenlabsService.ElevenLabsFormat[];
     languages: elevenlabsService.ElevenLabsLanguage[];
@@ -1128,6 +1130,7 @@ interface ElevenLabsTabProps {
 function ElevenLabsTab({
     status,
     voices,
+    setVoices,
     models,
     formats,
     languages,
@@ -1164,10 +1167,32 @@ function ElevenLabsTab({
     generatedFilesRef,
 }: ElevenLabsTabProps) {
     const isConfigured = status?.configured && status?.valid;
+    const [isLoadingVoices, setIsLoadingVoices] = useState(false);
 
-    // ElevenLabs voices are MULTILINGUAL - all voices can speak all 32 languages
-    // The language selector is for OUTPUT language, not for filtering voices
-    // Show all voices regardless of language selection
+    // Reload voices when language changes - get native language voices
+    useEffect(() => {
+        async function loadVoicesForLanguage() {
+            if (!isConfigured) return;
+            
+            setIsLoadingVoices(true);
+            try {
+                const result = await elevenlabsService.getVoices(selectedLanguage);
+                setVoices(result.voices);
+                // Select first voice for the new language
+                if (result.voices.length > 0) {
+                    setSelectedVoice(result.voices[0].id);
+                    setSelectedVoiceName(result.voices[0].name);
+                }
+            } catch (err) {
+                console.error('Error loading voices for language:', err);
+            } finally {
+                setIsLoadingVoices(false);
+            }
+        }
+        loadVoicesForLanguage();
+    }, [selectedLanguage, isConfigured]);
+
+    // Show all loaded voices (they're already filtered by language from API)
     const filteredVoices = voices;
 
     // Handle voice selection
@@ -1523,17 +1548,22 @@ function ElevenLabsTab({
                 )}
             </div>
 
-            {/* Voice Gallery - Matching Deepgram Style */}
+            {/* Voice Gallery - Native Language Voices */}
             <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6">
                 <div className="mb-4">
                     <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">Voice Gallery</h3>
                     <p className="text-sm text-[var(--color-text-muted)]">
-                        {filteredVoices.length} multilingual voices • All can speak {languages.find(l => l.code === selectedLanguage)?.name || 'English'}
+                        {isLoadingVoices ? 'Loading...' : `${filteredVoices.length} native ${languages.find(l => l.code === selectedLanguage)?.name || 'English'} voices`}
                     </p>
                 </div>
+                {isLoadingVoices ? (
+                    <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent-primary)]" />
+                    </div>
+                ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-96 overflow-y-auto p-1">
                     {filteredVoices.map((voice) => {
-                        const isFeatured = voice.category === 'premade';
+                        const isFeatured = voice.category === 'professional' || voice.category === 'premade';
                         const gender = voice.labels?.gender || 'neutral';
                         
                         return (
@@ -1596,6 +1626,7 @@ function ElevenLabsTab({
                         );
                     })}
                 </div>
+                )}
             </div>
 
             {/* Generated Files */}

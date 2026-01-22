@@ -112,9 +112,9 @@ export async function getLanguages(): Promise<ElevenLabsLanguage[]> {
     return response.json();
 }
 
-// Get available voices
-export async function getVoices(): Promise<{ voices: ElevenLabsVoice[] }> {
-    const response = await fetch('/api/elevenlabs/voices');
+// Get available voices for a specific language (native language voices)
+export async function getVoices(language: string = 'en'): Promise<{ voices: ElevenLabsVoice[], language: string }> {
+    const response = await fetch(`/api/elevenlabs/voices?language=${language}`);
     if (!response.ok) {
         throw new Error('Failed to get ElevenLabs voices');
     }
