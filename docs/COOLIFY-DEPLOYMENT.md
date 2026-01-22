@@ -34,20 +34,29 @@ Volume 2: /app/data
 **Verify both are set before first deployment!**
 
 ### 3. Environment Variables
-TourStack does not require environment variables for core operation (configuration is in the Dockerfile).
 
-If you are running **LibreTranslate** as a separate Coolify service, it requires environment variables for which languages to load.
+Add these in Coolify's **Environment Variables** section:
 
-Example:
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | `file:./data/dev.db` |
+| `DEEPGRAM_API_KEY` | Optional | Deepgram Aura-2 TTS (text-to-speech) |
+| `ELEVENLABS_API_KEY` | Optional | ElevenLabs premium TTS |
+| `GOOGLE_MAPS_API_KEY` | Optional | Google Maps for premium maps |
+
+> **Note:** Environment variables override any settings saved via the Settings UI.
+
+**LibreTranslate (if self-hosted):**
+
+If running LibreTranslate as a separate Coolify service:
 
 ```
 LT_LOAD_ONLY=en,es,fr,de,ja,it,ko,zh,pt
 ```
 
 Notes:
-
-- Loading more languages/models increases memory usage.
-- If a language is enabled in TourStack but not loaded in LibreTranslate, translations may fail (400) and appear to fall back to English.
+- Loading more languages increases memory usage
+- Dutch (nl) is NOT supported by LibreTranslate
 
 ---
 

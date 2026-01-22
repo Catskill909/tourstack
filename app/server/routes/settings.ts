@@ -30,13 +30,13 @@ const DEFAULT_SETTINGS = {
         kontaktKey: '',
     },
     transcription: {
-        deepgramApiKey: '',
-        deepgramEnabled: false,
+        deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
+        deepgramEnabled: !!process.env.DEEPGRAM_API_KEY,
         whisperEnabled: false,
         whisperEndpoint: '',
-        elevenLabsApiKey: '',
-        elevenLabsEnabled: false,
-        defaultProvider: 'none',
+        elevenLabsApiKey: process.env.ELEVENLABS_API_KEY || '',
+        elevenLabsEnabled: !!process.env.ELEVENLABS_API_KEY,
+        defaultProvider: process.env.DEEPGRAM_API_KEY ? 'deepgram' : 'none',
     },
     translation: {
         libreTranslateUrl: 'https://translate.supersoul.top/translate',
@@ -69,6 +69,16 @@ function loadSettings() {
     if (process.env.GOOGLE_MAPS_API_KEY) {
         settings.maps.googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
         settings.maps.googleMapsEnabled = true;
+    }
+    
+    if (process.env.DEEPGRAM_API_KEY) {
+        settings.transcription.deepgramApiKey = process.env.DEEPGRAM_API_KEY;
+        settings.transcription.deepgramEnabled = true;
+    }
+    
+    if (process.env.ELEVENLABS_API_KEY) {
+        settings.transcription.elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
+        settings.transcription.elevenLabsEnabled = true;
     }
     
     return settings;

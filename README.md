@@ -125,8 +125,9 @@ Add these in Coolify's **Environment Variables** section:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | `file:./data/dev.db` |
-| `GOOGLE_MAPS_API_KEY` | Optional | Google Maps API key for premium maps |
-| `DEEPGRAM_API_KEY` | Optional | For audio transcription |
+| `DEEPGRAM_API_KEY` | Optional | Deepgram TTS (text-to-speech) |
+| `ELEVENLABS_API_KEY` | Optional | ElevenLabs premium TTS |
+| `GOOGLE_MAPS_API_KEY` | Optional | Google Maps for premium maps |
 
 **To set up Google Maps:**
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
