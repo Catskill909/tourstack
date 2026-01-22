@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { MapAPISettings } from '../types';
 
 // Icons
@@ -115,18 +115,84 @@ export function Settings() {
     // General Settings
     const [defaultLanguage, setDefaultLanguage] = useState('en');
     const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const handleSave = () => {
-        // TODO: Save to database/localStorage
-        console.log('Saving settings:', { 
-            mapSettings, estimoteKey, kontaktKey, 
-            deepgramApiKey, deepgramEnabled, whisperEnabled, whisperEndpoint,
-            elevenLabsApiKey, elevenLabsEnabled, defaultTranscriptionProvider,
-            libreTranslateUrl, libreTranslateApiKey, libreTranslateEnabled,
-            defaultLanguage, analyticsEnabled 
-        });
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+    // Load settings on mount
+    useEffect(() => {
+        fetch('/api/settings')
+            .then(res => res.json())
+            .then(settings => {
+                if (settings.maps) {
+                    setMapSettings(settings.maps);
+                }
+                if (settings.positioning) {
+                    setEstimoteKey(settings.positioning.estimoteKey || '');
+                    setKontaktKey(settings.positioning.kontaktKey || '');
+                }
+                if (settings.transcription) {
+                    setDeepgramApiKey(settings.transcription.deepgramApiKey || '');
+                    setDeepgramEnabled(settings.transcription.deepgramEnabled || false);
+                    setWhisperEnabled(settings.transcription.whisperEnabled || false);
+                    setWhisperEndpoint(settings.transcription.whisperEndpoint || '');
+                    setElevenLabsApiKey(settings.transcription.elevenLabsApiKey || '');
+                    setElevenLabsEnabled(settings.transcription.elevenLabsEnabled || false);
+                    setDefaultTranscriptionProvider(settings.transcription.defaultProvider || 'none');
+                }
+                if (settings.translation) {
+                    setLibreTranslateUrl(settings.translation.libreTranslateUrl || '');
+                    setLibreTranslateApiKey(settings.translation.libreTranslateApiKey || '');
+                    setLibreTranslateEnabled(settings.translation.libreTranslateEnabled ?? true);
+                }
+                if (settings.general) {
+                    setDefaultLanguage(settings.general.defaultLanguage || 'en');
+                    setAnalyticsEnabled(settings.general.analyticsEnabled ?? true);
+                }
+            })
+            .catch(console.error)
+            .finally(() => setIsLoading(false));
+    }, []);
+
+    const handleSave = async () => {
+        const settings = {
+            maps: mapSettings,
+            positioning: { estimoteKey, kontaktKey },
+            transcription: {
+                deepgramApiKey,
+                deepgramEnabled,
+                whisperEnabled,
+                whisperEndpoint,
+                elevenLabsApiKey,
+                elevenLabsEnabled,
+                defaultProvider: defaultTranscriptionProvider,
+            },
+            translation: {
+                libreTranslateUrl,
+                libreTranslateApiKey,
+                libreTranslateEnabled,
+            },
+            general: {
+                defaultLanguage,
+                analyticsEnabled,
+            },
+        };
+
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings),
+            });
+            if (res.ok) {
+                // Also store Google Maps key in localStorage for quick access
+                if (mapSettings.googleMapsApiKey) {
+                    localStorage.setItem('googleMapsApiKey', mapSettings.googleMapsApiKey);
+                }
+                setSaved(true);
+                setTimeout(() => setSaved(false), 3000);
+            }
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+        }
     };
 
     return (

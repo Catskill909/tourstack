@@ -5,3 +5,6 @@ export { AudioBlockEditor } from './AudioBlockEditor';
 export { GalleryBlockEditor } from './GalleryBlockEditor';
 export { TimelineGalleryBlockEditor } from './TimelineGalleryBlockEditor';
 export { PositioningBlockEditor } from './PositioningBlockEditor';
+export { MapBlockEditor } from './MapBlockEditor';
+export { MapEditorModal } from './MapEditorModal';
+export { MapPreview } from './MapPreview';

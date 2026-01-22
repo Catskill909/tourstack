@@ -96,12 +96,32 @@ npm run db:studio     # Open Prisma Studio
 
 ## 🚀 Deployment (Coolify)
 
-Add persistent storage volumes:
+### Persistent Storage Volumes
 
 | Container Path | Host Path |
 |---------------|-----------|
 | `/app/uploads` | `/data/tourstack/uploads` |
 | `/app/data` | `/data/tourstack/data` |
+
+### Environment Variables
+
+Add these in Coolify's **Environment Variables** section:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | `file:./data/dev.db` |
+| `GOOGLE_MAPS_API_KEY` | Optional | Google Maps API key for premium maps |
+| `DEEPGRAM_API_KEY` | Optional | For audio transcription |
+
+**To set up Google Maps:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a project or select existing
+3. Enable **Maps JavaScript API**
+4. Create an API key under **Credentials**
+5. Add the key to Coolify: `GOOGLE_MAPS_API_KEY=your_key_here`
+6. Redeploy the application
+
+> **Note:** The API key set in Coolify environment variables will override any key saved in the Settings UI.
 
 ---
 

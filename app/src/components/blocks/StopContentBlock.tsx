@@ -1,8 +1,9 @@
-import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode } from 'lucide-react';
+import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData } from '../../types';
+import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData } from '../../types';
 import { GalleryPreview } from './GalleryPreview';
 import { TimelineGalleryPreview } from './TimelineGalleryPreview';
+import { MapPreview } from './MapPreview';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
 
 interface StopContentBlockProps {
@@ -26,6 +27,7 @@ const BLOCK_ICONS: Record<ContentBlockType, LucideIcon> = {
     timeline: History,
     comparison: Columns,
     positioning: QrCode,
+    map: MapIcon,
 };
 
 const BLOCK_LABELS: Record<ContentBlockType, string> = {
@@ -39,6 +41,7 @@ const BLOCK_LABELS: Record<ContentBlockType, string> = {
     timeline: 'Timeline',
     comparison: 'Comparison',
     positioning: 'Positioning',
+    map: 'Map',
 };
 
 export function StopContentBlock({ block, mode, language, deviceType = 'phone', onEdit, onDelete }: StopContentBlockProps) {
@@ -193,6 +196,29 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
         );
     }
 
+    function renderMapBlock(data: MapBlockData) {
+        // Size options: small=150px, medium=250px, large=fills available (calc)
+        const sizeStyles: Record<string, { height: string; minHeight: string }> = {
+            small: { height: '150px', minHeight: '150px' },
+            medium: { height: '250px', minHeight: '200px' },
+            large: { height: 'calc(100vh - 200px)', minHeight: '400px' },
+        };
+        const size = data.size || 'medium';
+        const style = sizeStyles[size] || sizeStyles.medium;
+        
+        return (
+            <div className="w-full" style={style}>
+                <MapPreview
+                    data={data}
+                    language={language}
+                    deviceType={deviceType}
+                    interactive={false}
+                    className="w-full h-full"
+                />
+            </div>
+        );
+    }
+
     function renderBlock() {
         switch (block.type) {
             case 'text':
@@ -211,6 +237,8 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                 return renderTimelineGalleryBlock(block.data as TimelineGalleryBlockData);
             case 'positioning':
                 return renderPositioningBlock(block.data as PositioningBlockData);
+            case 'map':
+                return renderMapBlock(block.data as MapBlockData);
             default:
                 return (
                     <div className="text-[var(--color-text-muted)] text-sm">

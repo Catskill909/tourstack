@@ -19,7 +19,8 @@
 | Phase 8: Thumbnail Markers UI | ✅ Complete |
 | Phase 9: Translation Infrastructure | ✅ Complete |
 | Phase 10: Audio Player Size Variants | ✅ Complete |
-| **Next:** Custom Theming | 🔜 Planned |
+| Phase 11: Map Block | ✅ Complete |
+| **Next:** Map-Stop Integration (Phase 2) | 🔜 Planned |
 
 **Deployment:** Coolify/Docker with persistent volumes  
 - Database: Prisma + SQLite (`/app/data`)
@@ -146,6 +147,14 @@ Image Gallery & Timeline:
    - Custom transitions (fade, slide, zoom)
    - Pan/Zoom effects (Ken Burns) for immersive storytelling
    - Interactive scrubbing
+**Map Block** (Phase 11):
+ - OpenStreetMap integration (free, no API key)
+ - Google Maps integration (premium, API key required)
+ - Click-to-place markers with address search
+ - Size options: Small (150px), Medium (250px), Large (full height)
+ - Trigger zones with configurable radius for geofencing
+ - Provider toggle (OpenStreetMap/Google Maps)
+ - Map styles: Standard, Satellite, Terrain, Hybrid
 Audio guide (MP3 upload with **3 size variants**):
  - **Large**: Full player with title, progress, time, speed, skip ±10s, volume
  - **Medium**: Compact inline - play + scrubber + time + volume

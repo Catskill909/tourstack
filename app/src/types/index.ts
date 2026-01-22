@@ -225,7 +225,8 @@ export type ContentBlockType =
   | 'quote'
   | 'timeline'
   | 'comparison'
-  | 'positioning';
+  | 'positioning'
+  | 'map';
 
 // Block data interfaces
 export interface TextBlockData {
@@ -352,6 +353,43 @@ export interface PositioningBlockData {
   instructions?: { [lang: string]: string };
 }
 
+// Map block for displaying location with OpenStreetMap or Google Maps
+export type MapProvider = 'openstreetmap' | 'google';
+export type MapStyle = 'standard' | 'satellite' | 'terrain' | 'hybrid';
+export type MapSize = 'small' | 'medium' | 'large';  // small=150px, medium=250px, large=fills available
+
+export interface MapMarker {
+  id: string;
+  latitude: number;
+  longitude: number;
+  title?: { [lang: string]: string };
+  description?: { [lang: string]: string };
+  icon?: 'default' | 'stop' | 'start' | 'end' | 'poi';
+}
+
+export interface MapBlockData {
+  // Core position
+  latitude: number;
+  longitude: number;
+  zoom: number;
+  
+  // Provider settings
+  provider: MapProvider;          // Which map to use
+  style: MapStyle;                // Map style
+  
+  // Display options
+  showMarker: boolean;            // Show marker at center
+  markerTitle?: { [lang: string]: string };
+  size?: MapSize;                 // Display size: small, medium, large (default: medium)
+  
+  // Additional markers (for tour overview maps)
+  markers?: MapMarker[];
+  
+  // Trigger zone (optional)
+  triggerRadius?: number;         // Radius in meters for geofence
+  showTriggerZone?: boolean;      // Visualize the trigger zone
+}
+
 // Discriminated union for type safety
 export type ContentBlockData =
   | TextBlockData
@@ -363,7 +401,8 @@ export type ContentBlockData =
   | QuoteBlockData
   | TimelineBlockData
   | ComparisonBlockData
-  | PositioningBlockData;
+  | PositioningBlockData
+  | MapBlockData;
 
 // Base content block interface
 export interface ContentBlock {

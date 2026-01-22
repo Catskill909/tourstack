@@ -8,9 +8,11 @@ import { ImageBlockEditor } from './blocks/ImageBlockEditor';
 import { AudioBlockEditor } from './blocks/AudioBlockEditor';
 import { GalleryBlockEditor } from './blocks/GalleryBlockEditor';
 import { TimelineGalleryEditorModal } from './blocks/TimelineGalleryEditorModal';
+import { MapEditorModal } from './blocks/MapEditorModal';
+import { MapBlockEditor } from './blocks/MapBlockEditor';
 import { PositioningBlockEditor } from './blocks/PositioningBlockEditor';
 import { StopPreviewModal } from './StopPreviewModal';
-import type { Stop, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData } from '../types';
+import type { Stop, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData } from '../types';
 
 interface StopEditorProps {
     stop: Stop;
@@ -38,6 +40,8 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
             return { audioFiles: {}, title: { en: '' }, size: 'large', showTitle: false, autoplay: false, showTranscript: false } as AudioBlockData;
         case 'positioning':
             return { method: 'qr_code', config: { method: 'qr_code', url: '', shortCode: '' } } as PositioningBlockData;
+        case 'map':
+            return { latitude: 0, longitude: 0, zoom: 15, provider: 'openstreetmap', style: 'standard', showMarker: true } as MapBlockData;
         default:
             return { content: { en: '' }, style: 'normal' } as TextBlockData;
     }
@@ -56,6 +60,7 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
     const [showAddBlock, setShowAddBlock] = useState(false);
     const [deleteBlockId, setDeleteBlockId] = useState<string | null>(null);
     const [showTimelineEditorId, setShowTimelineEditorId] = useState<string | null>(null);
+    const [showMapEditorId, setShowMapEditorId] = useState<string | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
     const [showSaveModal, setShowSaveModal] = useState(false);
@@ -437,6 +442,15 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
                                         onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
                                     />
                                 )}
+                                {editingBlock.type === 'map' && (
+                                    <MapBlockEditor
+                                        data={editingBlock.data as MapBlockData}
+                                        language={language}
+                                        availableLanguages={availableLanguages}
+                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
+                                        onOpenFullEditor={() => setShowMapEditorId(editingBlock.id)}
+                                    />
+                                )}
                             </div>
                         ) : (
                             <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
@@ -453,7 +467,7 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
                     <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6 w-full max-w-md shadow-xl">
                         <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">Add Content Block</h3>
                         <div className="grid grid-cols-3 gap-3">
-                            {(['text', 'image', 'gallery', 'timelineGallery', 'audio'] as ContentBlockType[]).map((type) => {
+                            {(['text', 'image', 'gallery', 'timelineGallery', 'audio', 'map'] as ContentBlockType[]).map((type) => {
                                 const Icon = BLOCK_ICONS[type];
                                 return (
                                     <button
@@ -540,6 +554,21 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
                         availableLanguages={availableLanguages}
                         onChange={(data) => handleUpdateBlock(showTimelineEditorId, data)}
                         onClose={() => setShowTimelineEditorId(null)}
+                    />
+                );
+            })()}
+
+            {/* Map Editor Modal */}
+            {showMapEditorId && (() => {
+                const mapBlock = blocks.find(b => b.id === showMapEditorId);
+                if (!mapBlock || mapBlock.type !== 'map') return null;
+                return (
+                    <MapEditorModal
+                        data={mapBlock.data as MapBlockData}
+                        language={language}
+                        availableLanguages={availableLanguages}
+                        onChange={(data) => handleUpdateBlock(showMapEditorId, data)}
+                        onClose={() => setShowMapEditorId(null)}
                     />
                 );
             })()}

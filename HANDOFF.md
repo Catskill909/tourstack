@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: January 21, 2026  
-**Session Status**: Audio Player Size Variants Complete ✅
+**Session Status**: Map Block Phase 1 Complete ✅
 
 ---
 
@@ -87,6 +87,17 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Editor Layout Fix** - Small player displays on its own line below upload
 - [x] **Removed Duration Field** - Simplified interface, not needed
 
+### Phase 11: Map Block ✅ (Jan 21, 2026)
+- [x] **OpenStreetMap Integration** - Leaflet-based maps (free, no API key)
+- [x] **Google Maps Integration** - Premium maps with API key support
+- [x] **Full-Screen Map Editor** - Click to place markers, address search, current location
+- [x] **Provider Toggle** - Switch between OpenStreetMap and Google Maps
+- [x] **Map Styles** - Standard, Satellite, Terrain, Hybrid
+- [x] **Size Options** - Small (150px), Medium (250px), Large (full height)
+- [x] **Trigger Zones** - Configurable radius for geofencing
+- [x] **Settings API** - Persistent settings storage with env var overrides
+- [x] **Coolify Ready** - `GOOGLE_MAPS_API_KEY` env var support for production
+
 ---
 
 ## 📋 Next Steps (Priority Order)
@@ -122,6 +133,11 @@ TourStack uses a **modular content block system** where tours and stops are comp
 | **Stop Editor** | |
 | Stop Editor | `app/src/components/StopEditor.tsx` |
 | Tour Detail | `app/src/pages/TourDetail.tsx` |
+| **Map Block** | |
+| Map Preview | `app/src/components/blocks/MapPreview.tsx` |
+| Map Editor Modal | `app/src/components/blocks/MapEditorModal.tsx` |
+| Map Block Editor | `app/src/components/blocks/MapBlockEditor.tsx` |
+| Settings API | `app/server/routes/settings.ts` |
 
 ---
 

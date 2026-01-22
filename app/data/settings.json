@@ -1,0 +1,30 @@
+{
+  "maps": {
+    "googleMapsApiKey": "AIzaSyBeZU9GKl8kHWH-Ic8DCgkBEngLPHaxw_g",
+    "googleMapsEnabled": true,
+    "openStreetMapEnabled": true,
+    "defaultMapProvider": "openstreetmap"
+  },
+  "positioning": {
+    "estimoteKey": "",
+    "kontaktKey": ""
+  },
+  "transcription": {
+    "deepgramApiKey": "",
+    "deepgramEnabled": false,
+    "whisperEnabled": false,
+    "whisperEndpoint": "",
+    "elevenLabsApiKey": "",
+    "elevenLabsEnabled": false,
+    "defaultProvider": "none"
+  },
+  "translation": {
+    "libreTranslateUrl": "https://translate.supersoul.top/translate",
+    "libreTranslateApiKey": "",
+    "libreTranslateEnabled": true
+  },
+  "general": {
+    "defaultLanguage": "en",
+    "analyticsEnabled": true
+  }
+}
