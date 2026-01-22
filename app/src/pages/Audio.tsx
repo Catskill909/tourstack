@@ -16,8 +16,14 @@ import {
     ChevronDown,
     User,
     Users,
-    X
+    X,
+    AlertTriangle,
 } from 'lucide-react';
+
+// Languages supported by LibreTranslate for auto-translation
+const TRANSLATION_SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'ja', 'ko', 'pt', 'zh'];
+// Note: Dutch (nl) is NOT supported by LibreTranslate
+
 import {
     getVoices,
     getFormats,
@@ -180,8 +186,8 @@ export function Audio() {
 
             let textToSpeak = text.trim();
 
-            // Auto-translate if enabled and not English
-            if (autoTranslate && selectedLanguage !== 'en') {
+            // Auto-translate if enabled, not English, and language is supported
+            if (autoTranslate && selectedLanguage !== 'en' && TRANSLATION_SUPPORTED_LANGUAGES.includes(selectedLanguage)) {
                 setIsTranslating(true);
                 try {
                     const response = await fetch('/api/translate', {
@@ -632,33 +638,47 @@ function DeepgramTab({
 
                 {/* Auto-Translate Toggle */}
                 {selectedLanguage !== 'en' && (
-                    <div className="flex items-center justify-between p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                                <span className="text-blue-500 text-sm font-bold">A</span>
+                    TRANSLATION_SUPPORTED_LANGUAGES.includes(selectedLanguage) ? (
+                        <div className="flex items-center justify-between p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                    <span className="text-blue-500 text-sm font-bold">A</span>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                                        Auto-translate to {voices?.[selectedLanguage]?.name || selectedLanguage}
+                                    </p>
+                                    <p className="text-xs text-[var(--color-text-muted)]">
+                                        Automatically translate your English text before generating audio
+                                    </p>
+                                </div>
                             </div>
+                            <button
+                                onClick={() => setAutoTranslate(!autoTranslate)}
+                                className={`relative w-11 h-6 rounded-full transition-colors ${
+                                    autoTranslate ? 'bg-[var(--color-accent-primary)]' : 'bg-[var(--color-bg-hover)]'
+                                }`}
+                            >
+                                <span
+                                    className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                                        autoTranslate ? 'translate-x-5' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
                             <div>
-                                <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                                    Auto-translate to {voices?.[selectedLanguage]?.name || selectedLanguage}
+                                <p className="text-sm font-medium text-amber-500">
+                                    Auto-translate not available for {voices?.[selectedLanguage]?.name || selectedLanguage}
                                 </p>
                                 <p className="text-xs text-[var(--color-text-muted)]">
-                                    Automatically translate your English text before generating audio
+                                    Please provide your text already translated to {voices?.[selectedLanguage]?.name || selectedLanguage}
                                 </p>
                             </div>
                         </div>
-                        <button
-                            onClick={() => setAutoTranslate(!autoTranslate)}
-                            className={`relative w-11 h-6 rounded-full transition-colors ${
-                                autoTranslate ? 'bg-[var(--color-accent-primary)]' : 'bg-[var(--color-bg-hover)]'
-                            }`}
-                        >
-                            <span
-                                className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                                    autoTranslate ? 'translate-x-5' : 'translate-x-0'
-                                }`}
-                            />
-                        </button>
-                    </div>
+                    )
                 )}
 
                 {/* Actions */}

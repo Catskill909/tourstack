@@ -167,16 +167,208 @@ When selecting a non-English language, an auto-translate toggle appears (enabled
 - [ ] Normalize volume
 - [ ] Concatenate multiple clips
 
-### Phase 4: ElevenLabs Integration (Future)
-- [ ] Voice cloning capabilities
-- [ ] More natural prosody
-- [ ] Emotion/tone control
-- [ ] Custom voice creation
+### Phase 4: ElevenLabs Integration 🔜 NEXT
+
+> **Status:** Planning Complete - Ready for Implementation
+
+#### 4.1 ElevenLabs Overview
+
+ElevenLabs provides premium text-to-speech with:
+- **32+ languages** supported
+- **3,000+ community voices** in voice library
+- **Voice cloning** (instant and professional)
+- **Voice design** - create voices from text descriptions
+- **Emotion/tone control** via audio tags
+- **Ultra-low latency** (~75ms with Flash v2.5)
+
+#### 4.2 ElevenLabs Models
+
+| Model | Languages | Char Limit | Latency | Best For |
+|-------|-----------|------------|---------|----------|
+| **Eleven v3** (alpha) | 70+ | 5,000 | Medium | Emotional, dramatic delivery |
+| **Multilingual v2** | 29 | 10,000 | Higher | Long-form, consistent quality |
+| **Flash v2.5** | 32 | 40,000 | ~75ms | Real-time, cost-effective |
+| **Turbo v2.5** | 32 | 40,000 | ~250ms | Balanced quality/speed |
+
+#### 4.3 ElevenLabs Audio Formats
+
+| Format | Sample Rates | Notes |
+|--------|--------------|-------|
+| **MP3** | 22.05kHz, 44.1kHz | Bitrates: 32-192kbps |
+| **PCM** | 16kHz - 48kHz | 16-bit depth |
+| **μ-law** | 8kHz | Telephony optimized |
+| **Opus** | 48kHz | 32-192kbps |
+
+#### 4.4 ElevenLabs Voice Types
+
+1. **Community Voices** - 10,000+ shared voices from library
+2. **Default Voices** - Curated, reliable, model-optimized
+3. **Cloned Voices** - Instant (30s sample) or Professional
+4. **Designed Voices** - AI-generated from text descriptions
+
+#### 4.5 ElevenLabs Tab Features (Planned)
+
+**Core TTS Generation:**
+- [ ] Text input with character count (model-specific limits)
+- [ ] Model selector (v3, Multilingual v2, Flash v2.5, Turbo v2.5)
+- [ ] Voice selector with categories (Default, Community, My Voices)
+- [ ] Voice preview player
+- [ ] Output format selector (MP3, PCM, Opus)
+- [ ] Sample rate selector
+- [ ] Generate button with progress
+- [ ] Audio player and download
+
+**Voice Settings:**
+- [ ] Stability slider (0-1) - consistency vs expressiveness
+- [ ] Similarity boost slider (0-1) - voice matching
+- [ ] Style slider (0-1) - expressiveness (v2+ models)
+- [ ] Speaker boost toggle - clarity enhancement
+
+**Advanced Features:**
+- [ ] Voice search in community library
+- [ ] Voice favorites/bookmarks
+- [ ] Pronunciation dictionary support
+- [ ] SSML-like controls via text markup
+
+**Voice Cloning (Premium):**
+- [ ] Instant voice clone from audio upload
+- [ ] Voice verification workflow
+- [ ] Clone management (rename, delete)
+
+**Voice Design:**
+- [ ] Text-to-voice description input
+- [ ] Generate voice previews
+- [ ] Save designed voice to library
+
+#### 4.6 ElevenLabs API Endpoints
+
+```typescript
+// Core TTS
+POST /v1/text-to-speech/{voice_id}
+POST /v1/text-to-speech/{voice_id}/stream
+
+// Voices
+GET  /v1/voices                    // List all voices
+GET  /v1/voices/{voice_id}         // Get voice details
+GET  /v1/voices/settings/default   // Default voice settings
+POST /v1/voices/settings/{voice_id}/edit  // Edit settings
+
+// Voice Library
+GET  /v1/shared-voices             // Community voices
+
+// Voice Cloning
+POST /v1/voices/add                // Instant clone
+POST /v1/voices/{voice_id}/edit    // Update voice
+
+// Voice Design
+POST /v1/voice-generation/generate-voice  // Create from description
+
+// Models
+GET  /v1/models                    // List available models
+```
+
+#### 4.7 ElevenLabs Pricing Considerations
+
+- Pay-per-character model
+- Different tiers: Free, Starter, Creator, Pro, Scale
+- Voice cloning requires Creator+ plan
+- Higher quality audio on paid tiers only
 
 ### Phase 5: Whisper Integration (Future)
 - [ ] STT for transcription verification
 - [ ] Audio-to-text for existing tour audio
 - [ ] Subtitle/caption generation
+
+---
+
+## Service Provider Architecture
+
+### Provider Abstraction Layer
+
+To enable seamless switching between TTS providers in content blocks, implement a unified interface:
+
+```typescript
+// Unified TTS Provider Interface
+interface TTSProvider {
+  id: string;                    // 'deepgram' | 'elevenlabs' | 'whisper'
+  name: string;
+  enabled: boolean;
+  
+  // Core methods
+  getVoices(): Promise<Voice[]>;
+  generateAudio(options: TTSOptions): Promise<AudioResult>;
+  previewVoice(voiceId: string): Promise<AudioBuffer>;
+  
+  // Provider-specific settings
+  getSettings(): ProviderSettings;
+  updateSettings(settings: Partial<ProviderSettings>): void;
+}
+
+interface TTSOptions {
+  text: string;
+  voiceId: string;
+  language?: string;
+  format?: 'mp3' | 'wav' | 'ogg' | 'flac' | 'pcm';
+  sampleRate?: number;
+  // Provider-specific options
+  providerOptions?: Record<string, unknown>;
+}
+
+interface Voice {
+  id: string;
+  name: string;
+  language: string;
+  gender: 'male' | 'female' | 'neutral';
+  provider: string;
+  preview_url?: string;
+  // Provider-specific metadata
+  metadata?: Record<string, unknown>;
+}
+```
+
+### Block Integration Strategy
+
+**Audio Block Provider Selection:**
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Audio Block Editor                                          │
+├─────────────────────────────────────────────────────────────┤
+│  Provider: [Deepgram ▼] [ElevenLabs] [Upload]               │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  [Provider-specific UI loads here]                   │    │
+│  │  - Voice selection                                   │    │
+│  │  - Settings (stability, format, etc.)               │    │
+│  │  - Generate button                                   │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  Generated Audio: [▶ Play] [⬇ Download] [🗑 Delete]         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Tour-Level Default Provider:**
+- Settings page allows setting default TTS provider
+- Individual blocks can override the default
+- Batch generation uses tour's default provider
+
+### Translation Integration
+
+**Auto-Translate Supported Languages:**
+
+| Language | LibreTranslate | Deepgram TTS | ElevenLabs TTS |
+|----------|----------------|--------------|----------------|
+| English | ✅ | ✅ | ✅ |
+| Spanish | ✅ | ✅ | ✅ |
+| French | ✅ | ✅ | ✅ |
+| German | ✅ | ✅ | ✅ |
+| Italian | ✅ | ✅ | ✅ |
+| Japanese | ✅ | ✅ | ✅ |
+| Portuguese | ✅ | ❌ | ✅ |
+| Korean | ✅ | ❌ | ✅ |
+| Chinese | ✅ | ❌ | ✅ |
+| **Dutch** | ❌ | ✅ | ✅ |
+
+> **Note:** Dutch (nl) is NOT supported by LibreTranslate. Users must provide pre-translated Dutch text.
 
 ---
 
