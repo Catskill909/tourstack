@@ -12,7 +12,8 @@ const LIBRE_TRANSLATE_API_KEY = process.env.LIBRE_TRANSLATE_API_KEY || 'Translat
 
 // Deepgram API configuration (for audio translation)
 const DEEPGRAM_API_KEY = process.env.DEEPGRAM_API_KEY || '';
-const DEEPGRAM_API_URL = 'https://api.deepgram.com/v1/listen';
+// Note: Deepgram STT URL for future audio translation feature
+// const DEEPGRAM_API_URL = 'https://api.deepgram.com/v1/listen';
 
 // Use mock mode only if explicitly set
 const USE_MOCK = process.env.LIBRE_TRANSLATE_URL === 'mock';
