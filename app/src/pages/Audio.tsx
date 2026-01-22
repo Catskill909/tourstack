@@ -1165,11 +1165,10 @@ function ElevenLabsTab({
 }: ElevenLabsTabProps) {
     const isConfigured = status?.configured && status?.valid;
 
-    // Filter voices by selected language (ElevenLabs voices have language in labels)
-    const filteredVoices = voices.filter(voice => {
-        const voiceLang = voice.labels?.language || 'en';
-        return voiceLang === selectedLanguage || selectedLanguage === 'en'; // Show all for English as default
-    });
+    // ElevenLabs voices are MULTILINGUAL - all voices can speak all 32 languages
+    // The language selector is for OUTPUT language, not for filtering voices
+    // Show all voices regardless of language selection
+    const filteredVoices = voices;
 
     // Handle voice selection
     const handleVoiceSelect = (voice: elevenlabsService.ElevenLabsVoice) => {
@@ -1529,7 +1528,7 @@ function ElevenLabsTab({
                 <div className="mb-4">
                     <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">Voice Gallery</h3>
                     <p className="text-sm text-[var(--color-text-muted)]">
-                        {filteredVoices.length} voices available in {languages.find(l => l.code === selectedLanguage)?.name || 'English'}
+                        {filteredVoices.length} multilingual voices • All can speak {languages.find(l => l.code === selectedLanguage)?.name || 'English'}
                     </p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-96 overflow-y-auto p-1">
