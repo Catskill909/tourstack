@@ -12,6 +12,7 @@ import mediaRouter from './routes/media.js';
 import translateRouter from './routes/translate.js';
 import transcribeRouter from './routes/transcribe.js';
 import settingsRouter from './routes/settings.js';
+import audioRouter from './routes/audio.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +35,7 @@ app.use('/api/media', mediaRouter);
 app.use('/api/translate', translateRouter);
 app.use('/api/transcribe', transcribeRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/audio', audioRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

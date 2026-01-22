@@ -20,7 +20,8 @@
 | Phase 9: Translation Infrastructure | ✅ Complete |
 | Phase 10: Audio Player Size Variants | ✅ Complete |
 | Phase 11: Map Block | ✅ Complete |
-| **Next:** Map-Stop Integration (Phase 2) | 🔜 Planned |
+| Phase 12: Audio TTS Section | ✅ Complete |
+| **Next:** Tour Audio Integration | 🔜 Planned |
 
 **Deployment:** Coolify/Docker with persistent volumes  
 - Database: Prisma + SQLite (`/app/data`)
@@ -161,6 +162,16 @@ Audio guide (MP3 upload with **3 size variants**):
  - **Small**: Icon-only play/pause button (44px phone, 56px tablet)
  - **Show Title toggle** for large player (editor-only for large size)
  - **Tablet scaling** - larger buttons/padding for medium/small sizes
+**Audio TTS Section** (Phase 12):
+ - Deepgram Aura-2 text-to-speech integration
+ - 7 languages: English, Spanish, German, French, Dutch, Italian, Japanese
+ - 40+ voices with gender indicators and preview
+ - Auto-translate toggle for non-English languages (via LibreTranslate)
+ - Multiple output formats: MP3, WAV, OGG, FLAC
+ - Sample rates: 8kHz, 16kHz, 24kHz, 48kHz
+ - Success modal with generation settings summary
+ - File metadata display: language badges, format, sample rate, file size
+ - Persistent storage in `/app/uploads/audio/generated/`
 Video embeds (YouTube, Vimeo, or direct upload)
 3D model viewers (for photogrammetry/museum artifacts)
 AR content markers (placeholder for WebAR integration)

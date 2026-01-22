@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: January 21, 2026  
-**Session Status**: Map Block Phase 1 Complete ✅
+**Last Updated**: January 22, 2026  
+**Session Status**: Audio TTS Section Complete ✅
 
 ---
 
@@ -98,6 +98,20 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Settings API** - Persistent settings storage with env var overrides
 - [x] **Coolify Ready** - `GOOGLE_MAPS_API_KEY` env var support for production
 
+### Phase 12: Audio TTS Section ✅ (Jan 22, 2026)
+- [x] **Deepgram Aura-2 TTS** - Full text-to-speech integration
+- [x] **7 Languages** - English, Spanish, German, French, Dutch, Italian, Japanese
+- [x] **40+ Voices** - Featured and standard voices per language
+- [x] **Auto-Translate** - Automatic translation via LibreTranslate before TTS generation
+- [x] **Voice Gallery** - Visual voice selector with gender indicators and preview
+- [x] **Voice Preview** - Listen to any voice before generating
+- [x] **Multiple Formats** - MP3, WAV, OGG, FLAC output options
+- [x] **Sample Rates** - 8kHz, 16kHz, 24kHz, 48kHz options
+- [x] **Success Modal** - Post-generation modal with settings summary
+- [x] **File Metadata** - Language badges, format, sample rate, file size display
+- [x] **Auto-Scroll** - Scrolls to generated files after creation
+- [x] **Persistent Storage** - Files saved to `/app/uploads/audio/generated/`
+
 ---
 
 ## 📋 Next Steps (Priority Order)
@@ -138,6 +152,10 @@ TourStack uses a **modular content block system** where tours and stops are comp
 | Map Editor Modal | `app/src/components/blocks/MapEditorModal.tsx` |
 | Map Block Editor | `app/src/components/blocks/MapBlockEditor.tsx` |
 | Settings API | `app/server/routes/settings.ts` |
+| **Audio TTS** | |
+| Audio Page | `app/src/pages/Audio.tsx` |
+| Audio API Routes | `app/server/routes/audio.ts` |
+| Audio Service | `app/src/services/audioService.ts` |
 
 ---
 

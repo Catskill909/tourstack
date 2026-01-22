@@ -6,6 +6,7 @@ import { TourDetail } from './pages/TourDetail';
 import { Collections } from './pages/Collections';
 import { CollectionDetail } from './pages/CollectionDetail';
 import { Settings } from './pages/Settings';
+import { Audio } from './pages/Audio';
 import './index.css';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="/templates" element={<ComingSoon title="Templates" />} />
           <Route path="/media" element={<ComingSoon title="Media Library" />} />
           <Route path="/languages" element={<ComingSoon title="Languages" />} />
+          <Route path="/audio" element={<Audio />} />
           <Route path="/analytics" element={<ComingSoon title="Analytics" />} />
           <Route path="/tools" element={<ComingSoon title="Tools" />} />
           <Route path="/settings" element={<Settings />} />
