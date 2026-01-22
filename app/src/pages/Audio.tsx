@@ -34,7 +34,17 @@ const TRANSLATION_LANGUAGE_MAP: Record<string, string> = {
     'pt': 'pt',
     'zh': 'zh-Hans', // LibreTranslate uses zh-Hans for Chinese
 };
-// Note: Dutch (nl), Arabic (ar), Russian (ru), etc. are NOT supported by LibreTranslate
+
+// Helper to check if a language has translation available
+const isTranslationAvailable = (langCode: string): boolean => {
+    return langCode in TRANSLATION_LANGUAGE_MAP;
+};
+
+// Get display name with availability indicator
+const getLanguageDisplayName = (name: string, code: string): string => {
+    if (code === 'en') return name; // English doesn't need translation
+    return isTranslationAvailable(code) ? `${name} ✓` : name;
+};
 
 import {
     getVoices,
@@ -144,6 +154,9 @@ export function Audio() {
     const [elPlayerAudio, setElPlayerAudio] = useState<HTMLAudioElement | null>(null);
     const [elSuccessModal, setElSuccessModal] = useState<elevenlabsService.GeneratedAudio | null>(null);
     const elGeneratedFilesRef = useRef<HTMLDivElement>(null);
+    
+    // Unavailable language modal state
+    const [unavailableLangModal, setUnavailableLangModal] = useState<{ name: string; code: string } | null>(null);
 
     // Load initial data
     useEffect(() => {
@@ -398,6 +411,56 @@ export function Audio() {
                 />
             )}
 
+            {/* Unavailable Language Modal */}
+            {unavailableLangModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[var(--color-bg-surface)] rounded-2xl shadow-2xl max-w-md w-full p-6 border border-[var(--color-border-default)]">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                                <AlertTriangle className="w-6 h-6 text-amber-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                                    Translation Not Available
+                                </h3>
+                                <p className="text-sm text-[var(--color-text-muted)]">
+                                    {unavailableLangModal.name}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4 mb-4">
+                            <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+                                Auto-translation to <strong>{unavailableLangModal.name}</strong> is not configured on this server.
+                            </p>
+                            <p className="text-sm text-[var(--color-text-muted)] mb-3">
+                                Available languages with auto-translation:
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {Object.keys(TRANSLATION_LANGUAGE_MAP).filter(l => l !== 'en').map(code => (
+                                    <span key={code} className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-medium">
+                                        {code.toUpperCase()}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <p className="text-xs text-[var(--color-text-muted)] mb-4">
+                            You can still use this language, but you'll need to provide your text already translated to {unavailableLangModal.name}.
+                        </p>
+                        
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setUnavailableLangModal(null)}
+                                className="flex-1 px-4 py-2.5 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors font-medium"
+                            >
+                                Got it
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="px-6 py-4 border-b border-[var(--color-border-default)]">
                 <div className="flex items-center justify-between">
@@ -473,6 +536,7 @@ export function Audio() {
                         autoTranslate={autoTranslate}
                         setAutoTranslate={setAutoTranslate}
                         isTranslating={isTranslating}
+                        onUnavailableLanguage={setUnavailableLangModal}
                     />
                 ) : activeTab === 'elevenlabs' ? (
                     <ElevenLabsTab
@@ -513,6 +577,7 @@ export function Audio() {
                         setSuccessModal={setElSuccessModal}
                         setAudioFiles={setElAudioFiles}
                         generatedFilesRef={elGeneratedFilesRef}
+                        onUnavailableLanguage={setUnavailableLangModal}
                     />
                 ) : (
                     <ComingSoonTab tab={tabs.find(t => t.id === activeTab)!} />
@@ -552,6 +617,7 @@ interface DeepgramTabProps {
     autoTranslate: boolean;
     setAutoTranslate: (value: boolean) => void;
     isTranslating: boolean;
+    onUnavailableLanguage: (lang: { name: string; code: string }) => void;
 }
 
 function DeepgramTab({
@@ -583,6 +649,7 @@ function DeepgramTab({
     autoTranslate,
     setAutoTranslate,
     isTranslating,
+    onUnavailableLanguage,
 }: DeepgramTabProps) {
     const isConfigured = status?.deepgram?.configured;
 
@@ -649,12 +716,19 @@ function DeepgramTab({
                         <div className="relative">
                             <select
                                 value={selectedLanguage}
-                                onChange={(e) => handleLanguageChange(e.target.value)}
+                                onChange={(e) => {
+                                    const newLang = e.target.value;
+                                    const langName = voices?.[newLang]?.name || newLang;
+                                    if (newLang !== 'en' && !isTranslationAvailable(newLang)) {
+                                        onUnavailableLanguage({ name: langName, code: newLang });
+                                    }
+                                    handleLanguageChange(newLang);
+                                }}
                                 className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] appearance-none cursor-pointer focus:border-[var(--color-accent-primary)] focus:ring-1 focus:ring-[var(--color-accent-primary)]"
                             >
                                 {voices && Object.entries(voices).map(([code, lang]) => (
                                     <option key={code} value={code}>
-                                        {lang.name} ({lang.voices.length} voices)
+                                        {getLanguageDisplayName(lang.name, code)} ({lang.voices.length} voices)
                                     </option>
                                 ))}
                             </select>
@@ -1137,6 +1211,7 @@ interface ElevenLabsTabProps {
     setSuccessModal: (audio: elevenlabsService.GeneratedAudio | null) => void;
     setAudioFiles: React.Dispatch<React.SetStateAction<elevenlabsService.GeneratedAudio[]>>;
     generatedFilesRef: React.RefObject<HTMLDivElement | null>;
+    onUnavailableLanguage: (lang: { name: string; code: string }) => void;
 }
 
 function ElevenLabsTab({
@@ -1177,6 +1252,7 @@ function ElevenLabsTab({
     setSuccessModal,
     setAudioFiles,
     generatedFilesRef,
+    onUnavailableLanguage,
 }: ElevenLabsTabProps) {
     const isConfigured = status?.configured && status?.valid;
     const [isLoadingVoices, setIsLoadingVoices] = useState(false);
@@ -1447,12 +1523,19 @@ function ElevenLabsTab({
                         <div className="relative">
                             <select
                                 value={selectedLanguage}
-                                onChange={(e) => setSelectedLanguage(e.target.value)}
+                                onChange={(e) => {
+                                    const newLang = e.target.value;
+                                    const langName = languages.find(l => l.code === newLang)?.name || newLang;
+                                    if (newLang !== 'en' && !isTranslationAvailable(newLang)) {
+                                        onUnavailableLanguage({ name: langName, code: newLang });
+                                    }
+                                    setSelectedLanguage(newLang);
+                                }}
                                 className="w-full appearance-none p-3 pr-10 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]"
                             >
                                 {languages.map((lang) => (
                                     <option key={lang.code} value={lang.code}>
-                                        {lang.name}
+                                        {getLanguageDisplayName(lang.name, lang.code)}
                                     </option>
                                 ))}
                             </select>
