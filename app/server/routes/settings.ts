@@ -42,6 +42,8 @@ const DEFAULT_SETTINGS = {
         libreTranslateUrl: 'https://translate.supersoul.top/translate',
         libreTranslateApiKey: '',
         libreTranslateEnabled: true,
+        deepgramEnabled: false,
+        defaultProvider: 'libretranslate', // 'libretranslate' | 'deepgram'
     },
     general: {
         defaultLanguage: 'en',

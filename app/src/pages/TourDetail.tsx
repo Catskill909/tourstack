@@ -597,6 +597,7 @@ export function TourDetail() {
                 <StopEditor
                     stop={editingStop}
                     availableLanguages={tour.languages || ['en']}
+                    translationProvider={tour.defaultTranslationProvider || 'libretranslate'}
                     onSave={handleSaveStop}
                     onClose={() => setEditingStop(null)}
                 />

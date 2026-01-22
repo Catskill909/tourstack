@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Sparkles, Loader2, Check, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { magicTranslate } from '../services/translationService';
+import { magicTranslate, type TranslationProvider } from '../services/translationService';
 
 interface MagicTranslateButtonProps {
     /** Source text to translate */
@@ -14,6 +14,8 @@ interface MagicTranslateButtonProps {
     onTranslate: (translations: { [lang: string]: string }) => void;
     /** Optional API key for LibreTranslate */
     apiKey?: string;
+    /** Translation provider ('libretranslate' | 'deepgram') */
+    provider?: TranslationProvider;
     /** Size variant */
     size?: 'sm' | 'md';
     /** Disabled state */
@@ -34,6 +36,7 @@ export function MagicTranslateButton({
     targetLangs,
     onTranslate,
     apiKey,
+    provider = 'libretranslate',
     size = 'md',
     disabled = false,
 }: MagicTranslateButtonProps) {
@@ -49,7 +52,8 @@ export function MagicTranslateButton({
                 sourceText,
                 sourceLang,
                 targetLangs,
-                apiKey
+                apiKey,
+                provider
             );
             onTranslate(translations);
             setState('success');

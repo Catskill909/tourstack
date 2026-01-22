@@ -43,6 +43,7 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
     const [duration, setDuration] = useState(30);
     const [heroImage, setHeroImage] = useState<string>('');
     const [_imageFile, setImageFile] = useState<File | null>(null);
+    const [defaultTranslationProvider, setDefaultTranslationProvider] = useState<'libretranslate' | 'deepgram'>('libretranslate');
 
     // Populate form when tour changes
     useEffect(() => {
@@ -60,6 +61,7 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
             setSupportedLanguages(tour.languages || [tour.primaryLanguage]);
             setDuration(tour.duration);
             setHeroImage(tour.heroImage || '');
+            setDefaultTranslationProvider(tour.defaultTranslationProvider || 'libretranslate');
         }
     }, [tour]);
 
@@ -90,6 +92,7 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                 primaryLanguage,
                 duration,
                 heroImage: heroImage || '',
+                defaultTranslationProvider,
             });
             onClose();
         } catch (error) {
@@ -282,6 +285,46 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                         </div>
                         <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                             Multi-language tours render translation tabs in the editor.
+                        </p>
+                    </div>
+
+                    {/* Default Translation Provider */}
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+                            Default Translation Provider
+                        </label>
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setDefaultTranslationProvider('libretranslate')}
+                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
+                                    defaultTranslationProvider === 'libretranslate'
+                                        ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
+                                        : 'border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'
+                                }`}
+                            >
+                                <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                                    LT
+                                </div>
+                                <span>LibreTranslate</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setDefaultTranslationProvider('deepgram')}
+                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
+                                    defaultTranslationProvider === 'deepgram'
+                                        ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
+                                        : 'border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'
+                                }`}
+                            >
+                                <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                                    DG
+                                </div>
+                                <span>Deepgram</span>
+                            </button>
+                        </div>
+                        <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                            Provider used for Magic Translate in the Stop Editor.
                         </p>
                     </div>
                 </div>

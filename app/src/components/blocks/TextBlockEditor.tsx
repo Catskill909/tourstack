@@ -4,7 +4,7 @@ import { FileUp, Loader2 } from 'lucide-react';
 import type { TextBlockData } from '../../types';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { MagicTranslateButton } from '../MagicTranslateButton';
-import { extractTextFromFile, SUPPORTED_FILE_FORMATS } from '../../services/translationService';
+import { extractTextFromFile, SUPPORTED_FILE_FORMATS, type TranslationProvider } from '../../services/translationService';
 
 interface TextBlockEditorProps {
     data: TextBlockData;
@@ -12,6 +12,8 @@ interface TextBlockEditorProps {
     language: string;
     /** All available languages for the tour */
     availableLanguages?: string[];
+    /** Translation provider to use */
+    translationProvider?: TranslationProvider;
     onChange: (data: TextBlockData) => void;
 }
 
@@ -19,6 +21,7 @@ export function TextBlockEditor({
     data,
     language,
     availableLanguages = ['en'],
+    translationProvider = 'libretranslate',
     onChange
 }: TextBlockEditorProps) {
     const { t } = useTranslation();
@@ -106,6 +109,7 @@ export function TextBlockEditor({
                         sourceLang={primaryLang}
                         targetLangs={otherLangs}
                         onTranslate={handleTranslations}
+                        provider={translationProvider}
                         size="sm"
                         disabled={!primaryText.trim()}
                     />

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle, Maximize2, Music, Languages, Loader2 } from 'lucide-react';
 import { BLOCK_ICONS, BLOCK_LABELS } from './blocks/StopContentBlock';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { translateWithLibre } from '../services/translationService';
+import { translateWithLibre, type TranslationProvider } from '../services/translationService';
 import { TextBlockEditor } from './blocks/TextBlockEditor';
 import { ImageBlockEditor } from './blocks/ImageBlockEditor';
 import { AudioBlockEditor } from './blocks/AudioBlockEditor';
@@ -18,6 +18,8 @@ interface StopEditorProps {
     stop: Stop;
     /** Available languages from tour.languages */
     availableLanguages?: string[];
+    /** Translation provider for Magic Translate */
+    translationProvider?: TranslationProvider;
     onSave: (stop: Stop, shouldClose?: boolean) => void;
     onClose: () => void;
 }
@@ -47,7 +49,7 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
     }
 }
 
-export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose }: StopEditorProps) {
+export function StopEditor({ stop, availableLanguages = ['en'], translationProvider = 'libretranslate', onSave, onClose }: StopEditorProps) {
     // Ensure contentBlocks is always an array - defensive check
     const safeContentBlocks = Array.isArray(stop.contentBlocks) ? stop.contentBlocks : [];
 
@@ -379,6 +381,7 @@ export function StopEditor({ stop, availableLanguages = ['en'], onSave, onClose 
                                         data={editingBlock.data as TextBlockData}
                                         language={language}
                                         availableLanguages={availableLanguages}
+                                        translationProvider={translationProvider}
                                         onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
                                     />
                                 )}

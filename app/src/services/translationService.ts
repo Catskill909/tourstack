@@ -1,42 +1,49 @@
 /**
  * Translation Service for TourStack
  * 
- * Provides AI-powered translation using LibreTranslate.
- * Architecture supports adding more providers later (OpenAI, DeepL, etc.)
+ * Provides AI-powered translation using LibreTranslate or Deepgram.
+ * Architecture supports multiple providers with fallback.
  */
+
+export type TranslationProvider = 'libretranslate' | 'deepgram';
 
 export interface TranslationRequest {
     text: string;
     sourceLang: string;
     targetLang: string;
+    provider?: TranslationProvider;
 }
 
 export interface BatchTranslationRequest {
     text: string;
     sourceLang: string;
     targetLangs: string[];
+    provider?: TranslationProvider;
 }
 
 export interface TranslationResult {
     [lang: string]: string;
 }
 
-// LibreTranslate API via our server proxy (avoids CORS)
+// Translation API via our server proxy (avoids CORS)
 const TRANSLATE_API = '/api/translate';
 
 /**
- * Translate text using our server-side LibreTranslate proxy
+ * Translate text using our server-side translation proxy
+ * Supports LibreTranslate (default) and Deepgram providers
  * 
  * @param text - Text to translate
  * @param sourceLang - Source language code (e.g., 'en')
  * @param targetLang - Target language code (e.g., 'es')
  * @param apiKey - Optional API key for rate limit bypass
+ * @param provider - Translation provider ('libretranslate' | 'deepgram')
  */
-export async function translateWithLibre(
+export async function translateText(
     text: string,
     sourceLang: string,
     targetLang: string,
-    apiKey?: string
+    apiKey?: string,
+    provider: TranslationProvider = 'libretranslate'
 ): Promise<string> {
     // Skip if same language or empty text
     if (sourceLang === targetLang || !text.trim()) {
@@ -54,6 +61,7 @@ export async function translateWithLibre(
                 sourceLang,
                 targetLang,
                 apiKey,
+                provider,
             }),
         });
 
@@ -71,15 +79,29 @@ export async function translateWithLibre(
 }
 
 /**
+ * Translate text using LibreTranslate (legacy function for backward compatibility)
+ */
+export async function translateWithLibre(
+    text: string,
+    sourceLang: string,
+    targetLang: string,
+    apiKey?: string
+): Promise<string> {
+    return translateText(text, sourceLang, targetLang, apiKey, 'libretranslate');
+}
+
+/**
  * Batch translate text to multiple target languages
  * 
  * @param request - Batch translation request
  * @param apiKey - Optional API key
+ * @param provider - Translation provider
  * @returns Object with translations keyed by language code
  */
 export async function batchTranslate(
     request: BatchTranslationRequest,
-    apiKey?: string
+    apiKey?: string,
+    provider: TranslationProvider = 'libretranslate'
 ): Promise<TranslationResult> {
     const { text, sourceLang, targetLangs } = request;
     const result: TranslationResult = {};
@@ -92,7 +114,7 @@ export async function batchTranslate(
         if (targetLang === sourceLang) continue;
 
         try {
-            result[targetLang] = await translateWithLibre(text, sourceLang, targetLang, apiKey);
+            result[targetLang] = await translateText(text, sourceLang, targetLang, apiKey, provider);
             // Small delay to respect rate limits on free API
             await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
@@ -108,14 +130,21 @@ export async function batchTranslate(
  * Magic Translate - One-click translation to all tour languages
  * 
  * This is the main entry point for the "✨ Translate" button.
+ * 
+ * @param text - Text to translate
+ * @param sourceLang - Source language code
+ * @param targetLangs - Array of target language codes
+ * @param apiKey - Optional API key
+ * @param provider - Translation provider ('libretranslate' | 'deepgram')
  */
 export async function magicTranslate(
     text: string,
     sourceLang: string,
     targetLangs: string[],
-    apiKey?: string
+    apiKey?: string,
+    provider: TranslationProvider = 'libretranslate'
 ): Promise<TranslationResult> {
-    return batchTranslate({ text, sourceLang, targetLangs }, apiKey);
+    return batchTranslate({ text, sourceLang, targetLangs }, apiKey, provider);
 }
 
 // Supported languages by LibreTranslate

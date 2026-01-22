@@ -106,11 +106,13 @@ export function Settings() {
     const [showElevenLabsKey, setShowElevenLabsKey] = useState(false);
     const [defaultTranscriptionProvider, setDefaultTranscriptionProvider] = useState<'deepgram' | 'whisper' | 'none'>('none');
 
-    // Translation Settings (LibreTranslate)
+    // Translation Settings (LibreTranslate + Deepgram)
     const [libreTranslateUrl, setLibreTranslateUrl] = useState('https://translate.supersoul.top/translate');
     const [libreTranslateApiKey, setLibreTranslateApiKey] = useState('');
     const [showLibreTranslateKey, setShowLibreTranslateKey] = useState(false);
     const [libreTranslateEnabled, setLibreTranslateEnabled] = useState(true);
+    const [deepgramTranslationEnabled, setDeepgramTranslationEnabled] = useState(false);
+    const [defaultTranslationProvider, setDefaultTranslationProvider] = useState<'libretranslate' | 'deepgram'>('libretranslate');
 
     // General Settings
     const [defaultLanguage, setDefaultLanguage] = useState('en');
@@ -143,6 +145,8 @@ export function Settings() {
                     setLibreTranslateUrl(settings.translation.libreTranslateUrl || '');
                     setLibreTranslateApiKey(settings.translation.libreTranslateApiKey || '');
                     setLibreTranslateEnabled(settings.translation.libreTranslateEnabled ?? true);
+                    setDeepgramTranslationEnabled(settings.translation.deepgramEnabled ?? false);
+                    setDefaultTranslationProvider(settings.translation.defaultProvider || 'libretranslate');
                 }
                 if (settings.general) {
                     setDefaultLanguage(settings.general.defaultLanguage || 'en');
@@ -170,6 +174,8 @@ export function Settings() {
                 libreTranslateUrl,
                 libreTranslateApiKey,
                 libreTranslateEnabled,
+                deepgramEnabled: deepgramTranslationEnabled,
+                defaultProvider: defaultTranslationProvider,
             },
             general: {
                 defaultLanguage,
@@ -799,9 +805,84 @@ export function Settings() {
                             </div>
                         </div>
 
+                        {/* Deepgram Translation */}
+                        <div className="bg-[var(--color-bg-elevated)] rounded-xl p-5">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                        DG
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-[var(--color-text-primary)]">Deepgram</h3>
+                                        <p className="text-sm text-[var(--color-text-muted)]">Enterprise ASR • Audio translation to English</p>
+                                    </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={deepgramTranslationEnabled}
+                                        onChange={(e) => setDeepgramTranslationEnabled(e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-[var(--color-bg-hover)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-accent-primary)]/50 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent-secondary)]"></div>
+                                </label>
+                            </div>
+                            {deepgramTranslationEnabled && (
+                                <div className="mt-4 p-3 bg-[var(--color-success)]/10 rounded-lg border border-[var(--color-success)]/20">
+                                    <p className="text-sm text-[var(--color-success)] flex items-center gap-2">
+                                        <CheckIcon />
+                                        Deepgram translation enabled (uses Transcription API key)
+                                    </p>
+                                </div>
+                            )}
+                            <div className="mt-4 p-3 bg-[var(--color-warning)]/10 rounded-lg border border-[var(--color-warning)]/20">
+                                <p className="text-sm text-[var(--color-warning)]">
+                                    ⚠️ <strong>Note:</strong> Deepgram translates audio to English during transcription. For text-to-text translation, LibreTranslate is used as fallback.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Default Translation Provider */}
+                        <div className="bg-[var(--color-bg-elevated)] rounded-xl p-5">
+                            <h3 className="font-semibold text-[var(--color-text-primary)] mb-3">Default Translation Provider</h3>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setDefaultTranslationProvider('libretranslate')}
+                                    disabled={!libreTranslateEnabled}
+                                    className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
+                                        defaultTranslationProvider === 'libretranslate'
+                                            ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
+                                            : 'border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:border-[var(--color-border-hover)]'
+                                    } ${!libreTranslateEnabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                >
+                                    <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                                        LT
+                                    </div>
+                                    <span>LibreTranslate</span>
+                                </button>
+                                <button
+                                    onClick={() => setDefaultTranslationProvider('deepgram')}
+                                    disabled={!deepgramTranslationEnabled}
+                                    className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
+                                        defaultTranslationProvider === 'deepgram'
+                                            ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
+                                            : 'border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:border-[var(--color-border-hover)]'
+                                    } ${!deepgramTranslationEnabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                >
+                                    <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                                        DG
+                                    </div>
+                                    <span>Deepgram</span>
+                                </button>
+                            </div>
+                            <p className="text-xs text-[var(--color-text-muted)] mt-3">
+                                Default provider for Magic Translate. Can be overridden per tour.
+                            </p>
+                        </div>
+
                         <div className="p-4 bg-[var(--color-info)]/10 rounded-lg border border-[var(--color-info)]/20">
                             <p className="text-sm text-[var(--color-info)]">
-                                💡 <strong>Tip:</strong> LibreTranslate powers the "Magic Translate" feature in the Stop Editor, enabling automatic translation of tour content to multiple languages.
+                                💡 <strong>Tip:</strong> LibreTranslate powers text-to-text translation for Magic Translate. Deepgram excels at audio transcription with built-in translation to English.
                             </p>
                         </div>
                     </div>

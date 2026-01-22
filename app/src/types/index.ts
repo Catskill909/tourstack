@@ -496,6 +496,9 @@ export interface Tour {
   primaryLanguage: string;
   duration: number; // minutes
   difficulty: Difficulty;
+  
+  // Translation settings
+  defaultTranslationProvider?: 'libretranslate' | 'deepgram';
 
   // Positioning
   primaryPositioningMethod: PositioningMethod;
