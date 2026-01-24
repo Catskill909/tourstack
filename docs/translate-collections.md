@@ -267,6 +267,27 @@ export interface AudioCollection extends Collection {
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+**Import Data Mapping (Audio Block):**
+```typescript
+// When importing an AudioCollection into an AudioBlock:
+function importToAudioBlock(collection: AudioCollection): Partial<AudioBlockData> {
+    // Build audioFiles from collection items
+    const audioFiles: { [lang: string]: string } = {};
+    collection.items.forEach(item => {
+        if (item.type === 'audio') {
+            audioFiles[item.language] = item.url;
+        }
+    });
+    
+    // Use collection.texts for transcript (already in correct format)
+    return {
+        audioFiles,                          // Per-language audio URLs
+        transcript: collection.texts,        // Per-language text (for captions/transcript)
+        title: { en: collection.name },      // Collection name as title
+    };
+}
+```
+
 **Timeline Gallery Import:**
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -284,6 +305,42 @@ export interface AudioCollection extends Collection {
 │  │     [Import Selected]                                    │  │
 │  └───────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
+```
+
+**Import Data Mapping (Timeline Gallery - Current Single-Language):**
+```typescript
+// When importing an AudioCollection into a TimelineGalleryBlock (Phase 4):
+function importToTimelineGallery(
+    collection: AudioCollection, 
+    selectedLang: string
+): Partial<TimelineGalleryBlockData> {
+    const audioItem = collection.items.find(
+        item => item.type === 'audio' && item.language === selectedLang
+    );
+    
+    return {
+        audioUrl: audioItem?.url,                    // Single audio for selected language
+        audioDuration: audioItem?.duration,
+        transcript: collection.texts,               // ALL language texts for captions
+    };
+}
+
+// Phase 5 enhancement: Multi-language support
+function importToTimelineGalleryMultiLang(
+    collection: AudioCollection
+): Partial<TimelineGalleryBlockData> {
+    const audioFiles: { [lang: string]: string } = {};
+    collection.items.forEach(item => {
+        if (item.type === 'audio') {
+            audioFiles[item.language] = item.url;
+        }
+    });
+    
+    return {
+        audioFiles,                                 // NEW: Per-language audio
+        transcript: collection.texts,              // Per-language text for captions
+    };
+}
 ```
 
 ---
@@ -658,7 +715,7 @@ export interface ImageCollectionItem extends BaseCollectionItem {
 export interface AudioCollectionItem extends BaseCollectionItem {
     type: 'audio';
     url: string;
-    language: string;
+    language: string;           // Language code: 'en', 'es', 'fr', etc.
     voice: {
         id: string;
         name: string;
@@ -669,10 +726,7 @@ export interface AudioCollectionItem extends BaseCollectionItem {
     sampleRate?: number;
     fileSize: number;
     duration?: number;
-    text: {
-        original: string;
-        translated?: string;
-    };
+    text: string;               // The text used to generate this audio (in this language)
 }
 
 export type CollectionItem = ImageCollectionItem | AudioCollectionItem;
@@ -686,7 +740,8 @@ export interface Collection {
     items: CollectionItem[];
     
     // Audio collection specific
-    sourceText?: string;
+    sourceLanguage?: string;     // Primary language (usually 'en')
+    texts?: { [lang: string]: string };  // All text versions keyed by language
     ttsSettings?: {
         provider: 'deepgram' | 'elevenlabs';
         format: string;

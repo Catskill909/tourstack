@@ -18,7 +18,9 @@ import {
     Users,
     X,
     AlertTriangle,
+    FolderPlus,
 } from 'lucide-react';
+import { AudioCollectionModal } from '../components/AudioCollectionModal';
 import { translateText } from '../services/translationService';
 
 // Languages supported by LibreTranslate for auto-translation
@@ -157,6 +159,9 @@ export function Audio() {
     
     // Unavailable language modal state
     const [unavailableLangModal, setUnavailableLangModal] = useState<{ name: string; code: string } | null>(null);
+    
+    // Audio Collection Modal state
+    const [showCollectionModal, setShowCollectionModal] = useState(false);
 
     // Load initial data
     useEffect(() => {
@@ -537,6 +542,7 @@ export function Audio() {
                         setAutoTranslate={setAutoTranslate}
                         isTranslating={isTranslating}
                         onUnavailableLanguage={setUnavailableLangModal}
+                        onOpenCollectionModal={() => setShowCollectionModal(true)}
                     />
                 ) : activeTab === 'elevenlabs' ? (
                     <ElevenLabsTab
@@ -583,6 +589,22 @@ export function Audio() {
                     <ComingSoonTab tab={tabs.find(t => t.id === activeTab)!} />
                 )}
             </div>
+
+            {/* Audio Collection Modal */}
+            <AudioCollectionModal
+                isOpen={showCollectionModal}
+                onClose={() => setShowCollectionModal(false)}
+                text={text}
+                provider="deepgram"
+                voices={voices}
+                formats={formats}
+                defaultFormat={selectedFormat}
+                defaultSampleRate={selectedSampleRate}
+                onSuccess={(collectionId) => {
+                    console.log('Collection created:', collectionId);
+                    setShowCollectionModal(false);
+                }}
+            />
         </div>
     );
 }
@@ -618,6 +640,7 @@ interface DeepgramTabProps {
     setAutoTranslate: (value: boolean) => void;
     isTranslating: boolean;
     onUnavailableLanguage: (lang: { name: string; code: string }) => void;
+    onOpenCollectionModal: () => void;
 }
 
 function DeepgramTab({
@@ -650,6 +673,7 @@ function DeepgramTab({
     setAutoTranslate,
     isTranslating,
     onUnavailableLanguage,
+    onOpenCollectionModal,
 }: DeepgramTabProps) {
     const isConfigured = status?.deepgram?.configured;
 
@@ -893,6 +917,15 @@ function DeepgramTab({
                                 Generate Audio
                             </>
                         )}
+                    </button>
+                    <button
+                        onClick={onOpenCollectionModal}
+                        disabled={!text.trim()}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                        title="Create a collection with audio in multiple languages"
+                    >
+                        <FolderPlus className="w-4 h-4" />
+                        Create Collection
                     </button>
                 </div>
 

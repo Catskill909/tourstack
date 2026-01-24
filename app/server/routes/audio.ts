@@ -522,4 +522,318 @@ router.post('/preview', async (req: Request, res: Response) => {
     }
 });
 
+// =============================================================================
+// BATCH GENERATION FOR AUDIO COLLECTIONS
+// =============================================================================
+
+// LibreTranslate API for batch translation
+const LIBRE_TRANSLATE_API = process.env.LIBRE_TRANSLATE_URL || 'https://translate.supersoul.top/translate';
+const LIBRE_TRANSLATE_API_KEY = process.env.LIBRE_TRANSLATE_API_KEY || 'TranslateThisForMe26';
+
+// Language code mapping for LibreTranslate
+const LANGUAGE_CODE_MAP: Record<string, string> = {
+    'zh': 'zh-Hans',
+};
+
+// Translate text using LibreTranslate
+async function translateText(
+    text: string,
+    sourceLang: string,
+    targetLang: string
+): Promise<string> {
+    const mappedSource = LANGUAGE_CODE_MAP[sourceLang] || sourceLang;
+    const mappedTarget = LANGUAGE_CODE_MAP[targetLang] || targetLang;
+    
+    const body: Record<string, string> = {
+        q: text,
+        source: mappedSource,
+        target: mappedTarget,
+        format: 'text',
+    };
+
+    if (LIBRE_TRANSLATE_API_KEY) {
+        body.api_key = LIBRE_TRANSLATE_API_KEY;
+    }
+
+    const response = await fetch(LIBRE_TRANSLATE_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Translation failed: ${errorText}`);
+    }
+
+    const data = await response.json() as { translatedText: string };
+    return data.translatedText;
+}
+
+// Generate single audio file (internal helper)
+async function generateSingleAudio(
+    text: string,
+    voice: string,
+    encoding: string,
+    sampleRate: number
+): Promise<{ buffer: Buffer; size: number }> {
+    const params = new URLSearchParams({
+        model: voice,
+        encoding: encoding,
+    });
+    
+    if (encoding === 'linear16' || encoding === 'wav') {
+        params.set('sample_rate', sampleRate.toString());
+    }
+
+    const response = await fetch(`${DEEPGRAM_TTS_URL}?${params}`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Token ${DEEPGRAM_API_KEY}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Deepgram TTS failed: ${errorText}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+        throw new Error('Failed to read response stream');
+    }
+
+    const chunks: Uint8Array[] = [];
+    let totalLength = 0;
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) {
+            chunks.push(value);
+            totalLength += value.length;
+        }
+    }
+
+    const audioBuffer = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+        audioBuffer.set(chunk, offset);
+        offset += chunk.length;
+    }
+
+    return { buffer: Buffer.from(audioBuffer), size: totalLength };
+}
+
+// Batch generation request interface
+interface BatchLanguageConfig {
+    code: string;
+    voiceId: string;
+    voiceName: string;
+}
+
+interface BatchGenerateRequest {
+    text: string;
+    collectionName: string;
+    collectionDescription?: string;
+    provider: 'deepgram' | 'elevenlabs';
+    format: string;
+    sampleRate?: number;
+    autoTranslate: boolean;
+    sourceLanguage: string;
+    languages: BatchLanguageConfig[];
+}
+
+// POST /api/audio/generate-batch - Generate audio for multiple languages and create collection
+router.post('/generate-batch', async (req: Request, res: Response) => {
+    try {
+        const {
+            text,
+            collectionName,
+            collectionDescription,
+            provider = 'deepgram',
+            format = 'mp3',
+            sampleRate = 24000,
+            autoTranslate = true,
+            sourceLanguage = 'en',
+            languages,
+        } = req.body as BatchGenerateRequest;
+
+        // Validation
+        if (!text || typeof text !== 'string' || text.trim().length === 0) {
+            return res.status(400).json({ error: 'Text is required' });
+        }
+
+        if (!collectionName) {
+            return res.status(400).json({ error: 'Collection name is required' });
+        }
+
+        if (!languages || !Array.isArray(languages) || languages.length === 0) {
+            return res.status(400).json({ error: 'At least one language is required' });
+        }
+
+        if (!DEEPGRAM_API_KEY && provider === 'deepgram') {
+            return res.status(500).json({
+                error: 'Deepgram API key not configured',
+                hint: 'Set DEEPGRAM_API_KEY environment variable',
+            });
+        }
+
+        console.log(`[Batch Generate] Starting batch generation for ${languages.length} languages`);
+
+        // Store texts for each language
+        const texts: Record<string, string> = { [sourceLanguage]: text };
+        
+        // Results tracking
+        const results: Array<{
+            language: string;
+            success: boolean;
+            item?: {
+                id: string;
+                type: 'audio';
+                url: string;
+                language: string;
+                voice: { id: string; name: string; gender?: string };
+                provider: string;
+                format: string;
+                sampleRate?: number;
+                fileSize: number;
+                duration?: number;
+                text: string;
+                order: number;
+            };
+            error?: string;
+        }> = [];
+
+        // Process each language sequentially
+        for (let i = 0; i < languages.length; i++) {
+            const lang = languages[i];
+            console.log(`[Batch Generate] Processing ${lang.code} (${i + 1}/${languages.length})`);
+
+            try {
+                // Get or translate text
+                let langText = text;
+                if (lang.code !== sourceLanguage && autoTranslate) {
+                    try {
+                        langText = await translateText(text, sourceLanguage, lang.code);
+                        texts[lang.code] = langText;
+                        console.log(`[Batch Generate] Translated to ${lang.code}: ${langText.substring(0, 50)}...`);
+                    } catch (translateError) {
+                        console.error(`[Batch Generate] Translation failed for ${lang.code}:`, translateError);
+                        results.push({
+                            language: lang.code,
+                            success: false,
+                            error: `Translation failed: ${translateError instanceof Error ? translateError.message : 'Unknown error'}`,
+                        });
+                        continue;
+                    }
+                } else if (lang.code === sourceLanguage) {
+                    texts[lang.code] = text;
+                }
+
+                // Generate audio
+                const { buffer, size } = await generateSingleAudio(
+                    langText,
+                    lang.voiceId,
+                    format,
+                    sampleRate
+                );
+
+                // Save file
+                const id = uuidv4();
+                const formatInfo = AUDIO_FORMATS.find(f => f.id === format) || AUDIO_FORMATS[0];
+                const timestamp = Date.now();
+                const filename = `batch-${timestamp}-${lang.code}-${lang.voiceId}${formatInfo.extension}`;
+                const filePath = path.join(GENERATED_DIR, filename);
+                const fileUrl = `/uploads/audio/generated/${filename}`;
+
+                fs.writeFileSync(filePath, buffer);
+
+                // Find voice gender
+                let voiceGender: string | undefined;
+                const langVoices = DEEPGRAM_VOICES[lang.code as keyof typeof DEEPGRAM_VOICES];
+                if (langVoices) {
+                    const voiceInfo = langVoices.voices.find(v => v.id === lang.voiceId);
+                    voiceGender = voiceInfo?.gender;
+                }
+
+                // Create item for collection
+                const item = {
+                    id,
+                    type: 'audio' as const,
+                    url: fileUrl,
+                    language: lang.code,
+                    voice: {
+                        id: lang.voiceId,
+                        name: lang.voiceName,
+                        gender: voiceGender,
+                    },
+                    provider,
+                    format,
+                    sampleRate,
+                    fileSize: size,
+                    duration: undefined, // Could calculate from audio if needed
+                    text: langText,
+                    order: i,
+                };
+
+                results.push({
+                    language: lang.code,
+                    success: true,
+                    item,
+                });
+
+                console.log(`[Batch Generate] Generated ${lang.code}: ${size} bytes`);
+            } catch (genError) {
+                console.error(`[Batch Generate] Generation failed for ${lang.code}:`, genError);
+                results.push({
+                    language: lang.code,
+                    success: false,
+                    error: genError instanceof Error ? genError.message : 'Generation failed',
+                });
+            }
+        }
+
+        // Create collection with results
+        const successfulItems = results
+            .filter(r => r.success && r.item)
+            .map(r => r.item!);
+
+        const collectionData = {
+            name: collectionName,
+            description: collectionDescription || '',
+            type: 'audio_collection',
+            items: successfulItems,
+            sourceLanguage,
+            texts,
+            ttsSettings: {
+                provider,
+                format,
+                sampleRate,
+                autoTranslate,
+            },
+        };
+
+        console.log(`[Batch Generate] Completed: ${successfulItems.length}/${languages.length} successful`);
+
+        return res.status(201).json({
+            collection: collectionData,
+            results,
+            summary: {
+                total: languages.length,
+                successful: successfulItems.length,
+                failed: languages.length - successfulItems.length,
+            },
+        });
+    } catch (error) {
+        console.error('Batch generation error:', error);
+        return res.status(500).json({
+            error: 'Batch generation failed',
+            details: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+});
+
 export default router;

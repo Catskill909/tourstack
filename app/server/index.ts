@@ -15,6 +15,7 @@ import settingsRouter from './routes/settings.js';
 import audioRouter from './routes/audio.js';
 import elevenlabsRouter from './routes/elevenlabs.js';
 import feedsRouter from './routes/feeds.js';
+import collectionsRouter from './routes/collections.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,6 +41,7 @@ app.use('/api/settings', settingsRouter);
 app.use('/api/audio', audioRouter);
 app.use('/api/elevenlabs', elevenlabsRouter);
 app.use('/api/feeds', feedsRouter);
+app.use('/api/collections', collectionsRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

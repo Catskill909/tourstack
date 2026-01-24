@@ -195,8 +195,13 @@ model Collection {
   
   name        String
   description String?
-  type        String   @default("gallery") // gallery, dataset
+  type        String   @default("gallery") // gallery, dataset, audio_collection
   items       String   // JSON: CollectionItem[]
+  
+  // Audio collection specific fields
+  sourceLanguage String?  // Primary language code (e.g., 'en')
+  texts          String?  // JSON: { [lang: string]: string } - per-language text
+  ttsSettings    String?  // JSON: { provider, format, sampleRate, autoTranslate }
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
