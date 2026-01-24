@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { collectionService } from '../lib/collectionService';
 import type { Voice } from '../services/audioService';
+import * as elevenlabsService from '../services/elevenlabsService';
 
 interface LanguageVoices {
     name: string;
@@ -46,6 +47,19 @@ interface GenerationResult {
 
 const TRANSLATION_AVAILABLE = ['en', 'es', 'fr', 'de', 'it', 'ja', 'ko', 'pt', 'zh'];
 
+// ElevenLabs supported languages (subset that LibreTranslate can handle)
+const ELEVENLABS_LANGUAGES = [
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'it', name: 'Italian' },
+    { code: 'pt', name: 'Portuguese' },
+    { code: 'ja', name: 'Japanese' },
+    { code: 'ko', name: 'Korean' },
+    { code: 'zh', name: 'Chinese' },
+];
+
 export function AudioCollectionModal({
     isOpen,
     onClose,
@@ -60,15 +74,19 @@ export function AudioCollectionModal({
     // Collection metadata
     const [collectionName, setCollectionName] = useState('');
     const [collectionDescription, setCollectionDescription] = useState('');
-    
+
     // Generation settings
     const [format, setFormat] = useState(defaultFormat);
     const [sampleRate, setSampleRate] = useState(defaultSampleRate);
     const [autoTranslate, setAutoTranslate] = useState(true);
-    
+
     // Language selections
     const [languages, setLanguages] = useState<LanguageSelection[]>([]);
-    
+
+    // ElevenLabs voice state (for when provider is elevenlabs)
+    const [elVoices, setElVoices] = useState<elevenlabsService.ElevenLabsVoice[]>([]);
+    const [selectedElVoice, setSelectedElVoice] = useState<{ id: string; name: string } | null>(null);
+
     // Generation state
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationResults, setGenerationResults] = useState<GenerationResult[]>([]);
@@ -76,9 +94,12 @@ export function AudioCollectionModal({
     const [success, setSuccess] = useState(false);
     const [createdCollectionId, setCreatedCollectionId] = useState<string | null>(null);
 
-    // Initialize languages from voices
+    // Initialize languages from voices (Deepgram) or static list (ElevenLabs)
     useEffect(() => {
-        if (voices && isOpen) {
+        if (!isOpen) return;
+
+        if (provider === 'deepgram' && voices) {
+            // Deepgram: use voice data per language
             const langSelections: LanguageSelection[] = Object.entries(voices).map(([code, data]) => {
                 const defaultVoice = data.voices.find(v => v.featured) || data.voices[0];
                 return {
@@ -91,23 +112,45 @@ export function AudioCollectionModal({
                 };
             });
             setLanguages(langSelections);
-            
-            // Reset state
-            setCollectionName('');
-            setCollectionDescription('');
-            setFormat(defaultFormat);
-            setSampleRate(defaultSampleRate);
-            setAutoTranslate(true);
-            setIsGenerating(false);
-            setGenerationResults([]);
-            setError(null);
-            setSuccess(false);
-            setCreatedCollectionId(null);
+        } else if (provider === 'elevenlabs') {
+            // ElevenLabs: use static language list with single voice for all
+            // Fetch ElevenLabs voices
+            elevenlabsService.getVoices('en').then(result => {
+                setElVoices(result.voices);
+                const defaultVoice = result.voices[0];
+                if (defaultVoice) {
+                    setSelectedElVoice({ id: defaultVoice.id, name: defaultVoice.name });
+                }
+            }).catch(err => {
+                console.error('Failed to load ElevenLabs voices:', err);
+            });
+
+            const langSelections: LanguageSelection[] = ELEVENLABS_LANGUAGES.map(lang => ({
+                code: lang.code,
+                name: lang.name,
+                enabled: lang.code === 'en',
+                voiceId: '', // Will be set from selectedElVoice
+                voiceName: '',
+                translationAvailable: TRANSLATION_AVAILABLE.includes(lang.code),
+            }));
+            setLanguages(langSelections);
         }
-    }, [voices, isOpen, defaultFormat, defaultSampleRate]);
+
+        // Reset state
+        setCollectionName('');
+        setCollectionDescription('');
+        setFormat(defaultFormat);
+        setSampleRate(defaultSampleRate);
+        setAutoTranslate(true);
+        setIsGenerating(false);
+        setGenerationResults([]);
+        setError(null);
+        setSuccess(false);
+        setCreatedCollectionId(null);
+    }, [voices, isOpen, defaultFormat, defaultSampleRate, provider]);
 
     const toggleLanguage = (code: string) => {
-        setLanguages(prev => prev.map(lang => 
+        setLanguages(prev => prev.map(lang =>
             lang.code === code ? { ...lang, enabled: !lang.enabled } : lang
         ));
     };
@@ -137,8 +180,12 @@ export function AudioCollectionModal({
         setGenerationResults([]);
 
         try {
-            // Call batch generation endpoint
-            const response = await fetch('/api/audio/generate-batch', {
+            // Call appropriate batch generation endpoint based on provider
+            const endpoint = provider === 'elevenlabs'
+                ? '/api/elevenlabs/generate-batch'
+                : '/api/audio/generate-batch';
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -150,10 +197,11 @@ export function AudioCollectionModal({
                     sampleRate,
                     autoTranslate,
                     sourceLanguage: 'en',
+                    // For ElevenLabs, use the same voice for all languages (multilingual v2 model)
                     languages: enabledLanguages.map(l => ({
                         code: l.code,
-                        voiceId: l.voiceId,
-                        voiceName: l.voiceName,
+                        voiceId: provider === 'elevenlabs' ? selectedElVoice?.id || '' : l.voiceId,
+                        voiceName: provider === 'elevenlabs' ? selectedElVoice?.name || '' : l.voiceName,
                     })),
                 }),
             });
@@ -164,7 +212,7 @@ export function AudioCollectionModal({
             }
 
             const data = await response.json();
-            
+
             // Update results
             setGenerationResults(data.results);
 
@@ -303,45 +351,81 @@ export function AudioCollectionModal({
                                     <Volume2 className="w-4 h-4" />
                                     Generation Settings
                                 </h3>
-                                <div className="grid grid-cols-2 gap-4">
+
+                                {/* ElevenLabs: Voice selector (same voice for all languages) */}
+                                {provider === 'elevenlabs' && (
                                     <div>
                                         <label className="block text-sm text-[var(--color-text-muted)] mb-1">
-                                            Format
+                                            Voice (used for all languages)
                                         </label>
                                         <div className="relative">
                                             <select
-                                                value={format}
-                                                onChange={(e) => setFormat(e.target.value)}
+                                                value={selectedElVoice?.id || ''}
+                                                onChange={(e) => {
+                                                    const voice = elVoices.find(v => v.id === e.target.value);
+                                                    if (voice) {
+                                                        setSelectedElVoice({ id: voice.id, name: voice.name });
+                                                    }
+                                                }}
                                                 disabled={isGenerating}
                                                 className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] appearance-none cursor-pointer focus:border-[var(--color-accent-primary)] focus:outline-none disabled:opacity-50"
                                             >
-                                                {formats?.formats.map((fmt) => (
-                                                    <option key={fmt.id} value={fmt.id}>{fmt.name}</option>
+                                                {elVoices.map((voice) => (
+                                                    <option key={voice.id} value={voice.id}>
+                                                        {voice.name} {voice.labels?.gender ? `(${voice.labels.gender})` : ''}
+                                                    </option>
                                                 ))}
                                             </select>
                                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
                                         </div>
+                                        <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                                            Multilingual v2 model speaks all languages with the same voice
+                                        </p>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm text-[var(--color-text-muted)] mb-1">
-                                            Sample Rate
-                                        </label>
-                                        <div className="relative">
-                                            <select
-                                                value={sampleRate}
-                                                onChange={(e) => setSampleRate(Number(e.target.value))}
-                                                disabled={isGenerating}
-                                                className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] appearance-none cursor-pointer focus:border-[var(--color-accent-primary)] focus:outline-none disabled:opacity-50"
-                                            >
-                                                {formats?.sampleRates.map((rate) => (
-                                                    <option key={rate.id} value={rate.id}>{rate.name}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
+                                )}
+
+                                {/* Deepgram: Format and Sample Rate */}
+                                {provider === 'deepgram' && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm text-[var(--color-text-muted)] mb-1">
+                                                Format
+                                            </label>
+                                            <div className="relative">
+                                                <select
+                                                    value={format}
+                                                    onChange={(e) => setFormat(e.target.value)}
+                                                    disabled={isGenerating}
+                                                    className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] appearance-none cursor-pointer focus:border-[var(--color-accent-primary)] focus:outline-none disabled:opacity-50"
+                                                >
+                                                    {formats?.formats.map((fmt) => (
+                                                        <option key={fmt.id} value={fmt.id}>{fmt.name}</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-[var(--color-text-muted)] mb-1">
+                                                Sample Rate
+                                            </label>
+                                            <div className="relative">
+                                                <select
+                                                    value={sampleRate}
+                                                    onChange={(e) => setSampleRate(Number(e.target.value))}
+                                                    disabled={isGenerating}
+                                                    className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] appearance-none cursor-pointer focus:border-[var(--color-accent-primary)] focus:outline-none disabled:opacity-50"
+                                                >
+                                                    {formats?.sampleRates.map((rate) => (
+                                                        <option key={rate.id} value={rate.id}>{rate.name}</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                
+                                )}
+
                                 {/* Auto-translate toggle */}
                                 <div className="flex items-center justify-between p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]">
                                     <div className="flex items-center gap-3">
@@ -360,14 +444,12 @@ export function AudioCollectionModal({
                                     <button
                                         onClick={() => setAutoTranslate(!autoTranslate)}
                                         disabled={isGenerating}
-                                        className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
-                                            autoTranslate ? 'bg-[var(--color-accent-primary)]' : 'bg-[var(--color-bg-hover)]'
-                                        }`}
+                                        className={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${autoTranslate ? 'bg-[var(--color-accent-primary)]' : 'bg-[var(--color-bg-hover)]'
+                                            }`}
                                     >
                                         <span
-                                            className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                                                autoTranslate ? 'translate-x-5' : 'translate-x-0'
-                                            }`}
+                                            className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${autoTranslate ? 'translate-x-5' : 'translate-x-0'
+                                                }`}
                                         />
                                     </button>
                                 </div>
@@ -383,11 +465,10 @@ export function AudioCollectionModal({
                                     {languages.map((lang) => (
                                         <div
                                             key={lang.code}
-                                            className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                                                lang.enabled
+                                            className={`flex items-center justify-between p-3 rounded-lg border transition-all ${lang.enabled
                                                     ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/30'
                                                     : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)]'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="flex items-center gap-3">
                                                 <input
@@ -402,9 +483,8 @@ export function AudioCollectionModal({
                                                         {lang.name}
                                                     </span>
                                                     {lang.code !== 'en' && (
-                                                        <span className={`ml-2 text-xs ${
-                                                            lang.translationAvailable ? 'text-green-500' : 'text-amber-500'
-                                                        }`}>
+                                                        <span className={`ml-2 text-xs ${lang.translationAvailable ? 'text-green-500' : 'text-amber-500'
+                                                            }`}>
                                                             {lang.translationAvailable ? '✓ Translation available' : '⚠ No auto-translation'}
                                                         </span>
                                                     )}

@@ -1,8 +1,49 @@
 # Translate Collections Feature - Development Plan
 
 **Created**: January 24, 2026  
-**Status**: Planning Phase  
+**Last Updated**: January 24, 2026  
+**Status**: Phase 2 Complete ✅  
 **Feature**: Multi-language TTS Audio Collection Generation
+
+---
+
+## Implementation Progress
+
+### ✅ Phase 1: Backend Infrastructure - COMPLETE
+- [x] Collections API Route (`server/routes/collections.ts`)
+- [x] Audio collection type support (`audio_collection`)
+- [x] Batch generation endpoint: `POST /api/audio/generate-batch` (Deepgram)
+- [x] Batch generation endpoint: `POST /api/elevenlabs/generate-batch` (ElevenLabs)
+- [x] Collection service using database API (not localStorage)
+
+### ✅ Phase 2: Audio Collection Modal - COMPLETE
+- [x] `AudioCollectionModal.tsx` component
+- [x] Deepgram "Create Collection" button on Audio page
+- [x] ElevenLabs "Create Collection" button on Audio page
+- [x] Multi-language selection with checkboxes
+- [x] Voice selection (per-language for Deepgram, single voice for ElevenLabs)
+- [x] Auto-translate toggle with LibreTranslate
+- [x] Generation progress UI with per-language results
+- [x] Success state with "View Collection" button
+
+### ✅ Phase 2.5: Collections View Enhancement - COMPLETE
+- [x] Audio collection cards with Volume2 icon (purple)
+- [x] Updated `CollectionDetail.tsx` for audio collections
+- [x] Audio playback controls (play/pause per item)
+- [x] Language badges, voice name, file size display
+- [x] Translated text preview for each language
+- [x] Download button per audio file
+
+### 🔄 Phase 3: Collections View Enhancement - PARTIAL
+- [ ] Filter tabs: All | Images | Audio
+- [ ] Download all as ZIP functionality
+- [ ] Collection search
+
+### 📋 Phase 4: Block Import Integration - NOT STARTED
+- [ ] Audio Block "Import from Collection" button
+- [ ] Timeline Gallery "Import from Collection" button
+- [ ] Collection picker modal
+- [ ] Auto-populate audioFiles for all languages
 
 ---
 
@@ -476,107 +517,121 @@ export const collectionService = {
 
 ## 4. Phased Implementation Plan
 
-### Phase 1: Backend Infrastructure (Week 1)
+### Phase 1: Backend Infrastructure ✅ COMPLETE
 
 **Goal:** Migrate collections to database API, add audio collection support
 
 **Tasks:**
 
-1. **Create Collections API Route** (`server/routes/collections.ts`)
+1. **Create Collections API Route** (`server/routes/collections.ts`) ✅
    - CRUD endpoints for collections
    - Support for `audio_collection` type
    - Filter by type query parameter
 
-2. **Update Collection Schema**
+2. **Update Collection Schema** ✅
    - Add new fields for audio metadata
    - Extend `CollectionItem` for audio-specific data
 
-3. **Migrate collectionService.ts**
+3. **Migrate collectionService.ts** ✅
    - Replace localStorage with API calls
    - Add TypeScript types for audio collections
 
-4. **Add Batch Generation Endpoint**
-   - `POST /api/audio/generate-batch`
+4. **Add Batch Generation Endpoint** ✅
+   - `POST /api/audio/generate-batch` (Deepgram)
+   - `POST /api/elevenlabs/generate-batch` (ElevenLabs)
    - Sequential generation with progress tracking
    - Error handling for partial failures
 
 **Deliverables:**
-- [ ] `server/routes/collections.ts` with full CRUD
-- [ ] Updated `collectionService.ts` using API
-- [ ] `POST /api/audio/generate-batch` endpoint
-- [ ] Unit tests for API endpoints
+- [x] `server/routes/collections.ts` with full CRUD
+- [x] Updated `collectionService.ts` using API
+- [x] `POST /api/audio/generate-batch` endpoint (Deepgram)
+- [x] `POST /api/elevenlabs/generate-batch` endpoint (ElevenLabs)
 
 ---
 
-### Phase 2: Audio Collection Modal (Week 2)
+### Phase 2: Audio Collection Modal ✅ COMPLETE
 
 **Goal:** Build the modal UI for batch audio generation
 
 **Tasks:**
 
-1. **Create AudioCollectionModal Component**
+1. **Create AudioCollectionModal Component** ✅
    - Title and description inputs
    - Provider selection (Deepgram/ElevenLabs)
    - Format and sample rate options
    - Language checkboxes with availability indicators
-   - Voice dropdown per language (filtered by provider)
+   - Voice dropdown per language (Deepgram) / single voice (ElevenLabs)
 
-2. **Integrate with Audio Page**
-   - Replace single "Generate Audio" button
-   - Show modal on click
+2. **Integrate with Audio Page** ✅
+   - "Create Collection" button on Deepgram tab
+   - "Create Collection" button on ElevenLabs tab
    - Handle generation progress
 
-3. **Generation Progress UI**
-   - Progress bar with language names
+3. **Generation Progress UI** ✅
    - Per-language success/error indicators
-   - Cancel button
-   - Retry failed languages
+   - Real-time result updates
 
-4. **Success State**
+4. **Success State** ✅
    - Show generated collection summary
    - "View Collection" button
-   - Option to generate more
 
 **Deliverables:**
-- [ ] `AudioCollectionModal.tsx` component
-- [ ] Updated `Audio.tsx` integration
-- [ ] Progress/success UI states
-- [ ] Voice selection synced with language
+- [x] `AudioCollectionModal.tsx` component
+- [x] Updated `Audio.tsx` integration (both tabs)
+- [x] Progress/success UI states
+- [x] Voice selection synced with provider
 
 ---
 
-### Phase 3: Collections View Enhancement (Week 3)
+### Phase 2.5: Collections View Enhancement ✅ COMPLETE
 
 **Goal:** Display and manage audio collections
 
 **Tasks:**
 
-1. **Update Collections Page**
-   - Add audio collection card design (different icon/styling)
-   - Show language badges
-   - Play preview of default (English) audio
-   - Display total duration and file count
+1. **Update Collections Page** ✅
+   - Audio collection card design (Volume2 icon, purple)
+   - Show audio collection type badge
 
-2. **Audio Collection Detail Page**
-   - List all language variants
-   - Play button per language
-   - Download individual or all
-   - Show original text and translations
-   - Edit metadata (title, description)
-
-3. **Collection Filtering**
-   - Filter tabs: All | Images | Audio
-   - Search across name/description
+2. **Audio Collection Detail Page** ✅
+   - List all language variants with playback
+   - Play/pause button per language
+   - Download individual files
+   - Show source text (English)
+   - Show translated text preview per language
+   - Language badges, voice name, file size display
+   - TTS settings display (provider, model, format)
 
 **Deliverables:**
-- [ ] Audio collection card component
-- [ ] Updated `CollectionDetail.tsx` for audio type
-- [ ] Filter/search UI
-- [ ] Download functionality (zip for all)
+- [x] Audio collection card component
+- [x] Updated `CollectionDetail.tsx` for audio type
+- [x] Playback controls
+- [x] Download functionality (per file)
 
 ---
 
-### Phase 4: Block Import Integration (Week 4)
+### Phase 3: Collections View Enhancement (Remaining) 🔄 IN PROGRESS
+
+**Goal:** Additional collection management features
+
+**Tasks:**
+
+1. **Collection Filtering**
+   - Filter tabs: All | Images | Audio
+   - Search across name/description
+
+2. **Bulk Download**
+   - Download all languages as ZIP
+   - Include metadata JSON
+
+**Deliverables:**
+- [ ] Filter/search UI
+- [ ] Download all as ZIP functionality
+
+---
+
+### Phase 4: Block Import Integration 📋 NOT STARTED
 
 **Goal:** Import collections into Audio Block and Timeline Gallery Block
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, LayoutGrid, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { Plus, Search, LayoutGrid, Image as ImageIcon, Trash2, Volume2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { collectionService } from '../lib/collectionService';
 
@@ -109,8 +109,17 @@ export function Collections() {
                             className="group relative bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl p-5 hover:border-[var(--color-accent-primary)] transition-all cursor-pointer"
                         >
                             <div className="flex items-start justify-between mb-4">
-                                <div className="p-3 rounded-lg bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]">
-                                    {collection.type === 'dataset' ? <LayoutGrid className="w-6 h-6" /> : <ImageIcon className="w-6 h-6" />}
+                                <div className={`p-3 rounded-lg ${collection.type === 'audio_collection'
+                                        ? 'bg-purple-500/10 text-purple-500'
+                                        : 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]'
+                                    }`}>
+                                    {collection.type === 'audio_collection' ? (
+                                        <Volume2 className="w-6 h-6" />
+                                    ) : collection.type === 'dataset' ? (
+                                        <LayoutGrid className="w-6 h-6" />
+                                    ) : (
+                                        <ImageIcon className="w-6 h-6" />
+                                    )}
                                 </div>
                                 <div className="relative">
                                     <button

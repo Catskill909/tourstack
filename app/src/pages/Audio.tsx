@@ -156,12 +156,13 @@ export function Audio() {
     const [elPlayerAudio, setElPlayerAudio] = useState<HTMLAudioElement | null>(null);
     const [elSuccessModal, setElSuccessModal] = useState<elevenlabsService.GeneratedAudio | null>(null);
     const elGeneratedFilesRef = useRef<HTMLDivElement>(null);
-    
+
     // Unavailable language modal state
     const [unavailableLangModal, setUnavailableLangModal] = useState<{ name: string; code: string } | null>(null);
-    
+
     // Audio Collection Modal state
     const [showCollectionModal, setShowCollectionModal] = useState(false);
+    const [collectionModalProvider, setCollectionModalProvider] = useState<'deepgram' | 'elevenlabs'>('deepgram');
 
     // Load initial data
     useEffect(() => {
@@ -238,12 +239,12 @@ export function Audio() {
             setPreviewingVoice(voiceId);
             const audioUrl = await getVoicePreview(voiceId);
             const audio = new window.Audio(audioUrl);
-            
+
             audio.onended = () => {
                 setPreviewingVoice(null);
                 URL.revokeObjectURL(audioUrl);
             };
-            
+
             audio.onerror = () => {
                 setPreviewingVoice(null);
                 URL.revokeObjectURL(audioUrl);
@@ -304,7 +305,7 @@ export function Audio() {
 
             setAudioFiles(prev => [result, ...prev]);
             setText('');
-            
+
             // Show success modal
             setSuccessModal(result);
         } catch (err) {
@@ -407,8 +408,8 @@ export function Audio() {
         <div className="h-full flex flex-col">
             {/* Success Modal */}
             {successModal && (
-                <SuccessModal 
-                    audio={successModal} 
+                <SuccessModal
+                    audio={successModal}
                     voices={voices}
                     onClose={handleCloseSuccessModal}
                     onPlay={() => handlePlayFile(successModal)}
@@ -433,7 +434,7 @@ export function Audio() {
                                 </p>
                             </div>
                         </div>
-                        
+
                         <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4 mb-4">
                             <p className="text-sm text-[var(--color-text-secondary)] mb-3">
                                 Auto-translation to <strong>{unavailableLangModal.name}</strong> is not configured on this server.
@@ -449,11 +450,11 @@ export function Audio() {
                                 ))}
                             </div>
                         </div>
-                        
+
                         <p className="text-xs text-[var(--color-text-muted)] mb-4">
                             You can still use this language, but you'll need to provide your text already translated to {unavailableLangModal.name}.
                         </p>
-                        
+
                         <div className="flex gap-3">
                             <button
                                 onClick={() => setUnavailableLangModal(null)}
@@ -491,13 +492,12 @@ export function Audio() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             disabled={tab.status === 'coming_soon'}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                                activeTab === tab.id
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${activeTab === tab.id
                                     ? 'bg-[var(--color-accent-primary)] text-white'
                                     : tab.status === 'coming_soon'
-                                    ? 'bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] cursor-not-allowed'
-                                    : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
-                            }`}
+                                        ? 'bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] cursor-not-allowed'
+                                        : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
+                                }`}
                         >
                             <tab.icon className="w-4 h-4" />
                             {tab.name}
@@ -542,7 +542,10 @@ export function Audio() {
                         setAutoTranslate={setAutoTranslate}
                         isTranslating={isTranslating}
                         onUnavailableLanguage={setUnavailableLangModal}
-                        onOpenCollectionModal={() => setShowCollectionModal(true)}
+                        onOpenCollectionModal={() => {
+                            setCollectionModalProvider('deepgram');
+                            setShowCollectionModal(true);
+                        }}
                     />
                 ) : activeTab === 'elevenlabs' ? (
                     <ElevenLabsTab
@@ -584,6 +587,10 @@ export function Audio() {
                         setAudioFiles={setElAudioFiles}
                         generatedFilesRef={elGeneratedFilesRef}
                         onUnavailableLanguage={setUnavailableLangModal}
+                        onOpenCollectionModal={() => {
+                            setCollectionModalProvider('elevenlabs');
+                            setShowCollectionModal(true);
+                        }}
                     />
                 ) : (
                     <ComingSoonTab tab={tabs.find(t => t.id === activeTab)!} />
@@ -594,12 +601,12 @@ export function Audio() {
             <AudioCollectionModal
                 isOpen={showCollectionModal}
                 onClose={() => setShowCollectionModal(false)}
-                text={text}
-                provider="deepgram"
-                voices={voices}
-                formats={formats}
-                defaultFormat={selectedFormat}
-                defaultSampleRate={selectedSampleRate}
+                text={collectionModalProvider === 'deepgram' ? text : elText}
+                provider={collectionModalProvider}
+                voices={collectionModalProvider === 'deepgram' ? voices : null}
+                formats={collectionModalProvider === 'deepgram' ? formats : null}
+                defaultFormat={collectionModalProvider === 'deepgram' ? selectedFormat : elSelectedFormat}
+                defaultSampleRate={collectionModalProvider === 'deepgram' ? selectedSampleRate : 44100}
                 onSuccess={(collectionId) => {
                     console.log('Collection created:', collectionId);
                     setShowCollectionModal(false);
@@ -856,14 +863,12 @@ function DeepgramTab({
                             </div>
                             <button
                                 onClick={() => setAutoTranslate(!autoTranslate)}
-                                className={`relative w-11 h-6 rounded-full transition-colors ${
-                                    autoTranslate ? 'bg-[var(--color-accent-primary)]' : 'bg-[var(--color-bg-hover)]'
-                                }`}
+                                className={`relative w-11 h-6 rounded-full transition-colors ${autoTranslate ? 'bg-[var(--color-accent-primary)]' : 'bg-[var(--color-bg-hover)]'
+                                    }`}
                             >
                                 <span
-                                    className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                                        autoTranslate ? 'translate-x-5' : 'translate-x-0'
-                                    }`}
+                                    className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${autoTranslate ? 'translate-x-5' : 'translate-x-0'
+                                        }`}
                                 />
                             </button>
                         </div>
@@ -952,19 +957,17 @@ function DeepgramTab({
                     {currentLanguageVoices.map((voice) => (
                         <div
                             key={voice.id}
-                            className={`p-3 rounded-lg border transition-all cursor-pointer ${
-                                selectedVoice === voice.id
+                            className={`p-3 rounded-lg border transition-all cursor-pointer ${selectedVoice === voice.id
                                     ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10'
                                     : 'border-transparent bg-[var(--color-bg-elevated)] hover:border-[var(--color-border-default)]'
-                            }`}
+                                }`}
                             onClick={() => setSelectedVoice(voice.id)}
                         >
                             <div className="flex items-center gap-2 mb-2">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                    voice.gender === 'female' 
-                                        ? 'bg-pink-500/20 text-pink-500' 
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${voice.gender === 'female'
+                                        ? 'bg-pink-500/20 text-pink-500'
                                         : 'bg-blue-500/20 text-blue-500'
-                                }`}>
+                                    }`}>
                                     {voice.gender === 'female' ? <User className="w-4 h-4" /> : <Users className="w-4 h-4" />}
                                 </div>
                                 {voice.featured && (
@@ -1109,7 +1112,7 @@ interface SuccessModalProps {
 
 function SuccessModal({ audio, voices, onClose, onPlay, isPlaying }: SuccessModalProps) {
     const languageName = voices?.[audio.language]?.name || audio.language;
-    
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -1245,6 +1248,7 @@ interface ElevenLabsTabProps {
     setAudioFiles: React.Dispatch<React.SetStateAction<elevenlabsService.GeneratedAudio[]>>;
     generatedFilesRef: React.RefObject<HTMLDivElement | null>;
     onUnavailableLanguage: (lang: { name: string; code: string }) => void;
+    onOpenCollectionModal: () => void;
 }
 
 function ElevenLabsTab({
@@ -1286,6 +1290,7 @@ function ElevenLabsTab({
     setAudioFiles,
     generatedFilesRef,
     onUnavailableLanguage,
+    onOpenCollectionModal,
 }: ElevenLabsTabProps) {
     const isConfigured = status?.configured && status?.valid;
     const [isLoadingVoices, setIsLoadingVoices] = useState(false);
@@ -1294,7 +1299,7 @@ function ElevenLabsTab({
     useEffect(() => {
         async function loadVoicesForLanguage() {
             if (!isConfigured) return;
-            
+
             setIsLoadingVoices(true);
             try {
                 const result = await elevenlabsService.getVoices(selectedLanguage);
@@ -1331,7 +1336,7 @@ function ElevenLabsTab({
             setGenerateError(null);
 
             let textToSpeak = text.trim();
-            
+
             // Auto-translate if target language is different from English
             // and the language is supported by LibreTranslate
             if (selectedLanguage !== 'en' && selectedLanguage in TRANSLATION_LANGUAGE_MAP) {
@@ -1375,7 +1380,7 @@ function ElevenLabsTab({
     const handlePreviewVoice = async (voiceId: string) => {
         try {
             setPreviewingVoice(voiceId);
-            
+
             // Find the voice and use its preview_url (pre-hosted by ElevenLabs)
             const voice = voices.find(v => v.id === voiceId);
             if (voice?.preview_url) {
@@ -1682,6 +1687,15 @@ function ElevenLabsTab({
                             </>
                         )}
                     </button>
+                    <button
+                        onClick={onOpenCollectionModal}
+                        disabled={!text.trim()}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                        title="Create a collection with audio in multiple languages"
+                    >
+                        <FolderPlus className="w-4 h-4" />
+                        Create Collection
+                    </button>
                 </div>
 
                 {generateError && (
@@ -1705,71 +1719,69 @@ function ElevenLabsTab({
                         <Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent-primary)]" />
                     </div>
                 ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-96 overflow-y-auto p-1">
-                    {filteredVoices.map((voice) => {
-                        const isFeatured = voice.category === 'professional' || voice.category === 'premade';
-                        const gender = voice.labels?.gender || 'neutral';
-                        
-                        return (
-                            <div
-                                key={voice.id}
-                                onClick={() => handleVoiceSelect(voice)}
-                                className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                                    selectedVoice === voice.id
-                                        ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 shadow-lg'
-                                        : 'border-transparent bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] hover:shadow-md'
-                                }`}
-                            >
-                                {/* Featured Badge */}
-                                {isFeatured && (
-                                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
-                                        Featured
-                                    </span>
-                                )}
-                                
-                                <div className="flex flex-col items-center text-center pt-1">
-                                    {/* Avatar */}
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                                        gender === 'female' 
-                                            ? 'bg-gradient-to-br from-pink-400 to-rose-500' 
-                                            : gender === 'male'
-                                            ? 'bg-gradient-to-br from-blue-400 to-indigo-500'
-                                            : 'bg-gradient-to-br from-purple-400 to-violet-500'
-                                    }`}>
-                                        <User className="w-6 h-6 text-white" />
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-96 overflow-y-auto p-1">
+                        {filteredVoices.map((voice) => {
+                            const isFeatured = voice.category === 'professional' || voice.category === 'premade';
+                            const gender = voice.labels?.gender || 'neutral';
+
+                            return (
+                                <div
+                                    key={voice.id}
+                                    onClick={() => handleVoiceSelect(voice)}
+                                    className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer ${selectedVoice === voice.id
+                                            ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 shadow-lg'
+                                            : 'border-transparent bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] hover:shadow-md'
+                                        }`}
+                                >
+                                    {/* Featured Badge */}
+                                    {isFeatured && (
+                                        <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full">
+                                            Featured
+                                        </span>
+                                    )}
+
+                                    <div className="flex flex-col items-center text-center pt-1">
+                                        {/* Avatar */}
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${gender === 'female'
+                                                ? 'bg-gradient-to-br from-pink-400 to-rose-500'
+                                                : gender === 'male'
+                                                    ? 'bg-gradient-to-br from-blue-400 to-indigo-500'
+                                                    : 'bg-gradient-to-br from-purple-400 to-violet-500'
+                                            }`}>
+                                            <User className="w-6 h-6 text-white" />
+                                        </div>
+
+                                        {/* Name */}
+                                        <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate w-full mb-0.5">
+                                            {voice.name.split(' - ')[0]}
+                                        </span>
+
+                                        {/* Gender */}
+                                        <span className="text-xs text-[var(--color-text-muted)] capitalize mb-2">
+                                            {gender}
+                                        </span>
+
+                                        {/* Preview Button */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handlePreviewVoice(voice.id);
+                                            }}
+                                            disabled={previewingVoice === voice.id}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-all disabled:opacity-50"
+                                        >
+                                            {previewingVoice === voice.id ? (
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                            ) : (
+                                                <Play className="w-3 h-3" />
+                                            )}
+                                            Preview
+                                        </button>
                                     </div>
-                                    
-                                    {/* Name */}
-                                    <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate w-full mb-0.5">
-                                        {voice.name.split(' - ')[0]}
-                                    </span>
-                                    
-                                    {/* Gender */}
-                                    <span className="text-xs text-[var(--color-text-muted)] capitalize mb-2">
-                                        {gender}
-                                    </span>
-                                    
-                                    {/* Preview Button */}
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handlePreviewVoice(voice.id);
-                                        }}
-                                        disabled={previewingVoice === voice.id}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-all disabled:opacity-50"
-                                    >
-                                        {previewingVoice === voice.id ? (
-                                            <Loader2 className="w-3 h-3 animate-spin" />
-                                        ) : (
-                                            <Play className="w-3 h-3" />
-                                        )}
-                                        Preview
-                                    </button>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
                 )}
             </div>
 
@@ -1806,73 +1818,73 @@ function ElevenLabsTab({
                             const formatParts = file.outputFormat?.split('_') || [];
                             const encoding = formatParts[0]?.toUpperCase() || 'MP3';
                             const sampleRate = formatParts[1] ? `${parseInt(formatParts[1]) / 1000}kHz` : '';
-                            
+
                             return (
-                            <div
-                                key={file.id}
-                                className="flex items-center gap-4 p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]"
-                            >
-                                {/* Play button */}
-                                <button
-                                    onClick={() => handlePlayFile(file)}
-                                    className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-[var(--color-accent-primary)] text-white rounded-full hover:bg-[var(--color-accent-primary)]/80 transition-colors"
+                                <div
+                                    key={file.id}
+                                    className="flex items-center gap-4 p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]"
                                 >
-                                    {playingId === file.id ? (
-                                        <Pause className="w-4 h-4" />
-                                    ) : (
-                                        <Play className="w-4 h-4 ml-0.5" />
-                                    )}
-                                </button>
-
-                                {/* File info */}
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-[var(--color-text-primary)] truncate">
-                                        {file.name}
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-500/20 text-purple-400">
-                                            {encoding}
-                                        </span>
-                                        {sampleRate && (
-                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-emerald-500/20 text-emerald-400">
-                                                {sampleRate}
-                                            </span>
-                                        )}
-                                        <span className="text-xs text-[var(--color-text-muted)]">
-                                            {elevenlabsService.formatFileSize(file.fileSize)}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                                        Voice: {file.voiceName}
-                                    </p>
-                                </div>
-
-                                {/* Text preview */}
-                                <div className="hidden lg:block flex-1 max-w-md">
-                                    <p className="text-sm text-[var(--color-text-muted)] truncate italic">
-                                        "{file.text}"
-                                    </p>
-                                </div>
-
-                                {/* Actions */}
-                                <div className="flex items-center gap-2">
-                                    <a
-                                        href={file.fileUrl}
-                                        download
-                                        className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
-                                        title="Download"
-                                    >
-                                        <Download className="w-4 h-4 text-[var(--color-text-muted)]" />
-                                    </a>
+                                    {/* Play button */}
                                     <button
-                                        onClick={() => handleDeleteFile(file.id)}
-                                        className="p-2 hover:bg-[var(--color-error)]/10 rounded-lg transition-colors"
-                                        title="Delete"
+                                        onClick={() => handlePlayFile(file)}
+                                        className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-[var(--color-accent-primary)] text-white rounded-full hover:bg-[var(--color-accent-primary)]/80 transition-colors"
                                     >
-                                        <Trash2 className="w-4 h-4 text-[var(--color-error)]" />
+                                        {playingId === file.id ? (
+                                            <Pause className="w-4 h-4" />
+                                        ) : (
+                                            <Play className="w-4 h-4 ml-0.5" />
+                                        )}
                                     </button>
+
+                                    {/* File info */}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-[var(--color-text-primary)] truncate">
+                                            {file.name}
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-500/20 text-purple-400">
+                                                {encoding}
+                                            </span>
+                                            {sampleRate && (
+                                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-emerald-500/20 text-emerald-400">
+                                                    {sampleRate}
+                                                </span>
+                                            )}
+                                            <span className="text-xs text-[var(--color-text-muted)]">
+                                                {elevenlabsService.formatFileSize(file.fileSize)}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                                            Voice: {file.voiceName}
+                                        </p>
+                                    </div>
+
+                                    {/* Text preview */}
+                                    <div className="hidden lg:block flex-1 max-w-md">
+                                        <p className="text-sm text-[var(--color-text-muted)] truncate italic">
+                                            "{file.text}"
+                                        </p>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-2">
+                                        <a
+                                            href={file.fileUrl}
+                                            download
+                                            className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
+                                            title="Download"
+                                        >
+                                            <Download className="w-4 h-4 text-[var(--color-text-muted)]" />
+                                        </a>
+                                        <button
+                                            onClick={() => handleDeleteFile(file.id)}
+                                            className="p-2 hover:bg-[var(--color-error)]/10 rounded-lg transition-colors"
+                                            title="Delete"
+                                        >
+                                            <Trash2 className="w-4 h-4 text-[var(--color-error)]" />
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
                             );
                         })}
                     </div>

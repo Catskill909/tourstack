@@ -567,4 +567,325 @@ router.post('/preview', async (req: Request, res: Response) => {
     }
 });
 
+// =============================================================================
+// BATCH GENERATION FOR AUDIO COLLECTIONS
+// =============================================================================
+
+// LibreTranslate API for batch translation
+const LIBRE_TRANSLATE_API = process.env.LIBRE_TRANSLATE_URL || 'https://translate.supersoul.top/translate';
+const LIBRE_TRANSLATE_API_KEY = process.env.LIBRE_TRANSLATE_API_KEY || 'TranslateThisForMe26';
+
+// Language code mapping for LibreTranslate
+const LANGUAGE_CODE_MAP: Record<string, string> = {
+    'zh': 'zh-Hans',
+};
+
+// Translate text using LibreTranslate
+async function translateText(
+    text: string,
+    sourceLang: string,
+    targetLang: string
+): Promise<string> {
+    const mappedSource = LANGUAGE_CODE_MAP[sourceLang] || sourceLang;
+    const mappedTarget = LANGUAGE_CODE_MAP[targetLang] || targetLang;
+
+    const body: Record<string, string> = {
+        q: text,
+        source: mappedSource,
+        target: mappedTarget,
+        format: 'text',
+    };
+
+    if (LIBRE_TRANSLATE_API_KEY) {
+        body.api_key = LIBRE_TRANSLATE_API_KEY;
+    }
+
+    const response = await fetch(LIBRE_TRANSLATE_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Translation failed: ${errorText}`);
+    }
+
+    const data = await response.json() as { translatedText: string };
+    return data.translatedText;
+}
+
+// Generate single audio file (internal helper)
+async function generateSingleAudioEL(
+    text: string,
+    voiceId: string,
+    modelId: string,
+    outputFormat: string,
+    stability: number,
+    similarityBoost: number
+): Promise<{ buffer: Buffer; size: number }> {
+    const requestBody = {
+        text: text.trim(),
+        model_id: modelId,
+        voice_settings: {
+            stability,
+            similarity_boost: similarityBoost,
+            style: 0.0,
+            use_speaker_boost: true,
+        },
+    };
+
+    const response = await fetch(
+        `${ELEVENLABS_API_URL}/text-to-speech/${voiceId}?output_format=${outputFormat}`,
+        {
+            method: 'POST',
+            headers: {
+                'xi-api-key': getApiKey(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+        }
+    );
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`ElevenLabs TTS failed: ${errorText}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+        throw new Error('Failed to read response stream');
+    }
+
+    const chunks: Uint8Array[] = [];
+    let totalLength = 0;
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) {
+            chunks.push(value);
+            totalLength += value.length;
+        }
+    }
+
+    const audioBuffer = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+        audioBuffer.set(chunk, offset);
+        offset += chunk.length;
+    }
+
+    return { buffer: Buffer.from(audioBuffer), size: totalLength };
+}
+
+// Batch generation request interface
+interface BatchLanguageConfig {
+    code: string;
+    voiceId: string;
+    voiceName: string;
+}
+
+interface BatchGenerateRequest {
+    text: string;
+    collectionName: string;
+    collectionDescription?: string;
+    modelId?: string;
+    outputFormat?: string;
+    stability?: number;
+    similarityBoost?: number;
+    autoTranslate: boolean;
+    sourceLanguage: string;
+    languages: BatchLanguageConfig[];
+}
+
+// POST /api/elevenlabs/generate-batch - Generate audio for multiple languages and create collection
+router.post('/generate-batch', async (req: Request, res: Response) => {
+    try {
+        const {
+            text,
+            collectionName,
+            collectionDescription,
+            modelId = 'eleven_multilingual_v2',
+            outputFormat = 'mp3_44100_128',
+            stability = 0.5,
+            similarityBoost = 0.75,
+            autoTranslate = true,
+            sourceLanguage = 'en',
+            languages,
+        } = req.body as BatchGenerateRequest;
+
+        // Validation
+        if (!text || typeof text !== 'string' || text.trim().length === 0) {
+            return res.status(400).json({ error: 'Text is required' });
+        }
+
+        if (!collectionName) {
+            return res.status(400).json({ error: 'Collection name is required' });
+        }
+
+        if (!languages || !Array.isArray(languages) || languages.length === 0) {
+            return res.status(400).json({ error: 'At least one language is required' });
+        }
+
+        if (!getApiKey()) {
+            return res.status(500).json({
+                error: 'ElevenLabs API key not configured',
+                hint: 'Set ELEVENLABS_API_KEY environment variable',
+            });
+        }
+
+        console.log(`[ElevenLabs Batch] Starting batch generation for ${languages.length} languages`);
+
+        // Store texts for each language
+        const texts: Record<string, string> = { [sourceLanguage]: text };
+
+        // Results tracking
+        const results: Array<{
+            language: string;
+            success: boolean;
+            item?: {
+                id: string;
+                type: 'audio';
+                url: string;
+                language: string;
+                voice: { id: string; name: string };
+                provider: string;
+                format: string;
+                modelId: string;
+                modelName: string;
+                fileSize: number;
+                text: string;
+                order: number;
+            };
+            error?: string;
+        }> = [];
+
+        // Process each language sequentially
+        for (let i = 0; i < languages.length; i++) {
+            const lang = languages[i];
+            console.log(`[ElevenLabs Batch] Processing ${lang.code} (${i + 1}/${languages.length})`);
+
+            try {
+                // Get or translate text
+                let langText = text;
+                if (lang.code !== sourceLanguage && autoTranslate) {
+                    try {
+                        langText = await translateText(text, sourceLanguage, lang.code);
+                        texts[lang.code] = langText;
+                        console.log(`[ElevenLabs Batch] Translated to ${lang.code}: ${langText.substring(0, 50)}...`);
+                    } catch (translateError) {
+                        console.error(`[ElevenLabs Batch] Translation failed for ${lang.code}:`, translateError);
+                        results.push({
+                            language: lang.code,
+                            success: false,
+                            error: `Translation failed: ${translateError instanceof Error ? translateError.message : 'Unknown error'}`,
+                        });
+                        continue;
+                    }
+                } else if (lang.code === sourceLanguage) {
+                    texts[lang.code] = text;
+                }
+
+                // Generate audio
+                const { buffer, size } = await generateSingleAudioEL(
+                    langText,
+                    lang.voiceId,
+                    modelId,
+                    outputFormat,
+                    stability,
+                    similarityBoost
+                );
+
+                // Save file
+                const id = uuidv4();
+                const formatInfo = ELEVENLABS_FORMATS.find(f => f.id === outputFormat) || ELEVENLABS_FORMATS[0];
+                const timestamp = Date.now();
+                const filename = `batch-${timestamp}-elevenlabs-${lang.code}-${lang.voiceId}${formatInfo.extension}`;
+                const filePath = path.join(GENERATED_DIR, filename);
+                const fileUrl = `/uploads/audio/generated/${filename}`;
+
+                fs.writeFileSync(filePath, buffer);
+
+                // Find model info
+                const model = ELEVENLABS_MODELS.find(m => m.id === modelId) || ELEVENLABS_MODELS[0];
+
+                // Create item for collection
+                const item = {
+                    id,
+                    type: 'audio' as const,
+                    url: fileUrl,
+                    language: lang.code,
+                    voice: {
+                        id: lang.voiceId,
+                        name: lang.voiceName,
+                    },
+                    provider: 'elevenlabs',
+                    format: outputFormat,
+                    modelId,
+                    modelName: model.name,
+                    fileSize: size,
+                    text: langText,
+                    order: i,
+                };
+
+                results.push({
+                    language: lang.code,
+                    success: true,
+                    item,
+                });
+
+                console.log(`[ElevenLabs Batch] Generated ${lang.code}: ${size} bytes`);
+            } catch (genError) {
+                console.error(`[ElevenLabs Batch] Generation failed for ${lang.code}:`, genError);
+                results.push({
+                    language: lang.code,
+                    success: false,
+                    error: genError instanceof Error ? genError.message : 'Generation failed',
+                });
+            }
+        }
+
+        // Create collection with results
+        const successfulItems = results
+            .filter(r => r.success && r.item)
+            .map(r => r.item!);
+
+        const collectionData = {
+            name: collectionName,
+            description: collectionDescription || '',
+            type: 'audio_collection',
+            items: successfulItems,
+            sourceLanguage,
+            texts,
+            ttsSettings: {
+                provider: 'elevenlabs',
+                modelId,
+                outputFormat,
+                stability,
+                similarityBoost,
+                autoTranslate,
+            },
+        };
+
+        console.log(`[ElevenLabs Batch] Completed: ${successfulItems.length}/${languages.length} successful`);
+
+        return res.status(201).json({
+            collection: collectionData,
+            results,
+            summary: {
+                total: languages.length,
+                successful: successfulItems.length,
+                failed: languages.length - successfulItems.length,
+            },
+        });
+    } catch (error) {
+        console.error('ElevenLabs batch generation error:', error);
+        return res.status(500).json({
+            error: 'Batch generation failed',
+            details: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+});
+
 export default router;

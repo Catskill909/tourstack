@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: January 22, 2026  
-**Session Status**: Audio TTS Section Complete ✅
+**Session Status**: Translate Collections (Batch TTS) In Progress 🔄
 
 ---
 
@@ -126,6 +126,24 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Format Options** - MP3 (44.1kHz), PCM, Opus
 - [x] **UI Matching** - Generated audio styling matches Deepgram (badges, text preview)
 
+### Phase 13.5: Translate Collections 🔄 (Jan 22, 2026)
+- [x] **Collections API** - Full CRUD via `server/routes/collections.ts`
+- [x] **Collection Service** - Migrated from localStorage to API calls
+- [x] **Audio Collection Type** - New `audio_collection` type with metadata
+- [x] **Deepgram Batch Generation** - `POST /api/audio/generate-batch` endpoint
+- [x] **ElevenLabs Batch Generation** - `POST /api/elevenlabs/generate-batch` endpoint
+- [x] **AudioCollectionModal** - UI for multi-language batch generation
+- [x] **Provider Routing** - Modal routes to correct endpoint based on provider
+- [x] **ElevenLabs Voice Selection** - Single voice for all languages (Multilingual v2)
+- [x] **Collections View** - Volume2 icon for audio collections (purple styling)
+- [x] **CollectionDetail Audio UI** - Playback, language badges, voice info, file size
+- [x] **Text Preview** - Show source text and translated text per language
+- [ ] **Collection Filtering** - Filter tabs (All | Images | Audio)
+- [ ] **Bulk Download** - Download all languages as ZIP
+- [ ] **Block Import** - Import collections into Audio Block / Timeline Gallery
+
+> **Architecture Note:** ElevenLabs uses a SINGLE voice for ALL languages via the Multilingual v2 model. The model handles pronunciation/accent automatically. Deepgram uses per-language voice selection.
+
 ---
 
 ## 📋 Next Steps (Priority Order)
@@ -175,6 +193,12 @@ TourStack uses a **modular content block system** where tours and stops are comp
 | ElevenLabs Service | `app/src/services/elevenlabsService.ts` |
 | Translation API | `app/server/routes/translate.ts` |
 | Translation Service | `app/src/services/translationService.ts` |
+| **Collections (Audio & Images)** | |
+| Collections API | `app/server/routes/collections.ts` |
+| Collection Service | `app/src/lib/collectionService.ts` |
+| AudioCollectionModal | `app/src/components/AudioCollectionModal.tsx` |
+| Collections Page | `app/src/pages/Collections.tsx` |
+| Collection Detail | `app/src/pages/CollectionDetail.tsx` |
 
 ---
 
