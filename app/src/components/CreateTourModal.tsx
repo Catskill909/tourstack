@@ -276,11 +276,10 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                                         return (
                                             <label
                                                 key={lang.code}
-                                                className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all text-sm ${
-                                                    isSelected
+                                                className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all text-sm ${isSelected
                                                         ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]'
                                                         : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:border-[var(--color-text-muted)]'
-                                                } ${isPrimary ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                    } ${isPrimary ? 'opacity-60 cursor-not-allowed' : ''}`}
                                             >
                                                 <input
                                                     type="checkbox"

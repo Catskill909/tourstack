@@ -328,8 +328,8 @@ export function CollectionPickerModal({
                                                 key={lang}
                                                 onClick={() => setSelectedLanguage(lang)}
                                                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${selectedLanguage === lang
-                                                        ? 'bg-[var(--color-accent-primary)] text-white border-[var(--color-accent-primary)]'
-                                                        : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]'
+                                                    ? 'bg-[var(--color-accent-primary)] text-white border-[var(--color-accent-primary)]'
+                                                    : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]'
                                                     }`}
                                             >
                                                 {selectedLanguage === lang && <Check className="w-4 h-4" />}

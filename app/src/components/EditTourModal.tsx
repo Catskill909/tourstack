@@ -299,11 +299,10 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                             <button
                                 type="button"
                                 onClick={() => setDefaultTranslationProvider('libretranslate')}
-                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
-                                    defaultTranslationProvider === 'libretranslate'
+                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${defaultTranslationProvider === 'libretranslate'
                                         ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
                                         : 'border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'
-                                }`}
+                                    }`}
                             >
                                 <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded flex items-center justify-center text-white text-xs font-bold">
                                     LT
@@ -313,11 +312,10 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                             <button
                                 type="button"
                                 onClick={() => setDefaultTranslationProvider('deepgram')}
-                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
-                                    defaultTranslationProvider === 'deepgram'
+                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${defaultTranslationProvider === 'deepgram'
                                         ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
                                         : 'border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'
-                                }`}
+                                    }`}
                             >
                                 <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded flex items-center justify-center text-white text-xs font-bold">
                                     DG
