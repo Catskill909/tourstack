@@ -2,8 +2,9 @@
 
 **Created**: January 24, 2026  
 **Last Updated**: January 24, 2026  
-**Status**: Phase 2.5 Complete ✅ | LOCAL TESTED ✅  
+**Status**: Phase 2.5 Complete ✅ | PRODUCTION DEPLOYED ✅  
 **Feature**: Multi-language TTS Audio Collection Generation
+**Next Phase**: Block Import Integration (Phase 4)
 
 ---
 
@@ -23,17 +24,17 @@
 
 ---
 
-## ✅ Local Testing Results (January 24, 2026)
+## ✅ Production Deployment (January 24, 2026)
 
 | Feature | Deepgram | ElevenLabs | Status |
 |---------|----------|------------|--------|
-| Batch TTS Generation | ✅ Working | ✅ Working | PASS |
-| Auto-Translation | ✅ LibreTranslate | ✅ LibreTranslate | PASS |
-| Collections Saved to DB | ✅ Working | ✅ Working | PASS |
-| Collection Detail View | ✅ Playback works | ✅ Playback works | PASS |
-| Success Modal with Metadata | ✅ Shows all details | ✅ Shows all details | PASS |
+| Batch TTS Generation | ✅ Working | ✅ Working | DEPLOYED |
+| Auto-Translation | ✅ LibreTranslate | ✅ LibreTranslate | DEPLOYED |
+| Collections Saved to DB | ✅ Working | ✅ Working | DEPLOYED |
+| Collection Detail View | ✅ Playback works | ✅ Playback works | DEPLOYED |
+| Success Modal with Metadata | ✅ Shows all details | ✅ Shows all details | DEPLOYED |
 
-**Ready for production deployment.**
+**🚀 Successfully deployed to Coolify production!**
 
 ---
 
@@ -76,11 +77,125 @@
 - [ ] Download all as ZIP functionality
 - [ ] Collection search
 
-### 📋 Phase 4: Block Import Integration - NOT STARTED
+### 📋 Phase 4: Block Import Integration - NEXT UP 🎯
 - [ ] Audio Block "Import from Collection" button
 - [ ] Timeline Gallery "Import from Collection" button
 - [ ] Collection picker modal
 - [ ] Auto-populate audioFiles for all languages
+- [ ] Import translated text into transcript fields
+
+---
+
+## 🎯 Phase 4 Implementation Details
+
+### Current Block Data Structures
+
+**AudioBlockData** (from `types/index.ts`):
+```typescript
+export interface AudioBlockData {
+  audioFiles: { [lang: string]: string }; // Per-language audio URLs ← IMPORT TARGET
+  title: { [lang: string]: string };
+  size: 'large' | 'medium' | 'small';
+  showTitle: boolean;
+  transcript?: { [lang: string]: string }; // ← IMPORT TRANSLATED TEXT HERE
+  transcriptWords?: Array<{ word: string; start: number; end: number; confidence: number; }>;
+  autoplay: boolean;
+  showTranscript: boolean;
+  showCaptions?: boolean;
+}
+```
+
+**TimelineGalleryBlockData** (from `types/index.ts`):
+```typescript
+export interface TimelineGalleryBlockData {
+  images: Array<{ id?: string; url: string; alt: { [lang: string]: string }; ... }>;
+  audioUrl: string;                     // Single audio URL ← NEEDS UPGRADE
+  audioDuration: number;
+  transcript?: { [lang: string]: string }; // ← IMPORT TRANSLATED TEXT HERE
+  transcriptWords?: Array<{ word: string; start: number; end: number; confidence: number; }>;
+  showCaptions?: boolean;
+}
+```
+
+### AudioCollectionItem Structure (from `collectionService.ts`):
+```typescript
+export interface AudioCollectionItem {
+  id: string;
+  order: number;
+  type: 'audio';
+  url: string;           // Audio file URL
+  language: string;      // 'en', 'es', 'fr', etc.
+  voice: { id: string; name: string; gender?: string; };
+  provider: 'deepgram' | 'elevenlabs';
+  format: string;
+  fileSize: number;
+  text: string;          // The translated text used for TTS
+}
+```
+
+### Import Mapping Strategy
+
+**Audio Block Import:**
+```typescript
+// Map collection items to AudioBlockData
+function importCollectionToAudioBlock(
+  collection: AudioCollection,
+  existingData: AudioBlockData
+): AudioBlockData {
+  const audioFiles: { [lang: string]: string } = {};
+  const transcript: { [lang: string]: string } = {};
+  
+  collection.items.forEach(item => {
+    audioFiles[item.language] = item.url;      // Map audio URL
+    transcript[item.language] = item.text;     // Map translated text
+  });
+  
+  return {
+    ...existingData,
+    audioFiles: { ...existingData.audioFiles, ...audioFiles },
+    transcript: { ...existingData.transcript, ...transcript },
+  };
+}
+```
+
+**Timeline Gallery Import (Requires Schema Update):**
+```typescript
+// Current: audioUrl (single)
+// Needed: audioFiles (per-language) - same as AudioBlockData
+
+// Option A: Add audioFiles to TimelineGalleryBlockData
+export interface TimelineGalleryBlockData {
+  // ... existing fields
+  audioUrl: string;                           // Keep for backward compat
+  audioFiles?: { [lang: string]: string };    // NEW: Per-language audio
+}
+
+// Option B: Use audioUrl for current language only (simpler)
+// User selects which language's audio to use from collection
+```
+
+### UI Flow
+
+1. **Audio Block Editor** (`AudioBlockEditor.tsx`):
+   - Add "📁 Import from Collection" button next to "Choose Audio File"
+   - Opens collection picker modal (shows audio_collection type only)
+   - Shows collection name, language count, preview
+   - On select: Populates `audioFiles` and `transcript` for ALL languages
+
+2. **Timeline Gallery Editor** (`TimelineGalleryBlockEditor.tsx`):
+   - Add "📁 Import from Collection" button in audio section
+   - Modal shows language selector (which language to use)
+   - On select: Sets `audioUrl` to selected language's audio
+   - Also imports `transcript` for all languages
+
+### Files to Modify
+
+| File | Changes |
+|------|--------|
+| `AudioBlockEditor.tsx` | Add import button, collection picker integration |
+| `TimelineGalleryBlockEditor.tsx` | Add import button, language selector |
+| `collectionService.ts` | Add `getAudioCollections()` helper |
+| `types/index.ts` | Optionally add `audioFiles` to TimelineGalleryBlockData |
 
 ---
 

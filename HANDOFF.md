@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: January 24, 2026  
-**Session Status**: ElevenLabs Guardrails + Text Preview Modal ✅ | LOCAL TESTED ✅
+**Session Status**: Translate Collections PRODUCTION DEPLOYED ✅ | Ready for Block Import Phase
 
 ---
 
@@ -235,7 +235,7 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Format Options** - MP3 (44.1kHz), PCM, Opus
 - [x] **UI Matching** - Generated audio styling matches Deepgram (badges, text preview)
 
-### Phase 13.5: Translate Collections ✅ (Jan 22-24, 2026)
+### Phase 13.5: Translate Collections ✅ PRODUCTION DEPLOYED (Jan 22-24, 2026)
 - [x] **Collections API** - Full CRUD via `server/routes/collections.ts`
 - [x] **Collection Service** - Migrated from localStorage to API calls
 - [x] **Audio Collection Type** - New `audio_collection` type with metadata
@@ -250,7 +250,7 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **CollectionDetail Audio UI** - Playback, language badges, voice info, file size
 - [x] **Text Preview** - Show source text and translated text per language
 - [x] **Success Modal** - Detailed metadata display after batch generation with "Stay & Continue" / "View Collection" options
-- [x] **LOCAL TESTING COMPLETE** - Both Deepgram and ElevenLabs TTS working ✅
+- [x] **PRODUCTION DEPLOYED** - Coolify deployment successful ✅
 
 ### Phase 14: Audio UX Improvements ✅ (Jan 24, 2026)
 - [x] **TextPreviewModal** - Click truncated text in audio lists to see full content
@@ -260,10 +260,15 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Both Tabs Support** - Works in Deepgram and ElevenLabs tabs
 - [x] **ElevenLabs Guardrails** - Extensive documentation preventing voice slot issues
 
-### 🔄 Phase 3-4: Remaining Work (Translate Collections)
+### 🔄 Phase 4: Block Import Integration - NEXT UP 🎯
+- [ ] **Audio Block Import** - Import collection into `audioFiles` + `transcript`
+- [ ] **Timeline Gallery Import** - Import collection audio (single or multi-lang)
+- [ ] **Collection Picker Modal** - Reusable modal for selecting audio collections
+- [ ] **Auto-populate Languages** - Map collection items to block language fields
+
+### 🔄 Phase 3: Collections View Enhancement (Lower Priority)
 - [ ] **Collection Filtering** - Filter tabs (All | Images | Audio)
 - [ ] **Bulk Download** - Download all languages as ZIP
-- [ ] **Block Import** - Import collections into Audio Block / Timeline Gallery
 
 > **Architecture Note:** ElevenLabs uses a SINGLE voice for ALL languages via the Multilingual v2 model. The model handles pronunciation/accent automatically. Deepgram uses per-language voice selection.
 
@@ -271,37 +276,62 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 ## 📋 Next Steps (Priority Order)
 
-### 1. 🟢 Hook Collections to Audio Blocks
-> **Primary Focus for Next Session**
+### 1. 🟢 Import Collections into Audio Blocks
+> **PRIMARY FOCUS for Next Session**
 >
-> Collections are now working with multi-language TTS audio. Next step is letting users **import** those collections into Audio Blocks in tour stops.
+> Audio Collections now work with multi-language TTS. Next step is letting users **import** those collections into Audio Blocks in tour stops.
 
-**Required Work:**
-- [ ] Add "Import from Collection" button to AudioBlockEditor
-- [ ] Collection picker modal (shows audio collections only)
-- [ ] Auto-populate `audioFiles` array for all languages
-- [ ] Handle existing audio (merge vs replace options)
+**Current State:**
+- `AudioBlockData.audioFiles` = `{ [lang: string]: string }` (per-language audio URLs)
+- `AudioBlockData.transcript` = `{ [lang: string]: string }` (per-language text)
+- `AudioCollectionItem` has `url`, `language`, and `text` fields
 
-**Files to Modify:**
-- `app/src/components/blocks/AudioBlockEditor.tsx`
-- `app/src/components/AudioCollectionModal.tsx` (add picker mode)
-- `app/src/lib/collectionService.ts` (add filtering)
-
-### 2. 🟢 Hook Collections to Timeline Gallery Blocks
-> Same concept as Audio Blocks - import multilingual audio sets
-
-**Required Work:**
-- [ ] Add "Import from Collection" button to TimelineGalleryEditorModal
-- [ ] Map collection items to timeline audio by language
-- [ ] Sync audio duration with timeline marker positions
+**Implementation:**
+```typescript
+// Map collection items to AudioBlockData
+const audioFiles: { [lang: string]: string } = {};
+const transcript: { [lang: string]: string } = {};
+collection.items.forEach(item => {
+  audioFiles[item.language] = item.url;
+  transcript[item.language] = item.text;
+});
+```
 
 **Files to Modify:**
+- `app/src/components/blocks/AudioBlockEditor.tsx` - Add import button + picker
+- `app/src/lib/collectionService.ts` - Add `getAudioCollections()` filter
+
+**UI Changes:**
+- Add "📁 Import from Collection" button next to "Choose Audio File"
+- Collection picker modal showing audio collections
+- On import: populate `audioFiles` and `transcript` for ALL languages
+
+### 2. 🟢 Import Collections into Timeline Gallery Blocks
+> Same concept but Timeline Gallery uses single `audioUrl` not per-language
+
+**Current State:**
+- `TimelineGalleryBlockData.audioUrl` = single audio URL (NOT per-language)
+- `TimelineGalleryBlockData.transcript` = `{ [lang: string]: string }` (per-language text)
+
+**Options:**
+1. **Simple (Recommended):** User selects which language's audio to use
+2. **Complex:** Add `audioFiles?: { [lang: string]: string }` to support multi-lang
+
+**Files to Modify:**
+- `app/src/components/blocks/TimelineGalleryBlockEditor.tsx`
 - `app/src/components/blocks/TimelineGalleryEditorModal.tsx`
 
-### 3. 🔵 Collection View Enhancements
-- [ ] Filter tabs (All | Images | Audio)
-- [ ] Bulk download as ZIP
-- [ ] Collection search
+### 3. 🟡 Collection Picker Modal (Shared Component)
+> Reusable modal for both Audio Block and Timeline Gallery
+
+**Features:**
+- Filter to show only `audio_collection` type
+- Show collection name, language count, created date
+- Preview audio files in list
+- Select button triggers import callback
+
+**New File:**
+- `app/src/components/CollectionPickerModal.tsx`
 
 ### 4. 🟡 Timeline Gallery Enhancements
 - Ken Burns Effect (Pan & Zoom) - use Framer Motion `useDrag` for editor

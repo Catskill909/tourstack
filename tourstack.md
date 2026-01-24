@@ -22,7 +22,9 @@
 | Phase 11: Map Block | ✅ Complete |
 | Phase 12: Audio TTS Section | ✅ Complete |
 | Phase 13: ElevenLabs Integration | ✅ Complete |
-| **Next:** API & Feeds Section | 🔜 Planned |
+| Phase 13.5: Translate Collections | ✅ DEPLOYED |
+| Phase 14: Audio UX Improvements | ✅ Complete |
+| **Next:** Block Import Integration | 🎯 In Progress |
 
 **Deployment:** Coolify/Docker with persistent volumes  
 - Database: Prisma + SQLite (`/app/data`)
