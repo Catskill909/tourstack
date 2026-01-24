@@ -22,6 +22,33 @@ npm run db:studio      # Open database GUI
 
 **Architecture**: Vite proxies `/api/*` requests to `http://localhost:3000` (Express).
 
+## � ElevenLabs Voice Limitation (CRITICAL!)
+
+> [!CAUTION]
+> **Before modifying ANY ElevenLabs code:**
+> - We use **PREMADE VOICES ONLY** (21 voices, work for ALL 32 languages)
+> - **DO NOT** try to add native language voices via `/shared-voices` API
+> - Using shared voices for generation AUTO-ADDS them to account (10 slot limit)
+> - After 10 slots: "voice_limit_reached" - ALL GENERATION FAILS
+>
+> **We wasted 8 hours learning this on January 24, 2026. Don't repeat our mistake.**
+>
+> 📖 Full details: [docs/ELEVENLABS-VOICES-ISSUE.md](docs/ELEVENLABS-VOICES-ISSUE.md)
+
+## �🔥 Server Down? Quick Fix
+
+```bash
+# Kill zombie processes and restart (copy & paste this entire block)
+pkill -f "node.*vite"; pkill -f "tsx.*server"; sleep 1
+cd /Users/paulhenshaw/Desktop/TourStack/app && npm run dev:all
+```
+
+**Verify both servers running:**
+```bash
+lsof -i :3000 -i :5173 | grep LISTEN
+# Should show TWO node processes
+```
+
 ## 🎯 Key Features
 
 - **7 Positioning Technologies**: QR Code, GPS, BLE Beacon, NFC, RFID, WiFi, UWB

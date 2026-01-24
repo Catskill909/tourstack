@@ -173,27 +173,93 @@ When selecting a non-English language, an auto-translate toggle appears (enabled
 ### Phase 4: ElevenLabs Integration ✅ COMPLETE
 
 > **Status:** Fully Implemented (January 24, 2026)
-> **IMPORTANT:** We use ONLY premade voices with LibreTranslate - NO custom voices, NO voice cloning!
+
+---
+
+### 🚨🚨🚨 CRITICAL: ELEVENLABS VOICE SLOTS - READ THIS FIRST! 🚨🚨🚨
+
+> [!CAUTION]
+> **We wasted an ENTIRE DAY (January 24, 2026) debugging voice slot issues.**
+> **DO NOT try to add "native language voices" - it WILL break!**
+
+#### The Problem We Solved (The Hard Way)
+
+| What You Want | What Actually Happens |
+|---------------|----------------------|
+| Show Italian voices for Italian | Uses `/shared-voices` API |
+| Generate audio with Italian voice | **AUTO-ADDS voice to your account** |
+| Auto-add uses a voice slot | **Starter tier = 10 slots MAX** |
+| 10 generations later... | **"voice_limit_reached" - ALL GENERATION FAILS** |
+
+#### The Solution (LOCKED IN - DO NOT CHANGE)
+
+```typescript
+// ✅ CORRECT - Use /voices API filtered to premade ONLY
+fetch(`${ELEVENLABS_API_URL}/voices`)
+  .filter((voice) => voice.category === 'premade')
+
+// ❌ WRONG - NEVER use shared-voices for generation!
+fetch(`${ELEVENLABS_API_URL}/shared-voices?language=${lang}`)
+```
+
+#### Why Premade Voices Work Fine
+
+| Concern | Reality |
+|---------|---------|
+| "But they're all English names!" | Yes, but Multilingual v2 handles pronunciation |
+| "Roger can't speak Italian!" | **WRONG** - Roger + Italian text = Italian pronunciation |
+| "We need native Italian voices!" | **NO** - premade voices sound native in ALL languages |
+| "Deepgram has per-language voices!" | Deepgram is different architecture, ElevenLabs uses multilingual model |
+
+#### Voice Slot Rules (MEMORIZE THIS)
+
+| Action | Uses Slot? | Safe for Production? |
+|--------|------------|---------------------|
+| `GET /voices` (premade only) | ❌ No | ✅ YES |
+| `POST /text-to-speech/{premade_id}` | ❌ No | ✅ YES |
+| `GET /shared-voices` (browse only) | ❌ No | ✅ YES |
+| `POST /text-to-speech/{shared_id}` | **✅ YES** | ❌ **BREAKS AT 10!** |
+
+#### If You See "voice_limit_reached"
+
+```bash
+# Check current slot usage
+curl -s "https://api.elevenlabs.io/v1/user/subscription" \
+  -H "xi-api-key: YOUR_KEY" | jq '.voice_slots_used, .voice_limit'
+
+# List voices using slots
+curl -s "https://api.elevenlabs.io/v1/voices" \
+  -H "xi-api-key: YOUR_KEY" | jq '.voices[] | select(.category != "premade")'
+
+# Delete a voice to free slot
+curl -X DELETE "https://api.elevenlabs.io/v1/voices/{voice_id}" \
+  -H "xi-api-key: YOUR_KEY"
+```
+
+📖 **Full incident report:** [ELEVENLABS-VOICES-ISSUE.md](ELEVENLABS-VOICES-ISSUE.md)
+
+---
 
 #### 4.1 ElevenLabs Overview
 
 ElevenLabs provides premium text-to-speech with:
 - **32+ languages** supported via Multilingual v2 model
-- **Premade voices ONLY** - no custom voice slots required
+- **PREMADE VOICES ONLY** - this is NOT a limitation, it's the CORRECT approach
 - **Auto-translate via LibreTranslate** - text translated, then spoken by premade voice
 - **Ultra-low latency** (~75ms with Flash v2.5)
 
 **Our Workflow:**
 1. User writes text in English (source language)
 2. LibreTranslate translates text to target language (Spanish, Italian, etc.)
-3. ElevenLabs speaks the translated text using a premade voice
+3. ElevenLabs speaks the translated text using a **premade** voice
 4. Multilingual v2 model handles correct pronunciation for all languages
 
-**Why Premade Voices Only:**
-- NO custom voice slots consumed (Starter tier limit = 10)
-- NO voice cloning fees
-- Works reliably on all ElevenLabs tiers
-- Premade voices speak ALL languages correctly via multilingual model
+**Why Premade Voices Are The ONLY Option:**
+- ✅ NO custom voice slots consumed (Starter tier limit = 10)
+- ✅ NO voice cloning fees
+- ✅ Works reliably on ALL ElevenLabs tiers including FREE
+- ✅ Premade voices speak ALL languages correctly via multilingual model
+- ⚠️ Shared voices LOOK better but BREAK production at scale
 
 #### 4.2 ElevenLabs Models
 
@@ -213,18 +279,25 @@ ElevenLabs provides premium text-to-speech with:
 
 #### 4.4 ElevenLabs Voice Types
 
-**✅ USED:** Premade Voices ONLY
-- ~30 high-quality voices included with any tier
+> [!CAUTION]
+> **DO NOT try to implement native language voices. We tried. It breaks. See top of this section.**
+
+**✅ USED: Premade Voices ONLY (THIS IS FINAL)**
+- 21 high-quality voices included with any tier (even FREE)
 - Work with ALL 32 languages via multilingual model
-- No custom voice slots required
+- **No custom voice slots required - EVER**
 - Always available, no additional cost
+- Roger + Italian text = Italian pronunciation
+- Sarah + Chinese text = Chinese pronunciation
 
-**❌ NOT USED:** Community/Shared Voices
-- Would consume custom voice slots (10 limit on Starter)
-- Cause "voice_limit_reached" errors
-- Not needed - premade voices work fine
+**❌ FORBIDDEN: Community/Shared Voices**
+- Browsing is fine, GENERATING is NOT
+- Auto-adds to account on first generation
+- Consumes 1 of 10 voice slots (Starter tier)
+- After 10 voices: "voice_limit_reached" error
+- **We wasted a full day learning this - don't repeat!**
 
-**❌ NOT USED:** Voice Cloning
+**❌ NOT USED: Voice Cloning**
 - Requires premium tier
 - Not needed for museum tour TTS
 

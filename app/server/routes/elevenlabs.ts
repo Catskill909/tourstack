@@ -1,4 +1,24 @@
 // ElevenLabs API Routes - Premium Text-to-Speech
+//
+// ╔════════════════════════════════════════════════════════════════════════════╗
+// ║  🚨 CRITICAL: READ BEFORE MODIFYING THIS FILE! 🚨                          ║
+// ║                                                                            ║
+// ║  We use PREMADE VOICES ONLY. This is NOT a bug, it's the ONLY way.        ║
+// ║                                                                            ║
+// ║  WHY: Using /shared-voices API for GENERATION auto-adds voices to the     ║
+// ║  account, consuming 1 of 10 voice slots (Starter tier). After 10 uses,    ║
+// ║  ALL generation fails with "voice_limit_reached" error.                   ║
+// ║                                                                            ║
+// ║  ✅ DO: Use /voices filtered to category === 'premade'                     ║
+// ║  ❌ DON'T: Use /shared-voices for anything except BROWSING                 ║
+// ║                                                                            ║
+// ║  Premade voices work for ALL 32 languages via Multilingual v2 model.      ║
+// ║  Roger + Italian text = Italian pronunciation. It works fine.             ║
+// ║                                                                            ║
+// ║  📖 Full details: docs/ELEVENLABS-VOICES-ISSUE.md                          ║
+// ║  ⏱️ Time wasted learning this: ~8 hours on January 24, 2026               ║
+// ╚════════════════════════════════════════════════════════════════════════════╝
+//
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import path from 'path';
@@ -261,10 +281,25 @@ router.get('/languages', (_req: Request, res: Response) => {
     return res.json(ELEVENLABS_LANGUAGES);
 });
 
-// GET /api/elevenlabs/voices - Get available voices
-// Returns ONLY premade voices (no custom voice slot required, no cloning)
-// Premade voices work with ALL languages via the Multilingual v2 model
-// Text is translated via LibreTranslate, then spoken by these voices
+// ╔════════════════════════════════════════════════════════════════════════════╗
+// ║  GET /api/elevenlabs/voices - PREMADE VOICES ONLY                          ║
+// ║                                                                            ║
+// ║  🚨 DO NOT CHANGE THIS TO USE /shared-voices! 🚨                           ║
+// ║                                                                            ║
+// ║  We tried that. It breaks after 10 generations because:                    ║
+// ║  - /shared-voices returns native language voices (looks great!)            ║
+// ║  - BUT generating with them AUTO-ADDS to account                           ║
+// ║  - Each auto-add uses 1 of 10 voice slots (Starter tier)                   ║
+// ║  - After 10: "voice_limit_reached" error - ALL GENERATION FAILS            ║
+// ║                                                                            ║
+// ║  The premade voices work FINE for all languages via Multilingual v2:       ║
+// ║  - Roger + Italian text = Italian pronunciation                            ║
+// ║  - Sarah + Chinese text = Chinese pronunciation                            ║
+// ║  - 21 premade voices × 32 languages = plenty of options                    ║
+// ║                                                                            ║
+// ║  Time wasted learning this: ~8 hours on January 24, 2026                   ║
+// ║  📖 See: docs/ELEVENLABS-VOICES-ISSUE.md                                   ║
+// ╚════════════════════════════════════════════════════════════════════════════╝
 router.get('/voices', async (req: Request, res: Response) => {
     if (!getApiKey()) {
         return res.status(500).json({
@@ -275,10 +310,9 @@ router.get('/voices', async (req: Request, res: Response) => {
     const language = req.query.language as string || 'en';
 
     try {
-        // Get premade voices only (these don't use custom voice slots)
-        // NO shared/community voices - they consume custom voice slots
-        // NO voice cloning - just basic TTS with LibreTranslate
-        const premadeResponse = await fetch(
+        // Get PREMADE voices only - these are FREE and don't use custom voice slots
+        // NEVER use /shared-voices API - it consumes slots when voices are used!
+        const response = await fetch(
             `${ELEVENLABS_API_URL}/voices`,
             {
                 headers: {
@@ -287,19 +321,20 @@ router.get('/voices', async (req: Request, res: Response) => {
             }
         );
 
-        if (!premadeResponse.ok) {
-            const errorText = await premadeResponse.text();
-            console.error('ElevenLabs voices error:', premadeResponse.status, errorText);
-            return res.status(premadeResponse.status).json({
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('ElevenLabs voices error:', response.status, errorText);
+            return res.status(response.status).json({
                 error: 'Failed to fetch voices',
                 details: errorText,
             });
         }
 
-        const premadeData = await premadeResponse.json() as { voices?: any[] };
+        const data = await response.json() as { voices?: any[] };
 
-        // Filter to ONLY premade voices (no custom slots, no cloning)
-        const voices = (premadeData.voices || [])
+        // Filter to ONLY premade voices - these work with ALL languages via Multilingual v2
+        // and NEVER consume custom voice slots
+        const voices = (data.voices || [])
             .filter((voice: any) => voice.category === 'premade')
             .map((voice: any) => ({
                 id: voice.voice_id,
@@ -310,10 +345,10 @@ router.get('/voices', async (req: Request, res: Response) => {
                 preview_url: voice.preview_url,
                 available_for_tiers: [],
                 verified_languages: [],
-                free_users_allowed: true, // Premade voices are always free
+                free_users_allowed: true,
             }));
 
-        return res.json({ voices, language, premadeCount: voices.length, sharedCount: 0 });
+        return res.json({ voices, language });
     } catch (error) {
         console.error('Error fetching ElevenLabs voices:', error);
         return res.status(500).json({

@@ -8,6 +8,12 @@ import {
     Languages,
     FolderPlus,
     ChevronDown,
+    FileAudio,
+    Clock,
+    HardDrive,
+    Mic2,
+    ExternalLink,
+    Edit3,
 } from 'lucide-react';
 import { collectionService } from '../lib/collectionService';
 import type { Voice } from '../services/audioService';
@@ -16,6 +22,22 @@ import * as elevenlabsService from '../services/elevenlabsService';
 interface LanguageVoices {
     name: string;
     voices: Voice[];
+}
+
+// Generated item from API response
+interface GeneratedItem {
+    id: string;
+    type: 'audio';
+    url: string;
+    language: string;
+    voice: { id: string; name: string; gender?: string };
+    provider: string;
+    format: string;
+    sampleRate?: number;
+    fileSize: number;
+    duration?: number;
+    text: string;
+    order: number;
 }
 
 interface AudioCollectionModalProps {
@@ -42,6 +64,7 @@ interface LanguageSelection {
 interface GenerationResult {
     language: string;
     success: boolean;
+    item?: GeneratedItem;
     error?: string;
 }
 
@@ -59,6 +82,39 @@ const ELEVENLABS_LANGUAGES = [
     { code: 'ko', name: 'Korean' },
     { code: 'zh', name: 'Chinese' },
 ];
+
+// Default ElevenLabs formats (fallback if API fails)
+const DEFAULT_ELEVENLABS_FORMATS = [
+    { id: 'mp3_22050_32', name: 'MP3 22kHz 32kbps (Low)' },
+    { id: 'mp3_44100_64', name: 'MP3 44kHz 64kbps (Medium)' },
+    { id: 'mp3_44100_128', name: 'MP3 44kHz 128kbps (Standard)' },
+    { id: 'mp3_44100_192', name: 'MP3 44kHz 192kbps (High)' },
+    { id: 'pcm_16000', name: 'PCM 16kHz (Compact)' },
+    { id: 'pcm_22050', name: 'PCM 22kHz' },
+    { id: 'pcm_24000', name: 'PCM 24kHz' },
+    { id: 'pcm_44100', name: 'PCM 44kHz (High Quality)' },
+    { id: 'ulaw_8000', name: 'μ-law 8kHz (Telephony)' },
+];
+
+// Helper to format file size
+function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+// Helper to format sample rate
+function formatSampleRate(rate?: number): string {
+    if (!rate) return '';
+    return `${rate / 1000}kHz`;
+}
+
+// Language display names
+const LANGUAGE_NAMES: Record<string, string> = {
+    en: 'English', es: 'Spanish', fr: 'French', de: 'German',
+    it: 'Italian', pt: 'Portuguese', ja: 'Japanese', ko: 'Korean',
+    zh: 'Chinese', nl: 'Dutch',
+};
 
 export function AudioCollectionModal({
     isOpen,
@@ -85,7 +141,9 @@ export function AudioCollectionModal({
 
     // ElevenLabs voice state (for when provider is elevenlabs)
     const [elVoices, setElVoices] = useState<elevenlabsService.ElevenLabsVoice[]>([]);
-    const [selectedElVoice, setSelectedElVoice] = useState<{ id: string; name: string } | null>(null);
+    const [elFormats, setElFormats] = useState<{ id: string; name: string }[]>(DEFAULT_ELEVENLABS_FORMATS);
+    const [isLoadingVoices, setIsLoadingVoices] = useState(false);
+    const [elSelectedFormat, setElSelectedFormat] = useState('mp3_44100_128');
 
     // Generation state
     const [isGenerating, setIsGenerating] = useState(false);
@@ -113,23 +171,47 @@ export function AudioCollectionModal({
             });
             setLanguages(langSelections);
         } else if (provider === 'elevenlabs') {
-            // ElevenLabs: use static language list with single voice for all
-            // Fetch ElevenLabs voices
+            // ElevenLabs: Fetch voices and assign DIFFERENT default voice to each language
+            setIsLoadingVoices(true);
             elevenlabsService.getVoices('en').then(result => {
                 setElVoices(result.voices);
-                const defaultVoice = result.voices[0];
-                if (defaultVoice) {
-                    setSelectedElVoice({ id: defaultVoice.id, name: defaultVoice.name });
+                const voices = result.voices;
+                
+                // Assign different voices to each language (cycle through available voices)
+                if (voices.length > 0) {
+                    setLanguages(prev => prev.map((lang, index) => {
+                        const voiceIndex = index % voices.length; // Cycle through voices
+                        const voice = voices[voiceIndex];
+                        return {
+                            ...lang,
+                            voiceId: voice.id,
+                            voiceName: voice.name,
+                        };
+                    }));
                 }
             }).catch(err => {
                 console.error('Failed to load ElevenLabs voices:', err);
+            }).finally(() => {
+                setIsLoadingVoices(false);
             });
 
+            // Fetch ElevenLabs formats (use defaults as fallback, already set in state init)
+            elevenlabsService.getFormats().then(formats => {
+                if (formats && formats.length > 0) {
+                    setElFormats(formats);
+                }
+                // If empty or fails, DEFAULT_ELEVENLABS_FORMATS is already set
+            }).catch(err => {
+                console.error('Failed to load ElevenLabs formats:', err);
+                // Keep using DEFAULT_ELEVENLABS_FORMATS which is already set
+            });
+
+            // Initialize languages (voices will be set when fetched above)
             const langSelections: LanguageSelection[] = ELEVENLABS_LANGUAGES.map(lang => ({
                 code: lang.code,
                 name: lang.name,
                 enabled: lang.code === 'en',
-                voiceId: '', // Will be set from selectedElVoice
+                voiceId: '', // Will be set when voices load
                 voiceName: '',
                 translationAvailable: TRANSLATION_AVAILABLE.includes(lang.code),
             }));
@@ -141,6 +223,7 @@ export function AudioCollectionModal({
         setCollectionDescription('');
         setFormat(defaultFormat);
         setSampleRate(defaultSampleRate);
+        setElSelectedFormat('mp3_44100_128');
         setAutoTranslate(true);
         setIsGenerating(false);
         setGenerationResults([]);
@@ -185,10 +268,22 @@ export function AudioCollectionModal({
                 ? '/api/elevenlabs/generate-batch'
                 : '/api/audio/generate-batch';
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            // Build request body based on provider
+            const requestBody = provider === 'elevenlabs'
+                ? {
+                    text,
+                    collectionName: collectionName.trim(),
+                    collectionDescription: collectionDescription.trim(),
+                    outputFormat: elSelectedFormat,
+                    autoTranslate,
+                    sourceLanguage: 'en',
+                    languages: enabledLanguages.map(l => ({
+                        code: l.code,
+                        voiceId: l.voiceId,
+                        voiceName: l.voiceName,
+                    })),
+                }
+                : {
                     text,
                     collectionName: collectionName.trim(),
                     collectionDescription: collectionDescription.trim(),
@@ -197,13 +292,17 @@ export function AudioCollectionModal({
                     sampleRate,
                     autoTranslate,
                     sourceLanguage: 'en',
-                    // For ElevenLabs, use the same voice for all languages (multilingual v2 model)
                     languages: enabledLanguages.map(l => ({
                         code: l.code,
-                        voiceId: provider === 'elevenlabs' ? selectedElVoice?.id || '' : l.voiceId,
-                        voiceName: provider === 'elevenlabs' ? selectedElVoice?.name || '' : l.voiceName,
+                        voiceId: l.voiceId,
+                        voiceName: l.voiceName,
                     })),
-                }),
+                };
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody),
             });
 
             if (!response.ok) {
@@ -276,33 +375,150 @@ export function AudioCollectionModal({
                 {/* Content */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                     {success ? (
-                        // Success state
-                        <div className="text-center py-8">
-                            <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
-                                <CheckCircle2 className="w-8 h-8 text-green-500" />
-                            </div>
-                            <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
-                                Collection Created!
-                            </h3>
-                            <p className="text-[var(--color-text-secondary)] mb-4">
-                                {generationResults.filter(r => r.success).length} audio files generated successfully
-                            </p>
-                            {generationResults.some(r => !r.success) && (
-                                <p className="text-amber-500 text-sm mb-4">
-                                    {generationResults.filter(r => !r.success).length} languages failed
+                        // Success state with detailed metadata
+                        <div className="space-y-6">
+                            {/* Success Header */}
+                            <div className="text-center">
+                                <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+                                    <CheckCircle2 className="w-8 h-8 text-green-500" />
+                                </div>
+                                <h3 className="text-xl font-bold text-[var(--color-text-primary)] mb-1">
+                                    Collection Created Successfully!
+                                </h3>
+                                <p className="text-[var(--color-text-secondary)]">
+                                    <span className="font-medium text-[var(--color-text-primary)]">{collectionName}</span>
                                 </p>
-                            )}
-                            <div className="flex gap-3 justify-center">
+                            </div>
+
+                            {/* Summary Stats */}
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)] text-center">
+                                    <FileAudio className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+                                    <p className="text-lg font-bold text-[var(--color-text-primary)]">
+                                        {generationResults.filter(r => r.success).length}
+                                    </p>
+                                    <p className="text-xs text-[var(--color-text-muted)]">Files Generated</p>
+                                </div>
+                                <div className="p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)] text-center">
+                                    <HardDrive className="w-5 h-5 text-blue-500 mx-auto mb-1" />
+                                    <p className="text-lg font-bold text-[var(--color-text-primary)]">
+                                        {formatFileSize(
+                                            generationResults
+                                                .filter(r => r.success && r.item)
+                                                .reduce((sum, r) => sum + (r.item?.fileSize || 0), 0)
+                                        )}
+                                    </p>
+                                    <p className="text-xs text-[var(--color-text-muted)]">Total Size</p>
+                                </div>
+                                <div className="p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)] text-center">
+                                    <Mic2 className="w-5 h-5 text-purple-500 mx-auto mb-1" />
+                                    <p className="text-lg font-bold text-[var(--color-text-primary)] capitalize">
+                                        {provider}
+                                    </p>
+                                    <p className="text-xs text-[var(--color-text-muted)]">Provider</p>
+                                </div>
+                            </div>
+
+                            {/* Generated Files List */}
+                            <div className="space-y-3">
+                                <h4 className="text-sm font-medium text-[var(--color-text-secondary)] flex items-center gap-2">
+                                    <Languages className="w-4 h-4" />
+                                    Generated Audio Files
+                                </h4>
+                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                    {generationResults.map((result) => (
+                                        <div
+                                            key={result.language}
+                                            className={`p-3 rounded-lg border ${result.success
+                                                ? 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)]'
+                                                : 'bg-red-500/10 border-red-500/20'
+                                                }`}
+                                        >
+                                            {result.success && result.item ? (
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                                            <span className="text-xs font-bold text-blue-500 uppercase">
+                                                                {result.language}
+                                                            </span>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                                                                {LANGUAGE_NAMES[result.language] || result.language}
+                                                            </p>
+                                                            <p className="text-xs text-[var(--color-text-muted)]">
+                                                                {result.item.voice.name}
+                                                                {result.item.voice.gender && ` (${result.item.voice.gender})`}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex gap-1.5">
+                                                            <span className="px-2 py-0.5 text-xs font-medium bg-purple-500/20 text-purple-400 rounded">
+                                                                {result.item.format.toUpperCase()}
+                                                            </span>
+                                                            {result.item.sampleRate && (
+                                                                <span className="px-2 py-0.5 text-xs font-medium bg-green-500/20 text-green-400 rounded">
+                                                                    {formatSampleRate(result.item.sampleRate)}
+                                                                </span>
+                                                            )}
+                                                            <span className="px-2 py-0.5 text-xs font-medium bg-gray-500/20 text-gray-400 rounded">
+                                                                {formatFileSize(result.item.fileSize)}
+                                                            </span>
+                                                        </div>
+                                                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-2">
+                                                    <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                                    <span className="text-sm text-red-400">
+                                                        {LANGUAGE_NAMES[result.language] || result.language}: {result.error || 'Failed'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* TTS Settings Summary */}
+                            <div className="p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]">
+                                <h4 className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide mb-2">
+                                    Generation Settings
+                                </h4>
+                                <div className="flex flex-wrap gap-2">
+                                    <span className="px-2 py-1 text-xs bg-[var(--color-bg-surface)] rounded text-[var(--color-text-secondary)]">
+                                        Provider: <span className="font-medium capitalize">{provider}</span>
+                                    </span>
+                                    <span className="px-2 py-1 text-xs bg-[var(--color-bg-surface)] rounded text-[var(--color-text-secondary)]">
+                                        Format: <span className="font-medium uppercase">{format}</span>
+                                    </span>
+                                    {provider === 'deepgram' && (
+                                        <span className="px-2 py-1 text-xs bg-[var(--color-bg-surface)] rounded text-[var(--color-text-secondary)]">
+                                            Sample Rate: <span className="font-medium">{formatSampleRate(sampleRate)}</span>
+                                        </span>
+                                    )}
+                                    <span className="px-2 py-1 text-xs bg-[var(--color-bg-surface)] rounded text-[var(--color-text-secondary)]">
+                                        Auto-Translate: <span className="font-medium">{autoTranslate ? 'Yes' : 'No'}</span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-3 pt-2">
                                 <button
                                     onClick={onClose}
-                                    className="px-6 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors"
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors"
                                 >
-                                    Close
+                                    <Edit3 className="w-4 h-4" />
+                                    Stay & Continue Editing
                                 </button>
                                 <a
                                     href={`/collections/${createdCollectionId}`}
-                                    className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all font-medium"
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all font-medium"
                                 >
+                                    <ExternalLink className="w-4 h-4" />
                                     View Collection
                                 </a>
                             </div>
@@ -352,35 +568,25 @@ export function AudioCollectionModal({
                                     Generation Settings
                                 </h3>
 
-                                {/* ElevenLabs: Voice selector (same voice for all languages) */}
+                                {/* ElevenLabs: Audio Quality only (voice is per-language below) */}
                                 {provider === 'elevenlabs' && (
                                     <div>
                                         <label className="block text-sm text-[var(--color-text-muted)] mb-1">
-                                            Voice (used for all languages)
+                                            Audio Quality
                                         </label>
                                         <div className="relative">
                                             <select
-                                                value={selectedElVoice?.id || ''}
-                                                onChange={(e) => {
-                                                    const voice = elVoices.find(v => v.id === e.target.value);
-                                                    if (voice) {
-                                                        setSelectedElVoice({ id: voice.id, name: voice.name });
-                                                    }
-                                                }}
+                                                value={elSelectedFormat}
+                                                onChange={(e) => setElSelectedFormat(e.target.value)}
                                                 disabled={isGenerating}
                                                 className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] appearance-none cursor-pointer focus:border-[var(--color-accent-primary)] focus:outline-none disabled:opacity-50"
                                             >
-                                                {elVoices.map((voice) => (
-                                                    <option key={voice.id} value={voice.id}>
-                                                        {voice.name} {voice.labels?.gender ? `(${voice.labels.gender})` : ''}
-                                                    </option>
+                                                {elFormats.map((fmt) => (
+                                                    <option key={fmt.id} value={fmt.id}>{fmt.name}</option>
                                                 ))}
                                             </select>
                                             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
                                         </div>
-                                        <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                                            Multilingual v2 model speaks all languages with the same voice
-                                        </p>
                                     </div>
                                 )}
 
@@ -466,8 +672,8 @@ export function AudioCollectionModal({
                                         <div
                                             key={lang.code}
                                             className={`flex items-center justify-between p-3 rounded-lg border transition-all ${lang.enabled
-                                                    ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/30'
-                                                    : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)]'
+                                                ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/30'
+                                                : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)]'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-3">
@@ -490,7 +696,8 @@ export function AudioCollectionModal({
                                                     )}
                                                 </div>
                                             </div>
-                                            {lang.enabled && voices && (
+                                            {/* Show voice dropdown for Deepgram */}
+                                            {provider === 'deepgram' && voices && voices[lang.code] && (
                                                 <div className="relative">
                                                     <select
                                                         value={lang.voiceId}
@@ -500,8 +707,8 @@ export function AudioCollectionModal({
                                                                 updateVoice(lang.code, voice.id, voice.name);
                                                             }
                                                         }}
-                                                        disabled={isGenerating}
-                                                        className="pl-3 pr-8 py-1.5 text-sm bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] appearance-none cursor-pointer focus:border-[var(--color-accent-primary)] focus:outline-none disabled:opacity-50"
+                                                        disabled={isGenerating || !lang.enabled}
+                                                        className={`pl-3 pr-8 py-1.5 text-sm bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] appearance-none cursor-pointer focus:border-[var(--color-accent-primary)] focus:outline-none disabled:opacity-50 ${!lang.enabled ? 'opacity-50' : ''}`}
                                                     >
                                                         {voices[lang.code]?.voices.map((voice) => (
                                                             <option key={voice.id} value={voice.id}>
@@ -511,6 +718,33 @@ export function AudioCollectionModal({
                                                     </select>
                                                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--color-text-muted)] pointer-events-none" />
                                                 </div>
+                                            )}
+                                            {/* Show voice dropdown for ElevenLabs (same voices for all languages) */}
+                                            {provider === 'elevenlabs' && elVoices.length > 0 && (
+                                                <div className="relative">
+                                                    <select
+                                                        value={lang.voiceId}
+                                                        onChange={(e) => {
+                                                            const voice = elVoices.find(v => v.id === e.target.value);
+                                                            if (voice) {
+                                                                updateVoice(lang.code, voice.id, voice.name);
+                                                            }
+                                                        }}
+                                                        disabled={isGenerating || !lang.enabled || isLoadingVoices}
+                                                        className={`pl-3 pr-8 py-1.5 text-sm bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] appearance-none cursor-pointer focus:border-[var(--color-accent-primary)] focus:outline-none disabled:opacity-50 ${!lang.enabled ? 'opacity-50' : ''}`}
+                                                    >
+                                                        {elVoices.map((voice) => (
+                                                            <option key={voice.id} value={voice.id}>
+                                                                {voice.name} {voice.labels?.gender ? `(${voice.labels.gender})` : ''}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--color-text-muted)] pointer-events-none" />
+                                                </div>
+                                            )}
+                                            {/* Show loading state for ElevenLabs voices */}
+                                            {provider === 'elevenlabs' && isLoadingVoices && (
+                                                <span className="text-xs text-[var(--color-text-muted)]">Loading voices...</span>
                                             )}
                                         </div>
                                     ))}

@@ -21,6 +21,7 @@ import {
     FolderPlus,
 } from 'lucide-react';
 import { AudioCollectionModal } from '../components/AudioCollectionModal';
+import { TextPreviewModal } from '../components/TextPreviewModal';
 import { translateText } from '../services/translationService';
 
 // Languages supported by LibreTranslate for auto-translation
@@ -163,6 +164,14 @@ export function Audio() {
     // Audio Collection Modal state
     const [showCollectionModal, setShowCollectionModal] = useState(false);
     const [collectionModalProvider, setCollectionModalProvider] = useState<'deepgram' | 'elevenlabs'>('deepgram');
+
+    // Text Preview Modal state
+    const [textPreviewModal, setTextPreviewModal] = useState<{
+        title: string;
+        text: string;
+        language?: string;
+        voiceName?: string;
+    } | null>(null);
 
     // Load initial data
     useEffect(() => {
@@ -493,10 +502,10 @@ export function Audio() {
                             onClick={() => setActiveTab(tab.id)}
                             disabled={tab.status === 'coming_soon'}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${activeTab === tab.id
-                                    ? 'bg-[var(--color-accent-primary)] text-white'
-                                    : tab.status === 'coming_soon'
-                                        ? 'bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] cursor-not-allowed'
-                                        : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
+                                ? 'bg-[var(--color-accent-primary)] text-white'
+                                : tab.status === 'coming_soon'
+                                    ? 'bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] cursor-not-allowed'
+                                    : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
                                 }`}
                         >
                             <tab.icon className="w-4 h-4" />
@@ -546,6 +555,7 @@ export function Audio() {
                             setCollectionModalProvider('deepgram');
                             setShowCollectionModal(true);
                         }}
+                        onShowTextPreview={(data) => setTextPreviewModal(data)}
                     />
                 ) : activeTab === 'elevenlabs' ? (
                     <ElevenLabsTab
@@ -591,6 +601,7 @@ export function Audio() {
                             setCollectionModalProvider('elevenlabs');
                             setShowCollectionModal(true);
                         }}
+                        onShowTextPreview={(data) => setTextPreviewModal(data)}
                     />
                 ) : (
                     <ComingSoonTab tab={tabs.find(t => t.id === activeTab)!} />
@@ -608,9 +619,20 @@ export function Audio() {
                 defaultFormat={collectionModalProvider === 'deepgram' ? selectedFormat : elSelectedFormat}
                 defaultSampleRate={collectionModalProvider === 'deepgram' ? selectedSampleRate : 44100}
                 onSuccess={(collectionId) => {
+                    // Don't close modal here - let the success state show first
+                    // Modal will close when user clicks "Stay & Continue" or navigates to collection
                     console.log('Collection created:', collectionId);
-                    setShowCollectionModal(false);
                 }}
+            />
+
+            {/* Text Preview Modal */}
+            <TextPreviewModal
+                isOpen={textPreviewModal !== null}
+                onClose={() => setTextPreviewModal(null)}
+                title={textPreviewModal?.title || ''}
+                text={textPreviewModal?.text || ''}
+                language={textPreviewModal?.language}
+                voiceName={textPreviewModal?.voiceName}
             />
         </div>
     );
@@ -648,6 +670,7 @@ interface DeepgramTabProps {
     isTranslating: boolean;
     onUnavailableLanguage: (lang: { name: string; code: string }) => void;
     onOpenCollectionModal: () => void;
+    onShowTextPreview: (data: { title: string; text: string; language?: string; voiceName?: string }) => void;
 }
 
 function DeepgramTab({
@@ -681,6 +704,7 @@ function DeepgramTab({
     isTranslating,
     onUnavailableLanguage,
     onOpenCollectionModal,
+    onShowTextPreview,
 }: DeepgramTabProps) {
     const isConfigured = status?.deepgram?.configured;
 
@@ -958,15 +982,15 @@ function DeepgramTab({
                         <div
                             key={voice.id}
                             className={`p-3 rounded-lg border transition-all cursor-pointer ${selectedVoice === voice.id
-                                    ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10'
-                                    : 'border-transparent bg-[var(--color-bg-elevated)] hover:border-[var(--color-border-default)]'
+                                ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10'
+                                : 'border-transparent bg-[var(--color-bg-elevated)] hover:border-[var(--color-border-default)]'
                                 }`}
                             onClick={() => setSelectedVoice(voice.id)}
                         >
                             <div className="flex items-center gap-2 mb-2">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${voice.gender === 'female'
-                                        ? 'bg-pink-500/20 text-pink-500'
-                                        : 'bg-blue-500/20 text-blue-500'
+                                    ? 'bg-pink-500/20 text-pink-500'
+                                    : 'bg-blue-500/20 text-blue-500'
                                     }`}>
                                     {voice.gender === 'female' ? <User className="w-4 h-4" /> : <Users className="w-4 h-4" />}
                                 </div>
@@ -1067,12 +1091,21 @@ function DeepgramTab({
                                     </p>
                                 </div>
 
-                                {/* Text preview */}
-                                <div className="hidden lg:block flex-1 max-w-md">
-                                    <p className="text-sm text-[var(--color-text-muted)] truncate italic">
-                                        "{file.text}"
-                                    </p>
-                                </div>
+                                    {/* Text preview - click to see full */}
+                                    <button
+                                        onClick={() => onShowTextPreview({
+                                            title: file.name,
+                                            text: file.text,
+                                            language: voices?.[file.language]?.name || file.language.toUpperCase(),
+                                            voiceName: file.voiceName,
+                                        })}
+                                        className="hidden lg:block flex-1 max-w-md text-left hover:bg-[var(--color-bg-hover)] rounded-lg p-2 -m-2 transition-colors"
+                                        title="Click to see full text"
+                                    >
+                                        <p className="text-sm text-[var(--color-text-muted)] truncate italic">
+                                            "{file.text}"
+                                        </p>
+                                    </button>
 
                                 {/* Actions */}
                                 <div className="flex items-center gap-2">
@@ -1249,6 +1282,7 @@ interface ElevenLabsTabProps {
     generatedFilesRef: React.RefObject<HTMLDivElement | null>;
     onUnavailableLanguage: (lang: { name: string; code: string }) => void;
     onOpenCollectionModal: () => void;
+    onShowTextPreview: (data: { title: string; text: string; language?: string; voiceName?: string }) => void;
 }
 
 function ElevenLabsTab({
@@ -1291,6 +1325,7 @@ function ElevenLabsTab({
     generatedFilesRef,
     onUnavailableLanguage,
     onOpenCollectionModal,
+    onShowTextPreview,
 }: ElevenLabsTabProps) {
     const isConfigured = status?.configured && status?.valid;
     const [isLoadingVoices, setIsLoadingVoices] = useState(false);
@@ -1729,8 +1764,8 @@ function ElevenLabsTab({
                                     key={voice.id}
                                     onClick={() => handleVoiceSelect(voice)}
                                     className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer ${selectedVoice === voice.id
-                                            ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 shadow-lg'
-                                            : 'border-transparent bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] hover:shadow-md'
+                                        ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 shadow-lg'
+                                        : 'border-transparent bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] hover:shadow-md'
                                         }`}
                                 >
                                     {/* Featured Badge */}
@@ -1743,10 +1778,10 @@ function ElevenLabsTab({
                                     <div className="flex flex-col items-center text-center pt-1">
                                         {/* Avatar */}
                                         <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${gender === 'female'
-                                                ? 'bg-gradient-to-br from-pink-400 to-rose-500'
-                                                : gender === 'male'
-                                                    ? 'bg-gradient-to-br from-blue-400 to-indigo-500'
-                                                    : 'bg-gradient-to-br from-purple-400 to-violet-500'
+                                            ? 'bg-gradient-to-br from-pink-400 to-rose-500'
+                                            : gender === 'male'
+                                                ? 'bg-gradient-to-br from-blue-400 to-indigo-500'
+                                                : 'bg-gradient-to-br from-purple-400 to-violet-500'
                                             }`}>
                                             <User className="w-6 h-6 text-white" />
                                         </div>
@@ -1859,12 +1894,20 @@ function ElevenLabsTab({
                                         </p>
                                     </div>
 
-                                    {/* Text preview */}
-                                    <div className="hidden lg:block flex-1 max-w-md">
+                                    {/* Text preview - click to see full */}
+                                    <button
+                                        onClick={() => onShowTextPreview({
+                                            title: file.name,
+                                            text: file.text,
+                                            voiceName: file.voiceName,
+                                        })}
+                                        className="hidden lg:block flex-1 max-w-md text-left hover:bg-[var(--color-bg-hover)] rounded-lg p-2 -m-2 transition-colors"
+                                        title="Click to see full text"
+                                    >
                                         <p className="text-sm text-[var(--color-text-muted)] truncate italic">
                                             "{file.text}"
                                         </p>
-                                    </div>
+                                    </button>
 
                                     {/* Actions */}
                                     <div className="flex items-center gap-2">

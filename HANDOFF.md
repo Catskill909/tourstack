@@ -1,7 +1,116 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: January 22, 2026  
-**Session Status**: Translate Collections (Batch TTS) In Progress 🔄
+**Last Updated**: January 24, 2026  
+**Session Status**: ElevenLabs Guardrails + Text Preview Modal ✅ | LOCAL TESTED ✅
+
+---
+
+## 🚀 Quick Start
+
+```bash
+cd app
+npm run dev:all       # ⭐ REQUIRED: Runs both Vite (5173) + Express API (3000)
+```
+
+**Current Status:** Both servers running ✅  
+**Local Testing:** Fully tested ✅ - Ready for production push
+- Frontend: http://localhost:5173
+- API Server: http://localhost:3000
+- Database: 11 Deepgram audio files, 15 ElevenLabs audio files loaded
+
+---
+
+## � ELEVENLABS CRITICAL GUARDRAILS (DO NOT SKIP!)
+
+> [!CAUTION]
+> **READ THIS BEFORE TOUCHING ANY ELEVENLABS CODE!**
+> We wasted an ENTIRE DAY debugging this. Don't repeat our mistake.
+
+### The Hard Truth About ElevenLabs Voice Slots
+
+| Action | Uses Slot? | Safe? |
+|--------|------------|-------|
+| Browse premade voices (`/voices`) | ❌ No | ✅ YES |
+| Generate with premade voice | ❌ No | ✅ YES |
+| Browse shared voices (`/shared-voices`) | ❌ No | ✅ YES |
+| **Generate with shared voice** | **✅ YES** | ❌ **DANGER!** |
+
+**Starter tier = 10 voice slots. When full, ALL shared voice generation FAILS.**
+
+### ⛔ NEVER DO THIS
+```typescript
+// ❌ WRONG - shared-voices API auto-adds voices when you GENERATE
+fetch(`/shared-voices?language=${lang}`)  // Looks harmless but ISN'T
+```
+
+### ✅ ALWAYS DO THIS
+```typescript
+// ✅ CORRECT - premade voices NEVER use slots
+fetch(`/voices`).filter(v => v.category === 'premade')
+```
+
+### Why Premade Voices Are Fine
+- **21 high-quality voices** included FREE
+- **Work with ALL 32 languages** via Multilingual v2 model
+- Roger speaking Italian = Italian pronunciation (just English name)
+- Sarah speaking Chinese = Chinese pronunciation (just English name)
+- **ZERO slot usage, ZERO additional cost**
+
+### If You See "voice_limit_reached" Error
+1. Someone used shared-voices API for GENERATION
+2. Voice was auto-added to account
+3. Slots filled up (10 max on Starter)
+4. **Fix:** Delete voices via ElevenLabs dashboard or API
+
+📖 **Full details:** [docs/ELEVENLABS-VOICES-ISSUE.md](docs/ELEVENLABS-VOICES-ISSUE.md)
+
+---
+
+## �🔥 Server Troubleshooting (READ FIRST!)
+
+> [!CAUTION]
+> **If you get `net::ERR_CONNECTION_REFUSED` or API errors, the server is down!**
+
+### Quick Fix (Copy & Paste)
+```bash
+# Kill all existing processes and restart
+pkill -f "node.*vite"; pkill -f "tsx.*server"; sleep 1
+cd /Users/paulhenshaw/Desktop/TourStack/app && npm run dev:all
+```
+
+### Verify Servers Are Running
+```bash
+# Check ports 3000 and 5173
+lsof -i :3000 -i :5173 | grep LISTEN
+```
+
+**Expected output:**
+```
+node    12345  user   TCP *:5173 (LISTEN)
+node    12346  user   TCP *:3000 (LISTEN)
+```
+
+### Common Symptoms & Solutions
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `Cannot POST /api/...` | Express not running | Run `npm run dev:all` |
+| `net::ERR_CONNECTION_REFUSED` | Server crashed/stopped | Kill & restart (see above) |
+| `ENOENT: package.json` | Wrong directory | Must be in `/app` folder |
+| Vite running but API fails | Only ran `npm run dev` | Use `npm run dev:all` instead |
+| Port already in use | Zombie process | `pkill -f node` then restart |
+
+### ⚠️ NEVER DO THIS
+```bash
+npm run dev          # ❌ WRONG - Only starts Vite, API will fail!
+cd TourStack && npm  # ❌ WRONG - Must be in /app folder!
+```
+
+### ✅ ALWAYS DO THIS
+```bash
+cd /Users/paulhenshaw/Desktop/TourStack/app
+npm run dev:all      # ✅ CORRECT - Starts BOTH servers
+```
 
 ---
 
@@ -126,7 +235,7 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Format Options** - MP3 (44.1kHz), PCM, Opus
 - [x] **UI Matching** - Generated audio styling matches Deepgram (badges, text preview)
 
-### Phase 13.5: Translate Collections 🔄 (Jan 22, 2026)
+### Phase 13.5: Translate Collections ✅ (Jan 22-24, 2026)
 - [x] **Collections API** - Full CRUD via `server/routes/collections.ts`
 - [x] **Collection Service** - Migrated from localStorage to API calls
 - [x] **Audio Collection Type** - New `audio_collection` type with metadata
@@ -135,9 +244,23 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **AudioCollectionModal** - UI for multi-language batch generation
 - [x] **Provider Routing** - Modal routes to correct endpoint based on provider
 - [x] **ElevenLabs Voice Selection** - Single voice for all languages (Multilingual v2)
+- [x] **ElevenLabs Audio Quality** - Format selector (MP3 22-192kbps, PCM, μ-law)
+- [x] **Deepgram Voice Dropdowns** - Always visible for all languages (not just when checked)
 - [x] **Collections View** - Volume2 icon for audio collections (purple styling)
 - [x] **CollectionDetail Audio UI** - Playback, language badges, voice info, file size
 - [x] **Text Preview** - Show source text and translated text per language
+- [x] **Success Modal** - Detailed metadata display after batch generation with "Stay & Continue" / "View Collection" options
+- [x] **LOCAL TESTING COMPLETE** - Both Deepgram and ElevenLabs TTS working ✅
+
+### Phase 14: Audio UX Improvements ✅ (Jan 24, 2026)
+- [x] **TextPreviewModal** - Click truncated text in audio lists to see full content
+- [x] **Copy to Clipboard** - One-click copy of full text from modal
+- [x] **Character Count** - Shows text length in preview modal
+- [x] **Voice & Language Display** - Context badges in preview modal
+- [x] **Both Tabs Support** - Works in Deepgram and ElevenLabs tabs
+- [x] **ElevenLabs Guardrails** - Extensive documentation preventing voice slot issues
+
+### 🔄 Phase 3-4: Remaining Work (Translate Collections)
 - [ ] **Collection Filtering** - Filter tabs (All | Images | Audio)
 - [ ] **Bulk Download** - Download all languages as ZIP
 - [ ] **Block Import** - Import collections into Audio Block / Timeline Gallery
@@ -148,17 +271,49 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 ## 📋 Next Steps (Priority Order)
 
-### 1. 🟢 Timeline Gallery Enhancements
+### 1. 🟢 Hook Collections to Audio Blocks
+> **Primary Focus for Next Session**
+>
+> Collections are now working with multi-language TTS audio. Next step is letting users **import** those collections into Audio Blocks in tour stops.
+
+**Required Work:**
+- [ ] Add "Import from Collection" button to AudioBlockEditor
+- [ ] Collection picker modal (shows audio collections only)
+- [ ] Auto-populate `audioFiles` array for all languages
+- [ ] Handle existing audio (merge vs replace options)
+
+**Files to Modify:**
+- `app/src/components/blocks/AudioBlockEditor.tsx`
+- `app/src/components/AudioCollectionModal.tsx` (add picker mode)
+- `app/src/lib/collectionService.ts` (add filtering)
+
+### 2. 🟢 Hook Collections to Timeline Gallery Blocks
+> Same concept as Audio Blocks - import multilingual audio sets
+
+**Required Work:**
+- [ ] Add "Import from Collection" button to TimelineGalleryEditorModal
+- [ ] Map collection items to timeline audio by language
+- [ ] Sync audio duration with timeline marker positions
+
+**Files to Modify:**
+- `app/src/components/blocks/TimelineGalleryEditorModal.tsx`
+
+### 3. 🔵 Collection View Enhancements
+- [ ] Filter tabs (All | Images | Audio)
+- [ ] Bulk download as ZIP
+- [ ] Collection search
+
+### 4. 🟡 Timeline Gallery Enhancements
 - Ken Burns Effect (Pan & Zoom) - use Framer Motion `useDrag` for editor
 - Additional transitions (Slide, Zoom) - use Framer Motion variants
 - Closed captioning editor
 
-### 2. 🔵 JSON Export/Import
+### 5. 🔵 JSON Export/Import
 - Full export (includes media URLs)
 - Import with validation
 - Mobile app format
 
-### 3. 🟡 Audio Player Enhancements
+### 6. 🟡 Audio Player Enhancements
 - Playlist support (multiple audio files)
 - Chapter markers/sections
 - Download option for audio files
@@ -186,11 +341,13 @@ TourStack uses a **modular content block system** where tours and stops are comp
 | Settings API | `app/server/routes/settings.ts` |
 | **Audio TTS** | |
 | Audio Page | `app/src/pages/Audio.tsx` |
+| TextPreviewModal | `app/src/components/TextPreviewModal.tsx` |
 | Deepgram API Routes | `app/server/routes/audio.ts` |
 | Deepgram Service | `app/src/services/audioService.ts` |
 | **ElevenLabs TTS** | |
 | ElevenLabs API Routes | `app/server/routes/elevenlabs.ts` |
 | ElevenLabs Service | `app/src/services/elevenlabsService.ts` |
+| ElevenLabs Voice Issue | `docs/ELEVENLABS-VOICES-ISSUE.md` |
 | Translation API | `app/server/routes/translate.ts` |
 | Translation Service | `app/src/services/translationService.ts` |
 | **Collections (Audio & Images)** | |

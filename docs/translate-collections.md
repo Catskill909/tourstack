@@ -2,8 +2,38 @@
 
 **Created**: January 24, 2026  
 **Last Updated**: January 24, 2026  
-**Status**: Phase 2 Complete ✅  
+**Status**: Phase 2.5 Complete ✅ | LOCAL TESTED ✅  
 **Feature**: Multi-language TTS Audio Collection Generation
+
+---
+
+## 🚨 CRITICAL: ElevenLabs Voice Limitations
+
+> [!CAUTION]
+> **Before modifying ANY ElevenLabs code, read [ELEVENLABS-VOICES-ISSUE.md](ELEVENLABS-VOICES-ISSUE.md)**
+>
+> **TL;DR:**
+> - ✅ **Deepgram:** Different voices per language (Celeste for Spanish, Thalia for English) - WORKS GREAT
+> - ⚠️ **ElevenLabs:** Same 21 premade voices for ALL languages - THIS IS CORRECT, DON'T "FIX" IT
+> - ❌ **DO NOT** try to add native language voices via `/shared-voices` API
+> - ❌ Using shared voices for GENERATION auto-adds them to account (10 slot limit)
+> - ❌ After 10 slots filled: "voice_limit_reached" error - ALL GENERATION FAILS
+>
+> **We wasted January 24, 2026 learning this. Don't repeat our mistake.**
+
+---
+
+## ✅ Local Testing Results (January 24, 2026)
+
+| Feature | Deepgram | ElevenLabs | Status |
+|---------|----------|------------|--------|
+| Batch TTS Generation | ✅ Working | ✅ Working | PASS |
+| Auto-Translation | ✅ LibreTranslate | ✅ LibreTranslate | PASS |
+| Collections Saved to DB | ✅ Working | ✅ Working | PASS |
+| Collection Detail View | ✅ Playback works | ✅ Playback works | PASS |
+| Success Modal with Metadata | ✅ Shows all details | ✅ Shows all details | PASS |
+
+**Ready for production deployment.**
 
 ---
 
@@ -22,9 +52,16 @@
 - [x] ElevenLabs "Create Collection" button on Audio page
 - [x] Multi-language selection with checkboxes
 - [x] Voice selection (per-language for Deepgram, single voice for ElevenLabs)
+- [x] **Deepgram voice dropdowns always visible** (not just when language is checked)
+- [x] **ElevenLabs Audio Quality selector** (MP3 22-192kbps, PCM, μ-law formats)
 - [x] Auto-translate toggle with LibreTranslate
 - [x] Generation progress UI with per-language results
-- [x] Success state with "View Collection" button
+- [x] **Success Modal with Metadata** - Shows:
+  - Collection name
+  - Summary stats (files generated, total size, provider)
+  - Per-language details (format, sample rate, file size, voice info)
+  - TTS settings summary (provider, format, sample rate, auto-translate)
+  - Choice: "Stay & Continue Editing" or "View Collection"
 
 ### ✅ Phase 2.5: Collections View Enhancement - COMPLETE
 - [x] Audio collection cards with Volume2 icon (purple)
@@ -72,12 +109,16 @@ This document outlines the phased development plan for the **Translate Collectio
 | Feature | Deepgram | ElevenLabs |
 |---------|----------|------------|
 | Languages | 7 (en, es, de, fr, nl, it, ja) | 32+ |
-| Voices | 40+ | 3,000+ (community) |
+| Voices | 40+ per-language | **21 premade ONLY** ⚠️ |
 | Auto-Translate | ✅ via LibreTranslate | ✅ via LibreTranslate |
 | Voice Preview | ✅ | ✅ |
 | Output Formats | MP3, WAV, OGG, FLAC | MP3, PCM, Opus |
 | Sample Rates | 8-48 kHz | 16-44 kHz |
 | File Storage | `/uploads/audio/generated/` | `/uploads/audio/generated/` |
+
+> [!CAUTION]
+> **ElevenLabs shows "3,000+ community voices" but using them BREAKS production!**
+> See [ELEVENLABS-VOICES-ISSUE.md](ELEVENLABS-VOICES-ISSUE.md) for why we use premade only.
 
 **Translation Support (LibreTranslate):**
 ```typescript
