@@ -23,7 +23,7 @@ function getApiKey(): string {
     if (process.env.ELEVENLABS_API_KEY) {
         return process.env.ELEVENLABS_API_KEY;
     }
-    
+
     // Fall back to settings file
     try {
         if (fs.existsSync(SETTINGS_FILE)) {
@@ -34,7 +34,7 @@ function getApiKey(): string {
     } catch (error) {
         console.error('Error reading settings for ElevenLabs API key:', error);
     }
-    
+
     return '';
 }
 
@@ -52,25 +52,25 @@ const GENERATED_DIR = path.join(AUDIO_DIR, 'generated');
 
 // ElevenLabs Models
 export const ELEVENLABS_MODELS = [
-    { 
-        id: 'eleven_multilingual_v2', 
-        name: 'Multilingual v2', 
+    {
+        id: 'eleven_multilingual_v2',
+        name: 'Multilingual v2',
         description: 'Best quality, 29 languages, 10K char limit',
         languages: 29,
         charLimit: 10000,
         latency: 'higher'
     },
-    { 
-        id: 'eleven_flash_v2_5', 
-        name: 'Flash v2.5', 
+    {
+        id: 'eleven_flash_v2_5',
+        name: 'Flash v2.5',
         description: 'Ultra-low latency (~75ms), 32 languages, 40K char limit',
         languages: 32,
         charLimit: 40000,
         latency: '~75ms'
     },
-    { 
-        id: 'eleven_turbo_v2_5', 
-        name: 'Turbo v2.5', 
+    {
+        id: 'eleven_turbo_v2_5',
+        name: 'Turbo v2.5',
         description: 'Balanced quality/speed, 32 languages, 40K char limit',
         languages: 32,
         charLimit: 40000,
@@ -225,7 +225,7 @@ router.get('/status', async (_req: Request, res: Response) => {
             can_use_instant_voice_cloning: boolean;
             can_use_professional_voice_cloning: boolean;
         };
-        
+
         return res.json({
             configured: true,
             valid: true,
@@ -261,8 +261,10 @@ router.get('/languages', (_req: Request, res: Response) => {
     return res.json(ELEVENLABS_LANGUAGES);
 });
 
-// GET /api/elevenlabs/voices - Get available voices for a language
-// Uses the Shared Voice Library API to get native language voices
+// GET /api/elevenlabs/voices - Get available voices
+// Returns ONLY premade voices (no custom voice slot required, no cloning)
+// Premade voices work with ALL languages via the Multilingual v2 model
+// Text is translated via LibreTranslate, then spoken by these voices
 router.get('/voices', async (req: Request, res: Response) => {
     if (!getApiKey()) {
         return res.status(500).json({
@@ -271,12 +273,13 @@ router.get('/voices', async (req: Request, res: Response) => {
     }
 
     const language = req.query.language as string || 'en';
-    
+
     try {
-        // Use the shared-voices API to get native language voices
-        // This gives us Italian voices for Italian, Chinese for Chinese, etc.
-        const response = await fetch(
-            `${ELEVENLABS_API_URL}/shared-voices?page_size=50&language=${language}&sort=trending`,
+        // Get premade voices only (these don't use custom voice slots)
+        // NO shared/community voices - they consume custom voice slots
+        // NO voice cloning - just basic TTS with LibreTranslate
+        const premadeResponse = await fetch(
+            `${ELEVENLABS_API_URL}/voices`,
             {
                 headers: {
                     'xi-api-key': getApiKey(),
@@ -284,38 +287,33 @@ router.get('/voices', async (req: Request, res: Response) => {
             }
         );
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('ElevenLabs shared-voices error:', response.status, errorText);
-            return res.status(response.status).json({
+        if (!premadeResponse.ok) {
+            const errorText = await premadeResponse.text();
+            console.error('ElevenLabs voices error:', premadeResponse.status, errorText);
+            return res.status(premadeResponse.status).json({
                 error: 'Failed to fetch voices',
                 details: errorText,
             });
         }
 
-        const data = await response.json() as { voices?: any[] };
-        
-        // Transform shared voices to our format
-        const voices = (data.voices || []).map((voice: any) => ({
-            id: voice.voice_id,
-            name: voice.name,
-            category: voice.category || 'shared',
-            description: voice.description,
-            labels: {
-                gender: voice.gender,
-                age: voice.age,
-                accent: voice.accent,
-                language: voice.language,
-                use_case: voice.use_case,
-                descriptive: voice.descriptive,
-            },
-            preview_url: voice.preview_url,
-            available_for_tiers: [],
-            verified_languages: voice.verified_languages || [],
-            free_users_allowed: voice.free_users_allowed,
-        }));
+        const premadeData = await premadeResponse.json() as { voices?: any[] };
 
-        return res.json({ voices, language });
+        // Filter to ONLY premade voices (no custom slots, no cloning)
+        const voices = (premadeData.voices || [])
+            .filter((voice: any) => voice.category === 'premade')
+            .map((voice: any) => ({
+                id: voice.voice_id,
+                name: voice.name,
+                category: 'premade',
+                description: voice.description || `${voice.labels?.gender || ''} ${voice.labels?.accent || ''} voice`.trim(),
+                labels: voice.labels || {},
+                preview_url: voice.preview_url,
+                available_for_tiers: [],
+                verified_languages: [],
+                free_users_allowed: true, // Premade voices are always free
+            }));
+
+        return res.json({ voices, language, premadeCount: voices.length, sharedCount: 0 });
     } catch (error) {
         console.error('Error fetching ElevenLabs voices:', error);
         return res.status(500).json({

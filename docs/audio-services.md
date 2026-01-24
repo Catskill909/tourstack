@@ -172,24 +172,34 @@ When selecting a non-English language, an auto-translate toggle appears (enabled
 
 ### Phase 4: ElevenLabs Integration ✅ COMPLETE
 
-> **Status:** Fully Implemented (January 22, 2026)
+> **Status:** Fully Implemented (January 24, 2026)
+> **IMPORTANT:** We use ONLY premade voices with LibreTranslate - NO custom voices, NO voice cloning!
 
 #### 4.1 ElevenLabs Overview
 
 ElevenLabs provides premium text-to-speech with:
-- **32+ languages** supported
-- **3,000+ community voices** in voice library
-- **Voice cloning** (instant and professional)
-- **Voice design** - create voices from text descriptions
-- **Emotion/tone control** via audio tags
+- **32+ languages** supported via Multilingual v2 model
+- **Premade voices ONLY** - no custom voice slots required
+- **Auto-translate via LibreTranslate** - text translated, then spoken by premade voice
 - **Ultra-low latency** (~75ms with Flash v2.5)
+
+**Our Workflow:**
+1. User writes text in English (source language)
+2. LibreTranslate translates text to target language (Spanish, Italian, etc.)
+3. ElevenLabs speaks the translated text using a premade voice
+4. Multilingual v2 model handles correct pronunciation for all languages
+
+**Why Premade Voices Only:**
+- NO custom voice slots consumed (Starter tier limit = 10)
+- NO voice cloning fees
+- Works reliably on all ElevenLabs tiers
+- Premade voices speak ALL languages correctly via multilingual model
 
 #### 4.2 ElevenLabs Models
 
 | Model | Languages | Char Limit | Latency | Best For |
 |-------|-----------|------------|---------|----------|
-| **Eleven v3** (alpha) | 70+ | 5,000 | Medium | Emotional, dramatic delivery |
-| **Multilingual v2** | 29 | 10,000 | Higher | Long-form, consistent quality |
+| **Multilingual v2** | 29 | 10,000 | Higher | Long-form, consistent quality ✅ DEFAULT |
 | **Flash v2.5** | 32 | 40,000 | ~75ms | Real-time, cost-effective |
 | **Turbo v2.5** | 32 | 40,000 | ~250ms | Balanced quality/speed |
 
@@ -200,35 +210,44 @@ ElevenLabs provides premium text-to-speech with:
 | **MP3** | 22.05kHz, 44.1kHz | Bitrates: 32-192kbps |
 | **PCM** | 16kHz - 48kHz | 16-bit depth |
 | **μ-law** | 8kHz | Telephony optimized |
-| **Opus** | 48kHz | 32-192kbps |
 
 #### 4.4 ElevenLabs Voice Types
 
-1. **Community Voices** - 10,000+ shared voices from library
-2. **Default Voices** - Curated, reliable, model-optimized
-3. **Cloned Voices** - Instant (30s sample) or Professional
-4. **Designed Voices** - AI-generated from text descriptions
+**✅ USED:** Premade Voices ONLY
+- ~30 high-quality voices included with any tier
+- Work with ALL 32 languages via multilingual model
+- No custom voice slots required
+- Always available, no additional cost
+
+**❌ NOT USED:** Community/Shared Voices
+- Would consume custom voice slots (10 limit on Starter)
+- Cause "voice_limit_reached" errors
+- Not needed - premade voices work fine
+
+**❌ NOT USED:** Voice Cloning
+- Requires premium tier
+- Not needed for museum tour TTS
 
 #### 4.5 ElevenLabs Tab Features ✅ IMPLEMENTED
 
 **Core TTS Generation:**
 - [x] Text input with character count (model-specific limits)
 - [x] Model selector (Multilingual v2, Flash v2.5, Turbo v2.5)
-- [x] Native language voice gallery (Italian voices for Italian, etc.)
+- [x] **Premade voice gallery only** (30 voices, all work with any language)
 - [x] Voice preview player using pre-hosted URLs
-- [x] Output format selector (MP3 44.1kHz, PCM, Opus)
+- [x] Output format selector (MP3 44.1kHz, PCM)
 - [x] Generate button with progress indicator
 - [x] Audio player and download
-- [x] Auto-translate toggle for non-English languages
+- [x] **Auto-translate toggle** for non-English languages via LibreTranslate
 
 **Voice Settings:**
 - [x] Stability slider (0-1) - consistency vs expressiveness
 - [x] Similarity boost slider (0-1) - voice matching
 
-**Language Availability:**
+**Language Availability (LibreTranslate):**
 - [x] Languages with auto-translation show ✓ in dropdown
 - [x] Styled modal for unavailable languages explaining configuration
-- [x] Supported: en, es, fr, de, it, pt, ja, ko, zh (via LibreTranslate)
+- [x] Supported: en, es, fr, de, it, pt, ja, ko, zh
 
 **Generated Audio Display:**
 - [x] Format badges (MP3, 44kHz)
@@ -237,12 +256,6 @@ ElevenLabs provides premium text-to-speech with:
 - [x] Text preview
 - [x] Play/pause controls
 - [x] Download and delete buttons
-
-**Future Enhancements:**
-- [ ] Voice search in community library
-- [ ] Voice favorites/bookmarks
-- [ ] Voice cloning (Premium tier)
-- [ ] Voice design from text descriptions
 
 #### 4.6 ElevenLabs API Endpoints
 
