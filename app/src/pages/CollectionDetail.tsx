@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Volume2, Download, Globe, Mic2, Eye } from 'lucide-react';
-import { collectionService, type CollectionItem } from '../lib/collectionService';
+import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Download, Globe, Mic2, Eye } from 'lucide-react';
+import { collectionService, type CollectionItem, type AudioCollectionItem, type ImageCollectionItem } from '../lib/collectionService';
 import { TextPreviewModal } from '../components/TextPreviewModal';
 
 // Helper to format file size
@@ -24,17 +24,6 @@ const LANGUAGE_NAMES: Record<string, string> = {
     zh: 'Chinese',
     nl: 'Dutch',
 };
-
-// Audio item type for audio collections
-interface AudioCollectionItem extends CollectionItem {
-    type: 'audio';
-    language?: string;
-    voice?: { id: string; name: string; gender?: string };
-    provider?: string;
-    format?: string;
-    fileSize?: number;
-    text?: string;
-}
 
 export function CollectionDetail() {
     const { id } = useParams();
@@ -93,11 +82,11 @@ export function CollectionDetail() {
 
     function handleAddItem(e: React.FormEvent) {
         e.preventDefault();
-        const newItem: CollectionItem = {
+        const newItem: ImageCollectionItem = {
             id: crypto.randomUUID(),
             type: 'image',
             url: newItemUrl,
-            caption: newItemCaption,
+            caption: newItemCaption ? { en: newItemCaption } : undefined,
             order: items.length
         };
         setItems([...items, newItem]);
@@ -206,8 +195,8 @@ export function CollectionDetail() {
                             <button
                                 onClick={() => handlePlayAudio(item)}
                                 className={`w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center transition-colors ${playingId === item.id
-                                        ? 'bg-[var(--color-accent-primary)] text-white'
-                                        : 'bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-accent-primary)]/20 hover:text-[var(--color-accent-primary)]'
+                                    ? 'bg-[var(--color-accent-primary)] text-white'
+                                    : 'bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-accent-primary)]/20 hover:text-[var(--color-accent-primary)]'
                                     }`}
                             >
                                 {playingId === item.id ? (
@@ -286,7 +275,7 @@ export function CollectionDetail() {
                     {items.map((item) => (
                         <div key={item.id} className="group relative bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl overflow-hidden aspect-square">
                             {item.type === 'image' ? (
-                                <img src={item.url} alt={item.caption} className="w-full h-full object-cover" />
+                                <img src={(item as ImageCollectionItem).url} alt={(item as ImageCollectionItem).caption?.en || ''} className="w-full h-full object-cover" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-[var(--color-bg-surface)]">
                                     <span className="text-[var(--color-text-muted)]">{item.type}</span>
@@ -294,7 +283,7 @@ export function CollectionDetail() {
                             )}
 
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                                <p className="text-white text-sm font-medium truncate">{item.caption || 'No caption'}</p>
+                                <p className="text-white text-sm font-medium truncate">{(item.type === 'image' && (item as ImageCollectionItem).caption?.en) || 'No caption'}</p>
                                 <button
                                     onClick={() => handleDeleteItem(item.id)}
                                     className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600"
