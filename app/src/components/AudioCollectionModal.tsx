@@ -175,7 +175,7 @@ export function AudioCollectionModal({
             elevenlabsService.getVoices('en').then(result => {
                 setElVoices(result.voices);
                 const voices = result.voices;
-                
+
                 // Assign different voices to each language (cycle through available voices)
                 if (voices.length > 0) {
                     setLanguages(prev => prev.map((lang, index) => {
