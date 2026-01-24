@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: January 24, 2026  
-**Session Status**: Translate Collections PRODUCTION DEPLOYED ✅ | Ready for Block Import Phase
+**Session Status**: Phase 4 Block Import COMPLETE ✅ | Audio Block Multi-Language Working 🎊
 
 ---
 
@@ -13,7 +13,7 @@ npm run dev:all       # ⭐ REQUIRED: Runs both Vite (5173) + Express API (3000)
 ```
 
 **Current Status:** Both servers running ✅  
-**Local Testing:** Fully tested ✅ - Ready for production push
+**Local Testing:** Fully tested ✅ - Audio Block import switches audio + text on language change!
 - Frontend: http://localhost:5173
 - API Server: http://localhost:3000
 - Database: 11 Deepgram audio files, 15 ElevenLabs audio files loaded
@@ -114,7 +114,51 @@ npm run dev:all      # ✅ CORRECT - Starts BOTH servers
 
 ---
 
-## 🏗️ Architecture Overview
+## � LibreTranslate Server Configuration
+
+> [!IMPORTANT]
+> We run a **self-hosted LibreTranslate server** at `translate.supersoul.top` with limited languages to reduce memory usage.
+
+### Supported Languages (LT_LOAD_ONLY)
+
+```
+en,es,fr,de,ja,it,ko,zh,pt
+```
+
+| Code | Language | Status |
+|------|----------|--------|
+| en | English | ✅ Primary |
+| es | Spanish | ✅ |
+| fr | French | ✅ |
+| de | German | ✅ |
+| it | Italian | ✅ |
+| pt | Portuguese | ✅ |
+| ja | Japanese | ✅ |
+| ko | Korean | ✅ |
+| zh | Chinese (zh-Hans) | ✅ |
+
+### Where Languages Are Defined
+
+All language lists must stay in sync with `LT_LOAD_ONLY`:
+
+| File | Constant |
+|------|----------|
+| `Audio.tsx` | `TRANSLATION_LANGUAGE_MAP` |
+| `CreateTourModal.tsx` | `languages` |
+| `EditTourModal.tsx` | `languages` |
+| `translationService.ts` | `SUPPORTED_LANGUAGES` |
+| `AudioCollectionModal.tsx` | `TRANSLATION_AVAILABLE`, `ELEVENLABS_LANGUAGES` |
+| `CollectionPickerModal.tsx` | `LANGUAGE_NAMES` |
+
+### Adding a New Language
+
+1. Update `LT_LOAD_ONLY` env var on LibreTranslate server
+2. Update ALL files listed above
+3. Test translation end-to-end
+
+---
+
+## �🏗️ Architecture Overview
 
 TourStack uses a **modular content block system** where tours and stops are composed of reusable, typed blocks.
 
@@ -260,11 +304,14 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Both Tabs Support** - Works in Deepgram and ElevenLabs tabs
 - [x] **ElevenLabs Guardrails** - Extensive documentation preventing voice slot issues
 
-### 🔄 Phase 4: Block Import Integration - NEXT UP 🎯
-- [ ] **Audio Block Import** - Import collection into `audioFiles` + `transcript`
-- [ ] **Timeline Gallery Import** - Import collection audio (single or multi-lang)
-- [ ] **Collection Picker Modal** - Reusable modal for selecting audio collections
-- [ ] **Auto-populate Languages** - Map collection items to block language fields
+### 🔄 Phase 4: Block Import Integration ✅ COMPLETE (Jan 24, 2026)
+- [x] **Audio Block Import** - Import collection into `audioFiles` + `transcript`
+- [x] **Timeline Gallery Import** - Import collection audio (single language mode)
+- [x] **Collection Picker Modal** - `CollectionPickerModal.tsx` with search, preview, multi/single modes
+- [x] **Auto-populate Languages** - Map collection items to block language fields
+- [x] **Audio Block Multi-Language Switch** - Switching languages changes BOTH audio AND text! 🎊
+
+> **Known Limitation:** Timeline Gallery uses single `audioUrl` (not `audioFiles`), so audio doesn't switch on language change. Transcript text DOES switch. This is by design for timeline sync.
 
 ### 🔄 Phase 3: Collections View Enhancement (Lower Priority)
 - [ ] **Collection Filtering** - Filter tabs (All | Images | Audio)
@@ -276,74 +323,39 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 ## 📋 Next Steps (Priority Order)
 
-### 1. 🟢 Import Collections into Audio Blocks
-> **PRIMARY FOCUS for Next Session**
->
-> Audio Collections now work with multi-language TTS. Next step is letting users **import** those collections into Audio Blocks in tour stops.
+### ✅ COMPLETED: Import Collections into Blocks
+> Phase 4 is complete! Both Audio Block and Timeline Gallery now support importing from collections.
 
-**Current State:**
-- `AudioBlockData.audioFiles` = `{ [lang: string]: string }` (per-language audio URLs)
-- `AudioBlockData.transcript` = `{ [lang: string]: string }` (per-language text)
-- `AudioCollectionItem` has `url`, `language`, and `text` fields
+**What Works:**
+- **Audio Block**: Full multi-language import - switches BOTH audio AND text on language change! 🎊
+- **Timeline Gallery**: Single-language import - audio stays fixed, transcript switches languages
+- **CollectionPickerModal**: Reusable picker with search, preview, multi/single modes
 
-**Implementation:**
+### 1. 🟢 Timeline Gallery Multi-Language Audio (Optional Enhancement)
+> Currently uses single `audioUrl`. Could add `audioFiles` for full multi-lang support.
+
+**Current Limitation:**
+- Timeline Gallery has `audioUrl: string` (single audio)
+- Transcript text switches on language change ✅
+- Audio does NOT switch (by design for timeline sync)
+
+**Future Enhancement (if needed):**
 ```typescript
-// Map collection items to AudioBlockData
-const audioFiles: { [lang: string]: string } = {};
-const transcript: { [lang: string]: string } = {};
-collection.items.forEach(item => {
-  audioFiles[item.language] = item.url;
-  transcript[item.language] = item.text;
-});
+// Add to TimelineGalleryBlockData:
+audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 ```
 
-**Files to Modify:**
-- `app/src/components/blocks/AudioBlockEditor.tsx` - Add import button + picker
-- `app/src/lib/collectionService.ts` - Add `getAudioCollections()` filter
-
-**UI Changes:**
-- Add "📁 Import from Collection" button next to "Choose Audio File"
-- Collection picker modal showing audio collections
-- On import: populate `audioFiles` and `transcript` for ALL languages
-
-### 2. 🟢 Import Collections into Timeline Gallery Blocks
-> Same concept but Timeline Gallery uses single `audioUrl` not per-language
-
-**Current State:**
-- `TimelineGalleryBlockData.audioUrl` = single audio URL (NOT per-language)
-- `TimelineGalleryBlockData.transcript` = `{ [lang: string]: string }` (per-language text)
-
-**Options:**
-1. **Simple (Recommended):** User selects which language's audio to use
-2. **Complex:** Add `audioFiles?: { [lang: string]: string }` to support multi-lang
-
-**Files to Modify:**
-- `app/src/components/blocks/TimelineGalleryBlockEditor.tsx`
-- `app/src/components/blocks/TimelineGalleryEditorModal.tsx`
-
-### 3. 🟡 Collection Picker Modal (Shared Component)
-> Reusable modal for both Audio Block and Timeline Gallery
-
-**Features:**
-- Filter to show only `audio_collection` type
-- Show collection name, language count, created date
-- Preview audio files in list
-- Select button triggers import callback
-
-**New File:**
-- `app/src/components/CollectionPickerModal.tsx`
-
-### 4. 🟡 Timeline Gallery Enhancements
+### 2. 🟡 Timeline Gallery Enhancements
 - Ken Burns Effect (Pan & Zoom) - use Framer Motion `useDrag` for editor
 - Additional transitions (Slide, Zoom) - use Framer Motion variants
 - Closed captioning editor
 
-### 5. 🔵 JSON Export/Import
+### 3. 🔵 JSON Export/Import
 - Full export (includes media URLs)
 - Import with validation
 - Mobile app format
 
-### 6. 🟡 Audio Player Enhancements
+### 4. 🟡 Audio Player Enhancements
 - Playlist support (multiple audio files)
 - Chapter markers/sections
 - Download option for audio files

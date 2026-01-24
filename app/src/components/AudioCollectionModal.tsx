@@ -67,9 +67,11 @@ interface GenerationResult {
     error?: string;
 }
 
+// Languages supported by our self-hosted LibreTranslate server (translate.supersoul.top)
+// Must match LT_LOAD_ONLY env var: en,es,fr,de,ja,it,ko,zh,pt
 const TRANSLATION_AVAILABLE = ['en', 'es', 'fr', 'de', 'it', 'ja', 'ko', 'pt', 'zh'];
 
-// ElevenLabs supported languages (subset that LibreTranslate can handle)
+// ElevenLabs supported languages - limited to what LibreTranslate can handle
 const ELEVENLABS_LANGUAGES = [
     { code: 'en', name: 'English' },
     { code: 'es', name: 'Spanish' },

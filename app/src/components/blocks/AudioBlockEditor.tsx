@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Maximize2, Minus, Circle, Mic, Loader2, Languages } from 'lucide-react';
+import { Maximize2, Minus, Circle, Mic, Loader2, Languages, FolderOpen } from 'lucide-react';
 import type { AudioBlockData } from '../../types';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
 import { transcribeAudio } from '../../services/transcriptionService';
 import { magicTranslate } from '../../services/translationService';
+import { CollectionPickerModal, type ImportedAudioData } from '../CollectionPickerModal';
 
 const SIZE_OPTIONS: { value: AudioBlockData['size']; label: string; icon: typeof Maximize2 }[] = [
     { value: 'large', label: 'Large', icon: Maximize2 },
@@ -23,6 +24,7 @@ export function AudioBlockEditor({ data, language, availableLanguages = ['en'], 
     const [transcribeError, setTranscribeError] = useState<string | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
     const [showTranslationSuccess, setShowTranslationSuccess] = useState(false);
+    const [showCollectionPicker, setShowCollectionPicker] = useState(false);
 
     // Target languages for translation (all except current)
     const targetLangs = availableLanguages.filter(l => l !== language);
@@ -96,6 +98,15 @@ export function AudioBlockEditor({ data, language, availableLanguages = ['en'], 
         }
     }
 
+    // Handle import from collection (all languages)
+    function handleImportFromCollection(importData: ImportedAudioData) {
+        onChange({
+            ...data,
+            audioFiles: { ...data.audioFiles, ...importData.audioFiles },
+            transcript: { ...data.transcript, ...importData.transcript },
+        });
+    }
+
     return (
         <div className="space-y-4">
             {/* Title */}
@@ -121,11 +132,20 @@ export function AudioBlockEditor({ data, language, availableLanguages = ['en'], 
                     Audio File ({language.toUpperCase()})
                 </label>
                 <div className="space-y-4">
-                    <div>
+                    <div className="flex items-center gap-3">
                         <label className="inline-block px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg cursor-pointer hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] transition-colors">
                             Choose Audio File
                             <input type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
                         </label>
+                        <span className="text-[var(--color-text-muted)] text-sm">or</span>
+                        <button
+                            type="button"
+                            onClick={() => setShowCollectionPicker(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/30 rounded-lg text-purple-400 hover:bg-purple-500/20 hover:border-purple-500/50 transition-colors"
+                        >
+                            <FolderOpen className="w-4 h-4" />
+                            Import from Collection
+                        </button>
                     </div>
                     {data.audioFiles[language] && (
                         <div>
@@ -154,11 +174,10 @@ export function AudioBlockEditor({ data, language, availableLanguages = ['en'], 
                         <button
                             key={value}
                             onClick={() => onChange({ ...data, size: value })}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                                data.size === value
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${data.size === value
                                     ? 'bg-[var(--color-accent-primary)] text-white shadow-sm'
                                     : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
-                            }`}
+                                }`}
                         >
                             <Icon className="w-3.5 h-3.5" />
                             {label}
@@ -278,7 +297,7 @@ export function AudioBlockEditor({ data, language, availableLanguages = ['en'], 
                                 Translation Complete
                             </h3>
                             <p className="text-[var(--color-text-secondary)] text-sm mb-6">
-                                Transcript translated to {targetLangs.length} language{targetLangs.length > 1 ? 's' : ''}. 
+                                Transcript translated to {targetLangs.length} language{targetLangs.length > 1 ? 's' : ''}.
                                 Remember to <span className="text-yellow-400 font-medium">save your changes</span> for translations to appear in preview.
                             </p>
                             <button
@@ -291,6 +310,15 @@ export function AudioBlockEditor({ data, language, availableLanguages = ['en'], 
                     </div>
                 </div>
             )}
+
+            {/* Collection Picker Modal */}
+            <CollectionPickerModal
+                isOpen={showCollectionPicker}
+                onClose={() => setShowCollectionPicker(false)}
+                onImport={handleImportFromCollection}
+                mode="multi"
+            />
         </div>
     );
 }
+

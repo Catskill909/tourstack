@@ -2,9 +2,9 @@
 
 **Created**: January 24, 2026  
 **Last Updated**: January 24, 2026  
-**Status**: Phase 2.5 Complete ✅ | PRODUCTION DEPLOYED ✅  
+**Status**: Phase 4 COMPLETE ✅ | Audio Block Import Working ✅  
 **Feature**: Multi-language TTS Audio Collection Generation
-**Next Phase**: Block Import Integration (Phase 4)
+**Current Phase**: Phase 4 - Block Import Integration ✅
 
 ---
 
@@ -77,16 +77,90 @@
 - [ ] Download all as ZIP functionality
 - [ ] Collection search
 
-### 📋 Phase 4: Block Import Integration - NEXT UP 🎯
-- [ ] Audio Block "Import from Collection" button
-- [ ] Timeline Gallery "Import from Collection" button
-- [ ] Collection picker modal
-- [ ] Auto-populate audioFiles for all languages
-- [ ] Import translated text into transcript fields
+### ✅ Phase 4: Block Import Integration - COMPLETE 🎉
+- [x] Audio Block "Import from Collection" button
+- [x] Timeline Gallery "Import from Collection" button  
+- [x] Collection picker modal (`CollectionPickerModal.tsx`)
+- [x] Auto-populate audioFiles for all languages (Audio Block)
+- [x] Import translated text into transcript fields
+- [x] **Audio Block: Full multi-language support** - switches BOTH audio AND text on language change! 🎊
+
+#### Phase 4 Summary: Two Different Workflows
+
+**🎵 Audio Block Workflow (Full Multi-Language):**
+```
+Audio View → Enter text → Generate TTS (all languages) → Save to Collection
+    ↓
+Tour Stop → Add Audio Block → "Import from Collection" 
+    ↓
+Preview → Switch language → BOTH audio AND transcript change ✅
+```
+
+**🖼️ Timeline Gallery Workflow (Self-Contained with Single Audio):**
+```
+Tour Stop → Add Timeline Gallery Block → Upload images
+    ↓
+Upload audio OR "Import from Collection" (picks ONE language)
+    ↓
+Transcribe with Deepgram → "Translate CC" → All caption languages
+    ↓
+Preview → Switch language → Captions change ✅, audio stays same
+```
+
+#### Why Timeline Gallery Uses Single Audio (By Design)
+
+Timeline Gallery synchronizes images to audio timestamps (markers on waveform). Multi-language audio would require:
+1. Different audio durations per language (narration length varies by language)
+2. Re-mapping all image timestamps for each language
+3. Complex sync logic for timeline markers across different durations
+
+**Current design is intentional:** One audio track with multi-language captions is the standard approach for image slideshows with narration. This is how most museum audio guides work.
+
+**Timeline Gallery Already Has Built-In Tools:**
+- ✅ Upload or import audio (single language)
+- ✅ Deepgram transcription (generates transcript from audio)
+- ✅ Magic Translate CC button (translates captions to all tour languages)
+- ✅ Waveform editor with draggable image markers
+
+#### Future Enhancement (Optional, Low Priority)
+
+To add full multi-language audio switching to Timeline Gallery:
+1. Add `audioFiles?: { [lang: string]: string }` to `TimelineGalleryBlockData`
+2. Store timestamps as percentages (0-100%) instead of absolute seconds
+3. Recalculate actual timestamps based on each audio's duration
+4. Update `TimelineGalleryPreview` to switch audio on language change
+
+**Recommendation:** Keep current design. The built-in transcription + translation tools provide a complete workflow.
 
 ---
 
-## 🎯 Phase 4 Implementation Details
+## 🎯 Phase 4 Implementation Details - COMPLETE ✅
+
+### What Was Built
+
+**New Component: `CollectionPickerModal.tsx`** (417 lines)
+A reusable modal for importing audio collections into blocks:
+- Search functionality to filter collections
+- Collection list view with language badges and file size
+- Collection detail view with audio preview (play/pause)
+- Two modes: `multi` (all languages) and `single` (user picks one)
+- Clean import interface returning `ImportedAudioData`
+
+**Modified: `AudioBlockEditor.tsx`**
+- Added "Import from Collection" button (purple, with FolderOpen icon)
+- Opens CollectionPickerModal in `mode="multi"`
+- Imports ALL language audio files and transcripts at once
+- **Result: Switching languages in preview switches BOTH audio and text!** 🎊
+
+**Modified: `TimelineGalleryBlockEditor.tsx`**
+- Added "Import from Collection" button in audio upload section
+- Opens CollectionPickerModal in `mode="single"` 
+- User selects which language's audio to import
+- Imports selected audio + all transcript languages
+
+**Modified: `TimelineGalleryEditorModal.tsx`**
+- Same import functionality for full-screen editor
+- Consistent UX across compact and expanded views
 
 ### Current Block Data Structures
 
@@ -188,14 +262,16 @@ export interface TimelineGalleryBlockData {
    - On select: Sets `audioUrl` to selected language's audio
    - Also imports `transcript` for all languages
 
-### Files to Modify
+### Files Modified
 
-| File | Changes |
-|------|--------|
-| `AudioBlockEditor.tsx` | Add import button, collection picker integration |
-| `TimelineGalleryBlockEditor.tsx` | Add import button, language selector |
-| `collectionService.ts` | Add `getAudioCollections()` helper |
-| `types/index.ts` | Optionally add `audioFiles` to TimelineGalleryBlockData |
+| File | Changes | Status |
+|------|---------|--------|
+| `CollectionPickerModal.tsx` | NEW - Reusable collection picker with multi/single mode | ✅ Created |
+| `AudioBlockEditor.tsx` | Added import button, multi-language import | ✅ Complete |
+| `TimelineGalleryBlockEditor.tsx` | Added import button, single-language import | ✅ Complete |
+| `TimelineGalleryEditorModal.tsx` | Added import button for full-screen editor | ✅ Complete |
+| `collectionService.ts` | Already has `getAudioCollections()` | ✅ Existed |
+| `types/index.ts` | No changes needed - AudioBlockData already supports multi-lang | ✅ N/A |
 
 ---
 

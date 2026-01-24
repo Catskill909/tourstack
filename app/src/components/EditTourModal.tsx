@@ -11,6 +11,8 @@ interface EditTourModalProps {
     onSave: (id: string, data: Partial<Tour>) => Promise<void>;
 }
 
+// Languages supported by our self-hosted LibreTranslate server (translate.supersoul.top)
+// Must match LT_LOAD_ONLY env var: en,es,fr,de,ja,it,ko,zh,pt
 const languages = [
     { code: 'en', name: 'English', hint: 'EN' },
     { code: 'es', name: 'Español', hint: 'ES' },

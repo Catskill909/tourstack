@@ -147,8 +147,9 @@ export async function magicTranslate(
     return batchTranslate({ text, sourceLang, targetLangs }, apiKey, provider);
 }
 
-// Supported languages by our LibreTranslate server (translate.supersoul.top)
-// Note: Server uses 'zh-Hans' for Chinese, but we map 'zh' -> 'zh-Hans' in translateText
+// Languages supported by our self-hosted LibreTranslate server (translate.supersoul.top)
+// Must match LT_LOAD_ONLY env var: en,es,fr,de,ja,it,ko,zh,pt
+// Note: Server uses 'zh-Hans' for Chinese, mapped automatically
 export const SUPPORTED_LANGUAGES = [
     'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh',
 ];

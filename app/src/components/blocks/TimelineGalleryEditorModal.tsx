@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Music, Images, Clock, Sliders, Trash2, Mic, Loader2, Captions, Languages } from 'lucide-react';
+import { X, Music, Images, Clock, Sliders, Trash2, Mic, Loader2, Captions, Languages, FolderOpen, Upload } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AudioWaveform, type AudioWaveformHandle } from './AudioWaveform';
 import type { TimelineGalleryBlockData, TransitionType } from '../../types';
 import { transcribeAudio } from '../../services/transcriptionService';
 import { magicTranslate } from '../../services/translationService';
 import { ClosedCaptions } from '../ui/ClosedCaptions';
+import { CollectionPickerModal, type ImportedAudioData } from '../CollectionPickerModal';
 
 interface TimelineGalleryImage {
     id: string;
@@ -43,6 +44,7 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
     const [transcribeError, setTranscribeError] = useState<string | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
     const [showTranslationSuccess, setShowTranslationSuccess] = useState(false);
+    const [showCollectionPicker, setShowCollectionPicker] = useState(false);
 
     // Ref to control AudioWaveform playback
     const audioWaveformRef = useRef<AudioWaveformHandle>(null);
@@ -163,6 +165,34 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
         } catch (error) {
             console.error('Audio upload failed:', error);
             alert('Failed to upload audio. Please try again.');
+        }
+    }
+
+    // Handle import from collection (single language for Timeline Gallery)
+    function handleImportFromCollection(importData: ImportedAudioData) {
+        // Get the first (and should be only in single mode) audio URL
+        const [firstLang] = Object.keys(importData.audioFiles);
+        if (firstLang && importData.audioFiles[firstLang]) {
+            const audioUrl = importData.audioFiles[firstLang];
+            // Create audio element to get duration
+            const audio = new Audio(audioUrl);
+            audio.onloadedmetadata = () => {
+                onChange({
+                    ...data,
+                    audioUrl,
+                    audioDuration: audio.duration,
+                    // Also import transcript for all languages
+                    transcript: { ...data.transcript, ...importData.transcript },
+                });
+            };
+            audio.onerror = () => {
+                // If metadata fails, still set the URL (duration will be updated by AudioWaveform)
+                onChange({
+                    ...data,
+                    audioUrl,
+                    transcript: { ...data.transcript, ...importData.transcript },
+                });
+            };
         }
     }
 
@@ -387,11 +417,10 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                     {data.transcript?.[language] && (
                         <button
                             onClick={() => onChange({ ...data, showCaptions: !data.showCaptions })}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                                data.showCaptions
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${data.showCaptions
                                     ? 'bg-yellow-500 text-black'
                                     : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                            }`}
+                                }`}
                         >
                             <Captions className="w-4 h-4" />
                             CC
@@ -542,14 +571,25 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                             }}
                         />
                     ) : (
-                        <label className="flex flex-col items-center justify-center h-full border-2 border-dashed border-white/20 rounded-xl cursor-pointer hover:border-purple-500/50 hover:bg-purple-500/5 transition-all">
-                            <div className="p-3 rounded-full bg-purple-500/10 mb-2">
-                                <Music className="w-8 h-8 text-purple-400" />
-                            </div>
-                            <span className="text-gray-400 text-sm">Upload audio narration</span>
-                            <span className="text-gray-500 text-xs mt-1">MP3, WAV, M4A</span>
-                            <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
-                        </label>
+                        <div className="flex flex-col items-center justify-center h-full gap-4">
+                            <label className="flex flex-col items-center justify-center w-full max-w-md p-6 border-2 border-dashed border-white/20 rounded-xl cursor-pointer hover:border-purple-500/50 hover:bg-purple-500/5 transition-all">
+                                <div className="p-3 rounded-full bg-purple-500/10 mb-2">
+                                    <Upload className="w-6 h-6 text-purple-400" />
+                                </div>
+                                <span className="text-gray-400 text-sm">Upload audio narration</span>
+                                <span className="text-gray-500 text-xs mt-1">MP3, WAV, M4A</span>
+                                <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
+                            </label>
+                            <span className="text-gray-500 text-xs">or</span>
+                            <button
+                                type="button"
+                                onClick={() => setShowCollectionPicker(true)}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-purple-500/10 border border-purple-500/30 rounded-xl text-purple-400 hover:bg-purple-500/20 hover:border-purple-500/50 transition-colors"
+                            >
+                                <FolderOpen className="w-4 h-4" />
+                                Import from Collection
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
@@ -674,7 +714,7 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                                 Translation Complete
                             </h3>
                             <p className="text-gray-400 text-sm mb-6">
-                                Captions have been translated to {targetLangs.length} language{targetLangs.length > 1 ? 's' : ''}. 
+                                Captions have been translated to {targetLangs.length} language{targetLangs.length > 1 ? 's' : ''}.
                                 Remember to <span className="text-yellow-400 font-medium">save your changes</span> for translations to appear in preview.
                             </p>
                             <button
@@ -687,6 +727,14 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                     </div>
                 </div>
             )}
+
+            {/* Collection Picker Modal */}
+            <CollectionPickerModal
+                isOpen={showCollectionPicker}
+                onClose={() => setShowCollectionPicker(false)}
+                onImport={handleImportFromCollection}
+                mode="single"
+            />
         </div>
     );
 }

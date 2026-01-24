@@ -25,8 +25,9 @@ import { AudioCollectionModal } from '../components/AudioCollectionModal';
 import { TextPreviewModal } from '../components/TextPreviewModal';
 import { translateText } from '../services/translationService';
 
-// Languages supported by LibreTranslate for auto-translation
-// Maps ElevenLabs language codes to LibreTranslate codes
+// Languages supported by our self-hosted LibreTranslate server (translate.supersoul.top)
+// Must match LT_LOAD_ONLY env var: en,es,fr,de,ja,it,ko,zh,pt
+// Maps TTS language codes to LibreTranslate codes
 const TRANSLATION_LANGUAGE_MAP: Record<string, string> = {
     'en': 'en',
     'es': 'es',

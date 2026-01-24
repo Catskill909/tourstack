@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-    Upload, X, GripVertical, Pencil, Music, Clock
+    Upload, X, GripVertical, Pencil, Music, Clock, FolderOpen
 } from 'lucide-react';
 import { AudioWaveform } from './AudioWaveform';
 import type { TimelineGalleryBlockData } from '../../types';
+import { CollectionPickerModal, type ImportedAudioData } from '../CollectionPickerModal';
 
 interface TimelineGalleryImage {
     id: string;
@@ -33,6 +34,9 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
     const [currentTime, setCurrentTime] = useState(0);
     const [previewIndex, setPreviewIndex] = useState(0);
     const [isFading, setIsFading] = useState(false);
+
+    // Collection picker state
+    const [showCollectionPicker, setShowCollectionPicker] = useState(false);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -141,6 +145,34 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
         }
     }
 
+    // Handle import from collection (single language for Timeline Gallery)
+    function handleImportFromCollection(importData: ImportedAudioData) {
+        // Get the first (and should be only in single mode) audio URL
+        const [firstLang] = Object.keys(importData.audioFiles);
+        if (firstLang && importData.audioFiles[firstLang]) {
+            const audioUrl = importData.audioFiles[firstLang];
+            // Create audio element to get duration
+            const audio = new Audio(audioUrl);
+            audio.onloadedmetadata = () => {
+                onChange({
+                    ...data,
+                    audioUrl,
+                    audioDuration: audio.duration,
+                    // Also import transcript for all languages
+                    transcript: { ...data.transcript, ...importData.transcript },
+                });
+            };
+            audio.onerror = () => {
+                // If metadata fails, still set the URL (duration will be updated by AudioWaveform)
+                onChange({
+                    ...data,
+                    audioUrl,
+                    transcript: { ...data.transcript, ...importData.transcript },
+                });
+            };
+        }
+    }
+
     function handleRemoveImage(id: string) {
         onChange({
             ...data,
@@ -226,13 +258,26 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
                         </button>
                     </div>
                 ) : (
-                    <label className="flex items-center justify-center gap-3 px-6 py-4 bg-[var(--color-bg-surface)] border-2 border-dashed border-[var(--color-border-default)] rounded-xl cursor-pointer hover:border-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/5 transition-all group">
-                        <div className="p-3 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] group-hover:bg-[var(--color-accent-primary)]/20 transition-colors">
-                            <Upload className="w-5 h-5" />
+                    <div className="space-y-3">
+                        <label className="flex items-center justify-center gap-3 px-6 py-4 bg-[var(--color-bg-surface)] border-2 border-dashed border-[var(--color-border-default)] rounded-xl cursor-pointer hover:border-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/5 transition-all group">
+                            <div className="p-3 rounded-full bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] group-hover:bg-[var(--color-accent-primary)]/20 transition-colors">
+                                <Upload className="w-5 h-5" />
+                            </div>
+                            <span className="text-sm text-[var(--color-text-secondary)]">Upload audio narration (MP3, WAV)</span>
+                            <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
+                        </label>
+                        <div className="flex items-center justify-center gap-3">
+                            <span className="text-xs text-[var(--color-text-muted)]">or</span>
                         </div>
-                        <span className="text-sm text-[var(--color-text-secondary)]">Upload audio narration (MP3, WAV)</span>
-                        <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
-                    </label>
+                        <button
+                            type="button"
+                            onClick={() => setShowCollectionPicker(true)}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-500/10 border border-purple-500/30 rounded-xl text-purple-400 hover:bg-purple-500/20 hover:border-purple-500/50 transition-colors"
+                        >
+                            <FolderOpen className="w-4 h-4" />
+                            Import from Collection
+                        </button>
+                    </div>
                 )}
             </div>
 
@@ -484,6 +529,14 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
                     </div>
                 </div>
             )}
+
+            {/* Collection Picker Modal */}
+            <CollectionPickerModal
+                isOpen={showCollectionPicker}
+                onClose={() => setShowCollectionPicker(false)}
+                onImport={handleImportFromCollection}
+                mode="single"
+            />
         </div>
     );
 }
