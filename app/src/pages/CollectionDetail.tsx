@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Volume2, Download, Globe, Mic2 } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Volume2, Download, Globe, Mic2, Eye } from 'lucide-react';
 import { collectionService, type CollectionItem } from '../lib/collectionService';
+import { TextPreviewModal } from '../components/TextPreviewModal';
 
 // Helper to format file size
 function formatFileSize(bytes: number): string {
@@ -45,6 +46,14 @@ export function CollectionDetail() {
     // Audio playback state
     const [playingId, setPlayingId] = useState<string | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    // Text preview modal state
+    const [textPreviewModal, setTextPreviewModal] = useState<{
+        title: string;
+        text: string;
+        language?: string;
+        voiceName?: string;
+    } | null>(null);
 
     // Edit item state
     const [showAddItem, setShowAddItem] = useState(false);
@@ -230,11 +239,23 @@ export function CollectionDetail() {
                                         </span>
                                     )}
                                 </div>
-                                {/* Translated Text Preview */}
+                                {/* Translated Text Preview - Clickable */}
                                 {item.text && (
-                                    <p className="text-sm text-[var(--color-text-muted)] mt-2 line-clamp-2">
-                                        {item.text}
-                                    </p>
+                                    <button
+                                        onClick={() => setTextPreviewModal({
+                                            title: LANGUAGE_NAMES[item.language || 'en'] || item.language || 'Audio',
+                                            text: item.text || '',
+                                            language: LANGUAGE_NAMES[item.language || 'en'] || item.language,
+                                            voiceName: item.voice?.name,
+                                        })}
+                                        className="w-full text-left mt-2 flex items-center gap-2 group cursor-pointer hover:bg-[var(--color-bg-hover)] rounded-lg p-1.5 -m-1.5 transition-colors"
+                                        title="Click to see full text"
+                                    >
+                                        <p className="text-sm text-[var(--color-text-muted)] line-clamp-2 group-hover:text-[var(--color-accent-primary)] group-hover:underline transition-colors">
+                                            {item.text}
+                                        </p>
+                                        <Eye className="w-4 h-4 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                                    </button>
                                 )}
                             </div>
 
@@ -341,6 +362,16 @@ export function CollectionDetail() {
                     </div>
                 </div>
             )}
+
+            {/* Text Preview Modal */}
+            <TextPreviewModal
+                isOpen={textPreviewModal !== null}
+                onClose={() => setTextPreviewModal(null)}
+                title={textPreviewModal?.title || ''}
+                text={textPreviewModal?.text || ''}
+                language={textPreviewModal?.language}
+                voiceName={textPreviewModal?.voiceName}
+            />
         </div>
     );
 }

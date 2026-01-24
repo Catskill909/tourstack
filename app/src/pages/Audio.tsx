@@ -19,6 +19,7 @@ import {
     X,
     AlertTriangle,
     FolderPlus,
+    Eye,
 } from 'lucide-react';
 import { AudioCollectionModal } from '../components/AudioCollectionModal';
 import { TextPreviewModal } from '../components/TextPreviewModal';
@@ -1091,21 +1092,22 @@ function DeepgramTab({
                                     </p>
                                 </div>
 
-                                    {/* Text preview - click to see full */}
-                                    <button
-                                        onClick={() => onShowTextPreview({
-                                            title: file.name,
-                                            text: file.text,
-                                            language: voices?.[file.language]?.name || file.language.toUpperCase(),
-                                            voiceName: file.voiceName,
-                                        })}
-                                        className="hidden lg:block flex-1 max-w-md text-left hover:bg-[var(--color-bg-hover)] rounded-lg p-2 -m-2 transition-colors"
-                                        title="Click to see full text"
-                                    >
-                                        <p className="text-sm text-[var(--color-text-muted)] truncate italic">
-                                            "{file.text}"
-                                        </p>
-                                    </button>
+                                {/* Text preview - click to see full */}
+                                <button
+                                    onClick={() => onShowTextPreview({
+                                        title: file.name,
+                                        text: file.text,
+                                        language: voices?.[file.language]?.name || file.language.toUpperCase(),
+                                        voiceName: file.voiceName,
+                                    })}
+                                    className="hidden lg:flex flex-1 max-w-md text-left items-center gap-2 hover:bg-[var(--color-bg-hover)] rounded-lg p-2 -m-2 transition-colors group cursor-pointer"
+                                    title="Click to see full text"
+                                >
+                                    <p className="text-sm text-[var(--color-text-muted)] truncate italic group-hover:text-[var(--color-accent-primary)] group-hover:underline transition-colors">
+                                        "{file.text}"
+                                    </p>
+                                    <Eye className="w-4 h-4 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                                </button>
 
                                 {/* Actions */}
                                 <div className="flex items-center gap-2">
@@ -1901,12 +1903,13 @@ function ElevenLabsTab({
                                             text: file.text,
                                             voiceName: file.voiceName,
                                         })}
-                                        className="hidden lg:block flex-1 max-w-md text-left hover:bg-[var(--color-bg-hover)] rounded-lg p-2 -m-2 transition-colors"
+                                        className="hidden lg:flex flex-1 max-w-md text-left items-center gap-2 hover:bg-[var(--color-bg-hover)] rounded-lg p-2 -m-2 transition-colors group cursor-pointer"
                                         title="Click to see full text"
                                     >
-                                        <p className="text-sm text-[var(--color-text-muted)] truncate italic">
+                                        <p className="text-sm text-[var(--color-text-muted)] truncate italic group-hover:text-[var(--color-accent-primary)] group-hover:underline transition-colors">
                                             "{file.text}"
                                         </p>
+                                        <Eye className="w-4 h-4 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                                     </button>
 
                                     {/* Actions */}
