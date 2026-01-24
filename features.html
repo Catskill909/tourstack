@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TourStack | Infrastructure</title>
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Technical infrastructure for museum storytelling. Multi-modal positioning and AI translation.">
+    
+    <!-- Modern Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            /* Technical Dark Palette */
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --accent-primary: #ffffff;
+            --accent-muted: #666666;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --border-color: rgba(255, 255, 255, 0.1);
+
+            /* Typography */
+            --font-main: 'Outfit', sans-serif;
+            --line-height-tight: 0.85;
+            
+            /* Transitions */
+            --transition-smooth: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 5vw;
+        }
+
+        section {
+            padding: 12vh 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* --- Big Block Headers --- */
+        .block-header {
+            font-size: clamp(4rem, 15vw, 18rem);
+            line-height: var(--line-height-tight);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: -0.05em;
+            margin-bottom: 4rem;
+        }
+
+        .block-header.outline {
+            color: transparent;
+            -webkit-text-stroke: 1px var(--accent-primary);
+        }
+
+        /* --- Navigation --- */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 2.5rem 0;
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-decoration: none;
+            color: var(--text-primary);
+            text-transform: uppercase;
+        }
+
+        /* --- Hero --- */
+        .hero {
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .hero-title {
+            margin-top: 5vh;
+        }
+
+        .hero-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: auto;
+            padding-bottom: 5vh;
+        }
+
+        .hero-description {
+            max-width: 500px;
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .version-badge {
+            text-align: right;
+            font-size: 0.8rem;
+            opacity: 0.5;
+            letter-spacing: 0.2em;
+        }
+
+        /* --- Feature Card Grid --- */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            padding: 3rem 2rem;
+            transition: var(--transition-smooth);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-5px);
+        }
+
+        .card-num {
+            font-size: 0.8rem;
+            color: var(--accent-muted);
+            letter-spacing: 0.2em;
+        }
+
+        .feature-card h3 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .tech-list {
+            margin-top: auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tech-tag {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.5rem;
+            border: 1px solid var(--border-color);
+            color: var(--accent-muted);
+            text-transform: uppercase;
+        }
+
+        /* --- Modal --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 2000;
+            display: none;
+            padding: 5vw;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5vh;
+        }
+
+        .close-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 0.8rem 1.5rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .close-btn:hover {
+            border-color: #fff;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .gallery-box {
+            aspect-ratio: 16/9;
+            background: #111;
+            border: 1px solid #222;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #444;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        /* --- Footer --- */
+        footer {
+            padding: 10vh 0;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 4rem;
+        }
+
+        .footer-logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 2rem;
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 1024px) {
+            .feature-grid { grid-template-columns: 1fr 1fr; }
+            .hero-meta { grid-template-columns: 1fr; }
+            .version-badge { text-align: left; }
+        }
+
+        @media (max-width: 768px) {
+            .feature-grid { grid-template-columns: 1fr; }
+            .footer-content { grid-template-columns: 1fr; }
+            .block-header { font-size: 4rem; }
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <div class="container nav-content">
+            <a href="#" class="logo-text">TourStack Infrastructure</a>
+            <button class="close-btn" onclick="openModal()">Gallery +</button>
+        </div>
+    </nav>
+
+    <div class="hero container">
+        <div class="hero-title">
+            <h1 class="block-header">TOUR<br>STACK</h1>
+        </div>
+        <div class="hero-meta">
+            <div class="hero-description">
+                Advanced architectural Information Systems for museum storytelling. Precision positioning meets AI-orchestrated immersion.
+            </div>
+            <div class="version-badge">
+                [ BUILD 2.50.26 ]<br>SYSTEM STATUS: OPERATIONAL
+            </div>
+        </div>
+    </div>
+
+    <section id="features" class="container">
+        <h2 class="block-header outline">Core</h2>
+        
+        <div class="feature-grid">
+            <!-- Card 01: Positioning -->
+            <div class="feature-card">
+                <span class="card-num">01 / POSITIONING</span>
+                <h3>Modality Infrastructure</h3>
+                <p>7-tier positioning framework designed for any environment. Seamless handoff between indoor stones and outdoor gardens.</p>
+                <div class="tech-list">
+                    <span class="tech-tag">BLE</span>
+                    <span class="tech-tag">GPS</span>
+                    <span class="tech-tag">UWB</span>
+                    <span class="tech-tag">NFC</span>
+                    <span class="tech-tag">QR</span>
+                    <span class="tech-tag">WiFi</span>
+                </div>
+            </div>
+
+            <!-- Card 02: AI Translation -->
+            <div class="feature-card">
+                <span class="card-num">02 / LINGUISTICS</span>
+                <h3>Magic Translate</h3>
+                <p>One-click AI orchestration localizing exhibition layers into 30+ languages, maintaining curatorial nuance.</p>
+                <div class="tech-list">
+                    <span class="tech-tag">LibreTranslate</span>
+                    <span class="tech-tag">OpenAI</span>
+                    <span class="tech-tag">i18next</span>
+                </div>
+            </div>
+
+            <!-- Card 03: Audio Engine -->
+            <div class="feature-card">
+                <span class="card-num">03 / AUDIO</span>
+                <h3>Studio Voice</h3>
+                <p>Museum-grade synthetic speech utilizing v2.5 models. 3,000+ human-grade timbres with 75ms latency.</p>
+                <div class="tech-list">
+                    <span class="tech-tag">ElevenLabs</span>
+                    <span class="tech-tag">Deepgram</span>
+                    <span class="tech-tag">Aura</span>
+                </div>
+            </div>
+
+            <!-- Card 04: CMS Logic -->
+            <div class="feature-card">
+                <span class="card-num">04 / CONTENT</span>
+                <h3>Block-Based CMS</h3>
+                <p>Modular content block system: Timeline galleries, responsive maps, rich text, and cinematic triggers.</p>
+                <div class="tech-list">
+                    <span class="tech-tag">React 19</span>
+                    <span class="tech-tag">Prisma</span>
+                    <span class="tech-tag">SQLite</span>
+                </div>
+            </div>
+
+            <!-- Card 05: Data Layer -->
+            <div class="feature-card">
+                <span class="card-num">05 / PERSISTENCE</span>
+                <h3>Universal JSON</h3>
+                <p>Pure, structured data portability. Consistent delivery across native mobile, web, and archival repos.</p>
+                <div class="tech-list">
+                    <span class="tech-tag">Docker</span>
+                    <span class="tech-tag">Coolify</span>
+                    <span class="tech-tag">Volumes</span>
+                </div>
+            </div>
+
+            <!-- Card 06: Insights -->
+            <div class="feature-card">
+                <span class="card-num">06 / ANALYTICS</span>
+                <h3>Spatial Insights</h3>
+                <p>Quantifiable dwell-time analytics and spatial heatmaps. Data-driven visitor flow understanding.</p>
+                <div class="tech-list">
+                    <span class="tech-tag">Zustand</span>
+                    <span class="tech-tag">Heatmaps</span>
+                    <span class="tech-tag">Flow</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal: Technical Gallery -->
+    <div id="galleryModal" class="modal-overlay">
+        <div class="modal-header container">
+            <h2 class="logo-text">PROJECT PROJECTIONS</h2>
+            <button class="close-btn" onclick="closeModal()">CLOSE (ESC)</button>
+        </div>
+        <div class="container gallery-grid">
+            <div class="gallery-box">[ INFRASTRUCTURE_MAPPING_01 ]</div>
+            <div class="gallery-box">[ POSITIONING_MATRIX_02 ]</div>
+            <div class="gallery-box">[ LINGUISTIC_SYNC_03 ]</div>
+            <div class="gallery-box">[ TEMPORAL_GALLERY_04 ]</div>
+            <div class="gallery-box">[ VISITOR_FLOW_05 ]</div>
+            <div class="gallery-box">[ SYSTEM_CORE_06 ]</div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container footer-content">
+            <div>
+                <span class="footer-logo">TOURSTACK</span>
+                <p style="color: var(--text-secondary); max-width: 400px; font-weight: 300;">
+                    Swiss-engineered narrative delivery for the world's leading cultural institutions. Architecting the future of museum storytelling.
+                </p>
+            </div>
+            <div style="text-align: right; display: flex; flex-direction: column; justify-content: flex-end;">
+                <p style="font-size: 0.7rem; opacity: 0.5; letter-spacing: 0.1em;">© 2026 TOURSTACK SYSTEM<br>DESIGNED FOR SCALE</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function openModal() {
+            document.getElementById('galleryModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('galleryModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close on escape key
+        window.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
