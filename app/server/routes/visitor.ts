@@ -47,7 +47,7 @@ router.get('/tour/:tourSlugOrId', async (req: Request, res: Response) => {
         const tourSlugOrId = req.params.tourSlugOrId as string;
 
         // Try to find by slug first, then by ID
-        let tour = await prisma.tour.findUnique({
+        let tour = await prisma.tour.findFirst({
             where: { slug: tourSlugOrId },
             include: { stops: { orderBy: { order: 'asc' } } },
         });
@@ -79,7 +79,7 @@ router.get('/tour/:tourSlugOrId/stop/:stopSlugOrId', async (req: Request, res: R
         const stopSlugOrId = req.params.stopSlugOrId as string;
 
         // Find tour first
-        let tour = await prisma.tour.findUnique({
+        let tour = await prisma.tour.findFirst({
             where: { slug: tourSlugOrId },
             include: { stops: { orderBy: { order: 'asc' } } },
         });

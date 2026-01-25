@@ -29,7 +29,7 @@ async function ensureUniqueSlug(baseSlug: string, type: 'tour' | 'stop', tourId?
 
     while (true) {
         const exists = type === 'tour'
-            ? await prisma.tour.findUnique({ where: { slug } })
+            ? await prisma.tour.findFirst({ where: { slug } })
             : await prisma.stop.findFirst({ where: { slug, tourId } });
 
         if (!exists) return slug;
