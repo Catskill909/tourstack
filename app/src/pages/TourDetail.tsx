@@ -4,7 +4,7 @@ import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, Pencil, Settings, Check,
 import { translateWithLibre } from '../services/translationService';
 import { useToursStore } from '../stores/useToursStore';
 import { StopEditor } from '../components/StopEditor';
-import { QRCodeEditorModal } from '../components/QRCodeEditorModal';
+import { PositioningEditorModal } from '../components/PositioningEditorModal';
 import { EditTourModal } from '../components/EditTourModal';
 import type { Stop, Tour, PositioningConfig } from '../types';
 
@@ -520,7 +520,7 @@ export function TourDetail() {
                                 <button
                                     onClick={() => setShowQRModal(stop.id)}
                                     className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)]"
-                                    title="View QR Code"
+                                    title="Positioning Settings"
                                 >
                                     <QrCode className="w-4 h-4" />
                                 </button>
@@ -582,9 +582,9 @@ export function TourDetail() {
                 </div>
             )}
 
-            {/* QR Code Editor Modal */}
+            {/* Positioning Editor Modal */}
             {showQRModal && (
-                <QRCodeEditorModal
+                <PositioningEditorModal
                     stop={stops.find(s => s.id === showQRModal)!}
                     tourId={tour.id}
                     onSave={handleSaveQRSettings}

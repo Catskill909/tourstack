@@ -52,6 +52,8 @@ lsof -i :3000 -i :5173 | grep LISTEN
 ## 🎯 Key Features
 
 - **7 Positioning Technologies**: QR Code, GPS, BLE Beacon, NFC, RFID, WiFi, UWB
+- **Positioning Editor**: Tabbed modal with QR generator, placeholder tabs for all technologies
+- **Native QR Generator**: `qrcode.react` with regeneration, unique tokens, PNG download
 - **Modular Content Blocks**: Text, images, galleries, audio, timeline galleries
 - **Stop Editor**: Split-pane editor with live preview mode
 - **Timeline Gallery**: Audio-synced image galleries with **thumbnail markers** on waveform

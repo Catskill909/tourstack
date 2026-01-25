@@ -34,7 +34,7 @@ This ground plan aligns our database schema, TypeScript types, UI components, an
 | Gallery Block Editor | ✅ Complete | `blocks/GalleryBlockEditor.tsx` |
 | Video Block Editor | ⏳ Pending | - |
 | Stop Editor | ✅ Complete | `StopEditor.tsx` |
-| QR Code Editor | ✅ Complete | `QRCodeEditorModal.tsx` |
+| Positioning Editor | ✅ Complete | `PositioningEditorModal.tsx` |
 
 ---
 

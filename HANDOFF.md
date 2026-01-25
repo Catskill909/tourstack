@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: January 24, 2026  
-**Session Status**: Phase 4 Block Import COMPLETE ✅ | Audio Block Multi-Language Working 🎊
+**Session Status**: Phase 15 Positioning Editor COMPLETE ✅ | QR Generator Working 🎊
 
 ---
 
@@ -13,10 +13,10 @@ npm run dev:all       # ⭐ REQUIRED: Runs both Vite (5173) + Express API (3000)
 ```
 
 **Current Status:** Both servers running ✅  
-**Local Testing:** Fully tested ✅ - Audio Block import switches audio + text on language change!
+**Local Testing:** Fully tested ✅ - QR codes regenerate with unique tokens!
 - Frontend: http://localhost:5173
 - API Server: http://localhost:3000
-- Database: 11 Deepgram audio files, 15 ElevenLabs audio files loaded
+- Database: 12 Deepgram audio files, 18 ElevenLabs audio files loaded
 
 ---
 
@@ -304,6 +304,20 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Both Tabs Support** - Works in Deepgram and ElevenLabs tabs
 - [x] **ElevenLabs Guardrails** - Extensive documentation preventing voice slot issues
 
+### Phase 15: Positioning Editor & QR Generator ✅ (Jan 24, 2026)
+- [x] **PositioningEditorModal** - New tabbed modal replacing QRCodeEditorModal
+- [x] **7 Technology Tabs** - QR Code, GPS, BLE Beacon, NFC, RFID, WiFi, UWB
+- [x] **Tab Icons** - QrCode, MapPin, Radio, Smartphone, Scan, Wifi, Target
+- [x] **Placeholder Tabs** - "Coming Soon" badges with use cases for each technology
+- [x] **Technology Hints** - Color-coded hints specific to each positioning method
+- [x] **qrcode.react Package** - Native SVG QR generation (8.7M weekly downloads)
+- [x] **Regenerate Button** - Creates NEW QR with unique URL token + short code
+- [x] **URL Tokens** - Each QR has unique `?t=xxxxxxxx` for tracking
+- [x] **PNG Download** - High-quality 500px PNG with white background
+- [x] **Short Code Backup** - Manual entry fallback for accessibility
+- [x] **Signage Tips** - Print size, placement, and backup code guidance
+- [x] **Docs** - `docs/positioning-tech.md` with full implementation plan
+
 ### 🔄 Phase 4: Block Import Integration ✅ COMPLETE (Jan 24, 2026)
 - [x] **Audio Block Import** - Import collection into `audioFiles` + `transcript`
 - [x] **Timeline Gallery Import** - Import collection audio (single language mode)
@@ -312,6 +326,12 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Audio Block Multi-Language Switch** - Switching languages changes BOTH audio AND text! 🎊
 
 > **Known Limitation:** Timeline Gallery uses single `audioUrl` (not `audioFiles`), so audio doesn't switch on language change. Transcript text DOES switch. This is by design for timeline sync.
+
+### 🔜 Phase 16: GPS Positioning Tab (Next)
+- [ ] Reuse Map Block components (Leaflet/Google Maps)
+- [ ] Geofence radius visualization with circle overlay
+- [ ] "Get Current Location" button
+- [ ] Lat/Long input with map click selection
 
 ### 🔄 Phase 3: Collections View Enhancement (Lower Priority)
 - [ ] **Collection Filtering** - Filter tabs (All | Images | Audio)

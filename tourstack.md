@@ -24,7 +24,8 @@
 | Phase 13: ElevenLabs Integration | ✅ Complete |
 | Phase 13.5: Translate Collections | ✅ DEPLOYED |
 | Phase 14: Audio UX Improvements | ✅ Complete |
-| **Next:** Block Import Integration | 🎯 In Progress |
+| Phase 15: Positioning Editor & QR Generator | ✅ Complete |
+| **Next:** GPS Positioning Tab | 🎯 Planned |
 
 **Deployment:** Coolify/Docker with persistent volumes  
 - Database: Prisma + SQLite (`/app/data`)
