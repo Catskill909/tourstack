@@ -77,10 +77,11 @@ lsof -i :3000 -i :5173 | grep LISTEN
 - **7 Positioning Technologies**: QR Code, GPS, BLE Beacon, NFC, RFID, WiFi, UWB
 - **Positioning Editor**: Tabbed modal with QR generator, placeholder tabs for all technologies
 - **Native QR Generator**: `qrcode.react` with regeneration, unique tokens, PNG download
-- **Modular Content Blocks**: Text, images, galleries, audio, timeline galleries
+- **Tour Block**: Full-screen hero intro with architectural design system aesthetic
+- **12 Content Blocks**: Text, Image, Gallery, Timeline Gallery, Audio, Video, Quote, Timeline, Comparison, Positioning, Map, Tour
 - **Stop Editor**: Split-pane editor with live preview mode
 - **Timeline Gallery**: Audio-synced image galleries with **thumbnail markers** on waveform
-- **Multilingual**: All content supports multiple languages
+- **Multilingual**: All content supports multiple languages with Magic Translate AI
 - **JSON Export**: Portable tour data for mobile apps and backup
 
 ## 📁 Project Structure

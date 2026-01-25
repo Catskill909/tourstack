@@ -11,11 +11,16 @@ import { TimelineGalleryEditorModal } from './blocks/TimelineGalleryEditorModal'
 import { MapEditorModal } from './blocks/MapEditorModal';
 import { MapBlockEditor } from './blocks/MapBlockEditor';
 import { PositioningBlockEditor } from './blocks/PositioningBlockEditor';
+import { TourBlockEditor } from './blocks/TourBlockEditor';
 import { StopPreviewModal } from './StopPreviewModal';
-import type { Stop, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData } from '../types';
+import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, TourBlockData } from '../types';
 
 interface StopEditorProps {
     stop: Stop;
+    /** Tour data for tour blocks */
+    tourData?: Tour;
+    /** All stops for navigation (tour blocks) */
+    allStops?: Stop[];
     /** Available languages from tour.languages */
     availableLanguages?: string[];
     /** Translation provider for Magic Translate */
@@ -44,12 +49,14 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
             return { method: 'qr_code', config: { method: 'qr_code', url: '', shortCode: '' } } as PositioningBlockData;
         case 'map':
             return { latitude: 0, longitude: 0, zoom: 15, provider: 'openstreetmap', style: 'standard', showMarker: true } as MapBlockData;
+        case 'tour':
+            return { layout: 'hero-bottom', imagePosition: 'center', imageFit: 'cover', overlayOpacity: 70, showBadge: true, badge: { en: 'FEATURED EXHIBIT' }, ctaText: { en: 'Begin Guided Tour' }, ctaStyle: 'primary', ctaAction: 'next-stop' } as TourBlockData;
         default:
             return { content: { en: '' }, style: 'normal' } as TextBlockData;
     }
 }
 
-export function StopEditor({ stop, availableLanguages = ['en'], translationProvider = 'libretranslate', onSave, onClose }: StopEditorProps) {
+export function StopEditor({ stop, tourData, allStops = [], availableLanguages = ['en'], translationProvider = 'libretranslate', onSave, onClose }: StopEditorProps) {
     // Ensure contentBlocks is always an array - defensive check
     const safeContentBlocks = Array.isArray(stop.contentBlocks) ? stop.contentBlocks : [];
 
@@ -94,7 +101,7 @@ export function StopEditor({ stop, availableLanguages = ['en'], translationProvi
         const titleObj = typeof editedStop.title === 'object' ? editedStop.title : { en: String(editedStop.title) };
         const primaryLang = availableLanguages[0] || 'en';
         const sourceText = titleObj[primaryLang] || titleObj['en'] || Object.values(titleObj)[0];
-        
+
         if (!sourceText?.trim()) return;
 
         setIsTranslatingTitle(true);
@@ -454,6 +461,17 @@ export function StopEditor({ stop, availableLanguages = ['en'], translationProvi
                                         onOpenFullEditor={() => setShowMapEditorId(editingBlock.id)}
                                     />
                                 )}
+                                {editingBlock.type === 'tour' && (
+                                    <TourBlockEditor
+                                        data={editingBlock.data as TourBlockData}
+                                        language={language}
+                                        availableLanguages={availableLanguages}
+                                        translationProvider={translationProvider}
+                                        tourData={tourData}
+                                        allStops={allStops}
+                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
+                                    />
+                                )}
                             </div>
                         ) : (
                             <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
@@ -470,7 +488,7 @@ export function StopEditor({ stop, availableLanguages = ['en'], translationProvi
                     <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6 w-full max-w-md shadow-xl">
                         <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">Add Content Block</h3>
                         <div className="grid grid-cols-3 gap-3">
-                            {(['text', 'image', 'gallery', 'timelineGallery', 'audio', 'map'] as ContentBlockType[]).map((type) => {
+                            {(['tour', 'text', 'image', 'gallery', 'timelineGallery', 'audio', 'map'] as ContentBlockType[]).map((type) => {
                                 const Icon = BLOCK_ICONS[type];
                                 return (
                                     <button
@@ -498,6 +516,7 @@ export function StopEditor({ stop, availableLanguages = ['en'], translationProvi
             {showPreview && (
                 <StopPreviewModal
                     stop={editedStop}
+                    tourData={tourData}
                     availableLanguages={availableLanguages}
                     onClose={() => setShowPreview(false)}
                 />

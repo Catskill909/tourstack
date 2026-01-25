@@ -39,6 +39,7 @@ export const AudioWaveform = forwardRef<AudioWaveformHandle, AudioWaveformProps>
     const [currentTime, setCurrentTime] = useState(0);
     const [isMuted, setIsMuted] = useState(false);
     const [isReady, setIsReady] = useState(false);
+    const [audioDuration, setAudioDuration] = useState(duration || 1);
     const [draggingMarkerId, setDraggingMarkerId] = useState<string | null>(null);
     const hasDraggedRef = useRef(false); // Track if actual drag happened (vs just click)
 
@@ -64,8 +65,9 @@ export const AudioWaveform = forwardRef<AudioWaveformHandle, AudioWaveformProps>
 
         wavesurfer.on('ready', () => {
             setIsReady(true);
-            const audioDuration = wavesurfer.getDuration();
-            onReady?.(audioDuration);
+            const dur = wavesurfer.getDuration();
+            setAudioDuration(dur);
+            onReady?.(dur);
         });
 
         wavesurfer.on('audioprocess', () => {
@@ -199,8 +201,6 @@ export const AudioWaveform = forwardRef<AudioWaveformHandle, AudioWaveformProps>
             };
         }
     }, [draggingMarkerId, handleMouseMove, handleMouseUp, handleTouchMove]);
-
-    const audioDuration = wavesurferRef.current?.getDuration() || duration || 1;
 
     return (
         <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-4 space-y-4">

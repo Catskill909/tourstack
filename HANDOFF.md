@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: January 25, 2026  
-**Session Status**: Phase 16 Visitor Experience IN PROGRESS 🔄 | QR System COMPLETE ✅
+**Session Status**: Phase 16 Visitor Experience IN PROGRESS 🔄 | Tour Block COMPLETE ✅ | QR System COMPLETE ✅
 
 ---
 
@@ -410,8 +410,12 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 > **Known Limitation:** Timeline Gallery uses single `audioUrl` (not `audioFiles`), so audio doesn't switch on language change. Transcript text DOES switch. This is by design for timeline sync.
 
-### � Phase 16: Visitor Experience System (IN PROGRESS - Jan 25, 2026)
-- [ ] **Visitor Routes** - `/visitor/tour/:tourId/stop/:stopId` pages
+### � Phase 16: Visitor Experience System (IN PROGRESS - Jan 25, 2026)- [x] **Tour Block** - Hero intro block with full-screen image, title, description, CTA button
+- [x] **Architectural Design System** - Clean minimalist typography, monochrome palette, border-style badges
+- [x] **Multilingual Support** - LanguageSwitcher + MagicTranslateButton for all text fields
+- [x] **Responsive Full-Height** - `min-h-[100dvh]` fills tablet/phone screens properly
+- [x] **3 Layout Variants** - Bottom aligned, centered, card overlay
+- [x] **CTA Customization** - Primary/secondary/outline/ghost styles, next-stop/specific-stop/external actions- [ ] **Visitor Routes** - `/visitor/tour/:tourId/stop/:stopId` pages
 - [ ] **Reuse StopContentBlock** - Same rendering as admin preview
 - [ ] **"Back to Admin" Button** - For staff viewing visitor pages
 - [ ] **Token Validation** - Verify `?t=TOKEN` from QR codes
@@ -491,6 +495,10 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 
 | Purpose | Path |
 |---------|------|
+| **Tour Block** | |
+| Tour Block Editor | `app/src/components/blocks/TourBlockEditor.tsx` |
+| Stop Content Block | `app/src/components/blocks/StopContentBlock.tsx` |
+| Tour Block Types | `app/src/types/index.ts` (TourBlockData) |
 | **API Server** | |
 | Express Server | `app/server/index.ts` |
 | Media Upload | `app/server/routes/media.ts` |

@@ -226,7 +226,8 @@ export type ContentBlockType =
   | 'timeline'
   | 'comparison'
   | 'positioning'
-  | 'map';
+  | 'map'
+  | 'tour';
 
 // Block data interfaces
 export interface TextBlockData {
@@ -390,6 +391,38 @@ export interface MapBlockData {
   showTriggerZone?: boolean;      // Visualize the trigger zone
 }
 
+// Tour Block - Full-screen hero introduction for tours
+export type TourBlockLayout = 'hero-bottom' | 'hero-center' | 'hero-overlay';
+export type TourBlockCtaStyle = 'primary' | 'secondary' | 'outline' | 'ghost';
+export type TourBlockCtaAction = 'next-stop' | 'specific-stop' | 'external-url';
+
+export interface TourBlockData {
+  // Layout variant
+  layout: TourBlockLayout;
+
+  // Content Overrides (optional - defaults to Tour data)
+  titleOverride?: { [lang: string]: string };
+  descriptionOverride?: { [lang: string]: string };
+  imageOverride?: string;
+
+  // Hero Image Settings
+  imagePosition: 'center' | 'top' | 'bottom';
+  imageFit: 'cover' | 'contain';
+  overlayOpacity: number; // 0-100, gradient darkness
+
+  // Badge/Label (e.g., "FEATURED EXHIBIT")
+  showBadge: boolean;
+  badge?: { [lang: string]: string };
+  badgeColor?: string;
+
+  // Call-to-Action Button
+  ctaText: { [lang: string]: string }; // Default: "Begin Guided Tour"
+  ctaStyle: TourBlockCtaStyle;
+  ctaAction: TourBlockCtaAction;
+  ctaTargetStopId?: string; // If action is 'specific-stop'
+  ctaExternalUrl?: string;  // If action is 'external-url'
+}
+
 // Discriminated union for type safety
 export type ContentBlockData =
   | TextBlockData
@@ -402,7 +435,8 @@ export type ContentBlockData =
   | TimelineBlockData
   | ComparisonBlockData
   | PositioningBlockData
-  | MapBlockData;
+  | MapBlockData
+  | TourBlockData;
 
 // Base content block interface
 export interface ContentBlock {

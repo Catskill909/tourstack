@@ -73,7 +73,7 @@ export function ImageUpload({
 
             // Also pass the file to parent
             onChange(file);
-        } catch (err) {
+        } catch (_err) {
             setError('Failed to process image');
             setIsLoading(false);
         }

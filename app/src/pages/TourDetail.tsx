@@ -435,10 +435,10 @@ export function TourDetail() {
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, stop.id)}
                             className={`flex items-center gap-4 p-4 bg-[var(--color-bg-elevated)] border rounded-xl transition-all group ${dragOverStopId === stop.id
-                                    ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/5 scale-[1.02]'
-                                    : draggedStopId === stop.id
-                                        ? 'border-[var(--color-accent-primary)]/50 opacity-50'
-                                        : 'border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50'
+                                ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/5 scale-[1.02]'
+                                : draggedStopId === stop.id
+                                    ? 'border-[var(--color-accent-primary)]/50 opacity-50'
+                                    : 'border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50'
                                 }`}
                         >
                             {/* Drag Handle & Order */}
@@ -596,6 +596,8 @@ export function TourDetail() {
             {editingStop && (
                 <StopEditor
                     stop={editingStop}
+                    tourData={tour}
+                    allStops={stops}
                     availableLanguages={tour.languages || ['en']}
                     translationProvider={tour.defaultTranslationProvider || 'libretranslate'}
                     onSave={handleSaveStop}

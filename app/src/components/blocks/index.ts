@@ -8,3 +8,4 @@ export { PositioningBlockEditor } from './PositioningBlockEditor';
 export { MapBlockEditor } from './MapBlockEditor';
 export { MapEditorModal } from './MapEditorModal';
 export { MapPreview } from './MapPreview';
+export { TourBlockEditor } from './TourBlockEditor';

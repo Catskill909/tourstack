@@ -58,9 +58,28 @@ When museum staff access visitor pages, they see:
 | Phase 13.5: Translate Collections | ✅ DEPLOYED |
 | Phase 14: Audio UX Improvements | ✅ Complete |
 | Phase 15: Positioning Editor & QR Generator | ✅ Complete |
-| Phase 16: Visitor Experience System | 🔄 In Progress |
+| Phase 16: Tour Block + Visitor System | 🔄 In Progress |
 | Phase 17: Stop Navigation & Links | 🎯 Planned |
 | Phase 18: GPS Positioning Tab | 🎯 Planned |
+
+### Tour Block (Phase 16) - COMPLETE ✅
+
+**New Content Block Type:** Full-screen hero introduction for tours.
+
+| Feature | Description |
+|---------|-------------|
+| **Architectural Design** | Clean minimalist typography, monochrome palette |
+| **Full-Height Image** | `min-h-[100dvh]` fills device screen properly |
+| **3 Layout Variants** | Bottom aligned, centered, card overlay |
+| **Multilingual** | LanguageSwitcher + MagicTranslateButton for title, description, badge, CTA |
+| **CTA Customization** | Primary/secondary/outline/ghost styles |
+| **CTA Actions** | Next stop, specific stop, or external URL |
+| **Fallback Image** | Uses `/assets/fallback.jpg` if no image selected |
+
+**Files:**
+- `TourBlockEditor.tsx` - Full editor with live preview
+- `StopContentBlock.tsx` - Renders tour block in view mode
+- `types/index.ts` - `TourBlockData` interface
 
 **Deployment:** Coolify/Docker with persistent volumes  
 - Database: Prisma + SQLite (`/app/data`)

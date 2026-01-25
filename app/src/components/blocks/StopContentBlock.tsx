@@ -1,16 +1,18 @@
-import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon } from 'lucide-react';
+import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData } from '../../types';
+import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, TourBlockData, Tour } from '../../types';
 import { GalleryPreview } from './GalleryPreview';
 import { TimelineGalleryPreview } from './TimelineGalleryPreview';
 import { MapPreview } from './MapPreview';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
+import fallbackImage from '../../assets/fallback.jpg';
 
 interface StopContentBlockProps {
     block: ContentBlock;
     mode: 'view' | 'edit';
     language: string;
     deviceType?: 'phone' | 'tablet';
+    tourData?: Tour; // For tour blocks that need parent tour info
     onEdit?: (block: ContentBlock) => void;
     onDelete?: (blockId: string) => void;
 }
@@ -28,6 +30,7 @@ const BLOCK_ICONS: Record<ContentBlockType, LucideIcon> = {
     comparison: Columns,
     positioning: QrCode,
     map: MapIcon,
+    tour: Play,
 };
 
 const BLOCK_LABELS: Record<ContentBlockType, string> = {
@@ -42,9 +45,10 @@ const BLOCK_LABELS: Record<ContentBlockType, string> = {
     comparison: 'Comparison',
     positioning: 'Positioning',
     map: 'Map',
+    tour: 'Tour Intro',
 };
 
-export function StopContentBlock({ block, mode, language, deviceType = 'phone', onEdit, onDelete }: StopContentBlockProps) {
+export function StopContentBlock({ block, mode, language, deviceType = 'phone', tourData, onEdit, onDelete }: StopContentBlockProps) {
     const Icon = BLOCK_ICONS[block.type];
     const label = BLOCK_LABELS[block.type];
 
@@ -205,7 +209,7 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
         };
         const size = data.size || 'medium';
         const style = sizeStyles[size] || sizeStyles.medium;
-        
+
         return (
             <div className="w-full" style={style}>
                 <MapPreview
@@ -215,6 +219,100 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                     interactive={false}
                     className="w-full h-full"
                 />
+            </div>
+        );
+    }
+
+    function renderTourBlock(data: TourBlockData) {
+        // Get display values (override or tour data)
+        const title = data.titleOverride?.[language] || data.titleOverride?.en || tourData?.title?.[language] || tourData?.title?.en || 'Welcome';
+        const description = data.descriptionOverride?.[language] || data.descriptionOverride?.en || tourData?.description?.[language] || tourData?.description?.en || '';
+        const heroImage = data.imageOverride || tourData?.heroImage || fallbackImage;
+        const badge = data.badge?.[language] || data.badge?.en || 'FEATURED EXHIBIT';
+        const ctaText = data.ctaText?.[language] || data.ctaText?.en || 'Begin Tour';
+
+        // Architectural Information System - clean gradient overlays
+        const overlayOpacity = (data.overlayOpacity || 60) / 100;
+        const overlayStyle = data.layout === 'hero-bottom'
+            ? { background: `linear-gradient(to top, rgba(17,17,17,${overlayOpacity}) 0%, rgba(17,17,17,${overlayOpacity * 0.6}) 40%, transparent 100%)` }
+            : data.layout === 'hero-center'
+                ? { background: `rgba(17,17,17,${overlayOpacity * 0.7})` }
+                : {};
+
+        // Architectural CTA button styles - minimal, clean
+        const ctaClasses = data.ctaStyle === 'primary'
+            ? 'bg-white text-neutral-900 hover:bg-neutral-100'
+            : data.ctaStyle === 'secondary'
+                ? 'bg-neutral-900/80 text-white backdrop-blur-sm hover:bg-neutral-900/90'
+                : data.ctaStyle === 'outline'
+                    ? 'border border-white/80 text-white hover:bg-white/10'
+                    : 'text-white/90 hover:text-white hover:bg-white/5';
+
+        return (
+            <div className="relative w-full h-full min-h-[100dvh]">
+                {/* Full-bleed Hero Image */}
+                <img
+                    src={heroImage}
+                    alt={title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{
+                        objectPosition: data.imagePosition || 'center',
+                        objectFit: data.imageFit || 'cover'
+                    }}
+                />
+
+                {/* Overlay */}
+                {data.layout !== 'hero-overlay' && (
+                    <div className="absolute inset-0" style={overlayStyle} />
+                )}
+
+                {/* Content - Architectural Information System styling */}
+                <div className={`absolute inset-0 flex flex-col ${data.layout === 'hero-bottom' ? 'justify-end' :
+                    data.layout === 'hero-center' ? 'justify-center items-center text-center' :
+                        'justify-end'
+                    } p-6 ${isTablet ? 'p-10' : 'p-6'}`}>
+                    {data.layout === 'hero-overlay' ? (
+                        <div className="bg-neutral-900/90 backdrop-blur-xl rounded-sm p-6 ${isTablet ? 'p-8' : 'p-6'} mx-auto max-w-[90%] border border-white/10">
+                            {data.showBadge && badge && (
+                                <span className="inline-block px-2 py-0.5 text-[10px] font-medium tracking-[0.2em] uppercase text-white/70 border border-white/20 mb-4">
+                                    {badge}
+                                </span>
+                            )}
+                            <h2 className={`${isTablet ? 'text-3xl' : 'text-2xl'} font-light tracking-tight text-white mb-3`}>
+                                {title}
+                            </h2>
+                            {description && (
+                                <p className={`${isTablet ? 'text-base' : 'text-sm'} text-white/60 mb-5 line-clamp-3 font-light leading-relaxed`}>
+                                    {description}
+                                </p>
+                            )}
+                            <button className="flex items-center gap-2 px-5 py-2.5 bg-white text-neutral-900 text-sm font-medium tracking-wide transition-all hover:bg-neutral-100">
+                                {ctaText}
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ) : (
+                        <div className={`${data.layout === 'hero-center' ? 'text-center' : ''} max-w-xl ${isTablet ? 'max-w-2xl' : ''}`}>
+                            {data.showBadge && badge && (
+                                <span className="inline-block px-2 py-0.5 text-[10px] font-medium tracking-[0.2em] uppercase text-white/80 border border-white/30 mb-4">
+                                    {badge}
+                                </span>
+                            )}
+                            <h2 className={`${isTablet ? 'text-4xl' : 'text-3xl'} font-light tracking-tight text-white mb-3`}>
+                                {title}
+                            </h2>
+                            {description && (
+                                <p className={`${isTablet ? 'text-lg' : 'text-base'} text-white/70 mb-6 line-clamp-3 font-light leading-relaxed`}>
+                                    {description}
+                                </p>
+                            )}
+                            <button className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium tracking-wide transition-all ${ctaClasses}`}>
+                                {ctaText}
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
         );
     }
@@ -239,6 +337,8 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                 return renderPositioningBlock(block.data as PositioningBlockData);
             case 'map':
                 return renderMapBlock(block.data as MapBlockData);
+            case 'tour':
+                return renderTourBlock(block.data as TourBlockData);
             default:
                 return (
                     <div className="text-[var(--color-text-muted)] text-sm">

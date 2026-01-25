@@ -276,6 +276,7 @@ export function VisitorStop() {
                                 mode="view"
                                 language={language}
                                 deviceType="phone"
+                                tourData={tour as any}
                             />
                         ))}
                     </div>

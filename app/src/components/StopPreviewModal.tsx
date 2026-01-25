@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { X, Smartphone, Tablet, RotateCcw, ZoomIn, ZoomOut, Monitor, MonitorOff } from 'lucide-react';
 import { StopContentBlock } from './blocks/StopContentBlock';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import type { Stop, ContentBlock } from '../types';
+import type { Stop, Tour, ContentBlock } from '../types';
 
 interface StopPreviewModalProps {
     stop: Stop;
+    /** Tour data for tour blocks */
+    tourData?: Tour;
     /** Available languages from tour */
     availableLanguages?: string[];
     onClose: () => void;
@@ -42,7 +44,7 @@ const DEVICE_CONFIGS = {
     },
 };
 
-export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }: StopPreviewModalProps) {
+export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], onClose }: StopPreviewModalProps) {
     const [deviceType, setDeviceType] = useState<DeviceType>('phone');
     const [previewLanguage, setPreviewLanguage] = useState(availableLanguages[0] || 'en');
     const [scale, setScale] = useState(0.85);
@@ -87,12 +89,12 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
     const scaledHeight = device.height + (device.bezelWidth * 2);
 
     return (
-        <div 
-            className="fixed inset-0 z-50 flex flex-col bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0d0d0d]" 
+        <div
+            className="fixed inset-0 z-50 flex flex-col bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0d0d0d]"
             onClick={onClose}
         >
             {/* Header Bar */}
-            <div 
+            <div
                 className="flex flex-wrap items-center gap-4 px-4 py-3 bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-b border-[var(--color-border-default)]"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -114,11 +116,10 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
                                 key={type}
                                 type="button"
                                 onClick={() => handleDeviceChange(type)}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                                    isActive
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
                                         ? 'bg-[var(--color-accent-primary)] text-[#1a1a1a] shadow-md'
                                         : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'
-                                }`}
+                                    }`}
                             >
                                 <Icon className="w-4 h-4" />
                                 <span className="hidden sm:inline">{DEVICE_CONFIGS[type].label}</span>
@@ -135,11 +136,10 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
                 {/* Status Bar Toggle */}
                 <button
                     onClick={() => setShowStatusBar(!showStatusBar)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                        showStatusBar
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border ${showStatusBar
                             ? 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] text-[var(--color-text-secondary)]'
                             : 'bg-[var(--color-bg-hover)] border-[var(--color-border-hover)] text-[var(--color-text-muted)]'
-                    }`}
+                        }`}
                     title={showStatusBar ? 'Hide status bar' : 'Show status bar'}
                 >
                     {showStatusBar ? <Monitor className="w-4 h-4" /> : <MonitorOff className="w-4 h-4" />}
@@ -193,7 +193,7 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
             </div>
 
             {/* Device Preview Area */}
-            <div 
+            <div
                 className="flex-1 flex items-center justify-center overflow-auto p-8"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -222,21 +222,21 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
                         }}
                     >
                         {/* Side Buttons - Volume (left side) */}
-                        <div 
+                        <div
                             className="absolute -left-[3px] top-[100px] w-[3px] h-[32px] rounded-l-sm"
                             style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
                         />
-                        <div 
+                        <div
                             className="absolute -left-[3px] top-[145px] w-[3px] h-[56px] rounded-l-sm"
                             style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
                         />
-                        <div 
+                        <div
                             className="absolute -left-[3px] top-[210px] w-[3px] h-[56px] rounded-l-sm"
                             style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
                         />
-                        
+
                         {/* Side Button - Power (right side) */}
-                        <div 
+                        <div
                             className="absolute -right-[3px] top-[160px] w-[3px] h-[80px] rounded-r-sm"
                             style={{ background: 'linear-gradient(270deg, #1a1a1a, #2a2a2a)' }}
                         />
@@ -262,7 +262,7 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
                         >
                             {/* Dynamic Island / Notch (Phone only) */}
                             {deviceType === 'phone' && (
-                                <div 
+                                <div
                                     className="absolute top-[10px] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center"
                                     style={{
                                         width: device.notchWidth,
@@ -280,9 +280,9 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
                             <div className="h-full overflow-y-auto">
                                 {/* Status Bar */}
                                 {showStatusBar && (
-                                    <div 
+                                    <div
                                         className="sticky top-0 z-10 flex items-center justify-between px-6 bg-[var(--color-bg-surface)]/95 backdrop-blur-md"
-                                        style={{ 
+                                        style={{
                                             paddingTop: deviceType === 'phone' ? 48 : 12,
                                             paddingBottom: 8,
                                         }}
@@ -298,7 +298,7 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
                                             </div>
                                             {/* WiFi */}
                                             <svg className="w-4 h-4 text-[var(--color-text-primary)]" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-4.9-2.3l1.4 1.4C9.4 16.4 10.6 16 12 16s2.6.4 3.5 1.1l1.4-1.4C15.6 14.6 13.9 14 12 14s-3.6.6-4.9 1.7zm-2.8-2.8l1.4 1.4C7.3 13 9.5 12 12 12s4.7 1 6.3 2.3l1.4-1.4C17.7 11.1 15 10 12 10s-5.7 1.1-7.7 2.9zM1.5 10l1.4 1.4C5.1 9.2 8.4 8 12 8s6.9 1.2 9.1 3.4L22.5 10C19.8 7.3 16.1 6 12 6s-7.8 1.3-10.5 4z"/>
+                                                <path d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-4.9-2.3l1.4 1.4C9.4 16.4 10.6 16 12 16s2.6.4 3.5 1.1l1.4-1.4C15.6 14.6 13.9 14 12 14s-3.6.6-4.9 1.7zm-2.8-2.8l1.4 1.4C7.3 13 9.5 12 12 12s4.7 1 6.3 2.3l1.4-1.4C17.7 11.1 15 10 12 10s-5.7 1.1-7.7 2.9zM1.5 10l1.4 1.4C5.1 9.2 8.4 8 12 8s6.9 1.2 9.1 3.4L22.5 10C19.8 7.3 16.1 6 12 6s-7.8 1.3-10.5 4z" />
                                             </svg>
                                             {/* Battery */}
                                             <div className="flex items-center gap-1">
@@ -312,7 +312,7 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
                                 )}
 
                                 {/* Content - with safe area padding when status bar is hidden */}
-                                <div 
+                                <div
                                     className={`space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`}
                                     style={{
                                         paddingTop: showStatusBar ? 16 : (deviceType === 'phone' ? 56 : 20),
@@ -322,14 +322,14 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
                                 >
                                     {/* Stop Header */}
                                     <div className="space-y-3">
-                                        <h1 
+                                        <h1
                                             className="font-bold text-[var(--color-text-primary)] leading-tight"
                                             style={{ fontSize: deviceType === 'tablet' ? '2.5rem' : '1.5rem' }}
                                         >
                                             {getStopTitle()}
                                         </h1>
                                         {getStopDescription() && (
-                                            <p 
+                                            <p
                                                 className="text-[var(--color-text-secondary)] leading-relaxed"
                                                 style={{ fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem' }}
                                             >
@@ -356,6 +356,7 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
                                                     mode="view"
                                                     language={previewLanguage}
                                                     deviceType={deviceType}
+                                                    tourData={tourData}
                                                 />
                                             ))}
                                         </div>
@@ -367,7 +368,7 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
                             </div>
 
                             {/* Home Indicator */}
-                            <div 
+                            <div
                                 className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white/30"
                                 style={{
                                     width: device.homeIndicatorWidth,
@@ -380,7 +381,7 @@ export function StopPreviewModal({ stop, availableLanguages = ['en'], onClose }:
             </div>
 
             {/* Footer */}
-            <div 
+            <div
                 className="flex items-center justify-center gap-2 py-3 bg-[var(--color-bg-surface)]/80 backdrop-blur-sm border-t border-[var(--color-border-default)]"
                 onClick={(e) => e.stopPropagation()}
             >
