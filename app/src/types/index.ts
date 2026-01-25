@@ -536,6 +536,12 @@ export interface Tour {
   // Translation settings
   defaultTranslationProvider?: 'libretranslate' | 'deepgram';
 
+  // Display settings for visitor/preview views
+  displaySettings?: {
+    showTitles: boolean;      // Show stop/block titles
+    showDescriptions: boolean; // Show stop/block descriptions
+  };
+
   // Positioning
   primaryPositioningMethod: PositioningMethod;
   backupPositioningMethod?: PositioningMethod;

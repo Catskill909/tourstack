@@ -40,6 +40,16 @@
 - **Admin**: Preview modal with device frames (testing)
 - **Visitor**: Full-screen pages via QR codes (production)
 
+> ⚠️ **CRITICAL: Preview = Real Device Pixels**
+>
+> The preview device dimensions ARE the actual visitor screen:
+> - **iPhone:** 375 × 812px (real device resolution)
+> - **iPad:** 820 × 1180px (real device resolution)
+>
+> The admin UI scales it down to fit, but content renders at true pixel dimensions.
+> **NEVER use `100vh` or `100dvh`** - these refer to browser viewport, not device screen.
+> Always pass explicit pixel heights from `DEVICE_CONFIGS` through the component chain.
+
 ### Draft vs Published
 
 | Status | Admin Access | Visitor Access |

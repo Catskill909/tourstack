@@ -74,6 +74,8 @@ lsof -i :3000 -i :5173 | grep LISTEN
 
 ## 🎯 Key Features
 
+> **Preview = Real Device:** The admin device preview renders at actual device pixels (375×812 iPhone, 820×1180 iPad). What you see IS what visitors see. The same React components power both admin preview and live visitor pages.
+
 - **7 Positioning Technologies**: QR Code, GPS, BLE Beacon, NFC, RFID, WiFi, UWB
 - **Positioning Editor**: Tabbed modal with QR generator, placeholder tabs for all technologies
 - **Native QR Generator**: `qrcode.react` with regeneration, unique tokens, PNG download

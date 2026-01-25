@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Smartphone, Tablet, RotateCcw, ZoomIn, ZoomOut, Monitor, MonitorOff } from 'lucide-react';
 import { StopContentBlock } from './blocks/StopContentBlock';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { DisplaySettingsPanel, type DisplaySettings } from './DisplaySettingsPanel';
 import type { Stop, Tour, ContentBlock } from '../types';
 
 interface StopPreviewModalProps {
@@ -49,6 +50,10 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
     const [previewLanguage, setPreviewLanguage] = useState(availableLanguages[0] || 'en');
     const [scale, setScale] = useState(0.85);
     const [showStatusBar, setShowStatusBar] = useState(true);
+    const [displaySettings, setDisplaySettings] = useState<DisplaySettings>({
+        showTitles: tourData?.displaySettings?.showTitles ?? true,
+        showDescriptions: tourData?.displaySettings?.showDescriptions ?? true,
+    });
 
     // Calculate appropriate scale when device changes
     const getDefaultScale = (type: DeviceType) => {
@@ -117,8 +122,8 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                                 type="button"
                                 onClick={() => handleDeviceChange(type)}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
-                                        ? 'bg-[var(--color-accent-primary)] text-[#1a1a1a] shadow-md'
-                                        : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'
+                                    ? 'bg-[var(--color-accent-primary)] text-[#1a1a1a] shadow-md'
+                                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'
                                     }`}
                             >
                                 <Icon className="w-4 h-4" />
@@ -137,8 +142,8 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                 <button
                     onClick={() => setShowStatusBar(!showStatusBar)}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border ${showStatusBar
-                            ? 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] text-[var(--color-text-secondary)]'
-                            : 'bg-[var(--color-bg-hover)] border-[var(--color-border-hover)] text-[var(--color-text-muted)]'
+                        ? 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] text-[var(--color-text-secondary)]'
+                        : 'bg-[var(--color-bg-hover)] border-[var(--color-border-hover)] text-[var(--color-text-muted)]'
                         }`}
                     title={showStatusBar ? 'Hide status bar' : 'Show status bar'}
                 >
@@ -277,9 +282,12 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                             )}
 
                             {/* Screen Content */}
-                            <div className="h-full overflow-y-auto">
-                                {/* Status Bar */}
-                                {showStatusBar && (
+                            <div
+                                className="h-full overflow-y-auto"
+                                style={{ scrollbarWidth: 'none', height: device.height }}
+                            >
+                                {/* Status Bar - hide for Tour Intro first to allow true full-bleed */}
+                                {showStatusBar && !(blocks.length > 0 && blocks[0].type === 'tour') && (
                                     <div
                                         className="sticky top-0 z-10 flex items-center justify-between px-6 bg-[var(--color-bg-surface)]/95 backdrop-blur-md"
                                         style={{
@@ -312,59 +320,79 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                                 )}
 
                                 {/* Content - with safe area padding when status bar is hidden */}
-                                <div
-                                    className={`space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`}
-                                    style={{
-                                        paddingTop: showStatusBar ? 16 : (deviceType === 'phone' ? 56 : 20),
-                                        // Scale up font sizes for tablets
-                                        fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem',
-                                    }}
-                                >
-                                    {/* Stop Header */}
-                                    <div className="space-y-3">
-                                        <h1
-                                            className="font-bold text-[var(--color-text-primary)] leading-tight"
-                                            style={{ fontSize: deviceType === 'tablet' ? '2.5rem' : '1.5rem' }}
+                                {/* Remove padding for Tour Intro blocks to allow full-bleed */}
+                                {(() => {
+                                    const hasTourIntroFirst = blocks.length > 0 && blocks[0].type === 'tour';
+                                    return (
+                                        <div
+                                            className={hasTourIntroFirst ? '' : `space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`}
+                                            style={hasTourIntroFirst ? { height: device.height, minHeight: device.height } : {
+                                                paddingTop: showStatusBar ? 16 : (deviceType === 'phone' ? 56 : 20),
+                                                fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem',
+                                            }}
                                         >
-                                            {getStopTitle()}
-                                        </h1>
-                                        {getStopDescription() && (
-                                            <p
-                                                className="text-[var(--color-text-secondary)] leading-relaxed"
-                                                style={{ fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem' }}
-                                            >
-                                                {getStopDescription()}
-                                            </p>
-                                        )}
-                                    </div>
+                                            {/* Stop Header - hide when Tour Intro block is first (it has its own title/desc) */}
+                                            {!hasTourIntroFirst && (displaySettings.showTitles || displaySettings.showDescriptions) && (
+                                                <div className="space-y-3">
+                                                    {displaySettings.showTitles && (
+                                                        <h1
+                                                            className="font-bold text-[var(--color-text-primary)] leading-tight"
+                                                            style={{ fontSize: deviceType === 'tablet' ? '2.5rem' : '1.5rem' }}
+                                                        >
+                                                            {getStopTitle()}
+                                                        </h1>
+                                                    )}
+                                                    {displaySettings.showDescriptions && getStopDescription() && (
+                                                        <p
+                                                            className="text-[var(--color-text-secondary)] leading-relaxed"
+                                                            style={{ fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem' }}
+                                                        >
+                                                            {getStopDescription()}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
 
-                                    {/* Content Blocks */}
-                                    {blocks.length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center py-16 text-[var(--color-text-muted)]">
-                                            <div className="w-16 h-16 rounded-full bg-[var(--color-bg-elevated)] flex items-center justify-center mb-4">
-                                                <RotateCcw className="w-8 h-8 opacity-50" />
-                                            </div>
-                                            <p className="text-sm">No content blocks yet</p>
-                                            <p className="text-xs mt-1 opacity-60">Add content to see it here</p>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-5">
-                                            {blocks.map((block: ContentBlock) => (
-                                                <StopContentBlock
-                                                    key={block.id}
-                                                    block={block}
-                                                    mode="view"
-                                                    language={previewLanguage}
-                                                    deviceType={deviceType}
-                                                    tourData={tourData}
-                                                />
-                                            ))}
-                                        </div>
-                                    )}
+                                            {/* Content Blocks */}
+                                            {blocks.length === 0 ? (
+                                                <div className={`flex flex-col items-center justify-center py-16 text-[var(--color-text-muted)] ${hasTourIntroFirst ? 'px-5' : ''}`}>
+                                                    <div className="w-16 h-16 rounded-full bg-[var(--color-bg-elevated)] flex items-center justify-center mb-4">
+                                                        <RotateCcw className="w-8 h-8 opacity-50" />
+                                                    </div>
+                                                    <p className="text-sm">No content blocks yet</p>
+                                                    <p className="text-xs mt-1 opacity-60">Add content to see it here</p>
+                                                </div>
+                                            ) : (
+                                                <div className={hasTourIntroFirst ? '' : 'space-y-5'} style={hasTourIntroFirst ? { height: '100%', minHeight: '100%' } : {}}>
+                                                    {blocks.map((block: ContentBlock, index: number) => (
+                                                        <div
+                                                            key={block.id}
+                                                            className={
+                                                                index === 0 && hasTourIntroFirst
+                                                                    ? ''
+                                                                    : index > 0 && hasTourIntroFirst
+                                                                        ? `space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`
+                                                                        : ''
+                                                            }
+                                                            style={index === 0 && hasTourIntroFirst ? { height: device.height, minHeight: device.height } : {}}
+                                                        >    <StopContentBlock
+                                                                block={block}
+                                                                mode="view"
+                                                                language={previewLanguage}
+                                                                deviceType={deviceType}
+                                                                tourData={tourData}
+                                                                displaySettings={displaySettings}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
 
-                                    {/* Bottom safe area padding */}
-                                    <div className="h-8" />
-                                </div>
+                                            {/* Bottom safe area padding */}
+                                            {!hasTourIntroFirst && <div className="h-8" />}
+                                        </div>
+                                    );
+                                })()}
                             </div>
 
                             {/* Home Indicator */}
@@ -379,6 +407,13 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                     </div>
                 </div>
             </div>
+
+            {/* Display Settings FAB */}
+            <DisplaySettingsPanel
+                settings={displaySettings}
+                onChange={setDisplaySettings}
+                position="bottom-right"
+            />
 
             {/* Footer */}
             <div

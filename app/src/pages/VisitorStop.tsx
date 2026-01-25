@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { ArrowLeft, Globe, AlertCircle, Loader2, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import { StopContentBlock } from '../components/blocks/StopContentBlock';
+import { DisplaySettingsPanel, type DisplaySettings } from '../components/DisplaySettingsPanel';
 import type { Stop, ContentBlock } from '../types';
 
 // API returns tour with full stop objects (not just IDs)
@@ -13,6 +14,10 @@ interface TourWithStops {
     status: string;
     languages: string[];
     stops: Stop[];
+    displaySettings?: {
+        showTitles: boolean;
+        showDescriptions: boolean;
+    };
 }
 
 // Language display names
@@ -40,6 +45,10 @@ export function VisitorStop() {
     const [error, setError] = useState<string | null>(null);
     const [language, setLanguage] = useState('en');
     const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+    const [displaySettings, setDisplaySettings] = useState<DisplaySettings>({
+        showTitles: true,
+        showDescriptions: true,
+    });
 
     // Check if user is staff (simplified - could use auth system later)
     const isStaff = localStorage.getItem('tourstack_staff') === 'true';
@@ -75,6 +84,14 @@ export function VisitorStop() {
                 // Set initial language from tour's first language
                 if (data.tour.languages?.length > 0) {
                     setLanguage(data.tour.languages[0]);
+                }
+
+                // Initialize display settings from tour data
+                if (data.tour.displaySettings) {
+                    setDisplaySettings({
+                        showTitles: data.tour.displaySettings.showTitles ?? true,
+                        showDescriptions: data.tour.displaySettings.showDescriptions ?? true,
+                    });
                 }
 
                 setLoading(false);
@@ -249,39 +266,88 @@ export function VisitorStop() {
             )}
 
             {/* Main Content */}
-            <main className="max-w-4xl mx-auto px-4 py-6">
-                {/* Stop Title */}
-                <div className="mb-6">
-                    <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)] leading-tight">
-                        {getLocalizedText(stop.title)}
-                    </h1>
-                    {stop.description && getLocalizedText(stop.description) && (
-                        <p className="mt-2 text-[var(--color-text-secondary)] leading-relaxed">
-                            {getLocalizedText(stop.description)}
-                        </p>
-                    )}
-                </div>
+            {(() => {
+                const hasTourIntroFirst = blocks.length > 0 && blocks[0].type === 'tour';
 
-                {/* Content Blocks */}
-                {blocks.length === 0 ? (
-                    <div className="text-center py-16 text-[var(--color-text-muted)]">
-                        <p>No content available for this stop.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        {blocks.map((block: ContentBlock) => (
-                            <StopContentBlock
-                                key={block.id}
-                                block={block}
-                                mode="view"
-                                language={language}
-                                deviceType="phone"
-                                tourData={tour as any}
-                            />
-                        ))}
-                    </div>
-                )}
-            </main>
+                // Tour Intro block - full viewport, no padding
+                if (hasTourIntroFirst) {
+                    return (
+                        <>
+                            {/* Tour Intro fills the screen */}
+                            <div className="relative" style={{ minHeight: '100dvh' }}>
+                                {blocks.map((block: ContentBlock, index: number) => (
+                                    <div
+                                        key={block.id}
+                                        className={index === 0 ? '' : 'max-w-4xl mx-auto px-4 py-6'}
+                                        style={index === 0 ? { minHeight: '100dvh' } : {}}
+                                    >
+                                        <StopContentBlock
+                                            block={block}
+                                            mode="view"
+                                            language={language}
+                                            deviceType="phone"
+                                            tourData={tour as any}
+                                            displaySettings={displaySettings}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    );
+                }
+
+                // Normal content - standard layout
+                return (
+                    <main className="max-w-4xl mx-auto px-4 py-6">
+                        {/* Stop Title */}
+                        {(displaySettings.showTitles || displaySettings.showDescriptions) && (
+                            <div className="mb-6">
+                                {displaySettings.showTitles && (
+                                    <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)] leading-tight">
+                                        {getLocalizedText(stop.title)}
+                                    </h1>
+                                )}
+                                {displaySettings.showDescriptions && stop.description && getLocalizedText(stop.description) && (
+                                    <p className={`${displaySettings.showTitles ? 'mt-2' : ''} text-[var(--color-text-secondary)] leading-relaxed`}>
+                                        {getLocalizedText(stop.description)}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Content Blocks */}
+                        {blocks.length === 0 ? (
+                            <div className="text-center py-16 text-[var(--color-text-muted)]">
+                                <p>No content available for this stop.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {blocks.map((block: ContentBlock) => (
+                                    <StopContentBlock
+                                        key={block.id}
+                                        block={block}
+                                        mode="view"
+                                        language={language}
+                                        deviceType="phone"
+                                        tourData={tour as any}
+                                        displaySettings={displaySettings}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </main>
+                );
+            })()}
+
+            {/* Display Settings FAB - Only show for staff in preview mode */}
+            {isStaff && (
+                <DisplaySettingsPanel
+                    settings={displaySettings}
+                    onChange={setDisplaySettings}
+                    position="bottom-left"
+                    showLabel
+                />
+            )}
 
             {/* Bottom Navigation */}
             <nav className="sticky bottom-0 bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-t border-[var(--color-border-default)]">

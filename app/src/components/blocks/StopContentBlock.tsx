@@ -7,12 +7,18 @@ import { MapPreview } from './MapPreview';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
 import fallbackImage from '../../assets/fallback.jpg';
 
+export interface DisplaySettings {
+    showTitles: boolean;
+    showDescriptions: boolean;
+}
+
 interface StopContentBlockProps {
     block: ContentBlock;
     mode: 'view' | 'edit';
     language: string;
     deviceType?: 'phone' | 'tablet';
     tourData?: Tour; // For tour blocks that need parent tour info
+    displaySettings?: DisplaySettings; // Control title/description visibility
     onEdit?: (block: ContentBlock) => void;
     onDelete?: (blockId: string) => void;
 }
@@ -48,9 +54,13 @@ const BLOCK_LABELS: Record<ContentBlockType, string> = {
     tour: 'Tour Intro',
 };
 
-export function StopContentBlock({ block, mode, language, deviceType = 'phone', tourData, onEdit, onDelete }: StopContentBlockProps) {
+export function StopContentBlock({ block, mode, language, deviceType = 'phone', tourData, displaySettings, onEdit, onDelete }: StopContentBlockProps) {
     const Icon = BLOCK_ICONS[block.type];
     const label = BLOCK_LABELS[block.type];
+
+    // Display settings with defaults
+    const showTitles = displaySettings?.showTitles ?? true;
+    const showDescriptions = displaySettings?.showDescriptions ?? true;
 
     // Font size scaling for tablets
     const isTablet = deviceType === 'tablet';
@@ -104,7 +114,7 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
         const title = data.title[language] || data.title.en || 'Audio';
         const transcript = data.transcript?.[language] || data.transcript?.en;
         const size = data.size || 'large';
-        const showTitle = data.showTitle ?? true;
+        const showTitle = (data.showTitle ?? true) && showTitles;
         return (
             <div className="space-y-3">
                 {audioUrl ? (
@@ -151,9 +161,11 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                         <Video className="w-12 h-12 text-[var(--color-text-muted)]" />
                     )}
                 </div>
-                <div className="p-3">
-                    <h4 className="font-medium text-[var(--color-text-primary)]">{title}</h4>
-                </div>
+                {showTitles && (
+                    <div className="p-3">
+                        <h4 className="font-medium text-[var(--color-text-primary)]">{title}</h4>
+                    </div>
+                )}
             </div>
         );
     }
@@ -231,13 +243,8 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
         const badge = data.badge?.[language] || data.badge?.en || 'FEATURED EXHIBIT';
         const ctaText = data.ctaText?.[language] || data.ctaText?.en || 'Begin Tour';
 
-        // Architectural Information System - clean gradient overlays
-        const overlayOpacity = (data.overlayOpacity || 60) / 100;
-        const overlayStyle = data.layout === 'hero-bottom'
-            ? { background: `linear-gradient(to top, rgba(17,17,17,${overlayOpacity}) 0%, rgba(17,17,17,${overlayOpacity * 0.6}) 40%, transparent 100%)` }
-            : data.layout === 'hero-center'
-                ? { background: `rgba(17,17,17,${overlayOpacity * 0.7})` }
-                : {};
+        // Stronger gradient for text readability - only behind text area
+        const overlayOpacity = (data.overlayOpacity || 80) / 100; // Default higher for better contrast
 
         // Architectural CTA button styles - minimal, clean
         const ctaClasses = data.ctaStyle === 'primary'
@@ -249,8 +256,8 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                     : 'text-white/90 hover:text-white hover:bg-white/5';
 
         return (
-            <div className="relative w-full h-full min-h-[100dvh]">
-                {/* Full-bleed Hero Image */}
+            <div className="relative w-full h-full" style={{ minHeight: 'inherit' }}>
+                {/* Full-bleed Hero Image - fills entire container */}
                 <img
                     src={heroImage}
                     alt={title}
@@ -261,54 +268,69 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                     }}
                 />
 
-                {/* Overlay */}
-                {data.layout !== 'hero-overlay' && (
-                    <div className="absolute inset-0" style={overlayStyle} />
-                )}
+                {/* Gradient Overlay - ONLY behind text area at bottom, much darker */}
+                {data.layout === 'hero-bottom' || !data.layout ? (
+                    <div
+                        className="absolute bottom-0 left-0 right-0 pointer-events-none"
+                        style={{
+                            height: '55%',
+                            background: `linear-gradient(to top, rgba(0,0,0,${overlayOpacity}) 0%, rgba(0,0,0,${overlayOpacity * 0.7}) 35%, rgba(0,0,0,0.2) 70%, transparent 100%)`
+                        }}
+                    />
+                ) : data.layout === 'hero-center' ? (
+                    <div
+                        className="absolute inset-0 pointer-events-none"
+                        style={{ background: `rgba(0,0,0,${overlayOpacity * 0.6})` }}
+                    />
+                ) : null}
 
                 {/* Content - Architectural Information System styling */}
-                <div className={`absolute inset-0 flex flex-col ${data.layout === 'hero-bottom' ? 'justify-end' :
+                <div className={`absolute inset-0 flex flex-col ${data.layout === 'hero-bottom' || !data.layout ? 'justify-end' :
                     data.layout === 'hero-center' ? 'justify-center items-center text-center' :
                         'justify-end'
-                    } p-6 ${isTablet ? 'p-10' : 'p-6'}`}>
+                    } ${isTablet ? 'p-12' : 'p-6'}`}>
                     {data.layout === 'hero-overlay' ? (
-                        <div className="bg-neutral-900/90 backdrop-blur-xl rounded-sm p-6 ${isTablet ? 'p-8' : 'p-6'} mx-auto max-w-[90%] border border-white/10">
+                        <div className={`bg-neutral-900/90 backdrop-blur-xl rounded-sm ${isTablet ? 'p-10' : 'p-6'} mx-auto max-w-[90%] border border-white/10`}>
                             {data.showBadge && badge && (
-                                <span className="inline-block px-2 py-0.5 text-[10px] font-medium tracking-[0.2em] uppercase text-white/70 border border-white/20 mb-4">
+                                <span className={`inline-block px-2 py-0.5 ${isTablet ? 'text-sm' : 'text-[10px]'} font-medium tracking-[0.2em] uppercase text-white/70 border border-white/20 mb-4`}>
                                     {badge}
                                 </span>
                             )}
-                            <h2 className={`${isTablet ? 'text-3xl' : 'text-2xl'} font-light tracking-tight text-white mb-3`}>
-                                {title}
-                            </h2>
-                            {description && (
-                                <p className={`${isTablet ? 'text-base' : 'text-sm'} text-white/60 mb-5 line-clamp-3 font-light leading-relaxed`}>
+                            {showTitles && (
+                                <h2 className={`${isTablet ? 'text-5xl' : 'text-2xl'} font-light tracking-tight text-white mb-4`}>
+                                    {title}
+                                </h2>
+                            )}
+                            {showDescriptions && description && (
+                                <p className={`${isTablet ? 'text-xl' : 'text-sm'} text-white/60 mb-6 line-clamp-3 font-light leading-relaxed`}>
                                     {description}
                                 </p>
                             )}
-                            <button className="flex items-center gap-2 px-5 py-2.5 bg-white text-neutral-900 text-sm font-medium tracking-wide transition-all hover:bg-neutral-100">
+                            <button className={`flex items-center gap-2 ${isTablet ? 'px-8 py-4 text-lg' : 'px-5 py-2.5 text-sm'} bg-white text-neutral-900 font-medium tracking-wide transition-all hover:bg-neutral-100`}>
                                 {ctaText}
-                                <ChevronRight className="w-4 h-4" />
+                                <ChevronRight className={isTablet ? 'w-6 h-6' : 'w-4 h-4'} />
                             </button>
                         </div>
                     ) : (
-                        <div className={`${data.layout === 'hero-center' ? 'text-center' : ''} max-w-xl ${isTablet ? 'max-w-2xl' : ''}`}>
+                        <div className={`${data.layout === 'hero-center' ? 'text-center' : ''} ${isTablet ? 'max-w-3xl' : 'max-w-xl'}`}>
                             {data.showBadge && badge && (
-                                <span className="inline-block px-2 py-0.5 text-[10px] font-medium tracking-[0.2em] uppercase text-white/80 border border-white/30 mb-4">
+                                <span className={`inline-block px-3 py-1 ${isTablet ? 'text-sm' : 'text-[10px]'} font-medium tracking-[0.2em] uppercase text-white/80 border border-white/30 mb-4`}>
                                     {badge}
                                 </span>
                             )}
-                            <h2 className={`${isTablet ? 'text-4xl' : 'text-3xl'} font-light tracking-tight text-white mb-3`}>
-                                {title}
-                            </h2>
-                            {description && (
-                                <p className={`${isTablet ? 'text-lg' : 'text-base'} text-white/70 mb-6 line-clamp-3 font-light leading-relaxed`}>
+                            {showTitles && (
+                                <h2 className={`${isTablet ? 'text-6xl' : 'text-3xl'} font-light tracking-tight text-white mb-4`}>
+                                    {title}
+                                </h2>
+                            )}
+                            {showDescriptions && description && (
+                                <p className={`${isTablet ? 'text-2xl' : 'text-base'} text-white/70 mb-8 line-clamp-3 font-light leading-relaxed`}>
                                     {description}
                                 </p>
                             )}
-                            <button className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium tracking-wide transition-all ${ctaClasses}`}>
+                            <button className={`inline-flex items-center gap-3 ${isTablet ? 'px-8 py-4 text-lg' : 'px-5 py-2.5 text-sm'} font-medium tracking-wide transition-all ${ctaClasses}`}>
                                 {ctaText}
-                                <ChevronRight className="w-4 h-4" />
+                                <ChevronRight className={isTablet ? 'w-6 h-6' : 'w-4 h-4'} />
                             </button>
                         </div>
                     )}
@@ -349,7 +371,9 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
     }
 
     if (mode === 'view') {
-        return <div className="content-block">{renderBlock()}</div>;
+        // For tour blocks, pass through height to fill container
+        const isTourBlock = block.type === 'tour';
+        return <div className={`content-block ${isTourBlock ? 'h-full' : ''}`} style={isTourBlock ? { minHeight: '100%' } : {}}>{renderBlock()}</div>;
     }
 
     // Edit mode - show with controls

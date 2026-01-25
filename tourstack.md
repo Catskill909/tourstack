@@ -95,6 +95,15 @@ When museum staff access visitor pages, they see:
 
 ### Architecture Overview
 
+> ⚠️ **CRITICAL DESIGN RULE: Preview = Real Device**
+>
+> The device preview in admin IS the real visitor screen. Dimensions are actual device pixels:
+> - **iPhone:** 375 × 812px - exactly what visitors see on real iPhones
+> - **iPad:** 820 × 1180px - exactly what visitors see on real iPads
+>
+> The `scale(0.55)` transform only shrinks it to fit the admin UI - content renders at true device resolution.
+> **NEVER use browser viewport units (vh/dvh) for content sizing** - use the device's pixel height.
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                     TOURSTACK UNIFIED APP                       │
