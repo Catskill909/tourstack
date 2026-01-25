@@ -59,7 +59,7 @@ model Template {
 // =============================================================================
 model Tour {
   id         String   @id @default(cuid())
-  slug       String?  @unique  // URL-friendly identifier, e.g., "timeline-gallery-tour"
+  slug       String?  // URL-friendly identifier, e.g., "timeline-gallery-tour" (unique enforced in code)
   museumId   String
   museum     Museum   @relation(fields: [museumId], references: [id])
   templateId String
