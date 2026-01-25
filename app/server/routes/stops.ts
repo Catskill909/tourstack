@@ -80,7 +80,7 @@ router.post('/', async (req: Request, res: Response) => {
         // We need to create with a placeholder, then update with the real URL
         const shortCode = generateShortCode();
         const token = generateToken();
-        
+
         // Create the stop first to get its ID
         const stop = await prisma.stop.create({
             data: {
@@ -104,18 +104,18 @@ router.post('/', async (req: Request, res: Response) => {
 
         // Now update with the correct URL containing the real stop ID
         // Use the host header or default to tourstack.app
-        const baseUrl = (req.get('origin') || req.get('host')) ? 
-            `${req.protocol}://${req.get('host')}` : 
+        const baseUrl = (req.get('origin') || req.get('host')) ?
+            `${req.protocol}://${req.get('host')}` :
             'https://tourstack.app';
         const visitorUrl = `${baseUrl}/visitor/tour/${data.tourId}/stop/${stop.id}?t=${token}`;
-        
+
         const updatedStop = await prisma.stop.update({
             where: { id: stop.id },
             data: {
-                primaryPositioning: JSON.stringify({ 
-                    method: 'qr_code', 
-                    url: visitorUrl, 
-                    shortCode 
+                primaryPositioning: JSON.stringify({
+                    method: 'qr_code',
+                    url: visitorUrl,
+                    shortCode
                 }),
             },
         });

@@ -98,11 +98,11 @@ export function TourDetail() {
     const [newStopTitle, setNewStopTitle] = useState('');
     const [showQRModal, setShowQRModal] = useState<string | null>(null);
     const [editingStop, setEditingStop] = useState<Stop | null>(null);
-    
+
     // Drag and drop state
     const [draggedStopId, setDraggedStopId] = useState<string | null>(null);
     const [dragOverStopId, setDragOverStopId] = useState<string | null>(null);
-    
+
     // Inline title editing state
     const [editingTitleStopId, setEditingTitleStopId] = useState<string | null>(null);
     const [editingTitleValue, setEditingTitleValue] = useState<{ [lang: string]: string }>({});
@@ -227,7 +227,7 @@ export function TourDetail() {
     // ============================================
     // DRAG AND DROP HANDLERS
     // ============================================
-    
+
     function handleDragStart(e: React.DragEvent, stopId: string) {
         setDraggedStopId(stopId);
         e.dataTransfer.effectAllowed = 'move';
@@ -261,12 +261,12 @@ export function TourDetail() {
     async function handleDrop(e: React.DragEvent, targetStopId: string) {
         e.preventDefault();
         setDragOverStopId(null);
-        
+
         if (!draggedStopId || !tour || draggedStopId === targetStopId) return;
 
         const draggedIdx = stops.findIndex(s => s.id === draggedStopId);
         const targetIdx = stops.findIndex(s => s.id === targetStopId);
-        
+
         if (draggedIdx === -1 || targetIdx === -1) return;
 
         // Reorder array
@@ -302,7 +302,7 @@ export function TourDetail() {
 
     async function saveEditingTitle() {
         if (!editingTitleStopId || !tour) return;
-        
+
         const stop = stops.find(s => s.id === editingTitleStopId);
         if (!stop) return;
 
@@ -316,7 +316,7 @@ export function TourDetail() {
         if (saved) {
             setStops(stops.map(s => s.id === saved.id ? saved : s));
         }
-        
+
         setEditingTitleStopId(null);
         setEditingTitleValue({});
         setIsSaving(false);
@@ -324,10 +324,10 @@ export function TourDetail() {
 
     async function translateStopTitle() {
         if (!editingTitleStopId || !tour) return;
-        
+
         const primaryLang = tour.primaryLanguage || 'en';
         const sourceText = editingTitleValue[primaryLang] || editingTitleValue['en'] || Object.values(editingTitleValue)[0];
-        
+
         if (!sourceText?.trim()) return;
 
         setIsTranslatingTitle(true);
@@ -433,13 +433,12 @@ export function TourDetail() {
                             onDragOver={(e) => handleDragOver(e, stop.id)}
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, stop.id)}
-                            className={`flex items-center gap-4 p-4 bg-[var(--color-bg-elevated)] border rounded-xl transition-all group ${
-                                dragOverStopId === stop.id
+                            className={`flex items-center gap-4 p-4 bg-[var(--color-bg-elevated)] border rounded-xl transition-all group ${dragOverStopId === stop.id
                                     ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/5 scale-[1.02]'
                                     : draggedStopId === stop.id
-                                    ? 'border-[var(--color-accent-primary)]/50 opacity-50'
-                                    : 'border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50'
-                            }`}
+                                        ? 'border-[var(--color-accent-primary)]/50 opacity-50'
+                                        : 'border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50'
+                                }`}
                         >
                             {/* Drag Handle & Order */}
                             <div className="flex items-center gap-2 text-[var(--color-text-muted)]">

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { 
+import {
     X, QrCode, RefreshCw, Copy, Check, ExternalLink, Download,
     MapPin, Radio, Smartphone, Scan, Wifi, Target, Clock
 } from 'lucide-react';
@@ -107,7 +107,7 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
 
     // Default URL - includes a unique token so each QR code is different
     const defaultBaseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://tourstack.app';
-    
+
     // Extract existing token from saved URL or generate new one
     const getInitialUrl = () => {
         if (qrConfig.url) return qrConfig.url;
@@ -120,16 +120,16 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
     // Regenerate creates a COMPLETELY NEW QR code with new token + short code
     const handleRegenerate = useCallback(() => {
         setIsRegenerating(true);
-        
+
         // Generate new short code
         const newShortCode = generateShortCode();
         setShortCode(newShortCode);
-        
+
         // Generate new URL with fresh token - THIS changes the QR code!
         const newToken = generateToken();
         const newUrl = `${defaultBaseUrl}/visitor/tour/${tourId}/stop/${stop.id}?t=${newToken}`;
         setTargetUrl(newUrl);
-        
+
         // Visual feedback
         setTimeout(() => setIsRegenerating(false), 500);
     }, [defaultBaseUrl, tourId, stop.id]);
@@ -167,7 +167,7 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
     function handleDownload() {
         // Get SVG element and convert to PNG for download
         if (!qrRef.current) return;
-        
+
         const svg = qrRef.current.querySelector('svg');
         if (!svg) return;
 
@@ -191,11 +191,11 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
             // White background
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, size, size);
-            
+
             // Draw QR code centered with padding
             const padding = 40;
             ctx.drawImage(img, padding, padding, size - padding * 2, size - padding * 2);
-            
+
             // Convert to PNG and download
             canvas.toBlob((blob) => {
                 if (blob) {
@@ -207,7 +207,7 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                     URL.revokeObjectURL(url);
                 }
             }, 'image/png');
-            
+
             URL.revokeObjectURL(svgUrl);
         };
         img.src = svgUrl;
@@ -216,7 +216,7 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
     // Render tab content based on active tab
     function renderTabContent() {
         const tab = TABS.find(t => t.id === activeTab);
-        
+
         if (!tab) return null;
 
         // QR Code tab - fully implemented
@@ -226,8 +226,8 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                     <div className="flex gap-6">
                         {/* QR Code Preview */}
                         <div className="shrink-0 flex flex-col items-center">
-                            <div 
-                                ref={qrRef} 
+                            <div
+                                ref={qrRef}
                                 className={`bg-white p-4 rounded-xl shadow-lg transition-opacity duration-200 ${isRegenerating ? 'opacity-50' : 'opacity-100'}`}
                             >
                                 <QRCodeSVG
@@ -335,7 +335,7 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                 <p className="text-sm text-[var(--color-text-muted)] text-center max-w-md mb-4">
                     {tab.description}
                 </p>
-                
+
                 {/* Coming Soon Badge */}
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full mb-6">
                     <Clock className="w-3.5 h-3.5 text-amber-500" />
@@ -363,7 +363,7 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                 {activeTab === 'gps' && (
                     <div className="mt-6 p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg max-w-sm">
                         <p className="text-xs text-blue-400 text-center">
-                            📍 GPS positioning will use the existing Map Block component 
+                            📍 GPS positioning will use the existing Map Block component
                             with geofence radius configuration.
                         </p>
                     </div>
@@ -371,7 +371,7 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                 {activeTab === 'ble_beacon' && (
                     <div className="mt-6 p-4 bg-purple-500/5 border border-purple-500/20 rounded-lg max-w-sm">
                         <p className="text-xs text-purple-400 text-center">
-                            📡 Configure UUID, Major, and Minor values for iBeacon/Eddystone 
+                            📡 Configure UUID, Major, and Minor values for iBeacon/Eddystone
                             compatible hardware.
                         </p>
                     </div>
@@ -379,7 +379,7 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                 {activeTab === 'nfc' && (
                     <div className="mt-6 p-4 bg-green-500/5 border border-green-500/20 rounded-lg max-w-sm">
                         <p className="text-xs text-green-400 text-center">
-                            📱 NFC tags require physical tap (0-4cm range). 
+                            📱 NFC tags require physical tap (0-4cm range).
                             Great for artifact labels and interactive exhibits.
                         </p>
                     </div>
@@ -387,7 +387,7 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                 {activeTab === 'rfid' && (
                     <div className="mt-6 p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg max-w-sm">
                         <p className="text-xs text-orange-400 text-center">
-                            🏷️ RFID supports active (battery) and passive tags 
+                            🏷️ RFID supports active (battery) and passive tags
                             with range up to 100ft for powered systems.
                         </p>
                     </div>
@@ -395,7 +395,7 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                 {activeTab === 'wifi' && (
                     <div className="mt-6 p-4 bg-cyan-500/5 border border-cyan-500/20 rounded-lg max-w-sm">
                         <p className="text-xs text-cyan-400 text-center">
-                            📶 Leverage existing WiFi access points for zone-based 
+                            📶 Leverage existing WiFi access points for zone-based
                             positioning without new hardware.
                         </p>
                     </div>
@@ -403,7 +403,7 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                 {activeTab === 'uwb' && (
                     <div className="mt-6 p-4 bg-pink-500/5 border border-pink-500/20 rounded-lg max-w-sm">
                         <p className="text-xs text-pink-400 text-center">
-                            🎯 Ultra-Wideband offers ±10-50cm accuracy. 
+                            🎯 Ultra-Wideband offers ±10-50cm accuracy.
                             Requires UWB anchors and compatible devices (iPhone 11+).
                         </p>
                     </div>
@@ -447,11 +447,10 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                                        isActive
+                                    className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${isActive
                                             ? 'border-[var(--color-accent-primary)] text-[var(--color-accent-primary)]'
                                             : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-border-default)]'
-                                    }`}
+                                        }`}
                                 >
                                     <TabIcon className="w-4 h-4" />
                                     <span>{tab.label}</span>
