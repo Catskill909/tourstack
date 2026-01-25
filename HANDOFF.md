@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: January 24, 2026  
-**Session Status**: Phase 15 Positioning Editor COMPLETE ✅ | QR Generator Working 🎊
+**Last Updated**: January 25, 2026  
+**Session Status**: Phase 15 Positioning Editor COMPLETE ✅ | QR Generator FULLY WORKING 🎊
 
 ---
 
@@ -13,10 +13,31 @@ npm run dev:all       # ⭐ REQUIRED: Runs both Vite (5173) + Express API (3000)
 ```
 
 **Current Status:** Both servers running ✅  
-**Local Testing:** Fully tested ✅ - QR codes regenerate with unique tokens!
+**Local Testing:** Fully tested ✅ - QR codes auto-generate with unique URLs & short codes!
 - Frontend: http://localhost:5173
 - API Server: http://localhost:3000
 - Database: 12 Deepgram audio files, 18 ElevenLabs audio files loaded
+
+---
+
+## 📍 QR CODE & POSITIONING SYSTEM
+
+### How It Works
+- **New stops automatically get** a unique QR code URL and 6-char short code
+- URL format: `/visitor/tour/{tourId}/stop/{stopId}?t={token}`
+- Short code: 6 uppercase chars (e.g., `MX4VPR`) - avoids confusing 0/O, 1/I
+- **Regenerate button** creates completely new token + short code
+- **PNG Download** exports 500px print-ready QR image
+
+### API Persistence
+The `primaryPositioning` field in each stop stores:
+```json
+{
+  "method": "qr_code",
+  "url": "http://localhost:3000/visitor/tour/.../stop/...?t=abc123",
+  "shortCode": "MX4VPR"
+}
+```
 
 ---
 

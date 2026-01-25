@@ -6,6 +6,21 @@ import { prisma } from '../db.js';
 
 const router = Router();
 
+// Helper to generate unique short codes for QR/positioning
+function generateShortCode(): string {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid confusing chars like 0/O, 1/I
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
+// Helper to generate unique tracking token
+function generateToken(): string {
+    return Math.random().toString(36).substring(2, 10);
+}
+
 // Type for route params
 interface TourIdParams {
     tourId: string;
@@ -61,6 +76,12 @@ router.post('/', async (req: Request, res: Response) => {
             _max: { order: true },
         });
 
+        // Generate a temporary ID for URL (will be replaced with actual ID)
+        // We need to create with a placeholder, then update with the real URL
+        const shortCode = generateShortCode();
+        const token = generateToken();
+        
+        // Create the stop first to get its ID
         const stop = await prisma.stop.create({
             data: {
                 tourId: data.tourId,
@@ -70,7 +91,8 @@ router.post('/', async (req: Request, res: Response) => {
                 image: data.image || '',
                 description: JSON.stringify(data.description || { en: '' }),
                 customFieldValues: JSON.stringify(data.customFieldValues || {}),
-                primaryPositioning: JSON.stringify(data.primaryPositioning || { method: 'qr_code', url: '', shortCode: '' }),
+                // Will be updated below with the correct stop ID in URL
+                primaryPositioning: JSON.stringify({ method: 'qr_code', url: '', shortCode }),
                 backupPositioning: data.backupPositioning ? JSON.stringify(data.backupPositioning) : null,
                 triggers: JSON.stringify(data.triggers || { triggerOnEnter: true, triggerOnExit: false }),
                 content: JSON.stringify(data.content || []),
@@ -80,7 +102,25 @@ router.post('/', async (req: Request, res: Response) => {
             },
         });
 
-        res.status(201).json(parseStop(stop));
+        // Now update with the correct URL containing the real stop ID
+        // Use the host header or default to tourstack.app
+        const baseUrl = (req.get('origin') || req.get('host')) ? 
+            `${req.protocol}://${req.get('host')}` : 
+            'https://tourstack.app';
+        const visitorUrl = `${baseUrl}/visitor/tour/${data.tourId}/stop/${stop.id}?t=${token}`;
+        
+        const updatedStop = await prisma.stop.update({
+            where: { id: stop.id },
+            data: {
+                primaryPositioning: JSON.stringify({ 
+                    method: 'qr_code', 
+                    url: visitorUrl, 
+                    shortCode 
+                }),
+            },
+        });
+
+        res.status(201).json(parseStop(updatedStop));
     } catch (error) {
         console.error('Error creating stop:', error);
         res.status(500).json({ error: 'Failed to create stop' });
