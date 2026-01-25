@@ -4,13 +4,36 @@
 
 Build interactive tours with QR codes, GPS, Bluetooth beacons, NFC, and more. Support for multilingual content, audio guides, image galleries, and rich media.
 
+---
+
+## ⛔️ CRITICAL: APP DIRECTORY LOCATION ⛔️
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  🚨🚨🚨 THE APP IS IN /app SUBDIRECTORY 🚨🚨🚨                  │
+│                                                                 │
+│  WORKSPACE:  /Users/paulhenshaw/Desktop/TourStack               │
+│  APP CODE:   /Users/paulhenshaw/Desktop/TourStack/app  ← HERE!  │
+│                                                                 │
+│  ALL npm commands MUST run from the /app directory:             │
+│                                                                 │
+│    cd /Users/paulhenshaw/Desktop/TourStack/app                  │
+│    npm run dev:all                                              │
+│                                                                 │
+│  ❌ WRONG: npm run dev:all  (from TourStack root)               │
+│  ✅ RIGHT: cd app && npm run dev:all                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## 🚀 Quick Start
 
 > [!CAUTION]
 > **ALWAYS use `npm run dev:all`** - The app requires BOTH servers!
 
 ```bash
-cd app
+cd app                 # ⚠️ MUST BE IN /app DIRECTORY!
 npm install
 npm run dev:all        # ⭐ REQUIRED: Frontend (5173) + API server (3000)
 npm run db:studio      # Open database GUI
@@ -22,7 +45,7 @@ npm run db:studio      # Open database GUI
 
 **Architecture**: Vite proxies `/api/*` requests to `http://localhost:3000` (Express).
 
-## � ElevenLabs Voice Limitation (CRITICAL!)
+## 🔊 ElevenLabs Voice Limitation (CRITICAL!)
 
 > [!CAUTION]
 > **Before modifying ANY ElevenLabs code:**

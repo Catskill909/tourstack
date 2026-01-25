@@ -21,6 +21,29 @@ function generateToken(): string {
     return Math.random().toString(36).substring(2, 10);
 }
 
+// Generate URL-friendly slug from title
+function generateSlug(title: string): string {
+    return title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+        .replace(/\s+/g, '-')          // Spaces to hyphens
+        .replace(/-+/g, '-')           // Multiple hyphens to single
+        .substring(0, 50)              // Limit length
+        .replace(/^-|-$/g, '');        // Trim hyphens
+}
+
+// Ensure slug is unique within tour
+async function ensureUniqueStopSlug(baseSlug: string, tourId: string): Promise<string> {
+    let slug = baseSlug || 'untitled';
+    let counter = 1;
+
+    while (true) {
+        const exists = await prisma.stop.findFirst({ where: { slug, tourId } });
+        if (!exists) return slug;
+        slug = `${baseSlug}-${counter++}`;
+    }
+}
+
 // Type for route params
 interface TourIdParams {
     tourId: string;
@@ -70,29 +93,46 @@ router.post('/', async (req: Request, res: Response) => {
     try {
         const data = req.body;
 
+        // Get the tour to access its slug
+        const tour = await prisma.tour.findUnique({ where: { id: data.tourId } });
+        if (!tour) {
+            res.status(404).json({ error: 'Tour not found' });
+            return;
+        }
+
         // Get max order for this tour
         const maxOrder = await prisma.stop.aggregate({
             where: { tourId: data.tourId },
             _max: { order: true },
         });
 
-        // Generate a temporary ID for URL (will be replaced with actual ID)
-        // We need to create with a placeholder, then update with the real URL
+        // Generate slug from title
+        const titleObj = data.title || { en: 'New Stop' };
+        const titleText = titleObj.en || Object.values(titleObj)[0] || 'New Stop';
+        const baseSlug = generateSlug(titleText);
+        const slug = await ensureUniqueStopSlug(baseSlug, data.tourId);
+
         const shortCode = generateShortCode();
         const token = generateToken();
 
-        // Create the stop first to get its ID
+        // Build readable URL using slugs
+        const baseUrl = (req.get('origin') || req.get('host')) ?
+            `${req.protocol}://${req.get('host')}` :
+            'https://tourstack.app';
+        const visitorUrl = `${baseUrl}/visitor/tour/${tour.slug}/stop/${slug}?t=${token}`;
+
+        // Create the stop with slug and readable URL
         const stop = await prisma.stop.create({
             data: {
                 tourId: data.tourId,
+                slug,
                 order: (maxOrder._max.order ?? -1) + 1,
                 type: data.type || 'mandatory',
                 title: JSON.stringify(data.title || { en: 'New Stop' }),
                 image: data.image || '',
                 description: JSON.stringify(data.description || { en: '' }),
                 customFieldValues: JSON.stringify(data.customFieldValues || {}),
-                // Will be updated below with the correct stop ID in URL
-                primaryPositioning: JSON.stringify({ method: 'qr_code', url: '', shortCode }),
+                primaryPositioning: JSON.stringify({ method: 'qr_code', url: visitorUrl, shortCode }),
                 backupPositioning: data.backupPositioning ? JSON.stringify(data.backupPositioning) : null,
                 triggers: JSON.stringify(data.triggers || { triggerOnEnter: true, triggerOnExit: false }),
                 content: JSON.stringify(data.content || []),
@@ -102,25 +142,7 @@ router.post('/', async (req: Request, res: Response) => {
             },
         });
 
-        // Now update with the correct URL containing the real stop ID
-        // Use the host header or default to tourstack.app
-        const baseUrl = (req.get('origin') || req.get('host')) ?
-            `${req.protocol}://${req.get('host')}` :
-            'https://tourstack.app';
-        const visitorUrl = `${baseUrl}/visitor/tour/${data.tourId}/stop/${stop.id}?t=${token}`;
-
-        const updatedStop = await prisma.stop.update({
-            where: { id: stop.id },
-            data: {
-                primaryPositioning: JSON.stringify({
-                    method: 'qr_code',
-                    url: visitorUrl,
-                    shortCode
-                }),
-            },
-        });
-
-        res.status(201).json(parseStop(updatedStop));
+        res.status(201).json(parseStop(stop));
     } catch (error) {
         console.error('Error creating stop:', error);
         res.status(500).json({ error: 'Failed to create stop' });

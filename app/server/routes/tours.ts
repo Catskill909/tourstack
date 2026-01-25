@@ -11,6 +11,32 @@ interface IdParams {
     id: string;
 }
 
+// Generate URL-friendly slug from title
+function generateSlug(title: string): string {
+    return title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+        .replace(/\s+/g, '-')          // Spaces to hyphens
+        .replace(/-+/g, '-')           // Multiple hyphens to single
+        .substring(0, 50)              // Limit length
+        .replace(/^-|-$/g, '');        // Trim hyphens
+}
+
+// Ensure slug is unique by appending number if needed
+async function ensureUniqueSlug(baseSlug: string, type: 'tour' | 'stop', tourId?: string): Promise<string> {
+    let slug = baseSlug || 'untitled';
+    let counter = 1;
+
+    while (true) {
+        const exists = type === 'tour'
+            ? await prisma.tour.findUnique({ where: { slug } })
+            : await prisma.stop.findFirst({ where: { slug, tourId } });
+
+        if (!exists) return slug;
+        slug = `${baseSlug}-${counter++}`;
+    }
+}
+
 // Helper to parse stop JSON fields
 function parseStop(stop: Stop) {
     return {
@@ -103,10 +129,17 @@ router.post('/', async (req: Request, res: Response) => {
             return;
         }
 
+        // Generate slug from title
+        const titleObj = data.title || { en: 'Untitled Tour' };
+        const titleText = titleObj.en || Object.values(titleObj)[0] || 'Untitled Tour';
+        const baseSlug = generateSlug(titleText);
+        const slug = await ensureUniqueSlug(baseSlug, 'tour');
+
         const tour = await prisma.tour.create({
             data: {
                 museumId: museum.id,
                 templateId: template.id,
+                slug,
                 status: 'draft',
                 title: JSON.stringify(data.title || { en: 'Untitled Tour' }),
                 heroImage: data.heroImage || '',

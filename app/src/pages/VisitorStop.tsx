@@ -7,6 +7,7 @@ import type { Stop, ContentBlock } from '../types';
 // API returns tour with full stop objects (not just IDs)
 interface TourWithStops {
     id: string;
+    slug: string;
     title: Record<string, string>;
     description?: Record<string, string>;
     status: string;
@@ -28,11 +29,12 @@ const LANGUAGE_NAMES: Record<string, string> = {
 };
 
 export function VisitorStop() {
-    const { tourId, stopId } = useParams<{ tourId: string; stopId: string }>();
+    const { tourId: tourSlugOrId, stopId: stopSlugOrId } = useParams<{ tourId: string; stopId: string }>();
     const [searchParams] = useSearchParams();
     const token = searchParams.get('t');
 
     const [tour, setTour] = useState<TourWithStops | null>(null);
+    const [allStops, setAllStops] = useState<Stop[]>([]);
     const [stop, setStop] = useState<Stop | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -42,43 +44,37 @@ export function VisitorStop() {
     // Check if user is staff (simplified - could use auth system later)
     const isStaff = localStorage.getItem('tourstack_staff') === 'true';
 
-    // Fetch tour and stop data
+    // Fetch tour and stop data using visitor API (supports slugs)
     useEffect(() => {
         async function fetchData() {
-            if (!tourId || !stopId) {
+            if (!tourSlugOrId || !stopSlugOrId) {
                 setError('Invalid tour or stop');
                 setLoading(false);
                 return;
             }
 
             try {
-                // Fetch tour data
-                const tourRes = await fetch(`/api/tours/${tourId}`);
-                if (!tourRes.ok) {
-                    throw new Error('Tour not found');
+                // Use visitor API which supports both slugs and IDs
+                const res = await fetch(`/api/visitor/tour/${tourSlugOrId}/stop/${stopSlugOrId}`);
+                if (!res.ok) {
+                    throw new Error('Content not found');
                 }
-                const tourData = await tourRes.json();
+                const data = await res.json();
 
                 // Check if tour is published (or staff viewing draft)
-                if (tourData.status !== 'published' && !isStaff) {
+                if (data.tour.status !== 'published' && !isStaff) {
                     setError('This tour is not available yet');
                     setLoading(false);
                     return;
                 }
 
-                setTour(tourData);
-
-                // Find the stop
-                const stopData = tourData.stops?.find((s: Stop) => s.id === stopId);
-                if (!stopData) {
-                    throw new Error('Stop not found');
-                }
-
-                setStop(stopData);
+                setTour(data.tour);
+                setStop(data.stop);
+                setAllStops(data.allStops || []);
 
                 // Set initial language from tour's first language
-                if (tourData.languages?.length > 0) {
-                    setLanguage(tourData.languages[0]);
+                if (data.tour.languages?.length > 0) {
+                    setLanguage(data.tour.languages[0]);
                 }
 
                 setLoading(false);
@@ -90,7 +86,7 @@ export function VisitorStop() {
         }
 
         fetchData();
-    }, [tourId, stopId, isStaff]);
+    }, [tourSlugOrId, stopSlugOrId, isStaff]);
 
     // Get localized text
     function getLocalizedText(field: string | Record<string, string> | null | undefined): string {
@@ -99,10 +95,10 @@ export function VisitorStop() {
         return field[language] || field.en || Object.values(field)[0] || '';
     }
 
-    // Get stop index and navigation
-    const stopIndex = tour?.stops?.findIndex((s) => s.id === stopId) ?? -1;
-    const prevStop = stopIndex > 0 ? tour?.stops?.[stopIndex - 1] : null;
-    const nextStop = tour?.stops && stopIndex < tour.stops.length - 1 ? tour.stops[stopIndex + 1] : null;
+    // Get stop index and navigation using allStops
+    const stopIndex = allStops.findIndex((s) => s.id === stop?.id) ?? -1;
+    const prevStop = stopIndex > 0 ? allStops[stopIndex - 1] : null;
+    const nextStop = stopIndex >= 0 && stopIndex < allStops.length - 1 ? allStops[stopIndex + 1] : null;
 
     // Loading state
     if (loading) {
@@ -130,9 +126,9 @@ export function VisitorStop() {
                     <p className="text-[var(--color-text-muted)] mb-6">
                         {error || 'This tour content could not be loaded.'}
                     </p>
-                    {isStaff && (
+                    {isStaff && tourSlugOrId && (
                         <Link
-                            to={`/tours/${tourId}`}
+                            to={`/tours/${tourSlugOrId}`}
                             className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-[#1a1a1a] rounded-lg font-medium hover:opacity-90 transition-opacity"
                         >
                             <Settings className="w-4 h-4" />
@@ -156,7 +152,7 @@ export function VisitorStop() {
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                         {prevStop ? (
                             <Link
-                                to={`/visitor/tour/${tourId}/stop/${prevStop.id}${token ? `?t=${token}` : ''}`}
+                                to={`/visitor/tour/${tour.slug}/stop/${prevStop.slug}${token ? `?t=${token}` : ''}`}
                                 className="p-2 -ml-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                                 title={`Previous: ${getLocalizedText(prevStop.title)}`}
                             >
@@ -170,7 +166,7 @@ export function VisitorStop() {
                                 {getLocalizedText(tour.title)}
                             </p>
                             <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
-                                {stopIndex + 1} of {tour.stops?.length || 0}
+                                {stopIndex + 1} of {allStops.length}
                             </p>
                         </div>
                     </div>
@@ -216,7 +212,7 @@ export function VisitorStop() {
                     {/* Next Stop */}
                     {nextStop ? (
                         <Link
-                            to={`/visitor/tour/${tourId}/stop/${nextStop.id}${token ? `?t=${token}` : ''}`}
+                            to={`/visitor/tour/${tour.slug}/stop/${nextStop.slug}${token ? `?t=${token}` : ''}`}
                             className="p-2 -mr-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                             title={`Next: ${getLocalizedText(nextStop.title)}`}
                         >
@@ -242,7 +238,7 @@ export function VisitorStop() {
                             )}
                         </div>
                         <Link
-                            to={`/tours/${tourId}`}
+                            to={`/tours/${tour.id}`}
                             className="flex items-center gap-1.5 text-sm text-amber-300 hover:text-amber-200 transition-colors"
                         >
                             <ArrowLeft className="w-4 h-4" />
@@ -291,7 +287,7 @@ export function VisitorStop() {
                 <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
                     {prevStop ? (
                         <Link
-                            to={`/visitor/tour/${tourId}/stop/${prevStop.id}${token ? `?t=${token}` : ''}`}
+                            to={`/visitor/tour/${tour.slug}/stop/${prevStop.slug}${token ? `?t=${token}` : ''}`}
                             className="flex items-center gap-2 px-4 py-2 bg-[var(--color-bg-elevated)] rounded-lg text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
                         >
                             <ChevronLeft className="w-4 h-4" />
@@ -304,7 +300,7 @@ export function VisitorStop() {
 
                     {/* Progress indicator */}
                     <div className="flex items-center gap-1">
-                        {tour.stops?.map((_, idx) => (
+                        {allStops.map((_, idx) => (
                             <div
                                 key={idx}
                                 className={`w-2 h-2 rounded-full transition-colors ${idx === stopIndex
@@ -319,7 +315,7 @@ export function VisitorStop() {
 
                     {nextStop ? (
                         <Link
-                            to={`/visitor/tour/${tourId}/stop/${nextStop.id}${token ? `?t=${token}` : ''}`}
+                            to={`/visitor/tour/${tour.slug}/stop/${nextStop.slug}${token ? `?t=${token}` : ''}`}
                             className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-[#1a1a1a] rounded-lg font-medium hover:opacity-90 transition-opacity"
                         >
                             <span className="hidden sm:inline">{getLocalizedText(nextStop.title)}</span>

@@ -5,6 +5,25 @@
 
 ---
 
+## ⛔️ CRITICAL: APP DIRECTORY ⛔️
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  🚨 ALL CODE & COMMANDS ARE IN THE /app SUBDIRECTORY! 🚨     │
+│                                                              │
+│  WORKSPACE ROOT:  /Users/paulhenshaw/Desktop/TourStack       │
+│  APP DIRECTORY:   /Users/paulhenshaw/Desktop/TourStack/app   │
+│                                                              │
+│  To start dev servers:                                       │
+│    cd /Users/paulhenshaw/Desktop/TourStack/app               │
+│    npm run dev:all                                           │
+│                                                              │
+│  ❌ NEVER run npm from TourStack root - no package.json!     │
+└──────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## 🎯 PRODUCT VISION: One App For Everything
 
 > **TourStack is a unified SaaS platform** - Admin CMS + Visitor App + Field Tools in ONE application.

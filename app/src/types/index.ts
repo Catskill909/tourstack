@@ -372,19 +372,19 @@ export interface MapBlockData {
   latitude: number;
   longitude: number;
   zoom: number;
-  
+
   // Provider settings
   provider: MapProvider;          // Which map to use
   style: MapStyle;                // Map style
-  
+
   // Display options
   showMarker: boolean;            // Show marker at center
   markerTitle?: { [lang: string]: string };
   size?: MapSize;                 // Display size: small, medium, large (default: medium)
-  
+
   // Additional markers (for tour overview maps)
   markers?: MapMarker[];
-  
+
   // Trigger zone (optional)
   triggerRadius?: number;         // Radius in meters for geofence
   showTriggerZone?: boolean;      // Visualize the trigger zone
@@ -421,6 +421,7 @@ export type StopType = 'mandatory' | 'optional' | 'bonus' | 'secret';
 
 export interface Stop {
   id: string;
+  slug: string;  // URL-friendly identifier, e.g., "entrance-hall"
   tourId: string;
   order: number;
   type: StopType;
@@ -482,6 +483,7 @@ export type Difficulty = 'accessible' | 'family' | 'general' | 'academic' | 'chi
 
 export interface Tour {
   id: string;
+  slug: string;  // URL-friendly identifier, e.g., "timeline-gallery-tour"
   museumId: string;
   templateId: string;
   status: TourStatus;
@@ -496,7 +498,7 @@ export interface Tour {
   primaryLanguage: string;
   duration: number; // minutes
   difficulty: Difficulty;
-  
+
   // Translation settings
   defaultTranslationProvider?: 'libretranslate' | 'deepgram';
 
