@@ -299,12 +299,21 @@ function formatStopForFeed(stop: any, lang?: string) {
         positioning = null;
     }
 
+    // Parse primaryPositioning (QR code, NFC, etc.)
+    let primaryPositioning = null;
+    try {
+        primaryPositioning = stop.primaryPositioning ? JSON.parse(stop.primaryPositioning) : null;
+    } catch {
+        primaryPositioning = null;
+    }
+
     return {
         id: stop.id,
         title: localizedTitle,
         order: stop.order,
         content_blocks: contentBlocks,
         positioning: positioning,
+        primary_positioning: primaryPositioning, // QR code URL, shortCode, NFC data
         created_at: stop.createdAt.toISOString(),
         updated_at: stop.updatedAt.toISOString(),
     };
