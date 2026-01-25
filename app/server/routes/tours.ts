@@ -263,6 +263,7 @@ router.post('/:id/duplicate', async (req: Request<IdParams>, res: Response) => {
                 museumId: original.museumId,
                 templateId: original.templateId,
                 status: 'draft',
+                slug: generateSlug(newTitle.en || Object.values(newTitle)[0] || 'tour'),
                 title: JSON.stringify(newTitle),
                 heroImage: original.heroImage,
                 description: original.description,
@@ -278,11 +279,13 @@ router.post('/:id/duplicate', async (req: Request<IdParams>, res: Response) => {
 
         // Duplicate stops - original.stops is available because of include
         for (const stop of original.stops) {
+            const stopTitle = JSON.parse(stop.title) as Record<string, string>;
             await prisma.stop.create({
                 data: {
                     tourId: duplicate.id,
                     order: stop.order,
                     type: stop.type,
+                    slug: generateSlug(stopTitle.en || Object.values(stopTitle)[0] || 'stop'),
                     title: stop.title,
                     image: stop.image,
                     description: stop.description,
