@@ -1,7 +1,34 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: January 25, 2026  
-**Session Status**: Phase 15 Positioning Editor COMPLETE ✅ | QR Generator FULLY WORKING 🎊
+**Session Status**: Phase 16 Visitor Experience IN PROGRESS 🔄 | QR System COMPLETE ✅
+
+---
+
+## 🎯 PRODUCT VISION: One App For Everything
+
+> **TourStack is a unified SaaS platform** - Admin CMS + Visitor App + Field Tools in ONE application.
+
+| Mode | Routes | Purpose |
+|------|--------|---------|
+| **Admin** | `/tours/*`, `/stops/*` | Create & manage tour content |
+| **Visitor** | `/visitor/*` | Public-facing tour experience |
+| **Tools** | `/tools/*`, `/scanner` | Beacon scanning, analytics |
+
+### Key Architecture Concept
+
+**The Preview System IS the Visitor View** - same `StopContentBlock` components render in both:
+- **Admin**: Preview modal with device frames (testing)
+- **Visitor**: Full-screen pages via QR codes (production)
+
+### Draft vs Published
+
+| Status | Admin Access | Visitor Access |
+|--------|--------------|----------------|
+| **Draft** | ✅ Full edit | ❌ Not visible |
+| **Published** | ✅ Full edit | ✅ Public |
+
+Staff viewing visitor pages see a **"Back to Admin"** button.
 
 ---
 
@@ -39,9 +66,25 @@ The `primaryPositioning` field in each stop stores:
 }
 ```
 
+### Feeds API
+The `/api/feeds/tours/:id` endpoint includes `primary_positioning` for each stop:
+```json
+{
+  "stops": [{
+    "id": "...",
+    "title": { "en": "Stop Name" },
+    "primary_positioning": {
+      "method": "qr_code",
+      "shortCode": "MX4VPR",
+      "url": "/visitor/tour/.../stop/...?t=abc123"
+    }
+  }]
+}
+```
+
 ---
 
-## � ELEVENLABS CRITICAL GUARDRAILS (DO NOT SKIP!)
+## 🚧 ELEVENLABS CRITICAL GUARDRAILS (DO NOT SKIP!)
 
 > [!CAUTION]
 > **READ THIS BEFORE TOUCHING ANY ELEVENLABS CODE!**
@@ -348,7 +391,22 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 > **Known Limitation:** Timeline Gallery uses single `audioUrl` (not `audioFiles`), so audio doesn't switch on language change. Transcript text DOES switch. This is by design for timeline sync.
 
-### 🔜 Phase 16: GPS Positioning Tab (Next)
+### � Phase 16: Visitor Experience System (IN PROGRESS - Jan 25, 2026)
+- [ ] **Visitor Routes** - `/visitor/tour/:tourId/stop/:stopId` pages
+- [ ] **Reuse StopContentBlock** - Same rendering as admin preview
+- [ ] **"Back to Admin" Button** - For staff viewing visitor pages
+- [ ] **Token Validation** - Verify `?t=TOKEN` from QR codes
+- [ ] **Published Check** - Only show published tours to visitors
+- [ ] **Language Selector** - Visitor-friendly language switching
+
+### 🎯 Phase 17: Stop Navigation & Links (Planned)
+- [ ] **Next/Previous Buttons** - Navigate between stops
+- [ ] **Stop List View** - See all stops in tour
+- [ ] **Related Stops** - Curator-defined links between stops
+- [ ] **Tour Progress** - Visual completion indicator
+- [ ] **Tour Map View** - Interactive map with all stops
+
+### 🎯 Phase 18: GPS Positioning Tab (Planned)
 - [ ] Reuse Map Block components (Leaflet/Google Maps)
 - [ ] Geofence radius visualization with circle overlay
 - [ ] "Get Current Location" button
@@ -363,6 +421,13 @@ TourStack uses a **modular content block system** where tours and stops are comp
 ---
 
 ## 📋 Next Steps (Priority Order)
+
+### 🔄 IN PROGRESS: Visitor Experience System
+> Phase 16 - Creating the visitor-facing pages that QR codes link to.
+
+**Key Principle:** The Preview System IS the Visitor View - same components, different context.
+- Admin: Preview in modal with device frames
+- Visitor: Full-screen pages via QR codes
 
 ### ✅ COMPLETED: Import Collections into Blocks
 > Phase 4 is complete! Both Audio Block and Timeline Gallery now support importing from collections.

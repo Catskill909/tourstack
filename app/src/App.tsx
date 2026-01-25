@@ -8,29 +8,38 @@ import { CollectionDetail } from './pages/CollectionDetail';
 import { Settings } from './pages/Settings';
 import { Audio } from './pages/Audio';
 import { ApiFeeds } from './pages/ApiFeeds';
+import { VisitorStop } from './pages/VisitorStop';
 import './index.css';
 
 function App() {
   return (
     <BrowserRouter>
-      <MainLayout>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/tours" element={<Tours />} />
-          <Route path="/tours/:id" element={<TourDetail />} />
-          <Route path="/collections" element={<Collections />} />
-          <Route path="/collections/:id" element={<CollectionDetail />} />
-          <Route path="/templates" element={<ComingSoon title="Templates" />} />
-          <Route path="/media" element={<ComingSoon title="Media Library" />} />
-          <Route path="/languages" element={<ComingSoon title="Languages" />} />
-          <Route path="/audio" element={<Audio />} />
-          <Route path="/analytics" element={<ComingSoon title="Analytics" />} />
-          <Route path="/api" element={<ApiFeeds />} />
-          <Route path="/tools" element={<ComingSoon title="Tools" />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/help" element={<ComingSoon title="Help" />} />
-        </Routes>
-      </MainLayout>
+      <Routes>
+        {/* Visitor Routes - NO admin layout */}
+        <Route path="/visitor/tour/:tourId/stop/:stopId" element={<VisitorStop />} />
+
+        {/* Admin Routes - WITH MainLayout */}
+        <Route path="/*" element={
+          <MainLayout>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/tours" element={<Tours />} />
+              <Route path="/tours/:id" element={<TourDetail />} />
+              <Route path="/collections" element={<Collections />} />
+              <Route path="/collections/:id" element={<CollectionDetail />} />
+              <Route path="/templates" element={<ComingSoon title="Templates" />} />
+              <Route path="/media" element={<ComingSoon title="Media Library" />} />
+              <Route path="/languages" element={<ComingSoon title="Languages" />} />
+              <Route path="/audio" element={<Audio />} />
+              <Route path="/analytics" element={<ComingSoon title="Analytics" />} />
+              <Route path="/api" element={<ApiFeeds />} />
+              <Route path="/tools" element={<ComingSoon title="Tools" />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/help" element={<ComingSoon title="Help" />} />
+            </Routes>
+          </MainLayout>
+        } />
+      </Routes>
     </BrowserRouter>
   );
 }

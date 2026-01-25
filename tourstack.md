@@ -1,7 +1,40 @@
 # TourStack - Museum Virtual Tour Platform
 
-**Target Users:** Museum curators, tour designers, content managers, educators  
+**Target Users:** Museum curators, tour designers, content managers, educators, visitors  
 **Key Differentiator:** Multi-technology positioning + AI-powered translation and audio generation
+
+---
+
+## 🎯 PRODUCT VISION: The Swiss Army Knife for Museums
+
+> **TourStack is a unified SaaS platform** - one app that serves ALL museum tour needs:
+> - **Admin Mode**: Create tours, manage content, configure positioning
+> - **Visitor Mode**: Public-facing tour experience via QR codes
+> - **Tools Mode**: Beacon scanning, field testing, analytics
+
+### Why One App?
+
+Museums shouldn't need 3 different tools. TourStack combines:
+1. **CMS** (Content Management) - Build and edit tours
+2. **Visitor App** - What guests see when they scan QR codes
+3. **Field Tools** - Beacon scanning, positioning testing, analytics
+
+### Draft vs Published Workflow
+
+| Status | Admin | Visitor | Description |
+|--------|-------|---------|-------------|
+| **Draft** | ✅ Full access | ❌ Not visible | Work in progress |
+| **Testing** | ✅ Full access | 🔒 Staff only | Internal review |
+| **Published** | ✅ Full access | ✅ Public | Live for visitors |
+| **Archived** | ✅ Read-only | ❌ Not visible | Preserved history |
+
+### Staff Access in Visitor Mode
+
+When museum staff access visitor pages, they see:
+- **"Back to Admin" button** - Quick return to CMS
+- **Staff badge** - Indicates they're logged in
+- **Draft preview** - Can view unpublished content
+- **Analytics overlay** (optional) - Real-time engagement data
 
 ---
 
@@ -25,12 +58,131 @@
 | Phase 13.5: Translate Collections | ✅ DEPLOYED |
 | Phase 14: Audio UX Improvements | ✅ Complete |
 | Phase 15: Positioning Editor & QR Generator | ✅ Complete |
-| **Next:** GPS Positioning Tab | 🎯 Planned |
+| Phase 16: Visitor Experience System | 🔄 In Progress |
+| Phase 17: Stop Navigation & Links | 🎯 Planned |
+| Phase 18: GPS Positioning Tab | 🎯 Planned |
 
 **Deployment:** Coolify/Docker with persistent volumes  
 - Database: Prisma + SQLite (`/app/data`)
 - Media: Server uploads (`/app/uploads`, 100MB limit)
 - See `docs/COOLIFY-DEPLOYMENT.md` for configuration
+
+---
+
+## 📱 VISITOR EXPERIENCE SYSTEM (Phase 16)
+
+> **The Preview System IS the Visitor View** - same components, different context.
+> Admin sees preview in a modal; Visitors see it as full-screen pages.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     TOURSTACK UNIFIED APP                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   ADMIN MODE    │  │  VISITOR MODE   │  │   TOOLS MODE    │ │
+│  │   /tours/*      │  │   /visitor/*    │  │   /tools/*      │ │
+│  │   /stops/*      │  │   /tour/*       │  │   /scanner      │ │
+│  │   /collections  │  │                 │  │   /analytics    │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│          │                    │                    │            │
+│          └────────────────────┼────────────────────┘            │
+│                               │                                 │
+│                    ┌──────────▼──────────┐                      │
+│                    │  SHARED COMPONENTS  │                      │
+│                    │  StopContentBlock   │                      │
+│                    │  AudioPlayer        │                      │
+│                    │  GalleryPreview     │                      │
+│                    │  MapPreview         │                      │
+│                    │  TimelineGallery    │                      │
+│                    └─────────────────────┘                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Visitor Routes
+
+| Route | Purpose | Access |
+|-------|---------|--------|
+| `/visitor/tour/:tourId` | Tour overview page | Published only |
+| `/visitor/tour/:tourId/stop/:stopId` | Stop content page | Published only |
+| `/visitor/tour/:tourId/stop/:stopId?t=TOKEN` | QR code entry | Token validated |
+| `/visitor/tour/:tourId/map` | Interactive tour map | Published only |
+
+### Visitor Features (Current & Planned)
+
+#### ✅ Available Now
+- [ ] Stop content rendering (all block types)
+- [ ] Language switching
+- [ ] Audio playback with captions
+- [ ] Image galleries with transitions
+- [ ] Maps with current location
+
+#### 🔄 In Development
+- [ ] QR code URL routing (`/visitor/tour/:id/stop/:id`)
+- [ ] Token validation for tracking
+- [ ] "Back to Admin" button for staff
+- [ ] Tour overview page
+
+#### 🎯 Planned Features
+- [ ] **Stop Navigation** - Next/Previous buttons, stop list
+- [ ] **Links to Other Stops** - "Related stops" or curator-defined links
+- [ ] **Tour Progress** - Visual indicator of completion
+- [ ] **Offline Mode** - PWA with cached content
+- [ ] **Accessibility Mode** - Large text, high contrast, screen reader
+- [ ] **Kid Mode** - Simplified UI, gamification elements
+- [ ] **Audio Tour Mode** - Auto-advance with audio cues
+- [ ] **Scavenger Hunt** - Gamified stop discovery
+
+### Staff vs Visitor Experience
+
+| Feature | Staff | Visitor |
+|---------|-------|---------|
+| View draft tours | ✅ Yes | ❌ No |
+| View published tours | ✅ Yes | ✅ Yes |
+| "Back to Admin" button | ✅ Yes | ❌ No |
+| Analytics overlay | ✅ Optional | ❌ No |
+| Edit content | ❌ No (use admin) | ❌ No |
+| Language switch | ✅ Yes | ✅ Yes |
+| Device frame (phone/tablet) | ✅ Preview only | ❌ No |
+
+### QR Code Flow
+
+```
+1. Visitor scans QR code on signage
+   ↓
+2. URL: /visitor/tour/{tourId}/stop/{stopId}?t={token}
+   ↓
+3. App validates token (prevents URL sharing/guessing)
+   ↓
+4. If valid & tour is PUBLISHED → Show stop content
+   If invalid or DRAFT → Show error/redirect
+   ↓
+5. Visitor views content, switches languages, navigates
+   ↓
+6. Analytics recorded (scan time, dwell time, interactions)
+```
+
+### Future: Stop Navigation System
+
+Museums need visitors to flow between stops:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Stop: The Rosetta Stone                    [1/12] ▶ Next  │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  [Stop Content - Audio, Images, Text, etc.]                │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│  Related Stops:                                             │
+│  • Egyptian Hieroglyphics (Stop 3)                         │
+│  • Ancient Writing Systems (Stop 7)                        │
+│                                                             │
+│  [◀ Previous: Entrance]  [Map 🗺️]  [Next: Mummies ▶]       │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
