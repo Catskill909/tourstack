@@ -24,7 +24,7 @@ async function migrateSlugs() {
     const tourSlugs = new Set<string>();
 
     for (const tour of tours) {
-        if (tour.slug) {
+        if (tour.slug && tour.slug.length > 0) {
             tourSlugs.add(tour.slug);
             console.log(`  ✓ Tour "${tour.id}" already has slug: ${tour.slug}`);
             continue;
@@ -60,7 +60,7 @@ async function migrateSlugs() {
         }
         const tourStopSlugs = stopSlugsPerTour.get(stop.tourId)!;
 
-        if (stop.slug) {
+        if (stop.slug && stop.slug.length > 0) {
             tourStopSlugs.add(stop.slug);
             console.log(`  ✓ Stop "${stop.id}" already has slug: ${stop.slug}`);
             continue;
