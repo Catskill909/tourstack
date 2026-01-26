@@ -34,7 +34,7 @@ const navItems = [
 
 const bottomNavItems = [
     { to: '/settings', icon: Settings, label: 'Settings' },
-    { to: '/help', icon: HelpCircle, label: 'Help' },
+    { to: '/docs', icon: HelpCircle, label: 'Help & Docs' },
 ];
 
 interface SidebarProps {

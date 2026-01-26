@@ -10,6 +10,7 @@ import { Audio } from './pages/Audio';
 import { ApiFeeds } from './pages/ApiFeeds';
 import { AIAssistance } from './pages/AIAssistance';
 import { VisitorStop } from './pages/VisitorStop';
+import { Docs } from './pages/Docs';
 import './index.css';
 
 function App() {
@@ -18,6 +19,11 @@ function App() {
       <Routes>
         {/* Visitor Routes - NO admin layout */}
         <Route path="/visitor/tour/:tourId/stop/:stopId" element={<VisitorStop />} />
+
+        {/* Documentation - Full-screen, no admin layout */}
+        <Route path="/docs" element={<Docs />} />
+        <Route path="/docs/:section" element={<Docs />} />
+        <Route path="/docs/:section/:page" element={<Docs />} />
 
         {/* Admin Routes - WITH MainLayout */}
         <Route path="/*" element={
