@@ -1201,7 +1201,325 @@ CollectionImportModal.tsx (NEW)
 
 ---
 
-## 9. Dependencies
+## 9. TTS Provider Reference 🔊
+
+### Overview: Audio Page Tab System
+
+The `/audio` page provides a unified interface for multiple TTS (Text-to-Speech) services via tabs. This allows museums to choose the best provider for their needs based on cost, quality, language support, and privacy requirements.
+
+**Implementation Status:**
+
+| Provider | Type | Tab Status | Integration |
+|----------|------|------------|-------------|
+| Deepgram | Paid Cloud | ✅ Active | ✅ Fully Working |
+| ElevenLabs | Paid Cloud | ✅ Active | ✅ Fully Working |
+| Google Cloud TTS | Paid Cloud | 🔄 Placeholder | 🎯 Phase 5 |
+| Amazon Polly | Paid Cloud | 🔄 Placeholder | 🎯 Phase 6 |
+| Microsoft Azure | Paid Cloud | 🔄 Placeholder | 🎯 Phase 7 |
+| IBM Watson | Paid Cloud | 🔄 Placeholder | 🎯 Future |
+| Coqui TTS | Free Self-Hosted | 🔄 Placeholder | 🎯 Phase 8 |
+| OpenTTS | Free Self-Hosted | 🔄 Placeholder | 🎯 Future |
+| MaryTTS | Free Self-Hosted | 🔄 Placeholder | 🎯 Future |
+| eSpeak NG | Free Self-Hosted | 🔄 Placeholder | 🎯 Future |
+| Festival | Free Self-Hosted | 🔄 Placeholder | 🎯 Future |
+| Whisper | STT Only | 🔄 Placeholder | ⚠️ STT, not TTS |
+
+> **Note:** Whisper is a Speech-to-Text (STT) service, not TTS. It remains on the Audio page for transcription workflows.
+
+---
+
+### 9.1 Paid Cloud TTS Providers
+
+#### ✅ Deepgram Aura-2 (ACTIVE)
+
+**Type:** Paid Cloud API  
+**Status:** ✅ Fully Integrated
+
+| Feature | Details |
+|---------|---------|
+| Languages | 7 (en, es, de, fr, nl, it, ja) |
+| Voices | 40+ per-language |
+| Quality | Neural TTS |
+| Formats | MP3, WAV, OGG, FLAC |
+| Sample Rates | 8-48 kHz |
+| Pricing | Pay-per-character |
+
+**Documentation:**
+- API Docs: https://developers.deepgram.com/docs/text-to-speech
+- Product: https://deepgram.com/product/text-to-speech
+
+**TourStack Files:**
+- Route: `server/routes/audio.ts`
+- Service: `src/services/audioService.ts`
+
+---
+
+#### ✅ ElevenLabs (ACTIVE)
+
+**Type:** Paid Cloud API  
+**Status:** ✅ Fully Integrated
+
+| Feature | Details |
+|---------|---------|
+| Languages | 32+ (all via Multilingual v2) |
+| Voices | **21 premade ONLY** ⚠️ |
+| Quality | Premium neural, industry-leading |
+| Formats | MP3, PCM, μ-law, Opus |
+| Sample Rates | 16-44 kHz |
+| Pricing | Pay-per-character |
+
+> [!CAUTION]
+> **Use PREMADE VOICES ONLY!** Shared/community voices auto-add to account and hit the 10-slot limit.
+> See [ELEVENLABS-VOICES-ISSUE.md](ELEVENLABS-VOICES-ISSUE.md)
+
+**Documentation:**
+- API Docs: https://elevenlabs.io/docs/api-reference/introduction
+- Product: https://elevenlabs.io/text-to-speech
+
+**TourStack Files:**
+- Route: `server/routes/elevenlabs.ts`
+- Service: `src/services/elevenlabsService.ts`
+
+---
+
+#### 🎯 Google Cloud Text-to-Speech (PLANNED - Phase 5)
+
+**Type:** Paid Cloud API (GCP)  
+**Status:** 🔄 Placeholder Tab
+
+| Feature | Details |
+|---------|---------|
+| Languages | 50+ |
+| Voices | 400+ (Standard, WaveNet, Neural2) |
+| Quality | WaveNet & Neural2 are premium quality |
+| Formats | MP3, LINEAR16, OGG_OPUS, MULAW |
+| Sample Rates | 8-48 kHz |
+| Pricing | Per character, varies by voice type |
+
+**Documentation:**
+- API Docs: https://cloud.google.com/text-to-speech/docs
+- API Reference: https://cloud.google.com/text-to-speech/docs/apis
+- Product: https://cloud.google.com/text-to-speech
+
+**Implementation Notes:**
+- Requires GCP project and service account
+- Environment variable: `GOOGLE_APPLICATION_CREDENTIALS` or `GOOGLE_TTS_API_KEY`
+- WaveNet voices cost ~4x standard but sound much better
+
+---
+
+#### 🎯 Amazon Polly (PLANNED - Phase 6)
+
+**Type:** Paid AWS Service  
+**Status:** 🔄 Placeholder Tab
+
+| Feature | Details |
+|---------|---------|
+| Languages | 30+ |
+| Voices | Standard + Neural + Long-Form + Generative |
+| Quality | Neural and Generative are premium |
+| Formats | MP3, OGG Vorbis, PCM |
+| Sample Rates | 8-24 kHz |
+| Pricing | Per character, free tier available |
+
+**Documentation:**
+- API Docs: https://docs.aws.amazon.com/polly/latest/dg/API_Reference.html
+- Product: https://aws.amazon.com/polly/
+
+**Implementation Notes:**
+- Requires AWS credentials (IAM)
+- SDK: `@aws-sdk/client-polly`
+- Good for AWS-native deployments
+
+---
+
+#### 🎯 Microsoft Azure Speech Service (PLANNED - Phase 7)
+
+**Type:** Paid Azure Service  
+**Status:** 🔄 Placeholder Tab
+
+| Feature | Details |
+|---------|---------|
+| Languages | 140+ |
+| Voices | 450+ neural voices |
+| Quality | Neural, Custom Neural |
+| Formats | MP3, OGG, WAV, raw audio |
+| Sample Rates | 8-48 kHz |
+| Pricing | Pay-as-you-go, free tier |
+
+**Documentation:**
+- API Docs: https://learn.microsoft.com/azure/cognitive-services/speech-service/
+- REST API: https://learn.microsoft.com/azure/cognitive-services/speech-service/rest-text-to-speech
+
+**Implementation Notes:**
+- Requires Azure subscription
+- Environment: `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`
+- Best language coverage of all providers
+
+---
+
+#### 🔮 IBM Watson Text-to-Speech (FUTURE)
+
+**Type:** Paid IBM Cloud Service  
+**Status:** 🔄 Placeholder Tab
+
+| Feature | Details |
+|---------|---------|
+| Languages | 20+ |
+| Voices | Standard + Expressive + Custom |
+| Quality | Neural voices available |
+| Formats | MP3, OGG, WAV |
+| Pricing | Per character |
+
+**Documentation:**
+- API Docs: https://cloud.ibm.com/apidocs/text-to-speech
+- Product: https://www.ibm.com/products/text-to-speech
+
+---
+
+### 9.2 Open-Source / Self-Hosted TTS
+
+Self-hosted options are ideal for:
+- **Privacy:** Audio data never leaves your server
+- **Cost:** No per-character fees after setup
+- **Air-gapped deployments:** Museums without internet access
+- **Custom voices:** Train on museum-specific content
+
+---
+
+#### 🎯 Coqui TTS (PLANNED - Phase 8)
+
+**Type:** Open-Source Neural TTS  
+**Status:** 🔄 Placeholder Tab
+
+| Feature | Details |
+|---------|---------|
+| Languages | 20+ (model-dependent) |
+| Voices | Pre-trained + fine-tunable |
+| Quality | Near-commercial neural quality |
+| Formats | WAV (converts to MP3) |
+| Cost | Free (self-hosted) |
+
+**Repository:** https://github.com/coqui-ai/TTS  
+**Documentation:** https://tts.readthedocs.io
+
+**Docker Deployment:**
+```bash
+docker run -d -p 5002:5002 ghcr.io/coqui-ai/tts \
+  --model_name tts_models/en/ljspeech/tacotron2-DDC
+```
+
+**Implementation Notes:**
+- Best open-source neural TTS option
+- GPU recommended for real-time synthesis
+- Can fine-tune on custom voices
+- Mozilla TTS fork with active development
+
+---
+
+#### 🔮 OpenTTS (FUTURE)
+
+**Type:** Open-Source TTS Server Aggregator  
+**Status:** 🔄 Placeholder Tab
+
+| Feature | Details |
+|---------|---------|
+| Languages | Varies by backend engine |
+| Voices | Aggregates multiple TTS engines |
+| Quality | Depends on backend |
+| Cost | Free (self-hosted) |
+
+**Repository:** https://github.com/synesthesiam/opentts
+
+**Key Feature:** Unified API for multiple TTS backends (espeak, flite, festival, pico, larynx, etc.)
+
+**Docker Deployment:**
+```bash
+docker run -p 5500:5500 synesthesiam/opentts
+```
+
+---
+
+#### 🔮 MaryTTS (FUTURE)
+
+**Type:** Open-Source TTS Platform  
+**Status:** 🔄 Placeholder Tab
+
+| Feature | Details |
+|---------|---------|
+| Languages | 6+ (en, de, fr, it, ru, te, tr) |
+| Voices | Unit-selection + HMM-based |
+| Quality | Older but reliable |
+| Cost | Free (self-hosted) |
+
+**Repository:** https://github.com/marytts/marytts
+
+**Implementation Notes:**
+- Java-based server
+- Mature project (since 2000!)
+- Good for older hardware
+
+---
+
+#### 🔮 eSpeak NG (FUTURE)
+
+**Type:** Open-Source Lightweight TTS  
+**Status:** 🔄 Placeholder Tab
+
+| Feature | Details |
+|---------|---------|
+| Languages | 100+ |
+| Voices | Formant synthesis |
+| Quality | Robotic but intelligible |
+| Cost | Free |
+
+**Repository:** https://github.com/espeak-ng/espeak-ng
+
+**Implementation Notes:**
+- Extremely fast and lightweight
+- Works on low-power devices
+- Great for accessibility (screen readers)
+- Not suitable for museum narration quality
+
+---
+
+#### 🔮 Festival (FUTURE)
+
+**Type:** Open-Source TTS Framework  
+**Status:** 🔄 Placeholder Tab
+
+| Feature | Details |
+|---------|---------|
+| Languages | en + community contributions |
+| Voices | Diphone + Unit-selection |
+| Quality | Varies by voice |
+| Cost | Free |
+
+**Repository:** https://github.com/festvox/festival
+
+**Implementation Notes:**
+- Academic/research focused
+- Extensible architecture
+- Festvox project for voice building
+
+---
+
+### 9.3 Speech-to-Text (STT) - Different Category
+
+> **Note:** These are transcription services, NOT TTS. Kept on Audio page for complete audio workflows.
+
+#### 🔄 Whisper (PLANNED)
+
+**Type:** Open-Source STT  
+**Status:** 🔄 Placeholder Tab (STT only)
+
+**Repository:** https://github.com/openai/whisper
+
+**Use Case:** Transcribe existing audio files for captions/closed captions.
+
+---
+
+## 10. Dependencies (Renamed from 9)
 
 ### External Services
 - **LibreTranslate**: Auto-translation (self-hosted or cloud)

@@ -69,7 +69,20 @@ import {
 
 import * as elevenlabsService from '../services/elevenlabsService';
 
-type TabId = 'deepgram' | 'whisper' | 'elevenlabs';
+// Tab system for TTS providers
+type TabId =
+    | 'deepgram'
+    | 'elevenlabs'
+    | 'google'
+    | 'polly'
+    | 'azure'
+    | 'watson'
+    | 'coqui'
+    | 'opentts'
+    | 'marytts'
+    | 'espeak'
+    | 'festival'
+    | 'whisper';
 
 interface Tab {
     id: TabId;
@@ -77,29 +90,135 @@ interface Tab {
     icon: React.ElementType;
     status: 'active' | 'coming_soon';
     description: string;
+    type: 'paid' | 'free' | 'stt';
+    docUrl?: string;
+    features?: string[];
 }
 
 const tabs: Tab[] = [
+    // === ACTIVE PROVIDERS ===
     {
         id: 'deepgram',
         name: 'Deepgram',
         icon: AudioWaveform,
         status: 'active',
-        description: 'Aura TTS - High-quality neural text-to-speech'
-    },
-    {
-        id: 'whisper',
-        name: 'Whisper',
-        icon: Mic,
-        status: 'coming_soon',
-        description: 'Self-hosted speech-to-text for transcription'
+        description: 'Aura-2 Neural TTS - High-quality, 7 languages, 40+ voices',
+        type: 'paid',
+        docUrl: 'https://developers.deepgram.com/docs/text-to-speech',
+        features: ['Neural TTS', '7 Languages', '40+ Voices', 'MP3/WAV/OGG/FLAC'],
     },
     {
         id: 'elevenlabs',
         name: 'ElevenLabs',
         icon: Volume2,
         status: 'active',
-        description: 'Premium voice cloning and synthesis'
+        description: 'Premium voice synthesis - 32+ languages, industry-leading quality',
+        type: 'paid',
+        docUrl: 'https://elevenlabs.io/docs/api-reference/introduction',
+        features: ['32+ Languages', '21 Premade Voices', 'Multilingual v2', 'MP3/PCM/Opus'],
+    },
+    // === PAID CLOUD PROVIDERS (COMING SOON) ===
+    {
+        id: 'google',
+        name: 'Google Cloud',
+        icon: Volume2,
+        status: 'coming_soon',
+        description: 'Google Cloud Text-to-Speech - WaveNet & Neural2 voices',
+        type: 'paid',
+        docUrl: 'https://cloud.google.com/text-to-speech/docs',
+        features: ['50+ Languages', '400+ Voices', 'WaveNet Quality', 'Neural2 Voices'],
+    },
+    {
+        id: 'polly',
+        name: 'Amazon Polly',
+        icon: Volume2,
+        status: 'coming_soon',
+        description: 'AWS Polly - Neural, Long-Form, and Generative voices',
+        type: 'paid',
+        docUrl: 'https://docs.aws.amazon.com/polly/latest/dg/API_Reference.html',
+        features: ['30+ Languages', 'Neural Voices', 'Long-Form', 'AWS Integration'],
+    },
+    {
+        id: 'azure',
+        name: 'Azure Speech',
+        icon: Volume2,
+        status: 'coming_soon',
+        description: 'Microsoft Azure Speech Service - 450+ neural voices',
+        type: 'paid',
+        docUrl: 'https://learn.microsoft.com/azure/cognitive-services/speech-service/',
+        features: ['140+ Languages', '450+ Voices', 'Custom Neural', 'Best Coverage'],
+    },
+    {
+        id: 'watson',
+        name: 'IBM Watson',
+        icon: Volume2,
+        status: 'coming_soon',
+        description: 'IBM Watson Text-to-Speech - Expressive neural voices',
+        type: 'paid',
+        docUrl: 'https://cloud.ibm.com/apidocs/text-to-speech',
+        features: ['20+ Languages', 'Neural Voices', 'Expressive', 'Enterprise'],
+    },
+    // === FREE/SELF-HOSTED PROVIDERS (COMING SOON) ===
+    {
+        id: 'coqui',
+        name: 'Coqui TTS',
+        icon: Mic,
+        status: 'coming_soon',
+        description: 'Open-source neural TTS - Self-hosted, no API fees',
+        type: 'free',
+        docUrl: 'https://tts.readthedocs.io',
+        features: ['Self-Hosted', 'Neural Quality', 'Fine-tunable', 'Privacy-First'],
+    },
+    {
+        id: 'opentts',
+        name: 'OpenTTS',
+        icon: Mic,
+        status: 'coming_soon',
+        description: 'TTS server aggregator - Multiple engines unified',
+        type: 'free',
+        docUrl: 'https://github.com/synesthesiam/opentts',
+        features: ['Self-Hosted', 'Multi-Engine', 'Unified API', 'Docker Ready'],
+    },
+    {
+        id: 'marytts',
+        name: 'MaryTTS',
+        icon: Mic,
+        status: 'coming_soon',
+        description: 'Java-based TTS platform - Mature and reliable',
+        type: 'free',
+        docUrl: 'https://github.com/marytts/marytts',
+        features: ['Self-Hosted', '6+ Languages', 'HMM Voices', 'Since 2000'],
+    },
+    {
+        id: 'espeak',
+        name: 'eSpeak NG',
+        icon: Mic,
+        status: 'coming_soon',
+        description: 'Lightweight formant TTS - 100+ languages',
+        type: 'free',
+        docUrl: 'https://github.com/espeak-ng/espeak-ng',
+        features: ['100+ Languages', 'Ultra Lightweight', 'Fast', 'Accessibility'],
+    },
+    {
+        id: 'festival',
+        name: 'Festival',
+        icon: Mic,
+        status: 'coming_soon',
+        description: 'Academic TTS framework - Extensible architecture',
+        type: 'free',
+        docUrl: 'https://github.com/festvox/festival',
+        features: ['Self-Hosted', 'Extensible', 'Research Grade', 'Festvox'],
+    },
+    // === STT (Transcription) ===
+    {
+        id: 'whisper',
+        name: 'Whisper',
+        icon: Mic,
+        status: 'coming_soon',
+        description: 'OpenAI Whisper - Speech-to-Text transcription (not TTS)',
+        type: 'stt',
+        docUrl: 'https://github.com/openai/whisper',
+        features: ['Speech-to-Text', 'Transcription', '99 Languages', 'Self-Hosted'],
     },
 ];
 
@@ -495,30 +614,12 @@ export function Audio() {
                 </div>
             </div>
 
-            {/* Tabs */}
-            <div className="px-6 py-3 border-b border-[var(--color-border-default)]">
-                <div className="flex gap-2">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            disabled={tab.status === 'coming_soon'}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${activeTab === tab.id
-                                ? 'bg-[var(--color-accent-primary)] text-white'
-                                : tab.status === 'coming_soon'
-                                    ? 'bg-[var(--color-bg-elevated)] text-[var(--color-text-muted)] cursor-not-allowed'
-                                    : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
-                                }`}
-                        >
-                            <tab.icon className="w-4 h-4" />
-                            {tab.name}
-                            {tab.status === 'coming_soon' && (
-                                <Lock className="w-3 h-3 ml-1" />
-                            )}
-                        </button>
-                    ))}
-                </div>
-            </div>
+            {/* Provider Selector */}
+            <ProviderSelector
+                tabs={tabs}
+                activeTab={activeTab}
+                onSelectTab={setActiveTab}
+            />
 
             {/* Content */}
             <div className="flex-1 overflow-auto p-6">
@@ -1941,27 +2042,568 @@ function ElevenLabsTab({
     );
 }
 
-// Coming Soon Tab Component
-function ComingSoonTab({ tab }: { tab: Tab }) {
+// Provider Selector Component with Modal Menu
+interface ProviderSelectorProps {
+    tabs: Tab[];
+    activeTab: TabId;
+    onSelectTab: (tab: TabId) => void;
+}
+
+function ProviderSelector({ tabs, activeTab, onSelectTab }: ProviderSelectorProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const activeProvider = tabs.find(t => t.id === activeTab);
+
+    const typeColors = {
+        paid: 'from-violet-500 to-purple-600',
+        free: 'from-emerald-500 to-teal-600',
+        stt: 'from-cyan-500 to-blue-600',
+    };
+
+    const typeLabels = {
+        paid: 'Cloud API',
+        free: 'Self-Hosted',
+        stt: 'Transcription',
+    };
+
+    const typeBadgeColors = {
+        paid: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
+        free: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+        stt: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+    };
+
+    // Group tabs by type
+    const paidTabs = tabs.filter(t => t.type === 'paid');
+    const freeTabs = tabs.filter(t => t.type === 'free');
+    const sttTabs = tabs.filter(t => t.type === 'stt');
+
+    const handleSelect = (tabId: TabId) => {
+        onSelectTab(tabId);
+        setIsOpen(false);
+    };
+
     return (
-        <div className="flex flex-col items-center justify-center h-full">
-            <div className="text-center max-w-md">
-                <div className="w-20 h-20 mx-auto rounded-2xl bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] flex items-center justify-center mb-6">
-                    <Lock className="w-10 h-10 text-[var(--color-text-muted)]" />
+        <>
+            {/* Current Selection Bar */}
+            <div className="px-6 py-3 border-b border-[var(--color-border-default)]">
+                <button
+                    onClick={() => setIsOpen(true)}
+                    className="flex items-center gap-3 px-4 py-2.5 bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border-default)] rounded-xl transition-all group w-full max-w-md"
+                >
+                    {activeProvider && (
+                        <>
+                            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${typeColors[activeProvider.type]} flex items-center justify-center shadow-sm`}>
+                                <activeProvider.icon className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="flex-1 text-left">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-medium text-[var(--color-text-primary)]">
+                                        {activeProvider.name}
+                                    </span>
+                                    {activeProvider.status === 'active' ? (
+                                        <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-medium rounded">
+                                            ACTIVE
+                                        </span>
+                                    ) : (
+                                        <span className="px-1.5 py-0.5 bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] text-[10px] font-medium rounded">
+                                            SOON
+                                        </span>
+                                    )}
+                                </div>
+                                <span className="text-xs text-[var(--color-text-muted)]">
+                                    {typeLabels[activeProvider.type]}
+                                </span>
+                            </div>
+                            <ChevronDown className="w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)] transition-colors" />
+                        </>
+                    )}
+                </button>
+            </div>
+
+            {/* Provider Selection Modal */}
+            {isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setIsOpen(false)}
+                    />
+
+                    {/* Modal */}
+                    <div className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden bg-[#1a1a1a] rounded-2xl shadow-2xl border border-[var(--color-border-default)] flex flex-col">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border-default)]">
+                            <div>
+                                <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                                    Select TTS Provider
+                                </h2>
+                                <p className="text-sm text-[var(--color-text-muted)]">
+                                    Choose a text-to-speech service
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5 text-[var(--color-text-muted)]" />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                            {/* Cloud API Services */}
+                            <div>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-6 h-6 rounded-md bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                                        <Volume2 className="w-3.5 h-3.5 text-white" />
+                                    </div>
+                                    <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
+                                        Cloud API Services
+                                    </h3>
+                                    <span className="text-xs text-[var(--color-text-muted)]">
+                                        Pay-per-use, high quality
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {paidTabs.map((tab) => (
+                                        <ProviderCard
+                                            key={tab.id}
+                                            tab={tab}
+                                            isActive={activeTab === tab.id}
+                                            typeColors={typeColors}
+                                            typeBadgeColors={typeBadgeColors}
+                                            onSelect={() => handleSelect(tab.id)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Self-Hosted Services */}
+                            <div>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-6 h-6 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+                                        <Mic className="w-3.5 h-3.5 text-white" />
+                                    </div>
+                                    <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
+                                        Self-Hosted (Free)
+                                    </h3>
+                                    <span className="text-xs text-[var(--color-text-muted)]">
+                                        No API fees, privacy-first
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {freeTabs.map((tab) => (
+                                        <ProviderCard
+                                            key={tab.id}
+                                            tab={tab}
+                                            isActive={activeTab === tab.id}
+                                            typeColors={typeColors}
+                                            typeBadgeColors={typeBadgeColors}
+                                            onSelect={() => handleSelect(tab.id)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Speech-to-Text */}
+                            <div>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-6 h-6 rounded-md bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                                        <Mic className="w-3.5 h-3.5 text-white" />
+                                    </div>
+                                    <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
+                                        Speech-to-Text
+                                    </h3>
+                                    <span className="text-xs text-[var(--color-text-muted)]">
+                                        Transcription services
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {sttTabs.map((tab) => (
+                                        <ProviderCard
+                                            key={tab.id}
+                                            tab={tab}
+                                            isActive={activeTab === tab.id}
+                                            typeColors={typeColors}
+                                            typeBadgeColors={typeBadgeColors}
+                                            onSelect={() => handleSelect(tab.id)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">
-                    {tab.name}
-                </h2>
-                <p className="text-lg text-[var(--color-accent-primary)] font-medium mb-4">
-                    Coming Soon
-                </p>
-                <p className="text-[var(--color-text-muted)]">
+            )}
+        </>
+    );
+}
+
+// Provider Card Component
+interface ProviderCardProps {
+    tab: Tab;
+    isActive: boolean;
+    typeColors: Record<string, string>;
+    typeBadgeColors: Record<string, string>;
+    onSelect: () => void;
+}
+
+function ProviderCard({ tab, isActive, typeColors, typeBadgeColors, onSelect }: ProviderCardProps) {
+    return (
+        <button
+            onClick={onSelect}
+            className={`group relative flex items-start gap-3 p-3 rounded-xl border transition-all text-left ${isActive
+                    ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/50'
+                    : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)]'
+                }`}
+        >
+            {/* Icon */}
+            <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${typeColors[tab.type]} flex items-center justify-center shadow-sm flex-shrink-0`}>
+                <tab.icon className="w-5 h-5 text-white" />
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                    <span className={`font-medium ${isActive ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-text-primary)]'}`}>
+                        {tab.name}
+                    </span>
+                    {tab.status === 'active' ? (
+                        <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-medium rounded">
+                            READY
+                        </span>
+                    ) : (
+                        <Lock className="w-3 h-3 text-[var(--color-text-muted)]" />
+                    )}
+                </div>
+                <p className="text-xs text-[var(--color-text-muted)] line-clamp-2">
                     {tab.description}
                 </p>
-                <div className="mt-6 p-4 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]">
-                    <div className="flex items-center justify-center gap-2 text-[var(--color-text-muted)]">
-                        <CheckCircle2 className="w-5 h-5 text-[var(--color-success)]" />
-                        <span>We're working on this feature</span>
+
+                {/* Features preview */}
+                {tab.features && tab.features.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                        {tab.features.slice(0, 3).map((feature, idx) => (
+                            <span
+                                key={idx}
+                                className={`px-1.5 py-0.5 text-[10px] rounded border ${typeBadgeColors[tab.type]}`}
+                            >
+                                {feature}
+                            </span>
+                        ))}
+                        {tab.features.length > 3 && (
+                            <span className="px-1.5 py-0.5 text-[10px] text-[var(--color-text-muted)]">
+                                +{tab.features.length - 3} more
+                            </span>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Active indicator */}
+            {isActive && (
+                <div className="absolute top-3 right-3">
+                    <CheckCircle2 className="w-5 h-5 text-[var(--color-accent-primary)]" />
+                </div>
+            )}
+        </button>
+    );
+}
+
+// Coming Soon Tab Component - Shows comprehensive info for future development
+function ComingSoonTab({ tab }: { tab: Tab }) {
+    const typeColors = {
+        paid: 'from-violet-500 to-purple-600',
+        free: 'from-emerald-500 to-teal-600',
+        stt: 'from-cyan-500 to-blue-600',
+    };
+
+    const typeLabels = {
+        paid: 'Cloud API',
+        free: 'Self-Hosted',
+        stt: 'Speech-to-Text',
+    };
+
+    const typeBadgeColors = {
+        paid: 'bg-violet-500/20 text-violet-300 border border-violet-500/30',
+        free: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
+        stt: 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30',
+    };
+
+    // Implementation details for each provider
+    const implementationDetails: Record<string, {
+        envVars: string[];
+        npmPackage?: string;
+        dockerCommand?: string;
+        apiEndpoint?: string;
+        notes?: string[];
+    }> = {
+        google: {
+            envVars: ['GOOGLE_APPLICATION_CREDENTIALS', 'GOOGLE_TTS_API_KEY'],
+            npmPackage: '@google-cloud/text-to-speech',
+            apiEndpoint: 'texttospeech.googleapis.com/v1/text:synthesize',
+            notes: [
+                'Requires GCP project with Text-to-Speech API enabled',
+                'WaveNet voices cost ~4x standard but sound much better',
+                'Neural2 voices are newest and highest quality',
+            ],
+        },
+        polly: {
+            envVars: ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION'],
+            npmPackage: '@aws-sdk/client-polly',
+            apiEndpoint: 'polly.{region}.amazonaws.com',
+            notes: [
+                'Requires IAM credentials with Polly permissions',
+                'Neural voices require NTTS engine specification',
+                'Free tier: 5M chars/month standard, 1M neural',
+            ],
+        },
+        azure: {
+            envVars: ['AZURE_SPEECH_KEY', 'AZURE_SPEECH_REGION'],
+            npmPackage: 'microsoft-cognitiveservices-speech-sdk',
+            apiEndpoint: '{region}.tts.speech.microsoft.com/cognitiveservices/v1',
+            notes: [
+                'Best language/voice coverage of all providers',
+                'Supports custom neural voice training',
+                'Free tier: 500K chars/month',
+            ],
+        },
+        watson: {
+            envVars: ['IBM_WATSON_API_KEY', 'IBM_WATSON_URL'],
+            npmPackage: 'ibm-watson',
+            apiEndpoint: 'api.{region}.text-to-speech.watson.cloud.ibm.com',
+            notes: [
+                'Supports expressive neural voices',
+                'SSML support for fine control',
+                'Lite plan: 10K chars/month free',
+            ],
+        },
+        coqui: {
+            envVars: ['COQUI_TTS_URL'],
+            dockerCommand: 'docker run -d -p 5002:5002 ghcr.io/coqui-ai/tts --model_name tts_models/en/ljspeech/tacotron2-DDC',
+            apiEndpoint: 'http://localhost:5002/api/tts',
+            notes: [
+                'GPU recommended for real-time synthesis',
+                'Can fine-tune on custom voices',
+                'Multiple model options (Tacotron2, VITS, etc.)',
+            ],
+        },
+        opentts: {
+            envVars: ['OPENTTS_URL'],
+            dockerCommand: 'docker run -d -p 5500:5500 synesthesiam/opentts',
+            apiEndpoint: 'http://localhost:5500/api/tts',
+            notes: [
+                'Aggregates multiple TTS engines',
+                'Supports espeak, flite, festival, larynx',
+                'Good for testing different engines',
+            ],
+        },
+        marytts: {
+            envVars: ['MARYTTS_URL'],
+            dockerCommand: 'docker run -d -p 59125:59125 synesthesiam/marytts',
+            apiEndpoint: 'http://localhost:59125/process',
+            notes: [
+                'Java-based, mature project (since 2000)',
+                'Unit-selection and HMM synthesis',
+                'Good for older hardware',
+            ],
+        },
+        espeak: {
+            envVars: ['ESPEAK_PATH'],
+            npmPackage: 'espeak-ng',
+            notes: [
+                '100+ languages supported',
+                'Formant synthesis (robotic but fast)',
+                'Best for accessibility/screen readers',
+                'Not recommended for museum narration',
+            ],
+        },
+        festival: {
+            envVars: ['FESTIVAL_URL'],
+            dockerCommand: 'docker run -d -p 1314:1314 synesthesiam/festival',
+            notes: [
+                'Academic/research focused',
+                'Festvox for custom voice building',
+                'Diphone and unit-selection synthesis',
+            ],
+        },
+        whisper: {
+            envVars: ['WHISPER_URL', 'OPENAI_API_KEY'],
+            dockerCommand: 'docker run -d -p 9000:9000 onerahmet/openai-whisper-asr-webservice',
+            apiEndpoint: 'http://localhost:9000/asr',
+            notes: [
+                'Speech-to-Text only (not TTS)',
+                'Useful for transcribing existing audio',
+                'OpenAI Whisper API or self-hosted',
+                'Supports 99 languages',
+            ],
+        },
+    };
+
+    const details = implementationDetails[tab.id] || {};
+
+    return (
+        <div className="h-full overflow-y-auto">
+            <div className="max-w-3xl mx-auto py-8 px-4">
+                {/* Header Section */}
+                <div className="text-center mb-8">
+                    <div className={`w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br ${typeColors[tab.type]} flex items-center justify-center mb-4 shadow-lg`}>
+                        <tab.icon className="w-10 h-10 text-white" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">
+                        {tab.name}
+                    </h2>
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${typeBadgeColors[tab.type]}`}>
+                        {typeLabels[tab.type]}
+                    </span>
+                    <p className="text-[var(--color-text-muted)] mt-4 max-w-md mx-auto">
+                        {tab.description}
+                    </p>
+                </div>
+
+                {/* Status Banner */}
+                <div className="flex items-center justify-center gap-3 p-4 bg-[var(--color-bg-elevated)] rounded-xl border border-[var(--color-border-default)] mb-8">
+                    <div className="w-3 h-3 rounded-full bg-violet-500 animate-pulse" />
+                    <span className="text-[var(--color-text-secondary)] font-medium">
+                        Integration Coming Soon
+                    </span>
+                </div>
+
+                {/* Features */}
+                {tab.features && tab.features.length > 0 && (
+                    <div className="mb-8">
+                        <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
+                            Key Features
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {tab.features.map((feature, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`px-3 py-2 rounded-lg text-sm text-center ${typeBadgeColors[tab.type]}`}
+                                >
+                                    {feature}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Implementation Guide */}
+                <div className="space-y-6">
+                    {/* Documentation */}
+                    {tab.docUrl && (
+                        <div className="p-4 bg-[var(--color-bg-elevated)] rounded-xl border border-[var(--color-border-default)]">
+                            <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
+                                📚 Documentation
+                            </h3>
+                            <a
+                                href={tab.docUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-[var(--color-accent-primary)] hover:underline"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                {tab.docUrl}
+                            </a>
+                        </div>
+                    )}
+
+                    {/* Environment Variables */}
+                    {details.envVars && details.envVars.length > 0 && (
+                        <div className="p-4 bg-[var(--color-bg-elevated)] rounded-xl border border-[var(--color-border-default)]">
+                            <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
+                                🔑 Environment Variables
+                            </h3>
+                            <div className="space-y-2">
+                                {details.envVars.map((envVar, idx) => (
+                                    <code
+                                        key={idx}
+                                        className="block px-3 py-2 bg-black/30 rounded-lg text-sm text-emerald-400 font-mono"
+                                    >
+                                        {envVar}=your_value_here
+                                    </code>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* NPM Package */}
+                    {details.npmPackage && (
+                        <div className="p-4 bg-[var(--color-bg-elevated)] rounded-xl border border-[var(--color-border-default)]">
+                            <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
+                                📦 NPM Package
+                            </h3>
+                            <code className="block px-3 py-2 bg-black/30 rounded-lg text-sm text-cyan-400 font-mono">
+                                npm install {details.npmPackage}
+                            </code>
+                        </div>
+                    )}
+
+                    {/* Docker Command */}
+                    {details.dockerCommand && (
+                        <div className="p-4 bg-[var(--color-bg-elevated)] rounded-xl border border-[var(--color-border-default)]">
+                            <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
+                                🐳 Docker Deployment
+                            </h3>
+                            <code className="block px-3 py-2 bg-black/30 rounded-lg text-sm text-violet-400 font-mono overflow-x-auto whitespace-nowrap">
+                                {details.dockerCommand}
+                            </code>
+                        </div>
+                    )}
+
+                    {/* API Endpoint */}
+                    {details.apiEndpoint && (
+                        <div className="p-4 bg-[var(--color-bg-elevated)] rounded-xl border border-[var(--color-border-default)]">
+                            <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
+                                🔗 API Endpoint
+                            </h3>
+                            <code className="block px-3 py-2 bg-black/30 rounded-lg text-sm text-pink-400 font-mono">
+                                {details.apiEndpoint}
+                            </code>
+                        </div>
+                    )}
+
+                    {/* Implementation Notes */}
+                    {details.notes && details.notes.length > 0 && (
+                        <div className="p-4 bg-[var(--color-bg-elevated)] rounded-xl border border-[var(--color-border-default)]">
+                            <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
+                                📝 Implementation Notes
+                            </h3>
+                            <ul className="space-y-2">
+                                {details.notes.map((note, idx) => (
+                                    <li key={idx} className="flex items-start gap-2 text-sm text-[var(--color-text-muted)]">
+                                        <span className="text-[var(--color-text-secondary)] mt-0.5">•</span>
+                                        {note}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* TourStack Integration Path */}
+                    <div className="p-4 bg-gradient-to-br from-violet-500/10 to-purple-600/10 rounded-xl border border-violet-500/20">
+                        <h3 className="text-sm font-semibold text-violet-300 uppercase tracking-wide mb-3">
+                            🚀 TourStack Integration Path
+                        </h3>
+                        <ol className="space-y-2 text-sm text-[var(--color-text-muted)]">
+                            <li className="flex items-start gap-2">
+                                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-500/20 text-violet-300 text-xs flex items-center justify-center">1</span>
+                                <span>Create server route: <code className="text-violet-300">server/routes/{tab.id}.ts</code></span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-500/20 text-violet-300 text-xs flex items-center justify-center">2</span>
+                                <span>Create service: <code className="text-violet-300">src/services/{tab.id}Service.ts</code></span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-500/20 text-violet-300 text-xs flex items-center justify-center">3</span>
+                                <span>Create tab component similar to <code className="text-violet-300">DeepgramTab</code> or <code className="text-violet-300">ElevenLabsTab</code></span>
+                            </li>
+                            <li className="flex items-start gap-2">
+                                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-500/20 text-violet-300 text-xs flex items-center justify-center">4</span>
+                                <span>Add env vars to Settings page for configuration</span>
+                            </li>
+                        </ol>
                     </div>
                 </div>
             </div>
