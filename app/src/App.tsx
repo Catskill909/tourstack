@@ -8,6 +8,7 @@ import { CollectionDetail } from './pages/CollectionDetail';
 import { Settings } from './pages/Settings';
 import { Audio } from './pages/Audio';
 import { ApiFeeds } from './pages/ApiFeeds';
+import { AIAssistance } from './pages/AIAssistance';
 import { VisitorStop } from './pages/VisitorStop';
 import './index.css';
 
@@ -34,6 +35,7 @@ function App() {
               <Route path="/analytics" element={<ComingSoon title="Analytics" />} />
               <Route path="/api" element={<ApiFeeds />} />
               <Route path="/tools" element={<ComingSoon title="Tools" />} />
+              <Route path="/ai-assistance" element={<AIAssistance />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/help" element={<ComingSoon title="Help" />} />
             </Routes>
