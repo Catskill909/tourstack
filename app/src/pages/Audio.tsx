@@ -2132,7 +2132,7 @@ function ProviderSelector({ tabs, activeTab, onSelectTab }: ProviderSelectorProp
                     />
 
                     {/* Modal */}
-                    <div className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden bg-[#1a1a1a] rounded-2xl shadow-2xl border border-[var(--color-border-default)] flex flex-col">
+                    <div className="relative w-full max-w-6xl max-h-[85vh] overflow-hidden bg-[#1a1a1a] rounded-2xl shadow-2xl border border-[var(--color-border-default)] flex flex-col">
                         {/* Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border-default)]">
                             <div>
@@ -2145,9 +2145,10 @@ function ProviderSelector({ tabs, activeTab, onSelectTab }: ProviderSelectorProp
                             </div>
                             <button
                                 onClick={() => setIsOpen(false)}
-                                className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
+                                className="p-2 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] hover:text-white transition-all duration-300 hover:rotate-90 group shadow-sm"
+                                aria-label="Close modal"
                             >
-                                <X className="w-5 h-5 text-[var(--color-text-muted)]" />
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 
@@ -2166,7 +2167,7 @@ function ProviderSelector({ tabs, activeTab, onSelectTab }: ProviderSelectorProp
                                         Pay-per-use, high quality
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                                     {paidTabs.map((tab) => (
                                         <ProviderCard
                                             key={tab.id}
@@ -2193,7 +2194,7 @@ function ProviderSelector({ tabs, activeTab, onSelectTab }: ProviderSelectorProp
                                         No API fees, privacy-first
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                                     {freeTabs.map((tab) => (
                                         <ProviderCard
                                             key={tab.id}
@@ -2220,7 +2221,7 @@ function ProviderSelector({ tabs, activeTab, onSelectTab }: ProviderSelectorProp
                                         Transcription services
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
                                     {sttTabs.map((tab) => (
                                         <ProviderCard
                                             key={tab.id}
