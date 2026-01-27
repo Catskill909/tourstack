@@ -2113,7 +2113,10 @@ function ProviderSelector({ tabs, activeTab, onSelectTab }: ProviderSelectorProp
                                     {typeLabels[activeProvider.type]}
                                 </span>
                             </div>
-                            <ChevronDown className="w-5 h-5 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)] transition-colors" />
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] group-hover:bg-[var(--color-bg-subtle)] transition-all ml-auto">
+                                <span className="text-xs font-medium text-[var(--color-text-secondary)]">More</span>
+                                <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)] transition-colors" />
+                            </div>
                         </>
                     )}
                 </button>
@@ -2252,8 +2255,8 @@ function ProviderCard({ tab, isActive, typeColors, typeBadgeColors, onSelect }: 
         <button
             onClick={onSelect}
             className={`group relative flex items-start gap-3 p-3 rounded-xl border transition-all text-left ${isActive
-                    ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/50'
-                    : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)]'
+                ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/50'
+                : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)]'
                 }`}
         >
             {/* Icon */}
