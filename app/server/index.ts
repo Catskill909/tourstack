@@ -17,6 +17,7 @@ import elevenlabsRouter from './routes/elevenlabs.js';
 import feedsRouter from './routes/feeds.js';
 import collectionsRouter from './routes/collections.js';
 import visitorRouter from './routes/visitor.js';
+import visionRouter from './routes/vision.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,6 +45,7 @@ app.use('/api/elevenlabs', elevenlabsRouter);
 app.use('/api/feeds', feedsRouter);
 app.use('/api/collections', collectionsRouter);
 app.use('/api/visitor', visitorRouter);
+app.use('/api/vision', visionRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

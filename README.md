@@ -184,6 +184,7 @@ Add these in Coolify's **Environment Variables** section:
 | `ELEVENLABS_API_KEY` | Optional | ElevenLabs premium TTS (32+ languages, 3000+ voices) |
 | `GOOGLE_MAPS_API_KEY` | Optional | Google Maps for premium maps |
 | `LT_LOAD_ONLY` | Optional | LibreTranslate languages (default: en,es,fr,de,ja,it,ko,zh,pt) |
+| `GOOGLE_VISION_API_KEY` | Optional | Enable AI features (Image to Text, Smart Cataloging, Captions) |
 
 **To set up Google Maps:**
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
