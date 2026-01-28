@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import { Upload, X, Copy, Check, FileText, Loader2, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Upload, X, Copy, Check, FileText, Loader2, Image as ImageIcon, AlertCircle, Plus, Save } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function SmartTagGenerator() {
     const [image, setImage] = useState<File | null>(null);
@@ -116,6 +117,27 @@ export function SmartTagGenerator() {
         }
     };
 
+    const [newTagInput, setNewTagInput] = useState('');
+    const [isAddingTag, setIsAddingTag] = useState(false);
+
+    const handleAddTag = (e?: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent) => {
+        if (e && 'key' in e && e.key !== 'Enter') return;
+
+        if (newTagInput.trim()) {
+            if (e) e.preventDefault();
+            const tagToAdd = newTagInput.trim().charAt(0).toUpperCase() + newTagInput.trim().slice(1);
+            if (!visualTags.includes(tagToAdd)) {
+                setVisualTags([...visualTags, tagToAdd]);
+            }
+            setNewTagInput('');
+            setIsAddingTag(false);
+        }
+    };
+
+    const handleRemoveTag = (tagToRemove: string) => {
+        setVisualTags(visualTags.filter(t => t !== tagToRemove));
+    };
+
     const handleClear = () => {
         setImage(null);
         setPreviewUrl(null);
@@ -124,6 +146,7 @@ export function SmartTagGenerator() {
         setWebReferences([]);
         setBestGuess(null);
         setError(null);
+        setNewTagInput('');
     };
 
     return (
@@ -257,23 +280,97 @@ export function SmartTagGenerator() {
                             )}
 
                             {/* Visual Tags (High Confidence) */}
-                            {visualTags.length > 0 && (
-                                <div>
-                                    <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
-                                        Visual Tags
-                                    </h4>
+                            <div>
+                                <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
+                                    Visual Tags
+                                </h4>
+                                <div className="space-y-3">
                                     <div className="flex flex-wrap gap-2">
                                         {visualTags.map((tag, i) => (
                                             <span
                                                 key={i}
-                                                className="px-3 py-1 rounded-md bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm hover:border-purple-500/30 hover:text-purple-300 transition-colors cursor-default"
+                                                className="group inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-sm hover:border-purple-500/30 hover:text-purple-300 transition-colors cursor-default"
                                             >
                                                 {tag}
+                                                <button
+                                                    onClick={() => handleRemoveTag(tag)}
+                                                    className="opacity-0 group-hover:opacity-100 p-0.5 rounded-full hover:bg-red-500/20 text-red-400 transition-all"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
                                             </span>
                                         ))}
                                     </div>
+
+                                    {/* Add Tag Button & Modal */}
+                                    <div className="relative inline-block">
+                                        <AnimatePresence mode="wait">
+                                            {!isAddingTag ? (
+                                                <motion.button
+                                                    initial={{ opacity: 0, scale: 0.9 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.9 }}
+                                                    onClick={() => setIsAddingTag(true)}
+                                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-purple-500/50 hover:bg-purple-500/10 transition-all group"
+                                                >
+                                                    <div className="p-1 rounded-md bg-[var(--color-bg-app)] border border-[var(--color-border-default)] group-hover:border-purple-500/30">
+                                                        <Plus className="w-4 h-4" />
+                                                    </div>
+                                                    <span className="text-sm font-medium">Add Tag</span>
+                                                </motion.button>
+                                            ) : (
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                                                    className="absolute top-0 left-0 z-10 w-[300px] p-4 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] shadow-xl shadow-black/50"
+                                                >
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <h5 className="text-sm font-semibold text-[var(--color-text-primary)]">Add New Tag</h5>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setIsAddingTag(false);
+                                                                    setNewTagInput('');
+                                                                }}
+                                                                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="space-y-3">
+                                                            <div className="relative">
+                                                                <input
+                                                                    type="text"
+                                                                    autoFocus
+                                                                    value={newTagInput}
+                                                                    onChange={(e) => setNewTagInput(e.target.value)}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') handleAddTag();
+                                                                        if (e.key === 'Escape') setIsAddingTag(false);
+                                                                    }}
+                                                                    placeholder="Type tag name..."
+                                                                    className="w-full bg-[var(--color-bg-app)] border border-[var(--color-border-default)] rounded-lg px-3 py-2 text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                                                                />
+                                                            </div>
+
+                                                            <button
+                                                                onClick={handleAddTag}
+                                                                disabled={!newTagInput.trim()}
+                                                                className="w-full py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:hover:bg-purple-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+                                                            >
+                                                                <Save className="w-4 h-4" />
+                                                                Save Tag
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     ) : (
                         "Upload an image and click 'Analyze Image' to see results"

@@ -31,8 +31,15 @@
 | Mode | Routes | Purpose |
 |------|--------|---------|
 | **Admin** | `/tours/*`, `/stops/*` | Create & manage tour content |
-| **Visitor** | `/visitor/*` | Public-facing tour experience |
-| **Tools** | `/tools/*`, `/scanner` | Beacon scanning, analytics |
+| **Visitor** | `/visitor/*` | Public-facing tour experience
+
+### 🔄 IN PROGRESS: AI Tools (Phase 2)
+> Next Up: Caption Generator using Generative AI (Gemini).
+
+- **Caption Writer**: Use Gemini to generate natural language descriptions of artifacts.
+- **Smart Cataloging**: Integrate tagging into the main Media Library upload flow.
+
+### ⏸ PAUSED: Visitor Experience System (production)
 
 ### Key Architecture Concept
 
@@ -432,6 +439,14 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [ ] **Published Check** - Only show published tours to visitors
 - [ ] **Language Selector** - Visitor-friendly language switching
 
+### Phase 19: AI Tools Integration (Part 1) ✅ (Jan 27, 2026)
+- [x] **AI Dashboard** - `/ai-assistance` portal for all AI tools
+- [x] **Smart Tag Generator** - Logic for Image-to-Text extraction
+- [x] **Visual Tagging** - Google Vision API integration for label detection
+- [x] **Manual Tag Editing** - Add/Remove tags with interactive UI
+- [x] **Smart Titles** - Web entity detection for "Best Guess" titles
+- [x] **Production Ready** - API Key security + Coolify env var support
+
 ### 🎯 Phase 17: Stop Navigation & Links (Planned)
 - [ ] **Next/Previous Buttons** - Navigate between stops
 - [ ] **Stop List View** - See all stops in tour
@@ -455,12 +470,13 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 ## 📋 Next Steps (Priority Order)
 
-### 🔄 IN PROGRESS: Visitor Experience System
-> Phase 16 - Creating the visitor-facing pages that QR codes link to.
+### 🔄 IN PROGRESS: AI Tools (Phase 2)
+> Next Up: Caption Generator using Generative AI (Gemini).
 
-**Key Principle:** The Preview System IS the Visitor View - same components, different context.
-- Admin: Preview in modal with device frames
-- Visitor: Full-screen pages via QR codes
+- **Caption Writer**: Use Gemini to generate natural language descriptions of artifacts.
+- **Smart Cataloging**: Integrate tagging into the main Media Library upload flow.
+
+### ⏸ PAUSED: Visitor Experience System
 
 ### ✅ COMPLETED: Import Collections into Blocks
 > Phase 4 is complete! Both Audio Block and Timeline Gallery now support importing from collections.
