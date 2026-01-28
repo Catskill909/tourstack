@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { Upload, X, Copy, Check, FileText, Loader2, Image as ImageIcon, AlertCircle, Plus, Save } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
@@ -8,8 +9,16 @@ export function SmartTagGenerator() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [extractedText, setExtractedText] = useState<string | null>(null);
     const [visualTags, setVisualTags] = useState<string[]>([]);
-    const [webReferences, setWebReferences] = useState<string[]>([]);
     const [bestGuess, setBestGuess] = useState<string | null>(null);
+    const [description, setDescription] = useState<string | null>(null);
+    const [objects, setObjects] = useState<string[]>([]);
+    const [colors, setColors] = useState<{ name: string; hex: string }[]>([]);
+    // New Visual Attributes
+    const [mood, setMood] = useState<string | null>(null);
+    const [lighting, setLighting] = useState<string | null>(null);
+    const [artStyle, setArtStyle] = useState<string | null>(null);
+    const [estimatedLocation, setEstimatedLocation] = useState<string | null>(null);
+
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [copied, setCopied] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -21,7 +30,9 @@ export function SmartTagGenerator() {
             setPreviewUrl(URL.createObjectURL(file));
             setExtractedText(null);
             setVisualTags([]);
-            setWebReferences([]);
+            setDescription(null);
+            setObjects([]);
+            setColors([]);
             setBestGuess(null);
             setError(null);
         }
@@ -41,7 +52,6 @@ export function SmartTagGenerator() {
         setError(null);
 
         try {
-            // Convert to base64
             const reader = new FileReader();
             reader.readAsDataURL(image);
 
@@ -49,55 +59,35 @@ export function SmartTagGenerator() {
                 const base64String = reader.result?.toString().split(',')[1];
 
                 try {
-                    const response = await fetch('/api/vision/analyze', {
+                    const response = await fetch('/api/gemini/analyze', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            image: base64String,
-                            features: ['TEXT_DETECTION']
-                        })
+                        body: JSON.stringify({ image: base64String })
                     });
 
                     if (!response.ok) {
                         const errorData = await response.json();
-                        // errorData.error is now the message string from the server
                         throw new Error(errorData.error || 'Failed to analyze image');
                     }
 
                     const data = await response.json();
 
-                    if (data.fullTextAnnotation) {
-                        setExtractedText(data.fullTextAnnotation.text);
-                    } else if (data.textAnnotations && data.textAnnotations.length > 0) {
-                        setExtractedText(data.textAnnotations[0].description);
-                    } else {
-                        setExtractedText(null);
-                    }
+                    // Map Gemini JSON response to state
+                    setDescription(data.description || null);
+                    setVisualTags(data.tags || []);
+                    setObjects(data.objects || []);
+                    setExtractedText(data.text || null);
+                    setColors(data.colors || []);
+                    setBestGuess(data.suggestedTitle || null);
 
-                    // Process Tags
-                    if (data.labelAnnotations) {
-                        const labels = data.labelAnnotations.map((l: any) => l.description);
-                        setVisualTags(labels.map((t: string) => t.charAt(0).toUpperCase() + t.slice(1)));
-                    } else {
-                        setVisualTags([]);
-                    }
+                    // Set new attributes
+                    setMood(data.mood || null);
+                    setLighting(data.lighting || null);
+                    setArtStyle(data.artStyle || null);
+                    setEstimatedLocation(data.estimatedLocation || null);
 
-                    if (data.webDetection?.webEntities) {
-                        const webEntities = data.webDetection.webEntities
-                            .slice(0, 5) // Limit to top 5
-                            .map((w: any) => w.description);
-                        setWebReferences(webEntities.map((t: string) => t.charAt(0).toUpperCase() + t.slice(1)));
-                    } else {
-                        setWebReferences([]);
-                    }
-
-                    if (data.webDetection?.bestGuessLabels?.length > 0) {
-                        setBestGuess(data.webDetection.bestGuessLabels[0].label);
-                    } else {
-                        setBestGuess(null);
-                    }
-                } catch (err) {
-                    setError('Failed to analyze image. Please try again.');
+                } catch (err: any) {
+                    setError(err.message || 'Failed to analyze image. Please try again.');
                     console.error(err);
                 } finally {
                     setIsAnalyzing(false);
@@ -143,8 +133,14 @@ export function SmartTagGenerator() {
         setPreviewUrl(null);
         setExtractedText(null);
         setVisualTags([]);
-        setWebReferences([]);
+        setDescription(null);
+        setObjects([]);
+        setColors([]);
         setBestGuess(null);
+        setMood(null);
+        setLighting(null);
+        setArtStyle(null);
+        setEstimatedLocation(null);
         setError(null);
         setNewTagInput('');
     };
@@ -208,7 +204,7 @@ export function SmartTagGenerator() {
                             )}
                         </div>
 
-                        {!isAnalyzing && !extractedText && (
+                        {!isAnalyzing && !extractedText && !description && (
                             <button
                                 onClick={handleAnalyze}
                                 className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:shadow-purple-500/25"
@@ -241,7 +237,7 @@ export function SmartTagGenerator() {
 
                 <div className={`
                     flex-1 rounded-xl border p-6 overflow-auto min-h-[400px]
-                    ${(extractedText || bestGuess || visualTags.length > 0 || webReferences.length > 0)
+                    ${(extractedText || bestGuess || visualTags.length > 0 || description)
                         ? 'bg-[var(--color-bg-surface)] border-[var(--color-border-default)]'
                         : 'bg-[var(--color-bg-app)] border-[var(--color-border-default)] text-[var(--color-text-muted)] flex items-center justify-center italic'
                     }
@@ -251,30 +247,103 @@ export function SmartTagGenerator() {
                             <AlertCircle className="w-10 h-10 mx-auto mb-3" />
                             <p>{error}</p>
                         </div>
-                    ) : (extractedText || bestGuess || visualTags.length > 0 || webReferences.length > 0) ? (
+                    ) : (extractedText || bestGuess || visualTags.length > 0 || description) ? (
                         <div className="space-y-8">
-                            {/* Best Guess Title */}
-                            {bestGuess && (
-                                <div>
-                                    <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
-                                        Suggested Title
-                                    </h4>
-                                    <p className="text-xl font-medium text-[var(--color-text-primary)] leading-tight capitalize">
-                                        {bestGuess}
-                                    </p>
+                            {/* Header Section: Title & Description */}
+                            <div className="space-y-4">
+                                {bestGuess && (
+                                    <div>
+                                        <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
+                                            Suggested Title
+                                        </h4>
+                                        <p className="text-xl font-medium text-[var(--color-text-primary)] leading-tight capitalize">
+                                            {bestGuess}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {description && (
+                                    <div>
+                                        <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
+                                            Description
+                                        </h4>
+                                        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                                            {description}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Colors & Objects Row */}
+                            {(colors.length > 0 || objects.length > 0) && (
+                                <div className="grid grid-cols-2 gap-6">
+                                    {colors.length > 0 && (
+                                        <div>
+                                            <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
+                                                Dominant Colors
+                                            </h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {colors.map((color, i) => (
+                                                    <div key={i} className="flex items-center gap-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-md px-2 py-1.5" title={color.hex}>
+                                                        <div
+                                                            className="w-4 h-4 rounded-full border border-black/10 shadow-sm"
+                                                            style={{ backgroundColor: color.hex }}
+                                                        />
+                                                        <span className="text-xs text-[var(--color-text-secondary)] font-mono">{color.name}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {objects.length > 0 && (
+                                        <div>
+                                            <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
+                                                Objects Detected
+                                            </h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {objects.map((obj, i) => (
+                                                    <span key={i} className="px-2 py-1 text-xs rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                                        {obj}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
-                            {/* Extracted Text (OCR) */}
-                            {extractedText && (
+                            {/* Visual Attributes */}
+                            {(mood || lighting || artStyle || estimatedLocation) && (
                                 <div>
-                                    <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
-                                        Text Found in Image
+                                    <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-3">
+                                        Visual DNA
                                     </h4>
-                                    <div className="bg-[var(--color-bg-app)] rounded-lg p-4 border border-[var(--color-border-default)]">
-                                        <p className="text-[var(--color-text-primary)] whitespace-pre-wrap leading-relaxed font-mono text-sm">
-                                            {extractedText}
-                                        </p>
+                                    <div className="grid grid-cols-2 gap-4 bg-[var(--color-bg-elevated)] rounded-xl p-4 border border-[var(--color-border-default)]">
+                                        {mood && (
+                                            <div>
+                                                <span className="text-xs text-[var(--color-text-muted)] block mb-1">Mood</span>
+                                                <span className="text-sm font-medium text-[var(--color-text-primary)]">{mood}</span>
+                                            </div>
+                                        )}
+                                        {lighting && (
+                                            <div>
+                                                <span className="text-xs text-[var(--color-text-muted)] block mb-1">Lighting</span>
+                                                <span className="text-sm font-medium text-[var(--color-text-primary)]">{lighting}</span>
+                                            </div>
+                                        )}
+                                        {artStyle && (
+                                            <div>
+                                                <span className="text-xs text-[var(--color-text-muted)] block mb-1">Style</span>
+                                                <span className="text-sm font-medium text-[var(--color-text-primary)]">{artStyle}</span>
+                                            </div>
+                                        )}
+                                        {estimatedLocation && (
+                                            <div>
+                                                <span className="text-xs text-[var(--color-text-muted)] block mb-1">Context</span>
+                                                <span className="text-sm font-medium text-[var(--color-text-primary)]">{estimatedLocation}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -371,6 +440,21 @@ export function SmartTagGenerator() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Extracted Text (OCR) - Moved to bottom */}
+                            {extractedText && (
+                                <div>
+                                    <h4 className="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
+                                        Text Found in Image
+                                    </h4>
+                                    <div className="bg-[var(--color-bg-app)] rounded-lg p-4 border border-[var(--color-border-default)]">
+                                        <p className="text-[var(--color-text-primary)] whitespace-pre-wrap leading-relaxed font-mono text-sm">
+                                            {extractedText}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
                     ) : (
                         "Upload an image and click 'Analyze Image' to see results"

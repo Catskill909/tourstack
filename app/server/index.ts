@@ -1,4 +1,5 @@
 // TourStack Express API Server
+import 'dotenv/config';
 import express from 'express';
 // TourStack Server Entry Point - Trigger Fresh Build
 import cors from 'cors';
@@ -18,6 +19,11 @@ import feedsRouter from './routes/feeds.js';
 import collectionsRouter from './routes/collections.js';
 import visitorRouter from './routes/visitor.js';
 import visionRouter from './routes/vision.js';
+import geminiRouter from './routes/gemini.js';
+
+// ... 
+
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +52,7 @@ app.use('/api/feeds', feedsRouter);
 app.use('/api/collections', collectionsRouter);
 app.use('/api/visitor', visitorRouter);
 app.use('/api/vision', visionRouter);
+app.use('/api/gemini', geminiRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

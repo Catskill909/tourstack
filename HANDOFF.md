@@ -33,13 +33,12 @@
 | **Admin** | `/tours/*`, `/stops/*` | Create & manage tour content |
 | **Visitor** | `/visitor/*` | Public-facing tour experience
 
-### 🔄 IN PROGRESS: AI Tools (Phase 2)
-> Next Up: Caption Generator using Generative AI (Gemini).
+### 🔄 IN PROGRESS: Visitor Experience System (production)
+> Next Up: Route validation and published state checks.
 
-- **Caption Writer**: Use Gemini to generate natural language descriptions of artifacts.
-- **Smart Cataloging**: Integrate tagging into the main Media Library upload flow.
-
-### ⏸ PAUSED: Visitor Experience System (production)
+- **Visitor Routes**: `/visitor/tour/:tourId/stop/:stopId` pages
+- **Route Validation**: Verify `?t=TOKEN` from QR codes
+- **Published Check**: Only show published tours to visitors
 
 ### Key Architecture Concept
 
@@ -439,12 +438,16 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [ ] **Published Check** - Only show published tours to visitors
 - [ ] **Language Selector** - Visitor-friendly language switching
 
-### Phase 19: AI Tools Integration (Part 1) ✅ (Jan 27, 2026)
+### Phase 19: AI Object Analysis ✅ (Jan 28, 2026)
 - [x] **AI Dashboard** - `/ai-assistance` portal for all AI tools
-- [x] **Smart Tag Generator** - Logic for Image-to-Text extraction
-- [x] **Visual Tagging** - Google Vision API integration for label detection
-- [x] **Manual Tag Editing** - Add/Remove tags with interactive UI
-- [x] **Smart Titles** - Web entity detection for "Best Guess" titles
+- [x] **AI Object Analysis** - Forensic-grade artifact analysis suite
+- [x] **Visual DNA** - Mood, lighting, style, and context analysis
+- [x] **Dominant Colors** - Color palette extraction with HEX and names
+- [x] **Object Detection** - Identifies artifacts within images
+- [x] **OCR Text Extraction** - Transcribes labels and plaques with high precision
+- [x] **Web Detection** - "Best Guess" identification of famous works
+- [x] **Interactive Tagging** - AI-generated tags with manual add/remove
+- [x] **Sticky Header Fix** - Geometry fix (`-top-6`) for flush viewport positioning
 - [x] **Production Ready** - API Key security + Coolify env var support
 
 ### 🎯 Phase 17: Stop Navigation & Links (Planned)
@@ -470,11 +473,10 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 ## 📋 Next Steps (Priority Order)
 
-### 🔄 IN PROGRESS: AI Tools (Phase 2)
-> Next Up: Caption Generator using Generative AI (Gemini).
-
-- **Caption Writer**: Use Gemini to generate natural language descriptions of artifacts.
-- **Smart Cataloging**: Integrate tagging into the main Media Library upload flow.
+### 🎯 PLANNED: AI Tools (Phase 2)
+- **Caption Generator**: Use Gemini to generate natural language descriptions of artifacts.
+- **Smart Cataloging**: Integrate AI analysis into the main Media Library upload flow.
+- **Bulk Analysis**: Run analysis on entire collections.
 
 ### ⏸ PAUSED: Visitor Experience System
 
