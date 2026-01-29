@@ -66,18 +66,63 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
     const isTablet = deviceType === 'tablet';
     const proseSize = isTablet ? 'prose-lg' : 'prose-base';
 
-    // Render functions for each block type
-    function renderTextBlock(data: TextBlockData) {
-        const content = data.content[language] || data.content.en || '';
+    // Render block header (title + image) if visible
+    function renderBlockHeader(blockData: any) {
+        // Skip tour blocks (they have their own header system)
+        if (block.type === 'tour') return null;
+
+        const showTitle = blockData.showTitle ?? false;
+        const showBlockImage = blockData.showBlockImage ?? false;
+
+        // If nothing to show, return null
+        if (!showTitle && !showBlockImage) return null;
+
+        const title = blockData.title?.[language] || blockData.title?.en || '';
+        const blockImage = blockData.blockImage;
+
         return (
-            <div className={`prose prose-invert max-w-none ${proseSize} ${data.style === 'callout' ? 'bg-[var(--color-accent-primary)]/10 p-4 rounded-lg border-l-4 border-[var(--color-accent-primary)]' : ''} ${data.style === 'sidebar' ? 'bg-[var(--color-bg-elevated)] p-4 rounded-lg' : ''}`}>
-                <div dangerouslySetInnerHTML={{ __html: content }} />
+            <div className="space-y-3 mb-4">
+                {/* Block Image FIRST */}
+                {showBlockImage && blockImage?.url && (
+                    <figure className="rounded-lg overflow-hidden">
+                        <img
+                            src={blockImage.url}
+                            alt=""
+                            className="w-full h-auto object-cover"
+                            style={{ maxHeight: isTablet ? '400px' : '300px' }}
+                        />
+                        {blockImage.caption?.[language] && (
+                            <figcaption className={`${isTablet ? 'text-sm' : 'text-xs'} text-[var(--color-text-muted)] mt-2 px-2`}>
+                                {blockImage.caption[language]}
+                            </figcaption>
+                        )}
+                    </figure>
+                )}
+
+                {/* Block Title SECOND */}
+                {showTitle && title && (
+                    <h3 className={`${isTablet ? 'text-2xl' : 'text-xl'} font-semibold text-[var(--color-text-primary)]`}>
+                        {title}
+                    </h3>
+                )}
             </div>
         );
     }
 
+    // Render functions for each block type
+    function renderTextBlock(data: TextBlockData) {
+        const content = data.content[language] || data.content.en || '';
+        return (
+            <>
+                {renderBlockHeader(data)}
+                <div className={`prose prose-invert max-w-none ${proseSize} ${data.style === 'callout' ? 'bg-[var(--color-accent-primary)]/10 p-4 rounded-lg border-l-4 border-[var(--color-accent-primary)]' : ''} ${data.style === 'sidebar' ? 'bg-[var(--color-bg-elevated)] p-4 rounded-lg' : ''}`}>
+                    <div dangerouslySetInnerHTML={{ __html: content }} />
+                </div>
+            </>
+        );
+    }
+
     function renderImageBlock(data: ImageBlockData) {
-        const alt = data.alt[language] || data.alt.en || '';
         const caption = data.caption?.[language] || data.caption?.en;
         const sizeClasses = {
             small: 'max-w-xs',
@@ -86,27 +131,40 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
             full: 'w-full',
         };
         return (
-            <figure className={sizeClasses[data.size]}>
-                {data.url ? (
-                    <img src={data.url} alt={alt} className="rounded-lg w-full" />
-                ) : (
-                    <div className="aspect-video bg-[var(--color-bg-hover)] rounded-lg flex items-center justify-center text-[var(--color-text-muted)]">
-                        <Image className="w-12 h-12" />
-                    </div>
-                )}
-                {caption && (
-                    <figcaption className="text-sm text-[var(--color-text-muted)] mt-2 text-center">{caption}</figcaption>
-                )}
-            </figure>
+            <>
+                {renderBlockHeader(data)}
+                <figure className={sizeClasses[data.size]}>
+                    {data.url ? (
+                        <img src={data.url} alt="" className="rounded-lg w-full" />
+                    ) : (
+                        <div className="aspect-video bg-[var(--color-bg-hover)] rounded-lg flex items-center justify-center text-[var(--color-text-muted)]">
+                            <Image className="w-12 h-12" />
+                        </div>
+                    )}
+                    {caption && (
+                        <figcaption className="text-sm text-[var(--color-text-muted)] mt-2 text-center">{caption}</figcaption>
+                    )}
+                </figure>
+            </>
         );
     }
 
     function renderGalleryBlock(data: GalleryBlockData) {
-        return <GalleryPreview data={data} language={language} />;
+        return (
+            <>
+                {renderBlockHeader(data)}
+                <GalleryPreview data={data} language={language} />
+            </>
+        );
     }
 
     function renderTimelineGalleryBlock(data: TimelineGalleryBlockData) {
-        return <TimelineGalleryPreview data={data} language={language} deviceType={deviceType} />;
+        return (
+            <>
+                {renderBlockHeader(data)}
+                <TimelineGalleryPreview data={data} language={language} deviceType={deviceType} />
+            </>
+        );
     }
 
     function renderAudioBlock(data: AudioBlockData) {
@@ -114,59 +172,68 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
         const title = data.title[language] || data.title.en || 'Audio';
         const transcript = data.transcript?.[language] || data.transcript?.en;
         const size = data.size || 'large';
-        const showTitle = (data.showTitle ?? true) && showTitles;
+        // Block title takes precedence over player title
+        const useBlockTitle = data.showTitle && data.title?.[language];
+        const usePlayerTitle = size === 'large' && (data.showTitle ?? true) && showTitles && !useBlockTitle;
         return (
-            <div className="space-y-3">
-                {audioUrl ? (
-                    <CustomAudioPlayer
-                        src={audioUrl}
-                        title={(size === 'large' && showTitle) ? title : undefined}
-                        size={size}
-                        deviceType={deviceType}
-                        autoplay={data.autoplay}
-                        transcriptWords={data.transcriptWords}
-                        transcript={data.transcript?.[language]}
-                        showCaptions={data.showCaptions}
-                    />
-                ) : (
-                    <div className="text-[var(--color-text-muted)] text-sm">No audio file</div>
-                )}
-                {data.showTranscript && transcript && (
-                    <div className="text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-surface)] p-3 rounded-lg max-h-32 overflow-y-auto border border-[var(--color-border-default)]">
-                        {transcript}
-                    </div>
-                )}
-            </div>
+            <>
+                {renderBlockHeader(data)}
+                <div className="space-y-3">
+                    {audioUrl ? (
+                        <CustomAudioPlayer
+                            src={audioUrl}
+                            title={usePlayerTitle ? title : undefined}
+                            size={size}
+                            deviceType={deviceType}
+                            autoplay={data.autoplay}
+                            transcriptWords={data.transcriptWords}
+                            transcript={data.transcript?.[language]}
+                            showCaptions={data.showCaptions}
+                        />
+                    ) : (
+                        <div className="text-[var(--color-text-muted)] text-sm">No audio file</div>
+                    )}
+                    {data.showTranscript && transcript && (
+                        <div className="text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-surface)] p-3 rounded-lg max-h-32 overflow-y-auto border border-[var(--color-border-default)]">
+                            {transcript}
+                        </div>
+                    )}
+                </div>
+            </>
         );
     }
 
     function renderVideoBlock(data: VideoBlockData) {
         const title = data.title[language] || data.title.en || 'Video';
+        const useBuiltInTitle = showTitles && (data.showTitle ?? true) && !data.showTitle;
         return (
-            <div className="bg-[var(--color-bg-elevated)] rounded-lg overflow-hidden">
-                <div className="aspect-video bg-black flex items-center justify-center">
-                    {data.videoUrl ? (
-                        data.provider === 'youtube' ? (
-                            <iframe
-                                src={data.videoUrl.replace('watch?v=', 'embed/')}
-                                className="w-full h-full"
-                                allowFullScreen
-                            />
+            <>
+                {renderBlockHeader(data)}
+                <div className="bg-[var(--color-bg-elevated)] rounded-lg overflow-hidden">
+                    <div className="aspect-video bg-black flex items-center justify-center">
+                        {data.videoUrl ? (
+                            data.provider === 'youtube' ? (
+                                <iframe
+                                    src={data.videoUrl.replace('watch?v=', 'embed/')}
+                                    className="w-full h-full"
+                                    allowFullScreen
+                                />
+                            ) : (
+                                <video controls className="w-full h-full" autoPlay={data.autoplay}>
+                                    <source src={data.videoUrl} />
+                                </video>
+                            )
                         ) : (
-                            <video controls className="w-full h-full" autoPlay={data.autoplay}>
-                                <source src={data.videoUrl} />
-                            </video>
-                        )
-                    ) : (
-                        <Video className="w-12 h-12 text-[var(--color-text-muted)]" />
+                            <Video className="w-12 h-12 text-[var(--color-text-muted)]" />
+                        )}
+                    </div>
+                    {useBuiltInTitle && (
+                        <div className="p-3">
+                            <h4 className="font-medium text-[var(--color-text-primary)]">{title}</h4>
+                        </div>
                     )}
                 </div>
-                {showTitles && (
-                    <div className="p-3">
-                        <h4 className="font-medium text-[var(--color-text-primary)]">{title}</h4>
-                    </div>
-                )}
-            </div>
+            </>
         );
     }
 
@@ -175,40 +242,46 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
         const author = data.author?.[language] || data.author?.en;
         const source = data.source?.[language] || data.source?.en;
         return (
-            <blockquote className={`border-l-4 border-[var(--color-accent-primary)] pl-4 py-2 ${data.style === 'highlighted' ? 'bg-[var(--color-accent-primary)]/10 pr-4 rounded-r-lg' : ''}`}>
-                <p className="text-lg italic text-[var(--color-text-primary)]">"{quote}"</p>
-                {(author || source) && (
-                    <footer className="text-sm text-[var(--color-text-muted)] mt-2">
-                        {author && <span className="font-medium">{author}</span>}
-                        {author && source && ', '}
-                        {source && <cite>{source}</cite>}
-                    </footer>
-                )}
-            </blockquote>
+            <>
+                {renderBlockHeader(data)}
+                <blockquote className={`border-l-4 border-[var(--color-accent-primary)] pl-4 py-2 ${data.style === 'highlighted' ? 'bg-[var(--color-accent-primary)]/10 pr-4 rounded-r-lg' : ''}`}>
+                    <p className="text-lg italic text-[var(--color-text-primary)]">"{quote}"</p>
+                    {(author || source) && (
+                        <footer className="text-sm text-[var(--color-text-muted)] mt-2">
+                            {author && <span className="font-medium">{author}</span>}
+                            {author && source && ', '}
+                            {source && <cite>{source}</cite>}
+                        </footer>
+                    )}
+                </blockquote>
+            </>
         );
     }
 
     function renderPositioningBlock(data: PositioningBlockData) {
         return (
-            <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4 flex items-center gap-4">
-                <div className="bg-white p-2 rounded-lg">
-                    {data.qrCodeDataUrl ? (
-                        <img src={data.qrCodeDataUrl} alt="QR Code" className="w-24 h-24" />
-                    ) : (
-                        <QrCode className="w-24 h-24 text-gray-400" />
-                    )}
+            <>
+                {renderBlockHeader(data)}
+                <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4 flex items-center gap-4">
+                    <div className="bg-white p-2 rounded-lg">
+                        {data.qrCodeDataUrl ? (
+                            <img src={data.qrCodeDataUrl} alt="QR Code" className="w-24 h-24" />
+                        ) : (
+                            <QrCode className="w-24 h-24 text-gray-400" />
+                        )}
+                    </div>
+                    <div>
+                        <h4 className="font-medium text-[var(--color-text-primary)]">
+                            {data.method.replace('_', ' ').toUpperCase()}
+                        </h4>
+                        {data.instructions && (
+                            <p className="text-sm text-[var(--color-text-muted)] mt-1">
+                                {data.instructions[language] || data.instructions.en}
+                            </p>
+                        )}
+                    </div>
                 </div>
-                <div>
-                    <h4 className="font-medium text-[var(--color-text-primary)]">
-                        {data.method.replace('_', ' ').toUpperCase()}
-                    </h4>
-                    {data.instructions && (
-                        <p className="text-sm text-[var(--color-text-muted)] mt-1">
-                            {data.instructions[language] || data.instructions.en}
-                        </p>
-                    )}
-                </div>
-            </div>
+            </>
         );
     }
 
@@ -223,15 +296,18 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
         const style = sizeStyles[size] || sizeStyles.medium;
 
         return (
-            <div className="w-full" style={style}>
-                <MapPreview
-                    data={data}
-                    language={language}
-                    deviceType={deviceType}
-                    interactive={false}
-                    className="w-full h-full"
-                />
-            </div>
+            <>
+                {renderBlockHeader(data)}
+                <div className="w-full" style={style}>
+                    <MapPreview
+                        data={data}
+                        language={language}
+                        deviceType={deviceType}
+                        interactive={false}
+                        className="w-full h-full"
+                    />
+                </div>
+            </>
         );
     }
 

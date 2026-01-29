@@ -1,15 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import {
-    Upload, X, GripVertical, Pencil, Music, Clock, FolderOpen
+    Upload, X, GripVertical, Pencil, Music, Clock, FolderOpen, Languages, Loader2
 } from 'lucide-react';
+import { translateWithLibre, type TranslationProvider } from '../../services/translationService';
 import { AudioWaveform } from './AudioWaveform';
 import type { TimelineGalleryBlockData } from '../../types';
 import { CollectionPickerModal, type ImportedAudioData } from '../CollectionPickerModal';
+import { BlockMetadataEditor } from './BlockMetadataEditor';
 
 interface TimelineGalleryImage {
     id: string;
     url: string;
-    alt: { [lang: string]: string };
     caption: { [lang: string]: string };
     credit?: { [lang: string]: string };
     timestamp: number;
@@ -18,6 +19,8 @@ interface TimelineGalleryImage {
 interface TimelineGalleryBlockEditorProps {
     data: TimelineGalleryBlockData;
     language: string;
+    availableLanguages?: string[];
+    translationProvider?: TranslationProvider;
     onChange: (data: TimelineGalleryBlockData) => void;
 }
 
@@ -25,10 +28,11 @@ function generateId(): string {
     return `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-export function TimelineGalleryBlockEditor({ data, language, onChange }: TimelineGalleryBlockEditorProps) {
+export function TimelineGalleryBlockEditor({ data, language, availableLanguages = ['en'], translationProvider = 'libretranslate', onChange }: TimelineGalleryBlockEditorProps) {
     const [isDragOver, setIsDragOver] = useState(false);
     const [editingImageId, setEditingImageId] = useState<string | null>(null);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [isTranslatingCaption, setIsTranslatingCaption] = useState(false);
 
     // Audio/preview state
     const [currentTime, setCurrentTime] = useState(0);
@@ -46,7 +50,6 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
     const images: TimelineGalleryImage[] = (data.images || []).map((img, idx) => ({
         id: img.id || `img_legacy_${idx}`,
         url: img.url,
-        alt: img.alt || { [language]: '' },
         caption: img.caption || { [language]: '' },
         credit: img.credit,
         timestamp: img.timestamp || 0
@@ -108,7 +111,6 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
                     resolve({
                         id: generateId(),
                         url,
-                        alt: { [language]: file.name.replace(/\.[^/.]+$/, '') },
                         caption: { [language]: '' },
                         credit: { [language]: '' },
                         timestamp: data.audioDuration || 0
@@ -203,6 +205,31 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
     }
     function handleDragEnd() { setDraggedIndex(null); }
 
+    async function handleTranslateCaptionForImage(imageId: string) {
+        const img = images.find(i => i.id === imageId);
+        if (!img) return;
+
+        const primaryLang = availableLanguages[0] || 'en';
+        const sourceText = img.caption?.[primaryLang] || img.caption?.['en'];
+
+        if (!sourceText?.trim()) return;
+
+        setIsTranslatingCaption(true);
+        const newCaption = { ...img.caption };
+        for (const lang of availableLanguages) {
+            if (lang === primaryLang) continue;
+            try {
+                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                newCaption[lang] = translated;
+            } catch (error) {
+                console.error(`Failed to translate caption to ${lang}:`, error);
+            }
+        }
+
+        handleUpdateImage(imageId, { caption: newCaption });
+        setIsTranslatingCaption(false);
+    }
+
     function formatTime(seconds: number): string {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
@@ -213,6 +240,18 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
 
     return (
         <div className="space-y-6">
+            {/* Block Metadata (Title & Image) */}
+            <BlockMetadataEditor
+                title={data.title}
+                showTitle={data.showTitle}
+                blockImage={data.blockImage}
+                showBlockImage={data.showBlockImage}
+                language={language}
+                availableLanguages={availableLanguages}
+                translationProvider={translationProvider}
+                onChange={(metadata) => onChange({ ...data, ...metadata })}
+            />
+
             {/* Audio Upload Section */}
             <div className="bg-gradient-to-br from-[var(--color-bg-elevated)] to-[var(--color-bg-surface)] rounded-2xl p-5 border border-[var(--color-border-default)] space-y-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
@@ -229,7 +268,7 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
                             markers={images.map(img => ({
                                 id: img.id,
                                 timestamp: img.timestamp,
-                                label: img.caption[language] || img.alt[language]
+                                label: img.caption[language] || ''
                             }))}
                             onMarkerMove={(id, newTimestamp) => {
                                 onChange({
@@ -292,7 +331,7 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
                             {currentImage && (
                                 <img
                                     src={currentImage.url}
-                                    alt={currentImage.alt[language] || ''}
+                                    alt=""
                                     className="w-full h-full object-contain"
                                 />
                             )}
@@ -470,24 +509,27 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                                            Alt Text
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={img.alt[language] || ''}
-                                            onChange={(e) => handleUpdateImage(img.id, {
-                                                alt: { ...img.alt, [language]: e.target.value }
-                                            })}
-                                            className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
-                                            placeholder="Describe the image..."
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                                            Caption
-                                        </label>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
+                                                Caption <span className="text-[var(--color-text-muted)] font-normal">Optional</span>
+                                            </label>
+                                            {availableLanguages.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleTranslateCaptionForImage(img.id)}
+                                                    disabled={isTranslatingCaption}
+                                                    className="flex items-center gap-1 px-2 py-0.5 text-xs bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded hover:bg-[var(--color-accent-primary)]/20 disabled:opacity-50"
+                                                    title="Translate caption to all languages"
+                                                >
+                                                    {isTranslatingCaption ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                    ) : (
+                                                        <Languages className="w-3 h-3" />
+                                                    )}
+                                                    <span>Translate</span>
+                                                </button>
+                                            )}
+                                        </div>
                                         <textarea
                                             value={img.caption[language] || ''}
                                             onChange={(e) => handleUpdateImage(img.id, {
@@ -501,7 +543,7 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
 
                                     <div>
                                         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                                            Credit
+                                            Credit <span className="text-[var(--color-text-muted)] font-normal">Optional</span>
                                         </label>
                                         <input
                                             type="text"
@@ -510,7 +552,7 @@ export function TimelineGalleryBlockEditor({ data, language, onChange }: Timelin
                                                 credit: { ...img.credit, [language]: e.target.value }
                                             })}
                                             className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
-                                            placeholder="© Photographer Name"
+                                            placeholder="Photo credit or attribution..."
                                         />
                                     </div>
 

@@ -5,6 +5,7 @@ import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
 import { transcribeAudio } from '../../services/transcriptionService';
 import { magicTranslate } from '../../services/translationService';
 import { CollectionPickerModal, type ImportedAudioData } from '../CollectionPickerModal';
+import { BlockMetadataEditor } from './BlockMetadataEditor';
 
 const SIZE_OPTIONS: { value: AudioBlockData['size']; label: string; icon: typeof Maximize2 }[] = [
     { value: 'large', label: 'Large', icon: Maximize2 },
@@ -109,6 +110,17 @@ export function AudioBlockEditor({ data, language, availableLanguages = ['en'], 
 
     return (
         <div className="space-y-4">
+            {/* Block Metadata (Title & Image) */}
+            <BlockMetadataEditor
+                title={data.title}
+                showTitle={data.showTitle}
+                blockImage={data.blockImage}
+                showBlockImage={data.showBlockImage}
+                language={language}
+                availableLanguages={availableLanguages}
+                onChange={(metadata) => onChange({ ...data, ...metadata })}
+            />
+
             {/* Title */}
             <div>
                 <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">

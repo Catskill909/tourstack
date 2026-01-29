@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react';
-import { Upload, X, GripVertical, Pencil, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { Upload, X, GripVertical, Pencil, ChevronLeft, ChevronRight, Settings, Languages, Loader2 } from 'lucide-react';
+import { translateWithLibre, type TranslationProvider } from '../../services/translationService';
 import type { GalleryBlockData } from '../../types';
+import { BlockMetadataEditor } from './BlockMetadataEditor';
 
 interface GalleryImage {
     id: string;
     url: string;
-    alt: { [lang: string]: string };
     caption: { [lang: string]: string };
     credit?: { [lang: string]: string };
 }
@@ -13,6 +14,8 @@ interface GalleryImage {
 interface GalleryBlockEditorProps {
     data: GalleryBlockData;
     language: string;
+    availableLanguages?: string[];
+    translationProvider?: TranslationProvider;
     onChange: (data: GalleryBlockData) => void;
 }
 
@@ -20,11 +23,12 @@ function generateId(): string {
     return `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-export function GalleryBlockEditor({ data, language, onChange }: GalleryBlockEditorProps) {
+export function GalleryBlockEditor({ data, language, availableLanguages = ['en'], translationProvider = 'libretranslate', onChange }: GalleryBlockEditorProps) {
     const [isDragOver, setIsDragOver] = useState(false);
     const [editingImageId, setEditingImageId] = useState<string | null>(null);
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [showSettings, setShowSettings] = useState(false);
+    const [isTranslatingCaption, setIsTranslatingCaption] = useState(false);
 
     // Preview state
     const [previewIndex, setPreviewIndex] = useState(0);
@@ -36,7 +40,6 @@ export function GalleryBlockEditor({ data, language, onChange }: GalleryBlockEdi
     const images: GalleryImage[] = (data.images || []).map((img, idx) => ({
         id: (img as GalleryImage).id || `img_legacy_${idx}`,
         url: img.url,
-        alt: img.alt || { [language]: '' },
         caption: img.caption || { [language]: '' },
         credit: img.credit
     }));
@@ -82,7 +85,6 @@ export function GalleryBlockEditor({ data, language, onChange }: GalleryBlockEdi
                     resolve({
                         id: generateId(),
                         url,
-                        alt: { [language]: file.name.replace(/\.[^/.]+$/, '') },
                         caption: { [language]: '' },
                         credit: { [language]: '' }
                     });
@@ -133,6 +135,31 @@ export function GalleryBlockEditor({ data, language, onChange }: GalleryBlockEdi
         onChange({ ...data, layout });
     }
 
+    async function handleTranslateCaptionForImage(imageId: string) {
+        const img = images.find(i => i.id === imageId);
+        if (!img) return;
+
+        const primaryLang = availableLanguages[0] || 'en';
+        const sourceText = img.caption?.[primaryLang] || img.caption?.['en'];
+
+        if (!sourceText?.trim()) return;
+
+        setIsTranslatingCaption(true);
+        const newCaption = { ...img.caption };
+        for (const lang of availableLanguages) {
+            if (lang === primaryLang) continue;
+            try {
+                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                newCaption[lang] = translated;
+            } catch (error) {
+                console.error(`Failed to translate caption to ${lang}:`, error);
+            }
+        }
+
+        handleUpdateImage(imageId, { caption: newCaption });
+        setIsTranslatingCaption(false);
+    }
+
     // Navigation controls
     function goToPrevious() {
         triggerCrossfade(previewIndex === 0 ? images.length - 1 : previewIndex - 1);
@@ -146,6 +173,18 @@ export function GalleryBlockEditor({ data, language, onChange }: GalleryBlockEdi
 
     return (
         <div className="space-y-6">
+            {/* Block Metadata (Title & Image) */}
+            <BlockMetadataEditor
+                title={data.title}
+                showTitle={data.showTitle}
+                blockImage={data.blockImage}
+                showBlockImage={data.showBlockImage}
+                language={language}
+                availableLanguages={availableLanguages}
+                translationProvider={translationProvider}
+                onChange={(metadata) => onChange({ ...data, ...metadata })}
+            />
+
             {/* Layout & Settings Header */}
             <div className="flex items-center gap-4 flex-wrap">
                 <button
@@ -244,7 +283,7 @@ export function GalleryBlockEditor({ data, language, onChange }: GalleryBlockEdi
                             {currentImage && (
                                 <img
                                     src={currentImage.url}
-                                    alt={currentImage.alt[language] || ''}
+                                    alt=""
                                     className="w-full h-full object-contain"
                                 />
                             )}
@@ -411,24 +450,27 @@ export function GalleryBlockEditor({ data, language, onChange }: GalleryBlockEdi
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                                            Alt Text
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={img.alt[language] || ''}
-                                            onChange={(e) => handleUpdateImage(img.id, {
-                                                alt: { ...img.alt, [language]: e.target.value }
-                                            })}
-                                            className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
-                                            placeholder="Describe the image..."
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                                            Caption <span className="text-[var(--color-accent-primary)]">*</span>
-                                        </label>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
+                                                Caption <span className="text-[var(--color-text-muted)] font-normal">Optional</span>
+                                            </label>
+                                            {availableLanguages.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleTranslateCaptionForImage(img.id)}
+                                                    disabled={isTranslatingCaption}
+                                                    className="flex items-center gap-1 px-2 py-0.5 text-xs bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded hover:bg-[var(--color-accent-primary)]/20 disabled:opacity-50"
+                                                    title="Translate caption to all languages"
+                                                >
+                                                    {isTranslatingCaption ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                    ) : (
+                                                        <Languages className="w-3 h-3" />
+                                                    )}
+                                                    <span>Translate</span>
+                                                </button>
+                                            )}
+                                        </div>
                                         <textarea
                                             value={img.caption[language] || ''}
                                             onChange={(e) => handleUpdateImage(img.id, {
@@ -442,7 +484,7 @@ export function GalleryBlockEditor({ data, language, onChange }: GalleryBlockEdi
 
                                     <div>
                                         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                                            Credit / Attribution
+                                            Credit <span className="text-[var(--color-text-muted)] font-normal">Optional</span>
                                         </label>
                                         <input
                                             type="text"
@@ -451,7 +493,7 @@ export function GalleryBlockEditor({ data, language, onChange }: GalleryBlockEdi
                                                 credit: { ...img.credit, [language]: e.target.value }
                                             })}
                                             className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
-                                            placeholder="© Photographer Name"
+                                            placeholder="Photo credit or attribution..."
                                         />
                                     </div>
 

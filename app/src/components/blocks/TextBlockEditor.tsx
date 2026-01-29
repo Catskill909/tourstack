@@ -5,6 +5,7 @@ import type { TextBlockData } from '../../types';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { MagicTranslateButton } from '../MagicTranslateButton';
 import { extractTextFromFile, SUPPORTED_FILE_FORMATS, type TranslationProvider } from '../../services/translationService';
+import { BlockMetadataEditor } from './BlockMetadataEditor';
 
 interface TextBlockEditorProps {
     data: TextBlockData;
@@ -91,6 +92,18 @@ export function TextBlockEditor({
 
     return (
         <div className="space-y-4">
+            {/* Block Metadata (Title & Image) */}
+            <BlockMetadataEditor
+                title={data.title}
+                showTitle={data.showTitle}
+                blockImage={data.blockImage}
+                showBlockImage={data.showBlockImage}
+                language={activeLanguage}
+                availableLanguages={availableLanguages}
+                translationProvider={translationProvider}
+                onChange={(metadata) => onChange({ ...data, ...metadata })}
+            />
+
             {/* Language Controls */}
             {availableLanguages.length > 1 && (
                 <div className="flex flex-wrap items-center gap-3 pb-3 border-b border-[var(--color-border-default)]">

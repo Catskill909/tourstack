@@ -331,10 +331,10 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                                                 fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem',
                                             }}
                                         >
-                                            {/* Stop Header - hide when Tour Intro block is first (it has its own title/desc) */}
+                                            {/* Stop Header - MOVED TO TOP - hide when Tour Intro block is first (it has its own title/desc) */}
                                             {!hasTourIntroFirst && (displaySettings.showTitles || displaySettings.showDescriptions) && (
-                                                <div className="space-y-3">
-                                                    {displaySettings.showTitles && (
+                                                <div className="space-y-3 mb-4">
+                                                    {displaySettings.showTitles && (stop.showTitle ?? true) && (
                                                         <h1
                                                             className="font-bold text-[var(--color-text-primary)] leading-tight"
                                                             style={{ fontSize: deviceType === 'tablet' ? '2.5rem' : '1.5rem' }}
@@ -342,7 +342,7 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                                                             {getStopTitle()}
                                                         </h1>
                                                     )}
-                                                    {displaySettings.showDescriptions && getStopDescription() && (
+                                                    {displaySettings.showDescriptions && (stop.showDescription ?? true) && getStopDescription() && (
                                                         <p
                                                             className="text-[var(--color-text-secondary)] leading-relaxed"
                                                             style={{ fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem' }}
@@ -352,6 +352,45 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                                                     )}
                                                 </div>
                                             )}
+
+                                            {/* Hero Image - NOW SECOND - hide when Tour Intro block is first */}
+                                            {!hasTourIntroFirst && (stop.showImage ?? true) && (() => {
+                                                const heroImage = stop.image;
+                                                if (!heroImage) return null;
+
+                                                // Handle both new object format and legacy string format
+                                                const imageData = typeof heroImage === 'object'
+                                                    ? heroImage
+                                                    : { url: heroImage, caption: {} };
+
+                                                if (!imageData.url) return null;
+
+                                                const caption = typeof imageData.caption === 'object'
+                                                    ? imageData.caption[previewLanguage] || imageData.caption.en || ''
+                                                    : '';
+
+                                                return (
+                                                    <figure className={`overflow-hidden rounded-lg mb-4 ${deviceType === 'tablet' ? '-mx-8' : '-mx-5'}`}>
+                                                        <img
+                                                            src={imageData.url}
+                                                            alt=""
+                                                            className="w-full h-auto object-cover"
+                                                            style={{ maxHeight: device.height * 0.4 }}
+                                                        />
+                                                        {caption && (
+                                                            <figcaption
+                                                                className="text-[var(--color-text-muted)] bg-[var(--color-bg-elevated)]/50 leading-snug"
+                                                                style={{
+                                                                    fontSize: deviceType === 'tablet' ? '0.9rem' : '0.75rem',
+                                                                    padding: deviceType === 'tablet' ? '0.75rem 2rem' : '0.5rem 1.25rem'
+                                                                }}
+                                                            >
+                                                                {caption}
+                                                            </figcaption>
+                                                        )}
+                                                    </figure>
+                                                );
+                                            })()}
 
                                             {/* Content Blocks */}
                                             {blocks.length === 0 ? (

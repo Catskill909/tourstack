@@ -1,15 +1,20 @@
 import { useState } from 'react';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Languages, Loader2 } from 'lucide-react';
+import { translateWithLibre, type TranslationProvider } from '../../services/translationService';
 import type { ImageBlockData } from '../../types';
+import { BlockMetadataEditor } from './BlockMetadataEditor';
 
 interface ImageBlockEditorProps {
     data: ImageBlockData;
     language: string;
+    availableLanguages?: string[];
+    translationProvider?: TranslationProvider;
     onChange: (data: ImageBlockData) => void;
 }
 
-export function ImageBlockEditor({ data, language, onChange }: ImageBlockEditorProps) {
+export function ImageBlockEditor({ data, language, availableLanguages = ['en'], translationProvider = 'libretranslate', onChange }: ImageBlockEditorProps) {
     const [isDragOver, setIsDragOver] = useState(false);
+    const [isTranslatingCaption, setIsTranslatingCaption] = useState(false);
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -40,8 +45,43 @@ export function ImageBlockEditor({ data, language, onChange }: ImageBlockEditorP
         onChange({ ...data, url: '' });
     }
 
+    async function handleTranslateCaption() {
+        const primaryLang = availableLanguages[0] || 'en';
+        const sourceText = data.caption?.[primaryLang] || data.caption?.['en'];
+
+        if (!sourceText?.trim()) return;
+
+        setIsTranslatingCaption(true);
+        const newCaption = { ...data.caption };
+        for (const lang of availableLanguages) {
+            if (lang === primaryLang) continue;
+            try {
+                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                newCaption[lang] = translated;
+            } catch (error) {
+                console.error(`Failed to translate caption to ${lang}:`, error);
+            }
+        }
+
+        onChange({ ...data, caption: newCaption });
+        setIsTranslatingCaption(false);
+    }
+
+
     return (
         <div className="space-y-4">
+            {/* Block Metadata (Title & Image) */}
+            <BlockMetadataEditor
+                title={data.title}
+                showTitle={data.showTitle}
+                blockImage={data.blockImage}
+                showBlockImage={data.showBlockImage}
+                language={language}
+                availableLanguages={availableLanguages}
+                translationProvider={translationProvider}
+                onChange={(metadata) => onChange({ ...data, ...metadata })}
+            />
+
             {/* Image upload/preview */}
             <div>
                 <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
@@ -78,28 +118,29 @@ export function ImageBlockEditor({ data, language, onChange }: ImageBlockEditorP
                 )}
             </div>
 
-            {/* Alt text */}
-            <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                    Alt Text ({language.toUpperCase()})
-                </label>
-                <input
-                    type="text"
-                    value={data.alt[language] || data.alt.en || ''}
-                    onChange={(e) => onChange({
-                        ...data,
-                        alt: { ...data.alt, [language]: e.target.value }
-                    })}
-                    className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
-                    placeholder="Describe the image..."
-                />
-            </div>
-
             {/* Caption */}
             <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
-                    Caption ({language.toUpperCase()}) <span className="text-[var(--color-text-muted)] font-normal">Optional</span>
-                </label>
+                <div className="flex items-center gap-2 mb-1">
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
+                        Caption <span className="text-[var(--color-text-muted)] font-normal">Optional</span>
+                    </label>
+                    {availableLanguages.length > 1 && (
+                        <button
+                            type="button"
+                            onClick={handleTranslateCaption}
+                            disabled={isTranslatingCaption}
+                            className="flex items-center gap-1 px-2 py-0.5 text-xs bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded hover:bg-[var(--color-accent-primary)]/20 disabled:opacity-50"
+                            title="Translate caption to all languages"
+                        >
+                            {isTranslatingCaption ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                                <Languages className="w-3 h-3" />
+                            )}
+                            <span>Translate</span>
+                        </button>
+                    )}
+                </div>
                 <input
                     type="text"
                     value={data.caption?.[language] || data.caption?.en || ''}
@@ -109,6 +150,23 @@ export function ImageBlockEditor({ data, language, onChange }: ImageBlockEditorP
                     })}
                     className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
                     placeholder="Image caption..."
+                />
+            </div>
+
+            {/* Credit */}
+            <div>
+                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
+                    Credit <span className="text-[var(--color-text-muted)] font-normal">Optional</span>
+                </label>
+                <input
+                    type="text"
+                    value={data.credit?.[language] || data.credit?.en || ''}
+                    onChange={(e) => onChange({
+                        ...data,
+                        credit: { ...data.credit, [language]: e.target.value }
+                    })}
+                    className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+                    placeholder="Photo credit or attribution..."
                 />
             </div>
 

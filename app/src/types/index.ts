@@ -233,23 +233,39 @@ export type ContentBlockType =
 export interface TextBlockData {
   content: { [lang: string]: string }; // Multilingual rich text (HTML)
   style: 'normal' | 'callout' | 'sidebar';
+  // Block metadata
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
+}
+
+// Stop Hero Image Data
+export interface StopImageData {
+  url: string;
+  caption?: { [lang: string]: string };
+  credit?: { [lang: string]: string };
 }
 
 export interface ImageBlockData {
   url: string;
-  alt: { [lang: string]: string };
   caption?: { [lang: string]: string };
+  credit?: { [lang: string]: string };
   size: 'small' | 'medium' | 'large' | 'full';
   aspectRatio?: '16:9' | '4:3' | '1:1' | 'auto';
+  // Block metadata
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
 }
 
 export interface GalleryBlockData {
   images: Array<{
     id?: string;                        // Unique image ID
     url: string;
-    alt: { [lang: string]: string };
-    caption: { [lang: string]: string }; // Required for museum context
-    credit?: { [lang: string]: string }; // Image credit/attribution
+    caption?: { [lang: string]: string }; // Optional
+    credit?: { [lang: string]: string }; // Optional
   }>;
   layout: 'carousel' | 'grid' | 'masonry';
   itemsPerRow?: number;
@@ -258,6 +274,12 @@ export interface GalleryBlockData {
   crossfadeDuration?: number;          // Crossfade duration in ms (default 500)
   autoAdvance?: boolean;               // Auto-advance to next image
   autoAdvanceInterval?: number;        // Auto-advance interval in seconds
+
+  // Block metadata
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
 }
 
 // Transition types for Timeline Gallery
@@ -268,8 +290,7 @@ export interface TimelineGalleryBlockData {
   images: Array<{
     id?: string;
     url: string;
-    alt: { [lang: string]: string };
-    caption: { [lang: string]: string };
+    caption?: { [lang: string]: string };
     credit?: { [lang: string]: string };
     timestamp: number;                  // Seconds into audio when image appears
   }>;
@@ -286,6 +307,11 @@ export interface TimelineGalleryBlockData {
     confidence: number;
   }>;
   showCaptions?: boolean;               // Display CC overlay during playback
+  // Block metadata
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
 }
 
 export interface AudioBlockData {
@@ -303,6 +329,9 @@ export interface AudioBlockData {
   autoplay: boolean;
   showTranscript: boolean;
   showCaptions?: boolean;               // Display CC during playback
+  // Block metadata
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
 }
 
 export interface VideoBlockData {
@@ -314,6 +343,10 @@ export interface VideoBlockData {
   thumbnail?: string;
   autoplay: boolean;
   controls: boolean;
+  // Block metadata
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
 }
 
 export interface QuoteBlockData {
@@ -321,6 +354,11 @@ export interface QuoteBlockData {
   author?: { [lang: string]: string };
   source?: { [lang: string]: string };
   style: 'default' | 'highlighted' | 'sidebar';
+  // Block metadata
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
 }
 
 export interface TimelineBlockData {
@@ -352,6 +390,11 @@ export interface PositioningBlockData {
   config: PositioningConfig;
   qrCodeDataUrl?: string;
   instructions?: { [lang: string]: string };
+  // Block metadata
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
 }
 
 // Map block for displaying location with OpenStreetMap or Google Maps
@@ -389,6 +432,12 @@ export interface MapBlockData {
   // Trigger zone (optional)
   triggerRadius?: number;         // Radius in meters for geofence
   showTriggerZone?: boolean;      // Visualize the trigger zone
+
+  // Block metadata
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
 }
 
 // Tour Block - Full-screen hero introduction for tours
@@ -462,8 +511,11 @@ export interface Stop {
 
   // Base Template Fields (REQUIRED)
   title: { [lang: string]: string };
-  image: string;
+  showTitle?: boolean; // Show/hide title in preview (default: true)
+  image: StopImageData | string; // Support both new format (object) and legacy (string)
+  showImage?: boolean; // Show/hide hero image in preview (default: true)
   description: { [lang: string]: string };
+  showDescription?: boolean; // Show/hide description in preview (default: true)
 
   // Custom Fields from Template
   customFieldValues: { [fieldId: string]: unknown };

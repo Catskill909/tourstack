@@ -188,7 +188,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
                     >
                         <img
                             src={images[previousIndex].url}
-                            alt={images[previousIndex].alt[language] || images[previousIndex].alt.en || ''}
+                            alt=""
                             className="w-full h-full object-contain"
                         />
                     </motion.div>
@@ -204,7 +204,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
                     >
                         <img
                             src={currentImage.url}
-                            alt={currentImage.alt[language] || currentImage.alt.en || ''}
+                            alt=""
                             className="w-full h-full object-contain"
                         />
                     </motion.div>

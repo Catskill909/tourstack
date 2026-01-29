@@ -299,21 +299,51 @@ export function VisitorStop() {
                 // Normal content - standard layout
                 return (
                     <main className="max-w-4xl mx-auto px-4 py-6">
-                        {/* Stop Title */}
+                        {/* Stop Title & Description - MOVED TO TOP */}
                         {(displaySettings.showTitles || displaySettings.showDescriptions) && (
                             <div className="mb-6">
-                                {displaySettings.showTitles && (
+                                {displaySettings.showTitles && (stop.showTitle ?? true) && (
                                     <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)] leading-tight">
                                         {getLocalizedText(stop.title)}
                                     </h1>
                                 )}
-                                {displaySettings.showDescriptions && stop.description && getLocalizedText(stop.description) && (
+                                {displaySettings.showDescriptions && (stop.showDescription ?? true) && stop.description && getLocalizedText(stop.description) && (
                                     <p className={`${displaySettings.showTitles ? 'mt-2' : ''} text-[var(--color-text-secondary)] leading-relaxed`}>
                                         {getLocalizedText(stop.description)}
                                     </p>
                                 )}
                             </div>
                         )}
+
+                        {/* Hero Image - NOW SECOND */}
+                        {(stop.showImage ?? true) && (() => {
+                            const heroImage = stop.image;
+                            if (!heroImage) return null;
+
+                            // Handle both new object format and legacy string format
+                            const imageData = typeof heroImage === 'object'
+                                ? heroImage
+                                : { url: heroImage, caption: {} };
+
+                            if (!imageData.url) return null;
+
+                            const caption = getLocalizedText(imageData.caption || {});
+
+                            return (
+                                <figure className="mb-6 -mx-4 md:mx-0 md:rounded-xl overflow-hidden">
+                                    <img
+                                        src={imageData.url}
+                                        alt=""
+                                        className="w-full h-auto max-h-96 object-cover"
+                                    />
+                                    {caption && (
+                                        <figcaption className="px-4 py-2 text-sm text-[var(--color-text-muted)] bg-[var(--color-bg-elevated)]/50">
+                                            {caption}
+                                        </figcaption>
+                                    )}
+                                </figure>
+                            );
+                        })()}
 
                         {/* Content Blocks */}
                         {blocks.length === 0 ? (

@@ -284,6 +284,39 @@ function formatStopForFeed(stop: any, lang?: string) {
     const title = parseLocalizedField(stop.title);
     const localizedTitle = lang ? { [lang]: title[lang] || title['en'] || '' } : title;
 
+    const description = parseLocalizedField(stop.description);
+    const localizedDescription = lang ? { [lang]: description[lang] || description['en'] || '' } : description;
+
+    // Parse image field - handle both old string format and new object format
+    let heroImage = null;
+    try {
+        if (stop.image) {
+            const parsed = typeof stop.image === 'string' && stop.image.startsWith('{')
+                ? JSON.parse(stop.image)
+                : stop.image;
+
+            // If it's an object (new format), include caption and credit
+            if (typeof parsed === 'object' && parsed.url) {
+                const imageUrl = formatImageUrl(parsed.url);
+                if (imageUrl) {
+                    heroImage = {
+                        url: imageUrl,
+                        caption: lang && parsed.caption ? { [lang]: parsed.caption[lang] || parsed.caption['en'] || '' } : parsed.caption,
+                        credit: lang && parsed.credit ? { [lang]: parsed.credit[lang] || parsed.credit['en'] || '' } : parsed.credit,
+                    };
+                }
+            } else if (typeof parsed === 'string') {
+                // Legacy format - just a URL string
+                const imageUrl = formatImageUrl(parsed);
+                if (imageUrl) {
+                    heroImage = { url: imageUrl };
+                }
+            }
+        }
+    } catch {
+        heroImage = null;
+    }
+
     let contentBlocks = [];
     try {
         const parsed = stop.content ? JSON.parse(stop.content) : [];
@@ -310,6 +343,8 @@ function formatStopForFeed(stop: any, lang?: string) {
     return {
         id: stop.id,
         title: localizedTitle,
+        description: localizedDescription,
+        hero_image: heroImage,
         order: stop.order,
         content_blocks: contentBlocks,
         positioning: positioning,

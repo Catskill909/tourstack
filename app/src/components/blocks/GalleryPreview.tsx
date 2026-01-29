@@ -54,7 +54,7 @@ export function GalleryPreview({ data, language }: GalleryPreviewProps) {
                         {currentImage && (
                             <img
                                 src={currentImage.url}
-                                alt={currentImage.alt[language] || currentImage.alt.en || ''}
+                                alt=""
                                 className="w-full h-full object-contain"
                             />
                         )}
@@ -132,7 +132,7 @@ export function GalleryPreview({ data, language }: GalleryPreviewProps) {
                     <figure key={idx} className="break-inside-avoid mb-4">
                         <img
                             src={img.url}
-                            alt={img.alt[language] || img.alt.en || ''}
+                            alt=""
                             className="rounded-xl w-full object-cover shadow-lg"
                         />
                         {img.caption && (
@@ -162,7 +162,7 @@ export function GalleryPreview({ data, language }: GalleryPreviewProps) {
                 <figure key={idx}>
                     <img
                         src={img.url}
-                        alt={img.alt[language] || img.alt.en || ''}
+                        alt=""
                         className="rounded-xl w-full aspect-square object-cover shadow-lg"
                     />
                     {img.caption && (

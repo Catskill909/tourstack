@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { QrCode, RefreshCw, Copy, Check, ExternalLink } from 'lucide-react';
 import type { PositioningBlockData, PositioningMethod, QRCodeConfig } from '../../types';
+import { BlockMetadataEditor } from './BlockMetadataEditor';
+import type { TranslationProvider } from '../../services/translationService';
 
 interface PositioningBlockEditorProps {
     data: PositioningBlockData;
     stopId: string;
     tourId: string;
     language: string;
+    availableLanguages?: string[];
+    translationProvider?: TranslationProvider;
     onChange: (data: PositioningBlockData) => void;
 }
 
@@ -20,7 +24,7 @@ function generateShortCode(): string {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-export function PositioningBlockEditor({ data, stopId, tourId, language, onChange }: PositioningBlockEditorProps) {
+export function PositioningBlockEditor({ data, stopId, tourId, language, availableLanguages = ['en'], translationProvider = 'libretranslate', onChange }: PositioningBlockEditorProps) {
     const [copied, setCopied] = useState(false);
 
     // Get current config as QR code config (default if not set)
@@ -112,6 +116,18 @@ export function PositioningBlockEditor({ data, stopId, tourId, language, onChang
 
     return (
         <div className="space-y-5">
+            {/* Block Metadata (Title & Image) */}
+            <BlockMetadataEditor
+                title={data.title}
+                showTitle={data.showTitle}
+                blockImage={data.blockImage}
+                showBlockImage={data.showBlockImage}
+                language={language}
+                availableLanguages={availableLanguages}
+                translationProvider={translationProvider}
+                onChange={(metadata) => onChange({ ...data, ...metadata })}
+            />
+
             {/* Method Selector */}
             <div>
                 <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">

@@ -1,21 +1,34 @@
 import { Maximize2, Map as MapIcon, MapPin } from 'lucide-react';
 import type { MapBlockData } from '../../types';
+import { BlockMetadataEditor } from './BlockMetadataEditor';
+import type { TranslationProvider } from '../../services/translationService';
 
 interface MapBlockEditorProps {
   data: MapBlockData;
   language: string;
   availableLanguages?: string[];
+  translationProvider?: TranslationProvider;
   onChange: (data: MapBlockData) => void;
   onOpenFullEditor: () => void;
 }
 
-export function MapBlockEditor({ data, language: _language, onChange: _onChange, onOpenFullEditor }: MapBlockEditorProps) {
-  void _language; // Reserved for multilingual marker titles
-  void _onChange; // Changes handled in full editor modal
+export function MapBlockEditor({ data, language, availableLanguages = ['en'], translationProvider = 'libretranslate', onChange, onOpenFullEditor }: MapBlockEditorProps) {
   const hasLocation = data.latitude && data.longitude && !isNaN(data.latitude) && !isNaN(data.longitude);
 
   return (
     <div className="space-y-4">
+      {/* Block Metadata (Title & Image) */}
+      <BlockMetadataEditor
+        title={data.title}
+        showTitle={data.showTitle}
+        blockImage={data.blockImage}
+        showBlockImage={data.showBlockImage}
+        language={language}
+        availableLanguages={availableLanguages}
+        translationProvider={translationProvider}
+        onChange={(metadata) => onChange({ ...data, ...metadata })}
+      />
+
       <div className="bg-gradient-to-br from-[var(--color-bg-elevated)] to-[var(--color-bg-surface)] rounded-xl p-6 border border-[var(--color-border-default)]">
         <div className="flex items-center gap-4 mb-4">
           <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600">

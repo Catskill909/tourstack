@@ -11,7 +11,6 @@ import { CollectionPickerModal, type ImportedAudioData } from '../CollectionPick
 interface TimelineGalleryImage {
     id: string;
     url: string;
-    alt: { [lang: string]: string };
     caption: { [lang: string]: string };
     credit?: { [lang: string]: string };
     timestamp: number;
@@ -64,7 +63,6 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
     const images: TimelineGalleryImage[] = (data.images || []).map((img, idx) => ({
         id: img.id || `img_legacy_${idx}`,
         url: img.url,
-        alt: img.alt || { [language]: '' },
         caption: img.caption || { [language]: '' },
         credit: img.credit,
         timestamp: Math.min(Math.max(0, img.timestamp || 0), audioDuration || Infinity)
@@ -232,7 +230,6 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                 return {
                     id: generateId(),
                     url,
-                    alt: { [language]: file.name.replace(/\.[^/.]+$/, '') },
                     caption: { [language]: '' },
                     credit: { [language]: '' },
                     timestamp
@@ -476,7 +473,7 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                                 <motion.img
                                     key={`prev-${images[previousIndex].id}`}
                                     src={images[previousIndex].url}
-                                    alt={images[previousIndex].alt[language] || ''}
+                                    alt=""
                                     className="absolute max-w-full max-h-full object-contain rounded-lg"
                                     initial={{ opacity: 1 }}
                                     animate={{ opacity: 0 }}
@@ -487,7 +484,7 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                             <motion.img
                                 key={`curr-${currentImage.id}`}
                                 src={currentImage.url}
-                                alt={currentImage.alt[language] || ''}
+                                alt=""
                                 className="absolute max-w-full max-h-full object-contain rounded-lg"
                                 initial={{ opacity: previousIndex !== null ? 0 : 1 }}
                                 animate={{ opacity: 1 }}
@@ -544,7 +541,7 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                             markers={sortedImages.map(img => ({
                                 id: img.id,
                                 timestamp: Math.min(img.timestamp, audioDuration),
-                                label: img.caption[language] || img.alt[language],
+                                label: img.caption[language] || '',
                                 thumbnailUrl: img.url
                             }))}
                             onMarkerMove={handleMarkerMove}
@@ -636,26 +633,6 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                                     rows={2}
                                     className="w-full px-3 py-2 bg-black/50 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none resize-none"
                                     placeholder="Describe what's shown in this image..."
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1">
-                                    Alt Text (Accessibility)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={editingImage.alt[language] || ''}
-                                    onChange={(e) => {
-                                        const updated = {
-                                            ...editingImage,
-                                            alt: { ...editingImage.alt, [language]: e.target.value }
-                                        };
-                                        setEditingImage(updated);
-                                        handleUpdateImage(editingImage.id, { alt: updated.alt });
-                                    }}
-                                    className="w-full px-3 py-2 bg-black/50 border border-white/20 rounded-lg text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
-                                    placeholder="Brief description for screen readers..."
                                 />
                             </div>
 

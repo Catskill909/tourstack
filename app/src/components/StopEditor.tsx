@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle, Maximize2, Music, Languages, Loader2 } from 'lucide-react';
+import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle, Maximize2, Music, Languages, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
 import { BLOCK_ICONS, BLOCK_LABELS } from './blocks/StopContentBlock';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { translateWithLibre, type TranslationProvider } from '../services/translationService';
@@ -13,7 +13,7 @@ import { MapBlockEditor } from './blocks/MapBlockEditor';
 import { PositioningBlockEditor } from './blocks/PositioningBlockEditor';
 import { TourBlockEditor } from './blocks/TourBlockEditor';
 import { StopPreviewModal } from './StopPreviewModal';
-import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, TourBlockData } from '../types';
+import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, TourBlockData, StopImageData } from '../types';
 
 interface StopEditorProps {
     stop: Stop;
@@ -38,7 +38,7 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
         case 'text':
             return { content: { en: '' }, style: 'normal' } as TextBlockData;
         case 'image':
-            return { url: '', alt: { en: '' }, size: 'medium' } as ImageBlockData;
+            return { url: '', caption: { en: '' }, credit: { en: '' }, size: 'medium' } as ImageBlockData;
         case 'gallery':
             return { images: [], layout: 'carousel', crossfadeDuration: 500 } as GalleryBlockData;
         case 'timelineGallery':
@@ -75,6 +75,11 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
     const [showSaveModal, setShowSaveModal] = useState(false);
     const [activeTitleLang, setActiveTitleLang] = useState(availableLanguages[0] || 'en');
     const [isTranslatingTitle, setIsTranslatingTitle] = useState(false);
+    const [activeDescriptionLang, setActiveDescriptionLang] = useState(availableLanguages[0] || 'en');
+    const [isTranslatingDescription, setIsTranslatingDescription] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [activeImageLang, setActiveImageLang] = useState(availableLanguages[0] || 'en');
+    const [isTranslatingImageCaption, setIsTranslatingImageCaption] = useState(false);
     const language = availableLanguages[0] || 'en'; // Primary language for editing
 
     const blocks = Array.isArray(editedStop.contentBlocks) ? editedStop.contentBlocks : [];
@@ -128,7 +133,152 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
     function handleDescriptionChange(value: string) {
         setEditedStop({
             ...editedStop,
-            description: { ...editedStop.description, en: value },
+            description: { ...editedStop.description, [activeDescriptionLang]: value },
+        });
+        setHasUnsavedChanges(true);
+    }
+
+    async function handleTranslateDescription() {
+        const descObj = editedStop.description || { en: '' };
+        const primaryLang = availableLanguages[0] || 'en';
+        const sourceText = descObj[primaryLang] || descObj['en'] || Object.values(descObj)[0];
+
+        if (!sourceText?.trim()) return;
+
+        setIsTranslatingDescription(true);
+        const newDescObj = { ...descObj };
+
+        for (const lang of availableLanguages) {
+            if (lang === primaryLang) continue;
+            try {
+                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                newDescObj[lang] = translated;
+            } catch (error) {
+                console.error(`Failed to translate description to ${lang}:`, error);
+            }
+        }
+
+        setEditedStop({
+            ...editedStop,
+            description: newDescObj,
+        });
+        setHasUnsavedChanges(true);
+        setIsTranslatingDescription(false);
+    }
+
+    function getStopDescription(): string {
+        if (typeof editedStop.description === 'object') {
+            return editedStop.description[activeDescriptionLang] ?? '';
+        }
+        return String(editedStop.description || '');
+    }
+
+    // Hero Image Helpers
+    function getImageData(): StopImageData {
+        if (typeof editedStop.image === 'string') {
+            // Legacy format - convert to object
+            return {
+                url: editedStop.image || '',
+                caption: {},
+                credit: {},
+            };
+        }
+        return editedStop.image || { url: '', caption: {}, credit: {} };
+    }
+
+    async function handleImageUpload(file: File) {
+        setIsUploadingImage(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch('/api/media/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error('Upload failed');
+            }
+
+            const data = await response.json();
+            const currentImage = getImageData();
+
+            setEditedStop({
+                ...editedStop,
+                image: {
+                    ...currentImage,
+                    url: data.url,
+                },
+            });
+            setHasUnsavedChanges(true);
+        } catch (error) {
+            console.error('Failed to upload image:', error);
+            alert('Failed to upload image. Please try again.');
+        } finally {
+            setIsUploadingImage(false);
+        }
+    }
+
+    function handleImageCaptionChange(value: string) {
+        const currentImage = getImageData();
+        setEditedStop({
+            ...editedStop,
+            image: {
+                ...currentImage,
+                caption: { ...currentImage.caption, [activeImageLang]: value },
+            },
+        });
+        setHasUnsavedChanges(true);
+    }
+
+    function handleImageCreditChange(value: string) {
+        const currentImage = getImageData();
+        setEditedStop({
+            ...editedStop,
+            image: {
+                ...currentImage,
+                credit: { ...currentImage.credit, [activeImageLang]: value },
+            },
+        });
+        setHasUnsavedChanges(true);
+    }
+
+    async function handleTranslateImageCaption() {
+        const currentImage = getImageData();
+        const primaryLang = availableLanguages[0] || 'en';
+        const sourceText = currentImage.caption?.[primaryLang] || currentImage.caption?.['en'];
+
+        if (!sourceText?.trim()) return;
+
+        setIsTranslatingImageCaption(true);
+        const newCaption = { ...currentImage.caption };
+        for (const lang of availableLanguages) {
+            if (lang === primaryLang) continue;
+            try {
+                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                newCaption[lang] = translated;
+            } catch (error) {
+                console.error(`Failed to translate caption to ${lang}:`, error);
+            }
+        }
+
+        setEditedStop({
+            ...editedStop,
+            image: {
+                ...currentImage,
+                caption: newCaption,
+            },
+        });
+        setHasUnsavedChanges(true);
+        setIsTranslatingImageCaption(false);
+    }
+
+
+    function handleImageRemove() {
+        setEditedStop({
+            ...editedStop,
+            image: { url: '', caption: {}, credit: {} },
         });
         setHasUnsavedChanges(true);
     }
@@ -295,16 +445,223 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                     <div className="w-1/2 border-r border-[var(--color-border-default)] overflow-y-auto p-6 space-y-4">
                         {/* Description */}
                         <div className="mb-6">
+                            {/* Language tabs and translate button for description (only show if multiple languages) */}
+                            {availableLanguages.length > 1 && (
+                                <div className="flex items-center gap-2 mb-2">
+                                    <LanguageSwitcher
+                                        availableLanguages={availableLanguages}
+                                        activeLanguage={activeDescriptionLang}
+                                        onChange={setActiveDescriptionLang}
+                                        contentMap={typeof editedStop.description === 'object' ? editedStop.description : { en: String(editedStop.description) }}
+                                        size="sm"
+                                        showStatus={true}
+                                    />
+                                    <button
+                                        onClick={handleTranslateDescription}
+                                        disabled={isTranslatingDescription}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-lg hover:bg-[var(--color-accent-primary)]/20 disabled:opacity-50"
+                                        title="Translate description to all languages"
+                                    >
+                                        {isTranslatingDescription ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            <Languages className="w-4 h-4" />
+                                        )}
+                                        <span>Translate</span>
+                                    </button>
+                                </div>
+                            )}
                             <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">
                                 Description
                             </label>
                             <textarea
-                                value={editedStop.description?.en || ''}
+                                value={getStopDescription()}
                                 onChange={(e) => handleDescriptionChange(e.target.value)}
                                 rows={3}
                                 className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none resize-none"
                                 placeholder="Brief description of this stop..."
                             />
+                        </div>
+
+                        {/* Hero Image */}
+                        <div className="mb-6 space-y-3">
+                            <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
+                                Hero Image
+                            </label>
+
+                            {/* Image Upload */}
+                            <div
+                                onClick={() => {
+                                    const input = document.createElement('input');
+                                    input.type = 'file';
+                                    input.accept = 'image/jpeg,image/png,image/webp';
+                                    input.onchange = (e) => {
+                                        const file = (e.target as HTMLInputElement).files?.[0];
+                                        if (file) handleImageUpload(file);
+                                    };
+                                    input.click();
+                                }}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const file = e.dataTransfer.files[0];
+                                    if (file && file.type.startsWith('image/')) {
+                                        handleImageUpload(file);
+                                    }
+                                }}
+                                className={`
+                                    relative rounded-xl border-2 transition-all cursor-pointer overflow-hidden
+                                    ${getImageData().url
+                                        ? 'border-[var(--color-border-default)] bg-[var(--color-bg-elevated)]'
+                                        : 'border-dashed border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)]'
+                                    }
+                                `}
+                            >
+                                {isUploadingImage ? (
+                                    <div className="flex flex-col items-center justify-center py-12">
+                                        <Loader2 className="w-8 h-8 text-[var(--color-accent-primary)] animate-spin mb-2" />
+                                        <p className="text-sm text-[var(--color-text-muted)]">Uploading image...</p>
+                                    </div>
+                                ) : getImageData().url ? (
+                                    <div className="relative group">
+                                        <img
+                                            src={getImageData().url}
+                                            alt="Stop hero"
+                                            className="w-full h-48 object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleImageRemove();
+                                                }}
+                                                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center gap-2 transition-colors"
+                                            >
+                                                <X className="w-4 h-4" />
+                                                Remove Image
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-12 px-4">
+                                        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 bg-[var(--color-bg-surface)]">
+                                            <ImageIcon className="w-8 h-8 text-[var(--color-text-muted)]" />
+                                        </div>
+                                        <p className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
+                                            Drag & drop image here
+                                        </p>
+                                        <p className="text-xs text-[var(--color-text-muted)] mb-3">
+                                            or click to browse
+                                        </p>
+                                        <p className="text-xs text-[var(--color-text-muted)]">
+                                            Supports JPG, PNG, WebP (max 5MB)
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Caption and Credit (only show if image exists) */}
+                            {getImageData().url && (
+                                <>
+                                    {/* Language switcher for caption/credit */}
+                                    {availableLanguages.length > 1 && (
+                                        <LanguageSwitcher
+                                            availableLanguages={availableLanguages}
+                                            activeLanguage={activeImageLang}
+                                            onChange={setActiveImageLang}
+                                            contentMap={{
+                                                ...(getImageData().caption || {}),
+                                                ...(getImageData().credit || {}),
+                                            }}
+                                            size="sm"
+                                            showStatus={true}
+                                        />
+                                    )}
+
+                                    {/* Caption */}
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <label className="block text-xs font-medium text-[var(--color-text-secondary)]">
+                                                Caption <span className="text-[var(--color-text-muted)]">Optional</span>
+                                            </label>
+                                            {availableLanguages.length > 1 && (
+                                                <button
+                                                    onClick={handleTranslateImageCaption}
+                                                    disabled={isTranslatingImageCaption}
+                                                    className="flex items-center gap-1 px-2 py-0.5 text-xs bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded hover:bg-[var(--color-accent-primary)]/20 disabled:opacity-50"
+                                                    title="Translate caption to all languages"
+                                                >
+                                                    {isTranslatingImageCaption ? (
+                                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                                    ) : (
+                                                        <Languages className="w-3 h-3" />
+                                                    )}
+                                                    <span>Translate</span>
+                                                </button>
+                                            )}
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={getImageData().caption?.[activeImageLang] || ''}
+                                            onChange={(e) => handleImageCaptionChange(e.target.value)}
+                                            className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+                                            placeholder="Image caption..."
+                                        />
+                                    </div>
+
+                                    {/* Credit */}
+                                    <div>
+                                        <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+                                            Credit <span className="text-[var(--color-text-muted)]">Optional</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={getImageData().credit?.[activeImageLang] || ''}
+                                            onChange={(e) => handleImageCreditChange(e.target.value)}
+                                            className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+                                            placeholder="Photo credit or attribution..."
+                                        />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Show/Hide Toggles for Stop Title, Description, and Hero Image */}
+                        <div className="mb-6 p-4 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]">
+                            <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-3">Display Settings</h4>
+                            <div className="flex flex-wrap gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={editedStop.showTitle ?? true}
+                                        onChange={(e) => setEditedStop({ ...editedStop, showTitle: e.target.checked })}
+                                        className="w-4 h-4 rounded border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+                                    />
+                                    <span className="text-sm text-[var(--color-text-secondary)]">Show Stop Title</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={editedStop.showDescription ?? true}
+                                        onChange={(e) => setEditedStop({ ...editedStop, showDescription: e.target.checked })}
+                                        className="w-4 h-4 rounded border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+                                    />
+                                    <span className="text-sm text-[var(--color-text-secondary)]">Show Stop Description</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={editedStop.showImage ?? true}
+                                        onChange={(e) => setEditedStop({ ...editedStop, showImage: e.target.checked })}
+                                        className="w-4 h-4 rounded border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+                                    />
+                                    <span className="text-sm text-[var(--color-text-secondary)]">Show Hero Image</span>
+                                </label>
+                            </div>
                         </div>
 
                         <div className="flex items-center justify-between mb-4">
@@ -396,6 +753,8 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                                     <ImageBlockEditor
                                         data={editingBlock.data as ImageBlockData}
                                         language={language}
+                                        availableLanguages={availableLanguages}
+                                        translationProvider={translationProvider}
                                         onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
                                     />
                                 )}
@@ -403,6 +762,8 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                                     <GalleryBlockEditor
                                         data={editingBlock.data as GalleryBlockData}
                                         language={language}
+                                        availableLanguages={availableLanguages}
+                                        translationProvider={translationProvider}
                                         onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
                                     />
                                 )}

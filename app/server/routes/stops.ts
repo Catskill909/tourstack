@@ -56,9 +56,21 @@ interface IdParams {
 // Helper to parse stop JSON fields
 function parseStop(stop: Stop) {
     const content = JSON.parse(stop.content);
+
+    // Parse image field - handle both old string format and new object format
+    let parsedImage: unknown;
+    try {
+        parsedImage = typeof stop.image === 'string' && stop.image.startsWith('{')
+            ? JSON.parse(stop.image)
+            : stop.image;
+    } catch {
+        parsedImage = stop.image;
+    }
+
     return {
         ...stop,
         title: JSON.parse(stop.title),
+        image: parsedImage,
         description: JSON.parse(stop.description),
         content: content,
         // Also return as contentBlocks for frontend compatibility
@@ -129,7 +141,7 @@ router.post('/', async (req: Request, res: Response) => {
                 order: (maxOrder._max.order ?? -1) + 1,
                 type: data.type || 'mandatory',
                 title: JSON.stringify(data.title || { en: 'New Stop' }),
-                image: data.image || '',
+                image: typeof data.image === 'object' ? JSON.stringify(data.image) : (data.image || ''),
                 description: JSON.stringify(data.description || { en: '' }),
                 customFieldValues: JSON.stringify(data.customFieldValues || {}),
                 primaryPositioning: JSON.stringify({ method: 'qr_code', url: visitorUrl, shortCode }),
@@ -159,7 +171,7 @@ router.put('/:id', async (req: Request<IdParams>, res: Response) => {
         if (data.order !== undefined) updateData.order = data.order;
         if (data.type !== undefined) updateData.type = data.type;
         if (data.title !== undefined) updateData.title = JSON.stringify(data.title);
-        if (data.image !== undefined) updateData.image = data.image;
+        if (data.image !== undefined) updateData.image = typeof data.image === 'object' ? JSON.stringify(data.image) : data.image;
         if (data.description !== undefined) updateData.description = JSON.stringify(data.description);
         // Accept both 'content' and 'contentBlocks' from frontend
         if (data.content !== undefined) updateData.content = JSON.stringify(data.content);
