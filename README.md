@@ -30,17 +30,19 @@ Build interactive tours with QR codes, GPS, Bluetooth beacons, NFC, and more. Su
 ## 🚀 Quick Start
 
 > [!CAUTION]
-> **ALWAYS use `npm run dev:all`** - The app requires BOTH servers!
+> **ALWAYS use `npm run start`** - This kills zombie processes and starts BOTH servers cleanly!
 
 ```bash
 cd app                 # ⚠️ MUST BE IN /app DIRECTORY!
 npm install
-npm run dev:all        # ⭐ REQUIRED: Frontend (5173) + API server (3000)
+npm run start          # ⭐ RECOMMENDED: Clean startup (kills zombies + starts both servers)
+# OR (only if ports are confirmed free):
+npm run dev:all        # Manual start - Frontend (5173) + API server (3000)
 npm run db:studio      # Open database GUI
 ```
 
 > [!WARNING]
-> Running only `npm run dev` will cause errors like `Cannot POST /api/translate`  
+> Running only `npm run dev` will cause errors like `Cannot POST /api/translate`
 > The Express API server (port 3000) must be running for any `/api/*` calls to work.
 
 **Architecture**: Vite proxies `/api/*` requests to `http://localhost:3000` (Express).
@@ -58,19 +60,52 @@ npm run db:studio      # Open database GUI
 >
 > 📖 Full details: [docs/ELEVENLABS-VOICES-ISSUE.md](docs/ELEVENLABS-VOICES-ISSUE.md)
 
-## �🔥 Server Down? Quick Fix
+## ⚡ Server Startup Guardrails (READ THIS!)
 
+> [!IMPORTANT]
+> **Why `npm run start` is the safest choice:**
+>
+> **The Problem**: Zombie processes from crashed/interrupted dev servers stick around and occupy ports 3000 (Express API) and 5173 (Vite). When you try to start the server again:
+> - ❌ Port 5173 occupied → Vite starts on port 5174 instead
+> - ❌ Port 3000 occupied → Express crashes
+> - ❌ API calls fail with `Cannot POST /api/translate` errors
+>
+> **The Solution**: `npm run start` automatically:
+> 1. ✅ Kills all zombie processes on ports 3000 and 5173
+> 2. ✅ Waits 2 seconds for ports to free up
+> 3. ✅ Starts both Vite (5173) and Express (3000) servers
+>
+> **When to use `npm run dev:all` directly:**
+> - Only if you're 100% sure both ports are free (fresh terminal, clean system)
+> - Check first with: `lsof -i :3000 -i :5173`
+
+### 🔥 Server Not Working? Quick Troubleshooting
+
+**Symptom**: Changes not showing, API errors, server won't start
+
+**Fix 1 - Clean Restart (RECOMMENDED):**
 ```bash
-# Kill zombie processes and restart (copy & paste this entire block)
-pkill -f "node.*vite"; pkill -f "tsx.*server"; sleep 1
+cd /Users/paulhenshaw/Desktop/TourStack/app
+npm run start
+```
+
+**Fix 2 - Manual Kill + Restart:**
+```bash
+# Kill zombie processes
+pkill -f "node.*vite"; pkill -f "tsx.*server"; sleep 2
+# Restart from app directory
 cd /Users/paulhenshaw/Desktop/TourStack/app && npm run dev:all
 ```
 
 **Verify both servers running:**
 ```bash
 lsof -i :3000 -i :5173 | grep LISTEN
-# Should show TWO node processes
+# Should show TWO node processes - one on 3000, one on 5173
 ```
+
+**If you see port 5174 instead of 5173:**
+- ❌ Zombie process still occupying port 5173
+- ✅ Run `npm run start` again (it will kill zombies)
 
 ## 🎯 Key Features
 
@@ -135,12 +170,13 @@ TourStack/
 ## 🔧 Commands
 
 > [!CAUTION]
-> **ALWAYS use `npm run dev:all`** for local development!
+> **ALWAYS use `npm run start`** for local development - it prevents zombie process issues!
 
 ```bash
 cd app
 npm install           # Install dependencies
-npm run dev:all       # ⭐ REQUIRED: Run both Vite + Express
+npm run start         # ⭐ RECOMMENDED: Clean startup (kills zombies + starts servers)
+npm run dev:all       # Alternative: Run both Vite + Express (only if ports free)
 npm run typecheck     # ⭐ Check TypeScript BEFORE committing
 npm run build         # Build for production
 npm run db:seed       # Seed templates

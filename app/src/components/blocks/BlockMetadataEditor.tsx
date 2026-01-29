@@ -26,7 +26,7 @@ export function BlockMetadataEditor({
     showBlockImage = false,
     language,
     availableLanguages = ['en'],
-    translationProvider = 'libretranslate',
+    translationProvider: _translationProvider = 'libretranslate',
     onChange
 }: BlockMetadataEditorProps) {
     const [isExpanded, setIsExpanded] = useState(() => {

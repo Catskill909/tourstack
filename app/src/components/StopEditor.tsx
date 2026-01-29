@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle, Maximize2, Music, Languages, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
+import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle, Maximize2, Music, Languages, Loader2, Image as ImageIcon } from 'lucide-react';
 import { BLOCK_ICONS, BLOCK_LABELS } from './blocks/StopContentBlock';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { translateWithLibre, type TranslationProvider } from '../services/translationService';
