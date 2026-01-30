@@ -172,17 +172,22 @@ model AppSettings {
 // =============================================================================
 model Media {
   id        String   @id @default(cuid())
-  
+
   filename  String
   mimeType  String
   size      Int      // bytes
   url       String
-  
+
+  // Dimensions & Duration
+  width     Int?     // Image width in pixels
+  height    Int?     // Image height in pixels
+  duration  Float?   // Audio/video duration in seconds
+
   // Metadata
   alt       String?
   caption   String?
   tags      String?  // JSON: string[]
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

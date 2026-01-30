@@ -9,6 +9,7 @@ import { Settings } from './pages/Settings';
 import { Audio } from './pages/Audio';
 import { ApiFeeds } from './pages/ApiFeeds';
 import { AIAssistance } from './pages/AIAssistance';
+import { Media } from './pages/Media';
 import { VisitorStop } from './pages/VisitorStop';
 import { Docs } from './pages/Docs';
 import './index.css';
@@ -35,7 +36,7 @@ function App() {
               <Route path="/collections" element={<Collections />} />
               <Route path="/collections/:id" element={<CollectionDetail />} />
               <Route path="/templates" element={<ComingSoon title="Templates" />} />
-              <Route path="/media" element={<ComingSoon title="Media Library" />} />
+              <Route path="/media" element={<Media />} />
               <Route path="/languages" element={<ComingSoon title="Languages" />} />
               <Route path="/audio" element={<Audio />} />
               <Route path="/analytics" element={<ComingSoon title="Analytics" />} />

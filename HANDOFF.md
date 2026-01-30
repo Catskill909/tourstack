@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: January 25, 2026  
-**Session Status**: Phase 16 Visitor Experience IN PROGRESS 🔄 | Tour Block COMPLETE ✅ | QR System COMPLETE ✅
+**Last Updated**: January 29, 2026
+**Session Status**: Phase 20 Media Library COMPLETE ✅ | Phase 16 Visitor Experience IN PROGRESS 🔄
 
 ---
 
@@ -450,6 +450,24 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Sticky Header Fix** - Geometry fix (`-top-6`) for flush viewport positioning
 - [x] **Production Ready** - API Key security + Coolify env var support
 
+### Phase 20: Media Library ✅ (Jan 29, 2026)
+- [x] **Media Library Page** - `/media` with responsive grid (1-5 columns)
+- [x] **Smart Search** - Filter by filename, alt text, caption, or tags
+- [x] **Type Filtering** - All / Images / Audio / Video / Documents tabs
+- [x] **Sort Options** - By date, name, or size (asc/desc)
+- [x] **Bulk Operations** - Multi-select, bulk delete, bulk tagging
+- [x] **Media Detail Modal** - Two-column layout with preview + metadata
+- [x] **Image Preview** - Full preview with click-to-expand fullscreen
+- [x] **Audio Preview** - wavesurfer.js waveform with play/pause controls
+- [x] **Video Preview** - HTML5 video player with native controls
+- [x] **Metadata Editing** - Alt text, caption, tags with save functionality
+- [x] **Where Used Tracking** - Shows Tours/Stops using each media item
+- [x] **AI Image Analysis** - Gemini integration with Apply Tags/Description buttons
+- [x] **Sync Feature** - Scans `/uploads` folders, populates database for existing files
+- [x] **Schema Enhancement** - Added `width`, `height`, `duration` fields to Media model
+- [x] **API Endpoints** - GET/PUT/DELETE single, bulk operations, usage tracking, sync
+- [x] **Production Ready** - Persistent `/app/uploads` volume for Coolify
+
 ### 🎯 Phase 17: Stop Navigation & Links (Planned)
 - [ ] **Next/Previous Buttons** - Navigate between stops
 - [ ] **Stop List View** - See all stops in tour
@@ -559,6 +577,19 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | AudioCollectionModal | `app/src/components/AudioCollectionModal.tsx` |
 | Collections Page | `app/src/pages/Collections.tsx` |
 | Collection Detail | `app/src/pages/CollectionDetail.tsx` |
+| **Media Library** | |
+| Media Page | `app/src/pages/Media.tsx` |
+| Media Service | `app/src/lib/mediaService.ts` |
+| Media Types | `app/src/types/media.ts` |
+| Media Card | `app/src/components/media/MediaCard.tsx` |
+| Media Detail Modal | `app/src/components/media/MediaDetailModal.tsx` |
+| Media Usage List | `app/src/components/media/MediaUsageList.tsx` |
+| Image Analysis Panel | `app/src/components/media/ImageAnalysisPanel.tsx` |
+| Audio Preview | `app/src/components/media/AudioPreview.tsx` |
+| Video Preview | `app/src/components/media/VideoPreview.tsx` |
+| Bulk Actions | `app/src/components/media/MediaBulkActions.tsx` |
+| Media API Routes | `app/server/routes/media.ts` |
+| Media Docs | `docs/media-view.md` |
 
 ---
 
