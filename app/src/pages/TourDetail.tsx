@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, Pencil, Settings, Check, X, Languages, Loader2, Play, Eye, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, Pencil, Settings, Check, X, Languages, Loader2, Play, Eye, ExternalLink, Monitor } from 'lucide-react';
 import { translateWithLibre } from '../services/translationService';
 import { useToursStore } from '../stores/useToursStore';
 import { StopEditor } from '../components/StopEditor';
 import { PositioningEditorModal } from '../components/PositioningEditorModal';
 import { EditTourModal } from '../components/EditTourModal';
+import { KioskLauncherModal } from '../components/KioskLauncherModal';
 import type { Stop, Tour, PositioningConfig } from '../types';
 
 // ============================================
@@ -111,6 +112,7 @@ export function TourDetail() {
 
     // Tour launch state
     const [isLaunching, setIsLaunching] = useState(false);
+    const [showKioskModal, setShowKioskModal] = useState(false);
 
     useEffect(() => {
         fetchTours();
@@ -436,6 +438,15 @@ export function TourDetail() {
                         <span>{tour.status === 'published' ? 'Run' : 'Preview'}</span>
                         <ExternalLink className="w-3 h-3 opacity-60" />
                     </button>
+                    {/* Kiosk Mode Button */}
+                    <button
+                        onClick={() => setShowKioskModal(true)}
+                        disabled={stops.length === 0}
+                        className={`p-2 bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-default)] rounded-lg transition-all ${stops.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={stops.length === 0 ? 'Add stops to enable kiosk mode' : 'Kiosk Mode Settings'}
+                    >
+                        <Monitor className="w-5 h-5" />
+                    </button>
                     <button
                         onClick={() => setShowEditTour(true)}
                         className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
@@ -658,6 +669,16 @@ export function TourDetail() {
                     template={undefined}
                     onClose={() => setShowEditTour(false)}
                     onSave={handleUpdateTour}
+                />
+            )}
+
+            {/* Kiosk Launcher Modal */}
+            {tour && (
+                <KioskLauncherModal
+                    isOpen={showKioskModal}
+                    tour={tour}
+                    stops={stops}
+                    onClose={() => setShowKioskModal(false)}
                 />
             )}
 

@@ -10,9 +10,11 @@ import {
     Eye,
     Archive,
     Play,
-    ExternalLink
+    ExternalLink,
+    Monitor
 } from 'lucide-react';
-import type { Tour, Template, TourStatus } from '../types';
+import type { Tour, Template, TourStatus, Stop } from '../types';
+import { KioskLauncherModal } from './KioskLauncherModal';
 
 interface TourCardProps {
     tour: Tour;
@@ -38,6 +40,8 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
     const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
     const [isLaunching, setIsLaunching] = useState(false);
+    const [showKioskModal, setShowKioskModal] = useState(false);
+    const [tourStops, setTourStops] = useState<Stop[]>([]);
     const menuRef = useRef<HTMLDivElement>(null);
 
     // Launch tour in visitor mode
@@ -69,6 +73,29 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
         }
 
         setIsLaunching(false);
+    }
+
+    // Open kiosk launcher modal
+    async function handleOpenKiosk(e: React.MouseEvent) {
+        e.stopPropagation(); // Prevent card click navigation
+
+        try {
+            // Fetch stops for this tour
+            const response = await fetch(`/api/stops/${tour.id}`);
+            if (!response.ok) throw new Error('Failed to fetch stops');
+            const stops = await response.json();
+
+            if (stops.length === 0) {
+                alert('This tour has no stops yet. Add stops before launching kiosk mode.');
+                return;
+            }
+
+            setTourStops(stops);
+            setShowKioskModal(true);
+        } catch (error) {
+            console.error('Error fetching stops for kiosk:', error);
+            alert('Failed to load tour stops. Please try again.');
+        }
     }
 
     // Close menu when clicking outside
@@ -151,13 +178,13 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
                 </span>
             </div>
 
-            {/* Launch Button */}
+            {/* Launch Buttons */}
             {stopCount > 0 && (
-                <div className="mb-4">
+                <div className="mb-4 flex gap-2">
                     <button
                         onClick={handleLaunchTour}
                         disabled={isLaunching}
-                        className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
                             tour.status === 'published'
                                 ? 'bg-green-600 hover:bg-green-700 text-white'
                                 : 'bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]'
@@ -181,6 +208,13 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
                                 <ExternalLink className="w-3 h-3 opacity-60" />
                             </>
                         )}
+                    </button>
+                    <button
+                        onClick={handleOpenKiosk}
+                        className="p-2.5 bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)] rounded-lg transition-all"
+                        title="Kiosk Mode Settings"
+                    >
+                        <Monitor className="w-4 h-4" />
                     </button>
                 </div>
             )}
@@ -251,6 +285,14 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
                     </div>
                 )}
             </div>
+
+            {/* Kiosk Launcher Modal */}
+            <KioskLauncherModal
+                isOpen={showKioskModal}
+                tour={tour}
+                stops={tourStops}
+                onClose={() => setShowKioskModal(false)}
+            />
         </div>
     );
 }

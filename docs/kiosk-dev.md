@@ -1,7 +1,7 @@
 # Kiosk & Visitor Launch System - Development Guide
 
 **Created**: January 29, 2026
-**Status**: Planning
+**Status**: Phase 2 Complete
 **Priority**: High - Critical for museum deployments
 
 ---
@@ -22,7 +22,7 @@ Museums need an intuitive way to:
 
 ## Current State Audit
 
-### What Exists (Jan 29, 2026)
+### What Exists (Jan 30, 2026)
 
 | Component | Status | Location |
 |-----------|--------|----------|
@@ -34,8 +34,11 @@ Museums need an intuitive way to:
 | Progress indicator | ✅ Working | Dot indicators in VisitorStop.tsx |
 | Staff preview mode | ✅ Working | localStorage flag `tourstack_staff` |
 | Published check | ✅ Working | Blocks non-staff from draft tours |
-| **Launch buttons** | ❌ Missing | No way to start from admin UI |
-| **Kiosk configuration** | ❌ Missing | No settings for unattended mode |
+| **Launch buttons** | ✅ Working | Run/Preview in TourCard & TourDetail |
+| **Kiosk Modal** | ✅ Working | `app/src/components/KioskLauncherModal.tsx` |
+| **Kiosk URL params** | ✅ Working | lang, fullscreen, hideNav, autoRestart, kiosk |
+| **Fullscreen API** | ✅ Working | Toggle button in kiosk mode |
+| **Auto-restart** | ✅ Working | "Start Over" button at tour end |
 
 ### Visitor Route Structure
 
@@ -168,20 +171,22 @@ Draft tour variant:
 
 #### Implementation Tasks
 
-- [ ] Create `KioskLauncherModal.tsx` component
-- [ ] Add kiosk parameter handling to `VisitorStop.tsx`
-- [ ] Implement fullscreen API integration
-- [ ] Add auto-restart logic (navigate to stop 1 on completion)
-- [ ] Add "hide nav" conditional rendering
-- [ ] Store kiosk presets in localStorage or database
+- [x] Create `KioskLauncherModal.tsx` component
+- [x] Add kiosk parameter handling to `VisitorStop.tsx`
+- [x] Implement fullscreen API integration
+- [x] Add auto-restart logic (navigate to stop 1 on completion)
+- [x] Add "hide nav" conditional rendering
+- [ ] Store kiosk presets in localStorage or database (Phase 3)
 
-#### Files to Create/Modify
+#### Files Created/Modified
 
 | File | Changes |
 |------|---------|
 | `app/src/components/KioskLauncherModal.tsx` | **New** - Modal component |
 | `app/src/pages/VisitorStop.tsx` | Handle kiosk URL params |
 | `app/src/types/index.ts` | Add KioskSettings interface |
+| `app/src/components/TourCard.tsx` | Add kiosk button |
+| `app/src/pages/TourDetail.tsx` | Add kiosk button |
 
 ---
 
@@ -492,12 +497,15 @@ Staff taps top-left corner 5 times rapidly
 - Good error handling
 - Staff preview mode works well
 - Language switching is smooth
+- Kiosk mode URL parameters ✅
+- Fullscreen API integration ✅
+- Auto-restart at tour completion ✅
+- Hide navigation option ✅
 
 **Areas for Improvement:**
 - Display settings not persisted (in-memory only)
-- No kiosk mode support yet
-- No fullscreen API integration
-- No idle timeout handling
+- No idle timeout handling (Phase 3)
+- No attract mode for unattended kiosks (Phase 3)
 
 ### visitor.ts API Analysis
 
@@ -546,6 +554,15 @@ Staff taps top-left corner 5 times rapidly
 ## Changelog
 
 ### January 30, 2026
+- **Phase 2 Complete** - Kiosk Launcher Modal & URL Parameter Handling
+  - Created `KioskLauncherModal.tsx` with language, start stop, and kiosk options
+  - Added URL parameter handling: `lang`, `fullscreen`, `hideNav`, `autoRestart`, `kiosk`
+  - Implemented fullscreen API with toggle button in kiosk mode
+  - Added "Start Over" button for auto-restart at tour completion
+  - Hide navigation conditionally when `hideNav=true`
+  - Added kiosk button (Monitor icon) to TourCard and TourDetail
+  - Added `KioskSettings` and `KioskPreset` interfaces to types
+
 - **Phase 1 Complete** - Added Run/Preview buttons to TourCard and TourDetail
   - "Run Tour" (green) for published tours
   - "Preview" (secondary) for draft tours

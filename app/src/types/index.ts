@@ -681,3 +681,32 @@ export interface AppSettings {
 
   updatedAt: string;
 }
+
+// =============================================================================
+// KIOSK MODE
+// =============================================================================
+export interface KioskSettings {
+  // Display options
+  fullscreen: boolean;        // Request browser fullscreen on launch
+  hideNav: boolean;           // Hide prev/next navigation buttons
+  autoRestart: boolean;       // Loop back to first stop on completion
+  lockToTour: boolean;        // Prevent browsing to other tours
+
+  // Idle timeout
+  idleTimeoutMinutes?: number; // Return to start after inactivity (0 = disabled)
+
+  // Staff access
+  staffPinEnabled: boolean;   // Require PIN for staff menu
+  staffPin?: string;          // 4-digit PIN code
+}
+
+export interface KioskPreset {
+  id: string;
+  name: string;               // e.g., "Main Lobby iPad"
+  tourId: string;
+  language: string;
+  startStopId?: string;       // Optional specific starting stop
+  settings: KioskSettings;
+  createdAt: string;
+  lastUsed?: string;
+}

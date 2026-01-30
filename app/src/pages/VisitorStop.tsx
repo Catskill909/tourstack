@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { ArrowLeft, Globe, AlertCircle, Loader2, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Globe, AlertCircle, Loader2, ChevronLeft, ChevronRight, Settings, Maximize, RotateCcw } from 'lucide-react';
 import { StopContentBlock } from '../components/blocks/StopContentBlock';
 import { DisplaySettingsPanel, type DisplaySettings } from '../components/DisplaySettingsPanel';
 import type { Stop, ContentBlock } from '../types';
@@ -36,19 +36,29 @@ const LANGUAGE_NAMES: Record<string, string> = {
 export function VisitorStop() {
     const { tourId: tourSlugOrId, stopId: stopSlugOrId } = useParams<{ tourId: string; stopId: string }>();
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const token = searchParams.get('t');
+
+    // Kiosk mode URL parameters
+    const urlLang = searchParams.get('lang');
+    const isKioskMode = searchParams.get('kiosk') === 'true';
+    const hideNav = searchParams.get('hideNav') === 'true';
+    const autoRestart = searchParams.get('autoRestart') === 'true';
+    const requestFullscreen = searchParams.get('fullscreen') === 'true';
 
     const [tour, setTour] = useState<TourWithStops | null>(null);
     const [allStops, setAllStops] = useState<Stop[]>([]);
     const [stop, setStop] = useState<Stop | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [language, setLanguage] = useState('en');
+    const [language, setLanguage] = useState(urlLang || 'en');
     const [showLanguageMenu, setShowLanguageMenu] = useState(false);
     const [displaySettings, setDisplaySettings] = useState<DisplaySettings>({
         showTitles: true,
         showDescriptions: true,
     });
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [showRestartPrompt, setShowRestartPrompt] = useState(false);
 
     // Check if user is staff (simplified - could use auth system later)
     const isStaff = localStorage.getItem('tourstack_staff') === 'true';
@@ -81,8 +91,10 @@ export function VisitorStop() {
                 setStop(data.stop);
                 setAllStops(data.allStops || []);
 
-                // Set initial language from tour's first language
-                if (data.tour.languages?.length > 0) {
+                // Set initial language from URL param or tour's first language
+                if (urlLang && data.tour.languages?.includes(urlLang)) {
+                    setLanguage(urlLang);
+                } else if (data.tour.languages?.length > 0) {
                     setLanguage(data.tour.languages[0]);
                 }
 
@@ -103,7 +115,58 @@ export function VisitorStop() {
         }
 
         fetchData();
-    }, [tourSlugOrId, stopSlugOrId, isStaff]);
+    }, [tourSlugOrId, stopSlugOrId, isStaff, urlLang]);
+
+    // Fullscreen API handling
+    useEffect(() => {
+        if (requestFullscreen && !loading && tour) {
+            const enterFullscreen = async () => {
+                try {
+                    if (document.documentElement.requestFullscreen) {
+                        await document.documentElement.requestFullscreen();
+                        setIsFullscreen(true);
+                    }
+                } catch (err) {
+                    console.log('Fullscreen request denied:', err);
+                }
+            };
+            // Small delay to ensure page is rendered
+            const timer = setTimeout(enterFullscreen, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [requestFullscreen, loading, tour]);
+
+    // Listen for fullscreen changes
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
+
+    // Toggle fullscreen
+    const toggleFullscreen = useCallback(async () => {
+        try {
+            if (document.fullscreenElement) {
+                await document.exitFullscreen();
+            } else {
+                await document.documentElement.requestFullscreen();
+            }
+        } catch (err) {
+            console.log('Fullscreen toggle failed:', err);
+        }
+    }, []);
+
+    // Handle tour restart (for kiosk auto-restart)
+    const handleRestartTour = useCallback(() => {
+        if (!tour || allStops.length === 0) return;
+        const firstStop = allStops[0];
+        // Preserve kiosk params when restarting
+        const params = new URLSearchParams(searchParams);
+        navigate(`/visitor/tour/${tour.slug || tour.id}/stop/${firstStop.slug || firstStop.id}?${params.toString()}`);
+        setShowRestartPrompt(false);
+    }, [tour, allStops, searchParams, navigate]);
 
     // Get localized text
     function getLocalizedText(field: string | Record<string, string> | null | undefined): string {
@@ -167,7 +230,7 @@ export function VisitorStop() {
                 <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
                     {/* Back / Tour Title */}
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                        {prevStop ? (
+                        {!hideNav && prevStop ? (
                             <Link
                                 to={`/visitor/tour/${tour.slug}/stop/${prevStop.slug}${token ? `?t=${token}` : ''}`}
                                 className="p-2 -ml-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
@@ -175,9 +238,9 @@ export function VisitorStop() {
                             >
                                 <ChevronLeft className="w-5 h-5" />
                             </Link>
-                        ) : (
+                        ) : !hideNav ? (
                             <div className="w-9" /> // Spacer
-                        )}
+                        ) : null}
                         <div className="min-w-0 flex-1">
                             <p className="text-xs text-[var(--color-text-muted)] truncate">
                                 {getLocalizedText(tour.title)}
@@ -227,7 +290,7 @@ export function VisitorStop() {
                     )}
 
                     {/* Next Stop */}
-                    {nextStop ? (
+                    {!hideNav && nextStop ? (
                         <Link
                             to={`/visitor/tour/${tour.slug}/stop/${nextStop.slug}${token ? `?t=${token}` : ''}`}
                             className="p-2 -mr-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
@@ -235,9 +298,9 @@ export function VisitorStop() {
                         >
                             <ChevronRight className="w-5 h-5" />
                         </Link>
-                    ) : (
+                    ) : !hideNav ? (
                         <div className="w-9" /> // Spacer
-                    )}
+                    ) : null}
                 </div>
             </header>
 
@@ -379,53 +442,74 @@ export function VisitorStop() {
                 />
             )}
 
-            {/* Bottom Navigation */}
-            <nav className="sticky bottom-0 bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-t border-[var(--color-border-default)]">
-                <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-                    {prevStop ? (
-                        <Link
-                            to={`/visitor/tour/${tour.slug}/stop/${prevStop.slug}${token ? `?t=${token}` : ''}`}
-                            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-bg-elevated)] rounded-lg text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
-                        >
-                            <ChevronLeft className="w-4 h-4" />
-                            <span className="hidden sm:inline">{getLocalizedText(prevStop.title)}</span>
-                            <span className="sm:hidden">Previous</span>
-                        </Link>
-                    ) : (
-                        <div />
-                    )}
+            {/* Bottom Navigation - hidden in hideNav kiosk mode */}
+            {!hideNav && (
+                <nav className="sticky bottom-0 bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-t border-[var(--color-border-default)]">
+                    <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+                        {prevStop ? (
+                            <Link
+                                to={`/visitor/tour/${tour.slug}/stop/${prevStop.slug}${token ? `?t=${token}` : ''}`}
+                                className="flex items-center gap-2 px-4 py-2 bg-[var(--color-bg-elevated)] rounded-lg text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                                <span className="hidden sm:inline">{getLocalizedText(prevStop.title)}</span>
+                                <span className="sm:hidden">Previous</span>
+                            </Link>
+                        ) : (
+                            <div />
+                        )}
 
-                    {/* Progress indicator */}
-                    <div className="flex items-center gap-1">
-                        {allStops.map((_, idx) => (
-                            <div
-                                key={idx}
-                                className={`w-2 h-2 rounded-full transition-colors ${idx === stopIndex
-                                    ? 'bg-[var(--color-accent-primary)]'
-                                    : idx < stopIndex
-                                        ? 'bg-[var(--color-accent-primary)]/50'
-                                        : 'bg-[var(--color-bg-elevated)]'
-                                    }`}
-                            />
-                        ))}
-                    </div>
-
-                    {nextStop ? (
-                        <Link
-                            to={`/visitor/tour/${tour.slug}/stop/${nextStop.slug}${token ? `?t=${token}` : ''}`}
-                            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-[#1a1a1a] rounded-lg font-medium hover:opacity-90 transition-opacity"
-                        >
-                            <span className="hidden sm:inline">{getLocalizedText(nextStop.title)}</span>
-                            <span className="sm:hidden">Next</span>
-                            <ChevronRight className="w-4 h-4" />
-                        </Link>
-                    ) : (
-                        <div className="px-4 py-2 text-[var(--color-text-muted)] text-sm">
-                            Tour Complete! 🎉
+                        {/* Progress indicator */}
+                        <div className="flex items-center gap-1">
+                            {allStops.map((_, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`w-2 h-2 rounded-full transition-colors ${idx === stopIndex
+                                        ? 'bg-[var(--color-accent-primary)]'
+                                        : idx < stopIndex
+                                            ? 'bg-[var(--color-accent-primary)]/50'
+                                            : 'bg-[var(--color-bg-elevated)]'
+                                        }`}
+                                />
+                            ))}
                         </div>
-                    )}
-                </div>
-            </nav>
+
+                        {nextStop ? (
+                            <Link
+                                to={`/visitor/tour/${tour.slug}/stop/${nextStop.slug}${token ? `?t=${token}` : ''}`}
+                                className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-[#1a1a1a] rounded-lg font-medium hover:opacity-90 transition-opacity"
+                            >
+                                <span className="hidden sm:inline">{getLocalizedText(nextStop.title)}</span>
+                                <span className="sm:hidden">Next</span>
+                                <ChevronRight className="w-4 h-4" />
+                            </Link>
+                        ) : autoRestart ? (
+                            <button
+                                onClick={handleRestartTour}
+                                className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-[#1a1a1a] rounded-lg font-medium hover:opacity-90 transition-opacity"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                                <span>Start Over</span>
+                            </button>
+                        ) : (
+                            <div className="px-4 py-2 text-[var(--color-text-muted)] text-sm">
+                                Tour Complete! 🎉
+                            </div>
+                        )}
+                    </div>
+                </nav>
+            )}
+
+            {/* Fullscreen toggle button (kiosk mode) */}
+            {isKioskMode && (
+                <button
+                    onClick={toggleFullscreen}
+                    className="fixed bottom-4 right-4 p-3 bg-[var(--color-bg-surface)]/90 backdrop-blur-md rounded-full shadow-lg border border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors z-40"
+                    title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                >
+                    <Maximize className="w-5 h-5" />
+                </button>
+            )}
         </div>
     );
 }

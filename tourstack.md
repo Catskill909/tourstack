@@ -58,7 +58,8 @@ When museum staff access visitor pages, they see:
 | Phase 13.5: Translate Collections | ✅ DEPLOYED |
 | Phase 14: Audio UX Improvements | ✅ Complete |
 | Phase 15: Positioning Editor & QR Generator | ✅ Complete |
-| Phase 16: Tour Block + Visitor System | 🔄 In Progress |
+| Phase 16: Tour Block + Visitor System | ✅ Complete |
+| Phase 16.5: Kiosk Launch System | ✅ Complete |
 | Phase 17: Stop Navigation & Links | 🎯 Planned |
 | Phase 18: GPS Positioning Tab | 🎯 Planned |
 | Phase 19: AI Object Analysis (Full) | ✅ Complete |
@@ -101,10 +102,32 @@ When museum staff access visitor pages, they see:
 - `vision.ts` - Server-side Google Cloud Vision API integration
 - `gemini/analyze` - Backend endpoint for advanced visual DNA
 
-**Deployment:** Coolify/Docker with persistent volumes  
+**Deployment:** Coolify/Docker with persistent volumes
 - Database: Prisma + SQLite (`/app/data`)
 - Media: Server uploads (`/app/uploads`, 100MB limit)
 - See `docs/COOLIFY-DEPLOYMENT.md` for configuration
+
+### Kiosk Launch System (Phase 16.5) - COMPLETE ✅
+
+**Museum Kiosk Deployment:** Launch and configure visitor tours from admin interface.
+
+| Feature | Description |
+|---------|-------------|
+| **Run/Preview Buttons** | Green "Run" for published, "Preview" for draft tours |
+| **Kiosk Launcher Modal** | Configure language, start stop, and display options |
+| **URL Parameters** | `lang`, `fullscreen`, `hideNav`, `autoRestart`, `kiosk` |
+| **Fullscreen API** | Browser fullscreen with toggle button in kiosk mode |
+| **Auto-restart** | "Start Over" button returns to first stop on completion |
+| **Hide Navigation** | Remove prev/next buttons for linear kiosk tours |
+
+**Files:**
+- `KioskLauncherModal.tsx` - Modal for kiosk configuration
+- `TourCard.tsx` - Run/Preview/Kiosk buttons on tour cards
+- `TourDetail.tsx` - Run Tour and Kiosk buttons in header
+- `VisitorStop.tsx` - URL parameter handling for kiosk mode
+- `types/index.ts` - `KioskSettings` and `KioskPreset` interfaces
+
+**Documentation:** See [docs/kiosk-dev.md](docs/kiosk-dev.md) for full planning and future phases.
 
 ---
 
