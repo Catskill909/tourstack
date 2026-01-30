@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, Pencil, Settings, Check, X, Languages, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, Pencil, Settings, Check, X, Languages, Loader2, Play, Eye, ExternalLink } from 'lucide-react';
 import { translateWithLibre } from '../services/translationService';
 import { useToursStore } from '../stores/useToursStore';
 import { StopEditor } from '../components/StopEditor';
@@ -108,6 +108,9 @@ export function TourDetail() {
     const [editingTitleValue, setEditingTitleValue] = useState<{ [lang: string]: string }>({});
     const [isTranslatingTitle, setIsTranslatingTitle] = useState(false);
     const titleInputRef = useRef<HTMLInputElement>(null);
+
+    // Tour launch state
+    const [isLaunching, setIsLaunching] = useState(false);
 
     useEffect(() => {
         fetchTours();
@@ -358,6 +361,26 @@ export function TourDetail() {
         }
     }
 
+    // Launch tour in visitor mode
+    function handleLaunchTour() {
+        if (stops.length === 0) {
+            alert('This tour has no stops yet. Add stops before launching.');
+            return;
+        }
+
+        setIsLaunching(true);
+
+        // Sort by order and get first stop
+        const sortedStops = [...stops].sort((a, b) => a.order - b.order);
+        const firstStop = sortedStops[0];
+
+        // Open visitor view in new tab
+        const visitorUrl = `/visitor/tour/${tour?.id}/stop/${firstStop.id}`;
+        window.open(visitorUrl, '_blank');
+
+        setIsLaunching(false);
+    }
+
     if (isLoading) {
         return <div className="p-6 text-center text-[var(--color-text-muted)]">Loading...</div>;
     }
@@ -392,6 +415,27 @@ export function TourDetail() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
+                    {/* Run/Preview Tour Button */}
+                    <button
+                        onClick={handleLaunchTour}
+                        disabled={isLaunching || stops.length === 0}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                            tour.status === 'published'
+                                ? 'bg-green-600 hover:bg-green-700 text-white'
+                                : 'bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]'
+                        } ${(isLaunching || stops.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={stops.length === 0 ? 'Add stops to enable launch' : (tour.status === 'published' ? 'Run tour in visitor mode' : 'Preview tour (staff only)')}
+                    >
+                        {isLaunching ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : tour.status === 'published' ? (
+                            <Play className="w-4 h-4" />
+                        ) : (
+                            <Eye className="w-4 h-4" />
+                        )}
+                        <span>{tour.status === 'published' ? 'Run' : 'Preview'}</span>
+                        <ExternalLink className="w-3 h-3 opacity-60" />
+                    </button>
                     <button
                         onClick={() => setShowEditTour(true)}
                         className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"

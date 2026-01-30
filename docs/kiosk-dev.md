@@ -97,11 +97,11 @@ Draft tour variant:
 
 #### Implementation Tasks
 
-- [ ] Add "Run" / "Preview" button to `TourCard.tsx`
-- [ ] Add "Run Tour" button to `TourDetail.tsx` header
-- [ ] Query first stop ID when launching
-- [ ] Open in new tab with `window.open()`
-- [ ] Style buttons per tour status (published vs draft)
+- [x] Add "Run" / "Preview" button to `TourCard.tsx`
+- [x] Add "Run Tour" button to `TourDetail.tsx` header
+- [x] Query first stop ID when launching
+- [x] Open in new tab with `window.open()`
+- [x] Style buttons per tour status (published vs draft)
 
 #### Files to Modify
 
@@ -544,6 +544,13 @@ Staff taps top-left corner 5 times rapidly
 ---
 
 ## Changelog
+
+### January 30, 2026
+- **Phase 1 Complete** - Added Run/Preview buttons to TourCard and TourDetail
+  - "Run Tour" (green) for published tours
+  - "Preview" (secondary) for draft tours
+  - Opens visitor view in new tab
+  - Disabled when tour has no stops
 
 ### January 29, 2026
 - Created initial document

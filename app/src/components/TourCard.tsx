@@ -9,7 +9,8 @@ import {
     Clock,
     Eye,
     Archive,
-    Play
+    Play,
+    ExternalLink
 } from 'lucide-react';
 import type { Tour, Template, TourStatus } from '../types';
 
@@ -36,7 +37,39 @@ const statusConfig: Record<TourStatus, { label: string; color: string; bg: strin
 export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStatusChange }: TourCardProps) {
     const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
+    const [isLaunching, setIsLaunching] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+
+    // Launch tour in visitor mode
+    async function handleLaunchTour(e: React.MouseEvent) {
+        e.stopPropagation(); // Prevent card click navigation
+        setIsLaunching(true);
+
+        try {
+            // Fetch first stop for this tour
+            const response = await fetch(`/api/stops/${tour.id}`);
+            if (!response.ok) throw new Error('Failed to fetch stops');
+            const stops = await response.json();
+
+            if (stops.length === 0) {
+                alert('This tour has no stops yet. Add stops before launching.');
+                setIsLaunching(false);
+                return;
+            }
+
+            // Sort by order and get first stop
+            const firstStop = stops.sort((a: { order: number }, b: { order: number }) => a.order - b.order)[0];
+
+            // Open visitor view in new tab
+            const visitorUrl = `/visitor/tour/${tour.id}/stop/${firstStop.id}`;
+            window.open(visitorUrl, '_blank');
+        } catch (error) {
+            console.error('Error launching tour:', error);
+            alert('Failed to launch tour. Please try again.');
+        }
+
+        setIsLaunching(false);
+    }
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -117,6 +150,40 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
                     {tour.analytics?.totalVisitors || 0}
                 </span>
             </div>
+
+            {/* Launch Button */}
+            {stopCount > 0 && (
+                <div className="mb-4">
+                    <button
+                        onClick={handleLaunchTour}
+                        disabled={isLaunching}
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                            tour.status === 'published'
+                                ? 'bg-green-600 hover:bg-green-700 text-white'
+                                : 'bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]'
+                        } ${isLaunching ? 'opacity-50 cursor-wait' : ''}`}
+                    >
+                        {isLaunching ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                <span>Opening...</span>
+                            </>
+                        ) : tour.status === 'published' ? (
+                            <>
+                                <Play className="w-4 h-4" />
+                                <span>Run Tour</span>
+                                <ExternalLink className="w-3 h-3 opacity-60" />
+                            </>
+                        ) : (
+                            <>
+                                <Eye className="w-4 h-4" />
+                                <span>Preview</span>
+                                <ExternalLink className="w-3 h-3 opacity-60" />
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
 
             {/* Footer with Status Badge */}
             <div className="flex items-center justify-between">
