@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: January 29, 2026
-**Session Status**: Phase 20 Media Library COMPLETE ✅ | Phase 16 Visitor Experience COMPLETE ✅
+**Last Updated**: January 30, 2026
+**Session Status**: Phase 20 Media Library COMPLETE ✅ | Phase 16 Visitor Experience COMPLETE ✅ | Kiosk Launch Phase 1 COMPLETE ✅
 
 ---
 
@@ -40,6 +40,14 @@
 - **Route Validation**: QR code `?t=TOKEN` parameter support ✅
 - **Published Check**: Only shows published tours to visitors ✅
 - **Test URL**: `http://localhost:5173/visitor/tour/[tourId]/stop/[stopId]`
+
+### ✅ NEW: Kiosk Launch System (Phase 1 Complete)
+> One-click tour launch from admin UI. See [docs/kiosk-dev.md](docs/kiosk-dev.md) for full planning.
+
+- **Run Tour Button**: Green button on published tours (TourCard + TourDetail)
+- **Preview Button**: Secondary button on draft tours (staff-only viewing)
+- **Auto First Stop**: Queries first stop and opens visitor view in new tab
+- **Phase 2 Planned**: Kiosk Launcher Modal with language, start stop, fullscreen options
 
 ### Key Architecture Concept
 
@@ -610,6 +618,10 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | Bulk Actions | `app/src/components/media/MediaBulkActions.tsx` |
 | Media API Routes | `app/server/routes/media.ts` |
 | Media Docs | `docs/media-view.md` |
+| **Kiosk & Visitor Launch** | |
+| Kiosk Dev Guide | `docs/kiosk-dev.md` |
+| Tour Card (Run button) | `app/src/components/TourCard.tsx` |
+| Tour Detail (Run button) | `app/src/pages/TourDetail.tsx` |
 
 ---
 
