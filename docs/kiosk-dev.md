@@ -218,6 +218,238 @@ interface KioskPreset {
 
 ---
 
+## Device-Specific Considerations
+
+### The Three Contexts
+
+TourStack's visitor mode serves three distinct use cases with different needs:
+
+| Context | Device Owner | Example | Primary Concerns |
+|---------|--------------|---------|------------------|
+| **Personal Device** | Visitor | Their iPhone/Android | Quick access, battery, data usage |
+| **Shared Tablet** | Museum | iPad on cart/stand | Easy exit, sanitization prompts, multi-user |
+| **Fixed Kiosk** | Museum | Wall-mounted display | Locked down, attract mode, no exit needed |
+
+### Phone-Specific Features
+
+Visitors using their own phones need a lightweight, respectful experience:
+
+```
+┌─────────────────────────────────────────┐
+│  📱 PHONE MODE                          │
+├─────────────────────────────────────────┤
+│  ✓ Quick QR scan → instant content     │
+│  ✓ Minimal UI chrome                    │
+│  ✓ Works in Safari/Chrome (no app)     │
+│  ✓ "Add to Home Screen" prompt         │
+│  ✓ Offline caching (PWA)               │
+│  ✓ Battery-conscious (no background)   │
+│  ✓ Easy share button                   │
+│  ✓ Bookmark/save for later             │
+└─────────────────────────────────────────┘
+```
+
+**Phone-specific tools:**
+- [ ] **PWA install prompt** - "Add to Home Screen" for app-like experience
+- [ ] **Share button** - Share current stop via native share sheet
+- [ ] **Save for later** - Bookmark tour to continue at home
+- [ ] **Low data mode** - Reduced image quality option
+- [ ] **Audio-only mode** - Listen while walking, screen off
+
+### Tablet-Specific Features
+
+Tablets (museum-owned, shared among visitors) need balance between openness and control:
+
+```
+┌─────────────────────────────────────────┐
+│  📱 TABLET MODE (Shared Device)         │
+├─────────────────────────────────────────┤
+│  ✓ Larger touch targets (44px min)     │
+│  ✓ Landscape + Portrait support        │
+│  ✓ Clear "End Tour" button             │
+│  ✓ "Next Visitor" reset option         │
+│  ✓ Staff unlock gesture/code           │
+│  ✓ Guided Access integration (iOS)     │
+│  ✓ Screen pinning (Android)            │
+└─────────────────────────────────────────┘
+```
+
+**Tablet-specific tools:**
+- [ ] **Orientation support** - Responsive layout for both orientations
+- [ ] **Touch target sizing** - Minimum 44x44px for all interactive elements
+- [ ] **Guided Access (iOS)** - Documentation for museum IT setup
+- [ ] **Screen Pinning (Android)** - Documentation for museum IT setup
+- [ ] **Sanitization reminder** - "Please sanitize before next visitor" prompt
+
+### Fixed Kiosk Features
+
+Wall-mounted or pedestal displays in locked enclosures:
+
+```
+┌─────────────────────────────────────────┐
+│  🖥️ FIXED KIOSK MODE                    │
+├─────────────────────────────────────────┤
+│  ✓ No exit option for visitors         │
+│  ✓ Attract mode when idle              │
+│  ✓ Auto-restart on completion          │
+│  ✓ Hidden staff unlock (5-tap corner)  │
+│  ✓ Fullscreen, no browser chrome       │
+│  ✓ Error recovery (auto-refresh)       │
+│  ✓ Network status indicator            │
+└─────────────────────────────────────────┘
+```
+
+**Kiosk-specific tools:**
+- [ ] **Attract mode** - Animated "Touch to begin" when idle
+- [ ] **Idle timeout** - Return to attract mode after X minutes
+- [ ] **Error recovery** - Auto-refresh if JavaScript errors occur
+- [ ] **Heartbeat ping** - Alert staff if kiosk goes offline
+- [ ] **Hidden staff access** - 5-tap corner or swipe gesture
+
+---
+
+## Exit Strategies for Visitors
+
+### Design Principles
+
+1. **Discoverable** - Exit should be findable without instructions
+2. **Intentional** - Prevent accidental exits mid-tour
+3. **Context-aware** - Different exit flows for different device types
+4. **Graceful** - Offer to save progress or provide feedback
+
+### Exit Methods by Context
+
+#### Personal Phone: Minimal Friction
+```
+┌─────────────────────────────────────────┐
+│  [←]  Stop 3 of 7           [≡ Menu]   │
+│                                         │
+│  ... content ...                        │
+│                                         │
+│  [◀ Prev]              [Next ▶]        │
+└─────────────────────────────────────────┘
+         │                       │
+         │                       │
+    Browser back            Menu has:
+    button works            • Exit Tour
+                            • Change Language
+                            • Share
+                            • About
+```
+
+**Phone exit options:**
+- Browser back button (standard behavior)
+- Menu → "Exit Tour"
+- Complete tour → End screen with "Done" button
+- Just close the tab (no penalty)
+
+#### Shared Tablet: Clear but Confirmed
+```
+┌─────────────────────────────────────────┐
+│  Ancient Egypt Tour        [End Tour]  │
+│  Stop 3 of 7                            │
+│                                         │
+│  ... content ...                        │
+│                                         │
+└─────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│  End your tour?                         │
+│                                         │
+│  Your progress won't be saved.          │
+│                                         │
+│  [Continue Tour]  [Yes, End Tour]       │
+│                                         │
+│  ─────────────────────────────────────  │
+│  Staff? Enter code to access settings   │
+│  [____]                                 │
+└─────────────────────────────────────────┘
+```
+
+**Tablet exit flow:**
+1. Tap "End Tour" button (always visible in header)
+2. Confirmation modal prevents accidental exit
+3. Optional: Staff code field for settings access
+4. Returns to tour start or attract screen
+
+#### Fixed Kiosk: Tour Completion Only
+```
+┌─────────────────────────────────────────┐
+│  Tour Complete! 🎉                       │
+│                                         │
+│  Thanks for exploring Ancient Egypt.    │
+│                                         │
+│  [Start Over]  [Explore Another Tour]  │
+│                                         │
+│  This screen will reset in 30 seconds   │
+│  ████████████░░░░░░░░                   │
+└─────────────────────────────────────────┘
+```
+
+**Kiosk exit behavior:**
+- No "exit" button - visitors complete or abandon
+- Auto-restart after completion (30s countdown)
+- Auto-restart after idle timeout (5 min default)
+- Staff exit: Hidden gesture (e.g., 5-tap top-left corner)
+
+### Staff Exit / Unlock Methods
+
+For museum-owned devices, staff need a way to exit kiosk mode:
+
+| Method | Security | Ease | Best For |
+|--------|----------|------|----------|
+| **5-tap corner** | Low | Easy | Trusted environments |
+| **Swipe pattern** | Medium | Medium | Shared spaces |
+| **PIN code** | High | Medium | Public areas |
+| **QR code scan** | High | Easy | Staff with phones |
+| **Bluetooth beacon** | High | Easy | Large deployments |
+
+#### Recommended: 5-Tap + PIN Combo
+```
+Staff taps top-left corner 5 times rapidly
+         │
+         ▼
+┌─────────────────────────────────────────┐
+│  🔐 Staff Access                        │
+│                                         │
+│  Enter PIN:                             │
+│  [●] [●] [●] [●]                       │
+│                                         │
+│  [1] [2] [3]                           │
+│  [4] [5] [6]                           │
+│  [7] [8] [9]                           │
+│      [0]                                │
+│                                         │
+│  [Cancel]                               │
+└─────────────────────────────────────────┘
+         │
+         ▼ (correct PIN)
+┌─────────────────────────────────────────┐
+│  Staff Menu                             │
+│                                         │
+│  [Exit Kiosk Mode]                     │
+│  [Change Tour]                          │
+│  [Restart Device]                       │
+│  [View Diagnostics]                     │
+│                                         │
+│  [Return to Tour]                       │
+└─────────────────────────────────────────┘
+```
+
+### Implementation Tasks
+
+- [ ] Add "End Tour" button to tablet/shared mode
+- [ ] Create exit confirmation modal
+- [ ] Implement 5-tap hidden gesture detection
+- [ ] Create staff PIN entry component
+- [ ] Add staff menu with device controls
+- [ ] Create tour completion screen with auto-restart
+- [ ] Add idle timeout detection
+- [ ] Implement attract mode component
+
+---
+
 ## Future Development Ideas
 
 ### Visitor Experience Enhancements
@@ -318,3 +550,5 @@ interface KioskPreset {
 - Documented current visitor view state
 - Defined Phase 1 & 2 implementation plans
 - Added future development ideas
+- Added device-specific considerations (phone, tablet, fixed kiosk)
+- Added exit strategies section with staff unlock methods
