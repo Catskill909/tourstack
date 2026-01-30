@@ -48,6 +48,7 @@ export const sessionMiddleware = session({
     secret: getSessionSecret(),
     resave: false,
     saveUninitialized: false,
+    proxy: process.env.NODE_ENV === 'production', // Trust reverse proxy (Coolify)
     cookie: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
