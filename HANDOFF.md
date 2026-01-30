@@ -14,12 +14,38 @@
 │  WORKSPACE ROOT:  /Users/paulhenshaw/Desktop/TourStack       │
 │  APP DIRECTORY:   /Users/paulhenshaw/Desktop/TourStack/app   │
 │                                                              │
-│  To start dev servers:                                       │
-│    cd /Users/paulhenshaw/Desktop/TourStack/app               │
-│    npm run dev:all                                           │
-│                                                              │
 │  ❌ NEVER run npm from TourStack root - no package.json!     │
 └──────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ⛔️ CRITICAL: SERVER STARTUP - READ THIS FIRST ⛔️
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  🚨🚨🚨 THE ONLY WAY TO START THE APP 🚨🚨🚨                            │
+│                                                                        │
+│  cd /Users/paulhenshaw/Desktop/TourStack/app                           │
+│  npm run start                                                         │
+│                                                                        │
+│  ✅ This is the ONLY correct way to start TourStack!                   │
+│  ✅ Kills zombie processes on ports 3000 and 5173                      │
+│  ✅ Waits 2 seconds for ports to free up                               │
+│  ✅ Starts BOTH Vite (5173) AND Express (3000) servers                 │
+│                                                                        │
+│  ❌ NEVER use: npm run dev                (Vite only - API will FAIL)  │
+│  ❌ NEVER use: npm run server             (Express only - no frontend) │
+│  ❌ NEVER use: npm run dev:all directly   (doesn't kill zombies)       │
+│  ❌ NEVER just run typecheck and assume app works                      │
+│                                                                        │
+│  TWO SERVERS MUST BE RUNNING:                                          │
+│  • Port 5173 = Vite (frontend)                                         │
+│  • Port 3000 = Express (API server)                                    │
+│                                                                        │
+│  VERIFY with: lsof -i :3000 -i :5173 | grep LISTEN                     │
+│  Should show TWO node processes!                                       │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -87,15 +113,52 @@ Staff viewing visitor pages see a **"Back to Admin"** button.
 ## 🚀 Quick Start
 
 ```bash
-cd app
-npm run dev:all       # ⭐ REQUIRED: Runs both Vite (5173) + Express API (3000)
+cd /Users/paulhenshaw/Desktop/TourStack/app
+npm run start         # ⭐ THE ONLY WAY: Kills zombies + starts BOTH servers
 ```
 
-**Current Status:** Both servers running ✅  
+> ⚠️ **CRITICAL**: See "SERVER STARTUP" section above. NEVER use `npm run dev:all` directly!
+
+**Current Status:** Both servers running ✅
 **Local Testing:** Fully tested ✅ - QR codes auto-generate with unique URLs & short codes!
 - Frontend: http://localhost:5173
 - API Server: http://localhost:3000
 - Database: 12 Deepgram audio files, 18 ElevenLabs audio files loaded
+
+---
+
+## 🔐 LOGIN SYSTEM
+
+### Overview
+TourStack uses session-based authentication to protect the admin panel.
+
+**Default Login:** Password is `admin` (when `ADMIN_PASSWORD` not set)
+
+### Route Protection
+
+| Route | Auth Required | Notes |
+|-------|---------------|-------|
+| `/login` | No | Login page |
+| `/visitor/*` | No | Public visitor pages |
+| `/docs/*` | No | Documentation |
+| `/api/auth/*` | No | Auth endpoints |
+| `/api/visitor/*` | No | Visitor API |
+| `/api/health` | No | Health check |
+| `/*` (all other) | **Yes** | Admin panel |
+| `/api/*` (all other) | **Yes** | Admin APIs |
+
+### Environment Variables (Coolify Production)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ADMIN_PASSWORD` | **Yes** | Admin password (defaults to "admin" if not set) |
+| `SESSION_SECRET` | **Yes** | Random 32+ char string for session encryption |
+
+### Key Files
+- `app/server/middleware/auth.ts` - Session middleware
+- `app/server/routes/auth.ts` - Login/logout/check endpoints
+- `app/src/pages/Login.tsx` - Login page component
+- `app/src/stores/useAuthStore.ts` - Auth state (Zustand)
 
 ---
 

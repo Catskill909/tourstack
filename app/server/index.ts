@@ -20,8 +20,8 @@ import collectionsRouter from './routes/collections.js';
 import visitorRouter from './routes/visitor.js';
 import visionRouter from './routes/vision.js';
 import geminiRouter from './routes/gemini.js';
-
-// ... 
+import authRouter from './routes/auth.js';
+import { sessionMiddleware, requireAuth } from './middleware/auth.js'; 
 
 
 
@@ -32,32 +32,39 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true,
+}));
 app.use(express.json({ limit: '50mb' }));
+app.use(sessionMiddleware);
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// API routes
-app.use('/api/tours', toursRouter);
-app.use('/api/stops', stopsRouter);
-app.use('/api/templates', templatesRouter);
-app.use('/api/media', mediaRouter);
-app.use('/api/translate', translateRouter);
-app.use('/api/transcribe', transcribeRouter);
-app.use('/api/settings', settingsRouter);
-app.use('/api/audio', audioRouter);
-app.use('/api/elevenlabs', elevenlabsRouter);
-app.use('/api/feeds', feedsRouter);
-app.use('/api/collections', collectionsRouter);
+// Public API routes (no auth required)
+app.use('/api/auth', authRouter);
 app.use('/api/visitor', visitorRouter);
-app.use('/api/vision', visionRouter);
-app.use('/api/gemini', geminiRouter);
 
-// Health check
+// Health check (public)
 app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Protected API routes (auth required)
+app.use('/api/tours', requireAuth, toursRouter);
+app.use('/api/stops', requireAuth, stopsRouter);
+app.use('/api/templates', requireAuth, templatesRouter);
+app.use('/api/media', requireAuth, mediaRouter);
+app.use('/api/translate', requireAuth, translateRouter);
+app.use('/api/transcribe', requireAuth, transcribeRouter);
+app.use('/api/settings', requireAuth, settingsRouter);
+app.use('/api/audio', requireAuth, audioRouter);
+app.use('/api/elevenlabs', requireAuth, elevenlabsRouter);
+app.use('/api/feeds', requireAuth, feedsRouter);
+app.use('/api/collections', requireAuth, collectionsRouter);
+app.use('/api/vision', requireAuth, visionRouter);
+app.use('/api/gemini', requireAuth, geminiRouter);
 
 // In production, serve the built frontend
 if (process.env.NODE_ENV === 'production') {

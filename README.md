@@ -216,6 +216,8 @@ Add these in Coolify's **Environment Variables** section:
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | `file:./data/dev.db` |
+| `ADMIN_PASSWORD` | **Yes** | Admin login password (defaults to "admin" if not set - NOT SECURE) |
+| `SESSION_SECRET` | **Yes** | Random 32+ char string for session encryption |
 | `DEEPGRAM_API_KEY` | Optional | Deepgram Aura-2 TTS (7 languages, 40+ voices) |
 | `ELEVENLABS_API_KEY` | Optional | ElevenLabs premium TTS (32+ languages, 3000+ voices) |
 | `GOOGLE_MAPS_API_KEY` | Optional | Google Maps for premium maps |
