@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: January 29, 2026
-**Session Status**: Phase 20 Media Library COMPLETE ✅ | Phase 16 Visitor Experience IN PROGRESS 🔄
+**Session Status**: Phase 20 Media Library COMPLETE ✅ | Phase 16 Visitor Experience COMPLETE ✅
 
 ---
 
@@ -33,12 +33,13 @@
 | **Admin** | `/tours/*`, `/stops/*` | Create & manage tour content |
 | **Visitor** | `/visitor/*` | Public-facing tour experience
 
-### 🔄 IN PROGRESS: Visitor Experience System (production)
-> Next Up: Route validation and published state checks.
+### ✅ COMPLETE: Visitor Experience System (production)
+> The public-facing tour view is fully operational with navigation, language switching, and staff preview mode.
 
-- **Visitor Routes**: `/visitor/tour/:tourId/stop/:stopId` pages
-- **Route Validation**: Verify `?t=TOKEN` from QR codes
-- **Published Check**: Only show published tours to visitors
+- **Visitor Routes**: `/visitor/tour/:tourId/stop/:stopId` ✅
+- **Route Validation**: QR code `?t=TOKEN` parameter support ✅
+- **Published Check**: Only shows published tours to visitors ✅
+- **Test URL**: `http://localhost:5173/visitor/tour/[tourId]/stop/[stopId]`
 
 ### Key Architecture Concept
 
@@ -426,17 +427,32 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 > **Known Limitation:** Timeline Gallery uses single `audioUrl` (not `audioFiles`), so audio doesn't switch on language change. Transcript text DOES switch. This is by design for timeline sync.
 
-### � Phase 16: Visitor Experience System (IN PROGRESS - Jan 25, 2026)- [x] **Tour Block** - Hero intro block with full-screen image, title, description, CTA button
+### ✅ Phase 16: Visitor Experience System (COMPLETE - Jan 29, 2026)
+- [x] **Tour Block** - Hero intro block with full-screen image, title, description, CTA button
 - [x] **Architectural Design System** - Clean minimalist typography, monochrome palette, border-style badges
 - [x] **Multilingual Support** - LanguageSwitcher + MagicTranslateButton for all text fields
 - [x] **Responsive Full-Height** - `min-h-[100dvh]` fills tablet/phone screens properly
 - [x] **3 Layout Variants** - Bottom aligned, centered, card overlay
-- [x] **CTA Customization** - Primary/secondary/outline/ghost styles, next-stop/specific-stop/external actions- [ ] **Visitor Routes** - `/visitor/tour/:tourId/stop/:stopId` pages
-- [ ] **Reuse StopContentBlock** - Same rendering as admin preview
-- [ ] **"Back to Admin" Button** - For staff viewing visitor pages
-- [ ] **Token Validation** - Verify `?t=TOKEN` from QR codes
-- [ ] **Published Check** - Only show published tours to visitors
-- [ ] **Language Selector** - Visitor-friendly language switching
+- [x] **CTA Customization** - Primary/secondary/outline/ghost styles, next-stop/specific-stop/external actions
+- [x] **Visitor Routes** - `/visitor/tour/:tourId/stop/:stopId` pages (VisitorStop.tsx)
+- [x] **Reuse StopContentBlock** - Same rendering as admin preview with mode="view"
+- [x] **"Back to Admin" Button** - Staff preview mode with admin banner
+- [x] **Token Validation** - QR code `?t=TOKEN` parameter support
+- [x] **Published Check** - Only shows published tours (staff can preview drafts)
+- [x] **Language Selector** - Dropdown language switcher in visitor view
+- [x] **Stop Navigation** - Previous/Next buttons with full tour navigation
+- [x] **Progress Indicator** - Visual dots showing position in tour sequence
+- [x] **Display Settings FAB** - Staff-only toggle for titles/descriptions visibility
+- [x] **Public API Endpoints** - `/api/visitor/tour/:slug`, `/api/visitor/s/:shortCode`
+
+> **Test URL:** `http://localhost:5173/visitor/tour/[tourId]/stop/[stopId]`
+> **Components:** VisitorStop.tsx, DisplaySettingsPanel.tsx, StopContentBlock.tsx
+> **API Routes:** server/routes/visitor.ts
+
+**Known Limitations:**
+- Display settings (show titles/descriptions) not persisted to database
+- No public tour gallery/discovery page
+- Interactive blocks (quiz, poll, challenges) rendering not implemented
 
 ### Phase 19: AI Object Analysis ✅ (Jan 28, 2026)
 - [x] **AI Dashboard** - `/ai-assistance` portal for all AI tools
@@ -555,6 +571,10 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | **Stop Editor** | |
 | Stop Editor | `app/src/components/StopEditor.tsx` |
 | Tour Detail | `app/src/pages/TourDetail.tsx` |
+| **Visitor Experience** | |
+| Visitor Stop Page | `app/src/pages/VisitorStop.tsx` |
+| Display Settings Panel | `app/src/components/DisplaySettingsPanel.tsx` |
+| Visitor API Routes | `app/server/routes/visitor.ts` |
 | **Map Block** | |
 | Map Preview | `app/src/components/blocks/MapPreview.tsx` |
 | Map Editor Modal | `app/src/components/blocks/MapEditorModal.tsx` |
