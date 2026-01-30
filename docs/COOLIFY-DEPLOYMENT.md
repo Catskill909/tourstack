@@ -15,6 +15,25 @@
 
 ---
 
+## ⚠️ Volume Mount Behavior (READ THIS!)
+
+> [!IMPORTANT]
+> **Volume mounts start EMPTY on first deployment!**
+>
+> Coolify volumes are persistent directories that preserve data across redeploys. However, they do **NOT** copy files from your local machine or container image. They start as empty directories.
+
+| What Happens | First Deploy | Subsequent Deploys |
+|--------------|--------------|-------------------|
+| `/app/uploads` | Empty directory | Preserves uploaded files |
+| `/app/data` | Empty (new DB created) | Preserves database |
+
+**This means:**
+- Media Library will be empty on first deploy (no files to show)
+- Database tables exist but have no content (except seeded templates)
+- Upload files directly through the production UI to populate
+
+---
+
 ## 🔧 Coolify Setup Checklist
 
 ### 1. Repository Settings
@@ -43,6 +62,7 @@ Add these in Coolify's **Environment Variables** section:
 | `DEEPGRAM_API_KEY` | Optional | Deepgram Aura-2 TTS (text-to-speech) |
 | `ELEVENLABS_API_KEY` | Optional | ElevenLabs premium TTS |
 | `GOOGLE_MAPS_API_KEY` | Optional | Google Maps for premium maps |
+| `GEMINI_API_KEY` | Optional | AI Image Analysis in Media Library |
 
 > **Note:** Environment variables override any settings saved via the Settings UI.
 
@@ -92,6 +112,10 @@ SQLite database dev.db created at...   ← NEW db created, data LOST!
 - **Cause:** Volume not mounted or mounted to wrong path
 - **Fix:** Verify Coolify storages show `/app/data` and `/app/uploads`
 
+### Media Library shows empty (no errors)
+- **Cause:** Volume mounts start empty on first deploy - this is expected
+- **Fix:** Upload files directly through the Media Library page, or click Sync if files exist in `/uploads`
+
 ---
 
 ## 📁 File Structure in Container
@@ -117,3 +141,41 @@ SQLite database dev.db created at...   ← NEW db created, data LOST!
 2. **ALWAYS** use `prisma db push` for schema changes
 3. **NEVER** delete or modify `/app/data/dev.db` manually
 4. Seed script is **idempotent** - safe to run repeatedly
+
+---
+
+## 📷 Media Library on Production
+
+### First Time Setup
+
+After first deployment, the Media Library (`/media`) will be empty. To populate it:
+
+1. **Upload directly** - Use the Upload button on the Media Library page
+2. **Sync existing files** - If files were uploaded via tour/stop editors, click **Sync** button
+
+### Sync Feature
+
+The Sync button scans `/app/uploads` and creates database entries for any files not already tracked:
+
+```bash
+# API endpoint (can also call directly)
+curl -X POST https://your-site.com/api/media/sync
+```
+
+Returns:
+```json
+{
+  "message": "Sync complete: 53 added, 1 already exist, 0 errors",
+  "added": 53,
+  "skipped": 1,
+  "errors": 0
+}
+```
+
+### Required Environment Variable
+
+For AI Image Analysis features, add:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GEMINI_API_KEY` | Optional | Enables AI analysis (tags, description, colors, OCR) |
