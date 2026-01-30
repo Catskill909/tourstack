@@ -58,7 +58,6 @@ export function VisitorStop() {
         showDescriptions: true,
     });
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [showRestartPrompt, setShowRestartPrompt] = useState(false);
 
     // Check if user is staff (simplified - could use auth system later)
     const isStaff = localStorage.getItem('tourstack_staff') === 'true';
@@ -165,7 +164,6 @@ export function VisitorStop() {
         // Preserve kiosk params when restarting
         const params = new URLSearchParams(searchParams);
         navigate(`/visitor/tour/${tour.slug || tour.id}/stop/${firstStop.slug || firstStop.id}?${params.toString()}`);
-        setShowRestartPrompt(false);
     }, [tour, allStops, searchParams, navigate]);
 
     // Get localized text
