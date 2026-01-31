@@ -2,17 +2,18 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, LayoutGrid, Image as ImageIcon, Trash2, Volume2, Pencil, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { collectionService, type Collection } from '../lib/collectionService';
+import { CollectionTypeModal, ImageCollectionWizard, type CollectionTypeOption } from '../components/collections';
 
 export function Collections() {
     const navigate = useNavigate();
     const [collections, setCollections] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [showCreateModal, setShowCreateModal] = useState(false);
 
-    // New Collection State
-    const [newCollectionName, setNewCollectionName] = useState('');
-    const [newCollectionDesc, setNewCollectionDesc] = useState('');
+    // Collection Creation State
+    const [showTypeModal, setShowTypeModal] = useState(false);
+    const [showImageWizard, setShowImageWizard] = useState(false);
+    const [showPlaceholderModal, setShowPlaceholderModal] = useState<'video' | 'documents' | null>(null);
 
     // Edit Collection State
     const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
@@ -34,21 +35,27 @@ export function Collections() {
         }
     }
 
-    async function handleCreate(e: React.FormEvent) {
-        e.preventDefault();
-        try {
-            await collectionService.create({
-                name: newCollectionName,
-                description: newCollectionDesc,
-                type: 'gallery'
-            });
-            setShowCreateModal(false);
-            setNewCollectionName('');
-            setNewCollectionDesc('');
-            loadCollections();
-        } catch (error) {
-            console.error('Failed to create collection:', error);
+    function handleTypeSelect(type: CollectionTypeOption) {
+        setShowTypeModal(false);
+        switch (type) {
+            case 'images':
+                setShowImageWizard(true);
+                break;
+            case 'audio':
+                // Navigate to Audio TTS page for audio collection creation
+                navigate('/audio');
+                break;
+            case 'video':
+            case 'documents':
+                setShowPlaceholderModal(type);
+                break;
         }
+    }
+
+    function handleCollectionCreated(collectionId: string) {
+        setShowImageWizard(false);
+        loadCollections();
+        navigate(`/collections/${collectionId}`);
     }
 
     async function handleDelete(id: string, e: React.MouseEvent) {
@@ -104,7 +111,7 @@ export function Collections() {
                     <p className="text-[var(--color-text-muted)] mt-1">Manage reusable content galleries and datasets</p>
                 </div>
                 <button
-                    onClick={() => setShowCreateModal(true)}
+                    onClick={() => setShowTypeModal(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors"
                 >
                     <Plus className="w-4 h-4" />
@@ -188,48 +195,53 @@ export function Collections() {
                 )}
             </div>
 
-            {/* Create Modal */}
-            {showCreateModal && (
+            {/* Collection Type Selection Modal */}
+            <CollectionTypeModal
+                isOpen={showTypeModal}
+                onClose={() => setShowTypeModal(false)}
+                onSelect={handleTypeSelect}
+            />
+
+            {/* Image Collection Wizard */}
+            <ImageCollectionWizard
+                isOpen={showImageWizard}
+                onClose={() => setShowImageWizard(false)}
+                onSuccess={handleCollectionCreated}
+            />
+
+            {/* Placeholder Modal for Video/Documents */}
+            {showPlaceholderModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] w-full max-w-md p-6 shadow-xl">
-                        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">Create New Collection</h2>
-                        <form onSubmit={handleCreate} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Name</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={newCollectionName}
-                                    onChange={e => setNewCollectionName(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
-                                    placeholder="e.g. Ancient Pottery"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Description</label>
-                                <textarea
-                                    value={newCollectionDesc}
-                                    onChange={e => setNewCollectionDesc(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none h-24 resize-none"
-                                    placeholder="Optional description..."
-                                />
-                            </div>
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCreateModal(false)}
-                                    className="flex-1 px-4 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-lg hover:bg-[var(--color-bg-hover)]"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90"
-                                >
-                                    Create Collection
-                                </button>
-                            </div>
-                        </form>
+                    <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] w-full max-w-md p-6 shadow-xl text-center">
+                        <div className={`inline-flex p-4 rounded-xl mb-4 ${
+                            showPlaceholderModal === 'video' ? 'bg-red-500/10' : 'bg-gray-500/10'
+                        }`}>
+                            {showPlaceholderModal === 'video' ? (
+                                <svg className="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            ) : (
+                                <svg className="w-12 h-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            )}
+                        </div>
+                        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">
+                            {showPlaceholderModal === 'video' ? 'Video Collections' : 'Document Collections'}
+                        </h2>
+                        <p className="text-[var(--color-text-muted)] mb-6">
+                            {showPlaceholderModal === 'video'
+                                ? 'Video collection features including scene detection, auto-captioning, and transcript generation are coming soon.'
+                                : 'Document collection features including PDF support, OCR extraction, and AI summarization are coming soon.'
+                            }
+                        </p>
+                        <button
+                            onClick={() => setShowPlaceholderModal(null)}
+                            className="px-6 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors"
+                        >
+                            Got it
+                        </button>
                     </div>
                 </div>
             )}

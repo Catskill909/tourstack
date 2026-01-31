@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: January 30, 2026
-**Session Status**: Phase 20 Media Library COMPLETE ✅ | Phase 16 Visitor Experience COMPLETE ✅ | Kiosk Launch Phase 2 COMPLETE ✅
+**Last Updated**: January 31, 2026
+**Session Status**: Phase 21 Collections Enhancement COMPLETE ✅ | Phase 20 Media Library COMPLETE ✅ | Phase 16 Visitor Experience COMPLETE ✅
 
 ---
 
@@ -535,6 +535,39 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **API Endpoints** - GET/PUT/DELETE single, bulk operations, usage tracking, sync
 - [x] **Production Ready** - Persistent `/app/uploads` volume for Coolify
 
+### Phase 21: Collections Enhancement ✅ (Jan 31, 2026)
+- [x] **CollectionTypeModal** - Beautiful 2x2 grid for selecting collection type (Images/Audio/Video/Documents)
+- [x] **ImageCollectionWizard** - 4-step guided wizard: Details → Upload → AI Analysis → Review
+- [x] **Drag & Drop Upload** - Multi-image upload via react-dropzone
+- [x] **Batch AI Analysis** - "Analyze All" button with per-image progress tracking
+- [x] **CollectionImageCard** - Reusable card with AI metadata badges (pending/analyzing/complete)
+- [x] **CollectionItemAnalysisModal** - Full-screen AI analysis viewer with navigation between items
+- [x] **AddItemWizard** - 3-step wizard for adding items to existing collections (same UX as creation)
+- [x] **ConfirmationModal** - Reusable modal replacing browser `alert()` and `confirm()` dialogs
+- [x] **Save Success Modal** - Beautiful green success confirmation for collection saves
+- [x] **Delete Confirmation** - Red danger modal with cancel/confirm for destructive actions
+- [x] **Edit Collection Modal** - Update name and description for existing collections
+- [x] **Placeholder Modals** - "Coming Soon" for Video and Document collections
+- [x] **Documentation** - Comprehensive `docs/collections-dev.md` guide
+
+> **Key Components:**
+> - `src/components/collections/` - CollectionTypeModal, ImageCollectionWizard, CollectionImageCard, CollectionItemAnalysisModal, AddItemWizard
+> - `src/components/ui/ConfirmationModal.tsx` - Reusable confirmation modal with variants
+> - `src/pages/Collections.tsx` - Updated with type selection and wizard flow
+> - `src/pages/CollectionDetail.tsx` - Updated with AddItemWizard and confirmation modals
+
+### 🎯 Phase 22: Collection Translations (Planned - Next Session)
+- [ ] **Magic Translate Button** - One-click AI translation for captions/alt text
+- [ ] **Per-Image Translation** - Edit translations in CollectionItemAnalysisModal
+- [ ] **Batch Translation** - Translate entire collection at once
+- [ ] **Translation Status** - Visual indicators for translated vs. pending items
+- [ ] **Language Picker** - Switch languages in collection detail view
+
+> **Implementation Notes:** Reuse existing translation infrastructure:
+> - `MagicTranslateButton` component
+> - `translationService.ts` for LibreTranslate API
+> - `LanguageSwitcher` component
+
 ### 🎯 Phase 17: Stop Navigation & Links (Planned)
 - [ ] **Next/Previous Buttons** - Navigate between stops
 - [ ] **Stop List View** - See all stops in tour
@@ -548,9 +581,12 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [ ] "Get Current Location" button
 - [ ] Lat/Long input with map click selection
 
-### 🔄 Phase 3: Collections View Enhancement (Lower Priority)
-- [ ] **Collection Filtering** - Filter tabs (All | Images | Audio)
-- [ ] **Bulk Download** - Download all languages as ZIP
+### ✅ Phase 3: Collections View Enhancement (Complete via Phase 21)
+- [x] **Collection Type Selection** - Modal with Images/Audio/Video/Documents options
+- [x] **Image Collection Wizard** - Guided creation with AI analysis
+- [x] **Add Items Wizard** - Same UX for adding to existing collections
+- [ ] **Collection Filtering** - Filter tabs (All | Images | Audio) - Lower priority
+- [ ] **Bulk Download** - Download all languages as ZIP - Lower priority
 
 > **Architecture Note:** ElevenLabs uses a SINGLE voice for ALL languages via the Multilingual v2 model. The model handles pronunciation/accent automatically. Deepgram uses per-language voice selection.
 
@@ -648,6 +684,13 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | AudioCollectionModal | `app/src/components/AudioCollectionModal.tsx` |
 | Collections Page | `app/src/pages/Collections.tsx` |
 | Collection Detail | `app/src/pages/CollectionDetail.tsx` |
+| CollectionTypeModal | `app/src/components/collections/CollectionTypeModal.tsx` |
+| ImageCollectionWizard | `app/src/components/collections/ImageCollectionWizard.tsx` |
+| CollectionImageCard | `app/src/components/collections/CollectionImageCard.tsx` |
+| CollectionItemAnalysisModal | `app/src/components/collections/CollectionItemAnalysisModal.tsx` |
+| AddItemWizard | `app/src/components/collections/AddItemWizard.tsx` |
+| ConfirmationModal | `app/src/components/ui/ConfirmationModal.tsx` |
+| Collections Dev Guide | `docs/collections-dev.md` |
 | **Media Library** | |
 | Media Page | `app/src/pages/Media.tsx` |
 | Media Service | `app/src/lib/mediaService.ts` |

@@ -63,6 +63,9 @@ When museum staff access visitor pages, they see:
 | Phase 17: Stop Navigation & Links | 🎯 Planned |
 | Phase 18: GPS Positioning Tab | 🎯 Planned |
 | Phase 19: AI Object Analysis (Full) | ✅ Complete |
+| Phase 20: Media Library | ✅ Complete |
+| Phase 21: Collections Enhancement | ✅ Complete |
+| Phase 22: Collection Translations | 🎯 Planned (Next) |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
 
@@ -128,6 +131,33 @@ When museum staff access visitor pages, they see:
 - `types/index.ts` - `KioskSettings` and `KioskPreset` interfaces
 
 **Documentation:** See [docs/kiosk-dev.md](docs/kiosk-dev.md) for full planning and future phases.
+
+### Collections Enhancement (Phase 21) - COMPLETE ✅
+
+**Image Collections with AI Analysis:** Full wizard-based collection creation with Gemini-powered analysis.
+
+| Feature | Description |
+|---------|-------------|
+| **CollectionTypeModal** | Beautiful 2x2 grid for selecting collection type |
+| **ImageCollectionWizard** | 4-step guided wizard: Details → Upload → AI Analysis → Review |
+| **Drag & Drop Upload** | Multi-image upload via react-dropzone |
+| **Batch AI Analysis** | "Analyze All" with per-image progress tracking |
+| **CollectionImageCard** | Reusable card with AI metadata badges |
+| **CollectionItemAnalysisModal** | Full-screen AI analysis viewer with navigation |
+| **AddItemWizard** | 3-step wizard for adding to existing collections |
+| **ConfirmationModal** | Beautiful modals replacing browser `alert()`/`confirm()` |
+
+**Files:**
+- `src/components/collections/CollectionTypeModal.tsx` - Type selection modal
+- `src/components/collections/ImageCollectionWizard.tsx` - 4-step creation wizard
+- `src/components/collections/CollectionImageCard.tsx` - Image display card
+- `src/components/collections/CollectionItemAnalysisModal.tsx` - AI analysis viewer
+- `src/components/collections/AddItemWizard.tsx` - Add items wizard
+- `src/components/ui/ConfirmationModal.tsx` - Reusable confirmation modal
+
+**Documentation:** See [docs/collections-dev.md](docs/collections-dev.md) for full guide.
+
+**Next:** Phase 22 - Collection Translations (Magic Translate for captions/alt text)
 
 ---
 

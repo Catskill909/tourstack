@@ -1,3 +1,5 @@
+import type { AIAnalysisResult } from '../types/media';
+
 // Base collection item interface
 export interface BaseCollectionItem {
     id: string;
@@ -11,6 +13,7 @@ export interface ImageCollectionItem extends BaseCollectionItem {
     alt?: { [lang: string]: string };
     caption?: { [lang: string]: string };
     credit?: string;
+    aiMetadata?: AIAnalysisResult;
 }
 
 // Audio collection item (for audio_collection type)

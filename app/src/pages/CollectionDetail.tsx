@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Download, Globe, Mic2, Eye } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Download, Globe, Mic2, Eye, Sparkles } from 'lucide-react';
 import { collectionService, type CollectionItem, type AudioCollectionItem, type ImageCollectionItem } from '../lib/collectionService';
 import { TextPreviewModal } from '../components/TextPreviewModal';
+import { CollectionItemAnalysisModal, AddItemWizard } from '../components/collections';
+import { ConfirmationModal } from '../components/ui/ConfirmationModal';
+import type { AIAnalysisResult } from '../types/media';
 
 // Helper to format file size
 function formatFileSize(bytes: number): string {
@@ -44,10 +47,16 @@ export function CollectionDetail() {
         voiceName?: string;
     } | null>(null);
 
-    // Edit item state
-    const [showAddItem, setShowAddItem] = useState(false);
-    const [newItemUrl, setNewItemUrl] = useState('');
-    const [newItemCaption, setNewItemCaption] = useState('');
+    // Add item wizard state
+    const [showAddItemWizard, setShowAddItemWizard] = useState(false);
+
+    // AI Analysis modal state
+    const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
+
+    // Confirmation modal state
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (id) loadCollection(id);
@@ -69,34 +78,36 @@ export function CollectionDetail() {
 
     async function handleSave() {
         if (!collection) return;
+        setIsSaving(true);
         try {
             await collectionService.update(collection.id, {
                 items
             });
-            alert('Collection saved successfully!');
+            setShowSuccessModal(true);
         } catch (error) {
             console.error('Failed to save collection:', error);
-            alert('Failed to save.');
+        } finally {
+            setIsSaving(false);
         }
     }
 
-    function handleAddItem(e: React.FormEvent) {
-        e.preventDefault();
-        const newItem: ImageCollectionItem = {
+    async function handleAddItems(newItems: Omit<ImageCollectionItem, 'id' | 'order'>[]) {
+        const itemsWithIds: ImageCollectionItem[] = newItems.map((item, index) => ({
+            ...item,
             id: crypto.randomUUID(),
-            type: 'image',
-            url: newItemUrl,
-            caption: newItemCaption ? { en: newItemCaption } : undefined,
-            order: items.length
-        };
-        setItems([...items, newItem]);
-        setNewItemUrl('');
-        setNewItemCaption('');
-        setShowAddItem(false);
+            order: items.length + index,
+        }));
+        setItems([...items, ...itemsWithIds]);
+        setShowAddItemWizard(false);
     }
 
     function handleDeleteItem(itemId: string) {
         setItems(items.filter(item => item.id !== itemId));
+        setShowDeleteModal(null);
+    }
+
+    function confirmDeleteItem(itemId: string) {
+        setShowDeleteModal(itemId);
     }
 
     // Audio playback
@@ -259,7 +270,7 @@ export function CollectionDetail() {
                                     <Download className="w-4 h-4" />
                                 </a>
                                 <button
-                                    onClick={() => handleDeleteItem(item.id)}
+                                    onClick={() => confirmDeleteItem(item.id)}
                                     className="p-2 hover:bg-red-500/10 rounded-lg text-[var(--color-text-muted)] hover:text-red-500 transition-colors"
                                     title="Delete"
                                 >
@@ -272,85 +283,81 @@ export function CollectionDetail() {
             ) : (
                 /* Items Grid - Image Gallery */
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {items.map((item) => (
-                        <div key={item.id} className="group relative bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl overflow-hidden aspect-square">
-                            {item.type === 'image' ? (
-                                <img src={(item as ImageCollectionItem).url} alt={(item as ImageCollectionItem).caption?.en || ''} className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-[var(--color-bg-surface)]">
-                                    <span className="text-[var(--color-text-muted)]">{item.type}</span>
-                                </div>
-                            )}
+                    {items.map((item, index) => {
+                        const imageItem = item as ImageCollectionItem & { aiMetadata?: AIAnalysisResult };
+                        const hasAI = !!imageItem.aiMetadata;
+                        return (
+                            <div
+                                key={item.id}
+                                className="group relative bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl overflow-hidden aspect-square cursor-pointer hover:border-[var(--color-accent-primary)] transition-colors"
+                                onClick={() => setSelectedItemIndex(index)}
+                            >
+                                {item.type === 'image' ? (
+                                    <img src={imageItem.url} alt={imageItem.caption?.en || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-[var(--color-bg-surface)]">
+                                        <span className="text-[var(--color-text-muted)]">{item.type}</span>
+                                    </div>
+                                )}
 
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                                <p className="text-white text-sm font-medium truncate">{(item.type === 'image' && (item as ImageCollectionItem).caption?.en) || 'No caption'}</p>
-                                <button
-                                    onClick={() => handleDeleteItem(item.id)}
-                                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                {/* AI Badge */}
+                                {hasAI && (
+                                    <div className="absolute top-2 right-2 p-1.5 bg-green-500 rounded-lg shadow-lg">
+                                        <Sparkles className="w-3 h-3 text-white" />
+                                    </div>
+                                )}
+
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                                    {/* AI metadata preview on hover */}
+                                    {hasAI && imageItem.aiMetadata?.suggestedTitle && (
+                                        <p className="text-white text-sm font-medium truncate mb-1">
+                                            {imageItem.aiMetadata.suggestedTitle}
+                                        </p>
+                                    )}
+                                    {hasAI && imageItem.aiMetadata?.tags && imageItem.aiMetadata.tags.length > 0 && (
+                                        <div className="flex flex-wrap gap-1 mb-2">
+                                            {imageItem.aiMetadata.tags.slice(0, 3).map((tag, i) => (
+                                                <span key={i} className="text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded">
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <p className="text-white/80 text-xs truncate">
+                                        {imageItem.caption?.en || (hasAI ? 'Click to view analysis' : 'No caption')}
+                                    </p>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            confirmDeleteItem(item.id);
+                                        }}
+                                        className="absolute top-2 left-2 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
 
                     {/* Add Item Button */}
                     <button
-                        onClick={() => setShowAddItem(true)}
+                        onClick={() => setShowAddItemWizard(true)}
                         className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-[var(--color-border-dash)] rounded-xl aspect-square hover:border-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/5 transition-all text-[var(--color-text-muted)] hover:text-[var(--color-accent-primary)]"
                     >
                         <Plus className="w-8 h-8" />
-                        <span className="font-medium">Add Item</span>
+                        <span className="font-medium">Add Items</span>
                     </button>
                 </div>
             )}
 
-            {/* Add Item Modal */}
-            {showAddItem && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] w-full max-w-md p-6 shadow-xl">
-                        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">Add Item</h2>
-                        <form onSubmit={handleAddItem} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Image URL</label>
-                                <input
-                                    type="url"
-                                    required
-                                    value={newItemUrl}
-                                    onChange={e => setNewItemUrl(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
-                                    placeholder="https://..."
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Caption</label>
-                                <input
-                                    type="text"
-                                    value={newItemCaption}
-                                    onChange={e => setNewItemCaption(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
-                                    placeholder="Optional caption"
-                                />
-                            </div>
-                            <div className="flex gap-3 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAddItem(false)}
-                                    className="flex-1 px-4 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-lg hover:bg-[var(--color-bg-hover)]"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90"
-                                >
-                                    Add
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            {/* Add Item Wizard */}
+            <AddItemWizard
+                isOpen={showAddItemWizard}
+                onClose={() => setShowAddItemWizard(false)}
+                onAdd={handleAddItems}
+                collectionName={collection.name}
+            />
 
             {/* Text Preview Modal */}
             <TextPreviewModal
@@ -360,6 +367,59 @@ export function CollectionDetail() {
                 text={textPreviewModal?.text || ''}
                 language={textPreviewModal?.language}
                 voiceName={textPreviewModal?.voiceName}
+            />
+
+            {/* AI Analysis Modal for Image Collections */}
+            {!isAudioCollection && selectedItemIndex !== null && items[selectedItemIndex] && (
+                <CollectionItemAnalysisModal
+                    isOpen={true}
+                    onClose={() => setSelectedItemIndex(null)}
+                    item={{
+                        id: items[selectedItemIndex].id,
+                        url: (items[selectedItemIndex] as ImageCollectionItem).url,
+                        alt: (items[selectedItemIndex] as ImageCollectionItem).alt,
+                        caption: (items[selectedItemIndex] as ImageCollectionItem).caption,
+                        aiMetadata: (items[selectedItemIndex] as ImageCollectionItem & { aiMetadata?: AIAnalysisResult }).aiMetadata,
+                    }}
+                    items={items.filter(i => i.type === 'image').map(i => ({
+                        id: i.id,
+                        url: (i as ImageCollectionItem).url,
+                        alt: (i as ImageCollectionItem).alt,
+                        caption: (i as ImageCollectionItem).caption,
+                        aiMetadata: (i as ImageCollectionItem & { aiMetadata?: AIAnalysisResult }).aiMetadata,
+                    }))}
+                    currentIndex={items.filter(i => i.type === 'image').findIndex(i => i.id === items[selectedItemIndex].id)}
+                    onNavigate={(index) => {
+                        const imageItems = items.filter(i => i.type === 'image');
+                        const item = imageItems[index];
+                        if (item) {
+                            setSelectedItemIndex(items.findIndex(i => i.id === item.id));
+                        }
+                    }}
+                />
+            )}
+
+            {/* Save Success Modal */}
+            <ConfirmationModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                title="Changes Saved"
+                message="Your collection has been updated successfully."
+                confirmText="Done"
+                variant="success"
+                showCancel={false}
+            />
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={showDeleteModal !== null}
+                onClose={() => setShowDeleteModal(null)}
+                onConfirm={() => showDeleteModal && handleDeleteItem(showDeleteModal)}
+                title="Delete Item"
+                message="Are you sure you want to remove this item from the collection? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
             />
         </div>
     );
