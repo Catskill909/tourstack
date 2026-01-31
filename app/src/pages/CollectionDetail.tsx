@@ -159,10 +159,20 @@ export function CollectionDetail() {
                 {!isAudioCollection && (
                     <button
                         onClick={handleSave}
-                        className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors"
+                        disabled={isSaving}
+                        className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors disabled:opacity-50"
                     >
-                        <Save className="w-4 h-4" />
-                        <span>Save Changes</span>
+                        {isSaving ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <span>Saving...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Save className="w-4 h-4" />
+                                <span>Save Changes</span>
+                            </>
+                        )}
                     </button>
                 )}
             </div>
