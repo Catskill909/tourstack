@@ -125,16 +125,37 @@
 
         .hero-description {
             max-width: 500px;
-            font-size: 1.25rem;
-            color: var(--text-secondary);
+            font-size: 1.5rem;
+            color: var(--text-primary);
             font-weight: 300;
+            line-height: 1.8;
+        }
+
+        .hero-description span {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            padding: 0.2rem 1rem;
+            border-radius: 2rem;
+            -webkit-box-decoration-break: clone;
+            box-decoration-break: clone;
         }
 
         .version-badge {
             text-align: right;
             font-size: 0.8rem;
-            opacity: 0.5;
+            opacity: 0.9;
             letter-spacing: 0.2em;
+            justify-self: end;
+            line-height: 2.2;
+        }
+
+        .version-badge span {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            padding: 0.2rem 1rem;
+            border-radius: 2rem;
+            -webkit-box-decoration-break: clone;
+            box-decoration-break: clone;
         }
 
         /* --- Feature Card Grid --- */
@@ -161,7 +182,7 @@
 
         .card-num {
             font-size: 0.8rem;
-            color: var(--accent-muted);
+            color: var(--text-secondary);
             letter-spacing: 0.2em;
         }
 
@@ -188,8 +209,8 @@
         .tech-tag {
             font-size: 0.65rem;
             padding: 0.2rem 0.5rem;
-            border: 1px solid var(--border-color);
-            color: var(--accent-muted);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-secondary);
             text-transform: uppercase;
         }
 
@@ -321,11 +342,12 @@
             </div>
             <div class="hero-meta">
                 <div class="hero-description">
-                    Advanced architectural Information Systems for museum storytelling. Precision positioning meets
-                    AI-orchestrated immersion.
+                    <span>Advanced architectural Information Systems for museum storytelling. Precision positioning
+                        meets
+                        AI-orchestrated immersion.</span>
                 </div>
                 <div class="version-badge">
-                    [ BUILD 2.50.26 ]<br>SYSTEM STATUS: OPERATIONAL
+                    <span>[ BUILD 2.50.26 ]<br>SYSTEM STATUS: OPERATIONAL</span>
                 </div>
             </div>
         </div>
@@ -359,7 +381,7 @@
             background-size: cover;
             background-position: center;
             opacity: 0;
-            animation: fade 30s infinite;
+            animation: fade 40s infinite;
         }
 
         .slide:nth-child(1) {
@@ -367,19 +389,19 @@
         }
 
         .slide:nth-child(2) {
-            animation-delay: 6s;
+            animation-delay: 8s;
         }
 
         .slide:nth-child(3) {
-            animation-delay: 12s;
+            animation-delay: 16s;
         }
 
         .slide:nth-child(4) {
-            animation-delay: 18s;
+            animation-delay: 24s;
         }
 
         .slide:nth-child(5) {
-            animation-delay: 24s;
+            animation-delay: 32s;
         }
 
         @keyframes fade {
@@ -387,11 +409,11 @@
                 opacity: 0;
             }
 
-            5% {
+            4% {
                 opacity: 0.7;
             }
 
-            15% {
+            16% {
                 opacity: 0.7;
             }
 
@@ -417,7 +439,6 @@
     </style>
 
     <section id="features" class="container">
-        <h2 class="block-header outline">Core</h2>
 
         <div class="feature-grid">
             <!-- Card 01: Positioning -->
