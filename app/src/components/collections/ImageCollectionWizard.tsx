@@ -97,7 +97,7 @@ export function ImageCollectionWizard({ isOpen, onClose, onSuccess }: ImageColle
         reader.onerror = () => reject(new Error('Failed to read file'));
         reader.readAsDataURL(image.file);
       });
-    } catch (err) {
+    } catch {
       return null;
     }
   };
