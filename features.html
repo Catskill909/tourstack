@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TourStack | Infrastructure</title>
     <!-- SEO Meta Tags -->
-    <meta name="description" content="Technical infrastructure for museum storytelling. Multi-modal positioning and AI translation.">
-    
+    <meta name="description"
+        content="Technical infrastructure for museum storytelling. Multi-modal positioning and AI translation.">
+
     <!-- Modern Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,7 +28,7 @@
             /* Typography */
             --font-main: 'Outfit', sans-serif;
             --line-height-tight: 0.85;
-            
+
             /* Transitions */
             --transition-smooth: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
@@ -78,9 +79,9 @@
             position: fixed;
             top: 0;
             width: 100%;
-            padding: 2.5rem 0;
+            padding: 1.5rem 0;
             z-index: 1000;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border-color);
         }
@@ -102,7 +103,8 @@
 
         /* --- Hero --- */
         .hero {
-            height: 90vh;
+            height: 100vh;
+            padding-top: 120px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -268,15 +270,31 @@
 
         /* --- Responsive --- */
         @media (max-width: 1024px) {
-            .feature-grid { grid-template-columns: 1fr 1fr; }
-            .hero-meta { grid-template-columns: 1fr; }
-            .version-badge { text-align: left; }
+            .feature-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .hero-meta {
+                grid-template-columns: 1fr;
+            }
+
+            .version-badge {
+                text-align: left;
+            }
         }
 
         @media (max-width: 768px) {
-            .feature-grid { grid-template-columns: 1fr; }
-            .footer-content { grid-template-columns: 1fr; }
-            .block-header { font-size: 4rem; }
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                grid-template-columns: 1fr;
+            }
+
+            .block-header {
+                font-size: 4rem;
+            }
         }
     </style>
 </head>
@@ -290,28 +308,118 @@
     </nav>
 
     <div class="hero container">
-        <div class="hero-title">
-            <h1 class="block-header">TOUR<br>STACK</h1>
+        <div class="hero-slideshow">
+            <div class="slide" style="background-image: url('assets/hero_slide_1_1769829874948.png')"></div>
+            <div class="slide" style="background-image: url('assets/hero_slide_2_1769829887446.png')"></div>
+            <div class="slide" style="background-image: url('assets/hero_slide_3_1769829899958.png')"></div>
+            <div class="slide" style="background-image: url('assets/hero_slide_4_1769829913740.png')"></div>
         </div>
-        <div class="hero-meta">
-            <div class="hero-description">
-                Advanced architectural Information Systems for museum storytelling. Precision positioning meets AI-orchestrated immersion.
+        <div class="hero-content-wrapper">
+            <div class="hero-title">
+                <h1 class="block-header">TOUR<br>STACK</h1>
             </div>
-            <div class="version-badge">
-                [ BUILD 2.50.26 ]<br>SYSTEM STATUS: OPERATIONAL
+            <div class="hero-meta">
+                <div class="hero-description">
+                    Advanced architectural Information Systems for museum storytelling. Precision positioning meets
+                    AI-orchestrated immersion.
+                </div>
+                <div class="version-badge">
+                    [ BUILD 2.50.26 ]<br>SYSTEM STATUS: OPERATIONAL
+                </div>
             </div>
         </div>
     </div>
 
+    <style>
+        .hero {
+            position: relative;
+            overflow: hidden;
+            display: block !important;
+        }
+
+        .hero-slideshow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            margin-left: calc(-50vw + 50%);
+            /* Center strictly to viewport */
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            animation: fade 24s infinite;
+        }
+
+        .slide:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .slide:nth-child(2) {
+            animation-delay: 6s;
+        }
+
+        .slide:nth-child(3) {
+            animation-delay: 12s;
+        }
+
+        .slide:nth-child(4) {
+            animation-delay: 18s;
+        }
+
+        @keyframes fade {
+            0% {
+                opacity: 0;
+            }
+
+            4% {
+                opacity: 0.7;
+            }
+
+            25% {
+                opacity: 0.7;
+            }
+
+            29% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .hero-content-wrapper {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+    </style>
+
     <section id="features" class="container">
         <h2 class="block-header outline">Core</h2>
-        
+
         <div class="feature-grid">
             <!-- Card 01: Positioning -->
             <div class="feature-card">
                 <span class="card-num">01 / POSITIONING</span>
                 <h3>Modality Infrastructure</h3>
-                <p>7-tier positioning framework designed for any environment. Seamless handoff between indoor stones and outdoor gardens.</p>
+                <p>7-tier positioning framework designed for any environment. Seamless handoff between indoor stones and
+                    outdoor gardens.</p>
                 <div class="tech-list">
                     <span class="tech-tag">BLE</span>
                     <span class="tech-tag">GPS</span>
@@ -326,7 +434,8 @@
             <div class="feature-card">
                 <span class="card-num">02 / LINGUISTICS</span>
                 <h3>Magic Translate</h3>
-                <p>One-click AI orchestration localizing exhibition layers into 30+ languages, maintaining curatorial nuance.</p>
+                <p>One-click AI orchestration localizing exhibition layers into 30+ languages, maintaining curatorial
+                    nuance.</p>
                 <div class="tech-list">
                     <span class="tech-tag">LibreTranslate</span>
                     <span class="tech-tag">OpenAI</span>
@@ -338,7 +447,8 @@
             <div class="feature-card">
                 <span class="card-num">03 / AUDIO</span>
                 <h3>Studio Voice</h3>
-                <p>Museum-grade synthetic speech utilizing v2.5 models. 3,000+ human-grade timbres with 75ms latency.</p>
+                <p>Museum-grade synthetic speech utilizing v2.5 models. 3,000+ human-grade timbres with 75ms latency.
+                </p>
                 <div class="tech-list">
                     <span class="tech-tag">ElevenLabs</span>
                     <span class="tech-tag">Deepgram</span>
@@ -350,7 +460,8 @@
             <div class="feature-card">
                 <span class="card-num">04 / CONTENT</span>
                 <h3>Block-Based CMS</h3>
-                <p>Modular content block system: Timeline galleries, responsive maps, rich text, and cinematic triggers.</p>
+                <p>Modular content block system: Timeline galleries, responsive maps, rich text, and cinematic triggers.
+                </p>
                 <div class="tech-list">
                     <span class="tech-tag">React 19</span>
                     <span class="tech-tag">Prisma</span>
@@ -362,7 +473,8 @@
             <div class="feature-card">
                 <span class="card-num">05 / PERSISTENCE</span>
                 <h3>Universal JSON</h3>
-                <p>Pure, structured data portability. Consistent delivery across native mobile, web, and archival repos.</p>
+                <p>Pure, structured data portability. Consistent delivery across native mobile, web, and archival repos.
+                </p>
                 <div class="tech-list">
                     <span class="tech-tag">Docker</span>
                     <span class="tech-tag">Coolify</span>
@@ -386,7 +498,8 @@
             <div class="feature-card">
                 <span class="card-num">07 / DELIVERY</span>
                 <h3>Kiosk & Visitor</h3>
-                <p>Unified visitor experience across personal phones, shared tablets, and fixed kiosks. One-click tour launch from admin.</p>
+                <p>Unified visitor experience across personal phones, shared tablets, and fixed kiosks. One-click tour
+                    launch from admin.</p>
                 <div class="tech-list">
                     <span class="tech-tag">PWA</span>
                     <span class="tech-tag">Fullscreen</span>
@@ -398,7 +511,8 @@
             <div class="feature-card">
                 <span class="card-num">08 / ASSETS</span>
                 <h3>Media Library</h3>
-                <p>Centralized asset management with AI-powered tagging, bulk operations, and usage tracking across all tours.</p>
+                <p>Centralized asset management with AI-powered tagging, bulk operations, and usage tracking across all
+                    tours.</p>
                 <div class="tech-list">
                     <span class="tech-tag">Gemini</span>
                     <span class="tech-tag">Vision AI</span>
@@ -410,7 +524,8 @@
             <div class="feature-card">
                 <span class="card-num">09 / INTELLIGENCE</span>
                 <h3>AI Assistance</h3>
-                <p>Forensic-grade artifact analysis. Visual DNA extraction, OCR text recognition, and smart cataloging for collections.</p>
+                <p>Forensic-grade artifact analysis. Visual DNA extraction, OCR text recognition, and smart cataloging
+                    for collections.</p>
                 <div class="tech-list">
                     <span class="tech-tag">Google Vision</span>
                     <span class="tech-tag">Gemini</span>
@@ -441,11 +556,13 @@
             <div>
                 <span class="footer-logo">TOURSTACK</span>
                 <p style="color: var(--text-secondary); max-width: 400px; font-weight: 300;">
-                    Swiss-engineered narrative delivery for the world's leading cultural institutions. Architecting the future of museum storytelling.
+                    Swiss-engineered narrative delivery for the world's leading cultural institutions. Architecting the
+                    future of museum storytelling.
                 </p>
             </div>
             <div style="text-align: right; display: flex; flex-direction: column; justify-content: flex-end;">
-                <p style="font-size: 0.7rem; opacity: 0.5; letter-spacing: 0.1em;">© 2026 TOURSTACK SYSTEM<br>DESIGNED FOR SCALE</p>
+                <p style="font-size: 0.7rem; opacity: 0.5; letter-spacing: 0.1em;">© 2026 TOURSTACK SYSTEM<br>DESIGNED
+                    FOR SCALE</p>
             </div>
         </div>
     </footer>
@@ -469,4 +586,5 @@
         });
     </script>
 </body>
+
 </html>
