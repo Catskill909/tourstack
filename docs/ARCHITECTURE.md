@@ -7,8 +7,8 @@
 ---
 
 > [!CAUTION]
-> **Local Development**: ALWAYS use `npm run dev:all` to start both Vite + Express servers!  
-> Running only `npm run dev` will cause API errors like `Cannot POST /api/...`
+> **Local Development**: ALWAYS use `npm run start` from the `/app` directory!
+> This kills zombie processes and starts BOTH Vite + Express servers.
 
 ---
 

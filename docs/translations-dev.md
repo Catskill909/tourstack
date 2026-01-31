@@ -68,30 +68,18 @@ The translation service is configured via environment variables in the server.
 ### Local Development (Important)
 
 > [!CAUTION]
-> **ALWAYS use `npm run dev:all`** to start development!  
-> The app requires BOTH the Vite frontend AND the Express API server.
+> **ALWAYS use `npm run start`** from the `/app` directory!
 
-In local development, the app runs as **two processes**:
+```bash
+cd /Users/paulhenshaw/Desktop/TourStack/app
+npm run start      # ⭐ Kills zombies + starts BOTH servers
+```
 
+This starts **two processes**:
 - **Vite dev server**: `http://localhost:5173`
 - **Express API server**: `http://localhost:3000`
 
-Vite proxies requests so the browser can call `/api/*` without CORS issues:
-
-- `/api/*` -> `http://localhost:3000/api/*`
-- `/uploads/*` -> `http://localhost:3000/uploads/*`
-
-**Required command:**
-
-```bash
-cd app
-npm run dev:all       # ⭐ REQUIRED: Starts BOTH servers
-```
-
-> [!WARNING]
-> If you only run `npm run dev` (Vite) and not the API server, you will see errors like:
-> - `Cannot POST /api/translate/extract`
-> - `Cannot POST /api/transcribe`
+Vite proxies `/api/*` and `/uploads/*` to port 3000 automatically.
 > - `Failed to load resource: the server responded with a status of 404`
 
 ### Self-Hosting LibreTranslate: Loaded Languages (LT_LOAD_ONLY)
@@ -201,7 +189,7 @@ Notes:
 
 **`Cannot POST /api/translate/extract` / 404 on `/api/translate/*`:**
 - Ensure the API server is running on `http://localhost:3000`.
-- Recommended: `npm run dev:all`.
+- Fix: `cd /Users/paulhenshaw/Desktop/TourStack/app && npm run start`
 
 **File Import JSON parse error (`Unexpected token '<' ... is not valid JSON`):**
 - This usually means the client received an HTML error page instead of JSON.

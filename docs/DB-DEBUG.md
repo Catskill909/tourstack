@@ -132,12 +132,12 @@ The container should now be able to create `/app/data/dev.db` as a file.
 ### Working Local Setup
 
 > [!CAUTION]
-> **ALWAYS use `npm run dev:all`** - The app requires BOTH servers!
+> **ALWAYS use `npm run start`** from the `/app` directory!
 
 ```bash
-cd app
+cd /Users/paulhenshaw/Desktop/TourStack/app
 npm run db:seed    # Creates dev.db and seeds templates
-npm run dev:all    # ⭐ REQUIRED: Runs Vite + Express together
+npm run start      # ⭐ Kills zombies + starts BOTH servers
 ```
 
 ### Database Path Configuration

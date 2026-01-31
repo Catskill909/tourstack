@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, LayoutGrid, Image as ImageIcon, Trash2, Volume2 } from 'lucide-react';
+import { Plus, Search, LayoutGrid, Image as ImageIcon, Trash2, Volume2, Pencil, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { collectionService } from '../lib/collectionService';
+import { collectionService, type Collection } from '../lib/collectionService';
 
 export function Collections() {
     const navigate = useNavigate();
@@ -13,6 +13,11 @@ export function Collections() {
     // New Collection State
     const [newCollectionName, setNewCollectionName] = useState('');
     const [newCollectionDesc, setNewCollectionDesc] = useState('');
+
+    // Edit Collection State
+    const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editDesc, setEditDesc] = useState('');
 
     useEffect(() => {
         loadCollections();
@@ -55,6 +60,34 @@ export function Collections() {
             } catch (error) {
                 console.error('Failed to delete collection:', error);
             }
+        }
+    }
+
+    function openEditModal(collection: Collection, e: React.MouseEvent) {
+        e.stopPropagation();
+        setEditingCollection(collection);
+        setEditName(collection.name);
+        setEditDesc(collection.description || '');
+    }
+
+    function closeEditModal() {
+        setEditingCollection(null);
+        setEditName('');
+        setEditDesc('');
+    }
+
+    async function handleUpdate(e: React.FormEvent) {
+        e.preventDefault();
+        if (!editingCollection) return;
+        try {
+            await collectionService.update(editingCollection.id, {
+                name: editName,
+                description: editDesc,
+            });
+            closeEditModal();
+            loadCollections();
+        } catch (error) {
+            console.error('Failed to update collection:', error);
         }
     }
 
@@ -121,10 +154,18 @@ export function Collections() {
                                         <ImageIcon className="w-6 h-6" />
                                     )}
                                 </div>
-                                <div className="relative">
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={(e) => openEditModal(collection, e)}
+                                        className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/10 rounded-lg transition-colors"
+                                        title="Edit collection"
+                                    >
+                                        <Pencil className="w-4 h-4" />
+                                    </button>
                                     <button
                                         onClick={(e) => handleDelete(collection.id, e)}
                                         className="p-2 text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                        title="Delete collection"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
@@ -186,6 +227,97 @@ export function Collections() {
                                     className="flex-1 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90"
                                 >
                                     Create Collection
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {editingCollection && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] w-full max-w-md shadow-xl">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-[var(--color-border-default)]">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${editingCollection.type === 'audio_collection'
+                                        ? 'bg-purple-500/10 text-purple-500'
+                                        : 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]'
+                                    }`}>
+                                    {editingCollection.type === 'audio_collection' ? (
+                                        <Volume2 className="w-5 h-5" />
+                                    ) : editingCollection.type === 'dataset' ? (
+                                        <LayoutGrid className="w-5 h-5" />
+                                    ) : (
+                                        <ImageIcon className="w-5 h-5" />
+                                    )}
+                                </div>
+                                <h2 className="text-lg font-bold text-[var(--color-text-primary)]">Edit Collection</h2>
+                            </div>
+                            <button
+                                onClick={closeEditModal}
+                                className="p-2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <form onSubmit={handleUpdate} className="p-4 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Name</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={editName}
+                                    onChange={e => setEditName(e.target.value)}
+                                    className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+                                    placeholder="Collection name"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Description</label>
+                                <textarea
+                                    value={editDesc}
+                                    onChange={e => setEditDesc(e.target.value)}
+                                    className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none h-24 resize-none"
+                                    placeholder="Optional description..."
+                                />
+                            </div>
+
+                            {/* Collection Info */}
+                            <div className="pt-2 border-t border-[var(--color-border-default)]">
+                                <div className="flex items-center justify-between text-sm text-[var(--color-text-muted)]">
+                                    <span>{editingCollection.items?.length || 0} items</span>
+                                    <span>Updated {new Date(editingCollection.updatedAt).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={closeEditModal}
+                                    className="flex-1 px-4 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        closeEditModal();
+                                        navigate(`/collections/${editingCollection.id}`);
+                                    }}
+                                    className="flex-1 px-4 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-colors"
+                                >
+                                    View Items
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors"
+                                >
+                                    Save
                                 </button>
                             </div>
                         </form>

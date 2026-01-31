@@ -245,51 +245,23 @@ fetch(`/voices`).filter(v => v.category === 'premade')
 
 ---
 
-## �🔥 Server Troubleshooting (READ FIRST!)
+## 🔥 Server Troubleshooting
 
-> [!CAUTION]
-> **If you get `net::ERR_CONNECTION_REFUSED` or API errors, the server is down!**
+**Symptom**: API errors, `Cannot POST /api/*`, `net::ERR_CONNECTION_REFUSED`
 
-### Quick Fix (Copy & Paste)
-```bash
-# Kill all existing processes and restart
-pkill -f "node.*vite"; pkill -f "tsx.*server"; sleep 1
-cd /Users/paulhenshaw/Desktop/TourStack/app && npm run dev:all
-```
-
-### Verify Servers Are Running
-```bash
-# Check ports 3000 and 5173
-lsof -i :3000 -i :5173 | grep LISTEN
-```
-
-**Expected output:**
-```
-node    12345  user   TCP *:5173 (LISTEN)
-node    12346  user   TCP *:3000 (LISTEN)
-```
-
-### Common Symptoms & Solutions
-
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `Cannot POST /api/...` | Express not running | Run `npm run dev:all` |
-| `net::ERR_CONNECTION_REFUSED` | Server crashed/stopped | Kill & restart (see above) |
-| `ENOENT: package.json` | Wrong directory | Must be in `/app` folder |
-| Vite running but API fails | Only ran `npm run dev` | Use `npm run dev:all` instead |
-| Port already in use | Zombie process | `pkill -f node` then restart |
-
-### ⚠️ NEVER DO THIS
-```bash
-npm run dev          # ❌ WRONG - Only starts Vite, API will fail!
-cd TourStack && npm  # ❌ WRONG - Must be in /app folder!
-```
-
-### ✅ ALWAYS DO THIS
+**Fix**: Just run start again - it kills zombies automatically:
 ```bash
 cd /Users/paulhenshaw/Desktop/TourStack/app
-npm run dev:all      # ✅ CORRECT - Starts BOTH servers
+npm run start
 ```
+
+**Verify both servers running:**
+```bash
+lsof -i :3000 -i :5173 | grep LISTEN
+# Should show TWO node processes - one on 3000, one on 5173
+```
+
+**If you see port 5174 instead of 5173**, a zombie is still running. Run `npm run start` again.
 
 ---
 
@@ -698,18 +670,22 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 
 ## 🔧 Commands
 
-> [!CAUTION]
-> **ALWAYS use `npm run dev:all`** to start development!  
-> Running only `npm run dev` (Vite) will cause API errors like `Cannot POST /api/...`  
-> The app requires BOTH the Vite frontend AND the Express API server.
-
 ```bash
-cd app
-npm install           # Install dependencies
-npm run dev:all       # ⭐ REQUIRED: Run both Vite + Express concurrently
-# Individual commands (for debugging only):
-# npm run dev         # Vite dev server only (localhost:5173)
-# npm run server      # Express API only (localhost:3000)
+cd /Users/paulhenshaw/Desktop/TourStack/app
+
+# ⭐ DEVELOPMENT - Use this ONE command:
+npm run start         # Kills zombies + starts BOTH servers
+
+# Other useful commands:
+npm run typecheck     # Check TypeScript BEFORE committing
+npm run build         # Build for production
+npm run db:seed       # Seed templates
+npm run db:studio     # Open Prisma Studio
+
+# ❌ NEVER USE THESE FOR DEVELOPMENT:
+# npm run dev         # Vite only - API will FAIL
+# npm run server      # Express only - no frontend
+# npm run dev:all     # Doesn't kill zombies - use 'start' instead
 ```
 
 ---
