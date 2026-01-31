@@ -313,6 +313,7 @@
             <div class="slide" style="background-image: url('assets/hero_slide_2_1769829887446.png')"></div>
             <div class="slide" style="background-image: url('assets/hero_slide_3_1769829899958.png')"></div>
             <div class="slide" style="background-image: url('assets/hero_slide_4_1769829913740.png')"></div>
+            <div class="slide" style="background-image: url('assets/hero_slide_5_final_1769830774387.png')"></div>
         </div>
         <div class="hero-content-wrapper">
             <div class="hero-title">
@@ -358,7 +359,7 @@
             background-size: cover;
             background-position: center;
             opacity: 0;
-            animation: fade 24s infinite;
+            animation: fade 30s infinite;
         }
 
         .slide:nth-child(1) {
@@ -377,20 +378,24 @@
             animation-delay: 18s;
         }
 
+        .slide:nth-child(5) {
+            animation-delay: 24s;
+        }
+
         @keyframes fade {
             0% {
                 opacity: 0;
             }
 
-            4% {
+            5% {
                 opacity: 0.7;
             }
 
-            25% {
+            15% {
                 opacity: 0.7;
             }
 
-            29% {
+            20% {
                 opacity: 0;
             }
 
@@ -398,6 +403,7 @@
                 opacity: 0;
             }
         }
+
 
         .hero-content-wrapper {
             position: relative;
