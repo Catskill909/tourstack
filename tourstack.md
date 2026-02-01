@@ -67,6 +67,7 @@ When museum staff access visitor pages, they see:
 | Phase 21: Collections Enhancement | ✅ Complete |
 | Phase 22: Collection Translations | ✅ Complete |
 | Phase 23a: Collections ↔ Media Library Sync | ✅ Complete |
+| Phase 24: Translation View | ✅ Complete |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
 
@@ -202,6 +203,27 @@ Collections → AI Analyze → Translate → Save → Auto-Sync → Media Librar
 - `app/src/components/media/MediaDetailModal.tsx` - Tracks aiMetadata state
 
 **Documentation:** See [docs/collections-media-sync.md](docs/collections-media-sync.md) for full guide.
+
+### Translation View (Phase 24) - COMPLETE ✅
+
+**New View:** Standalone `/languages` Translation Tools page with tabbed provider interface.
+
+| Feature | Description |
+|---------|-------------|
+| **Provider Tabs** | LibreTranslate (active) + 8 placeholders |
+| **Two-Panel UI** | Source → Target with language swapping |
+| **9 Languages** | en, es, fr, de, it, pt, ja, ko, zh |
+| **File Translation** | txt, docx, pdf, odt, epub, srt, html |
+| **Quick Phrases** | Museum-specific (Wayfinding, Safety, Audio Guide, Accessibility) |
+| **Translation History** | Session-based with recall |
+
+**Cloud APIs (Coming Soon):** DeepL, Google Cloud Translation, Microsoft Azure, Amazon Translate
+
+**Self-Hosted (Coming Soon):** Argos Translate, OpenNMT, Bergamot, Marian NMT
+
+**Files:**
+- `app/src/pages/Languages.tsx` - Main translation view
+- `app/server/routes/translate.ts` - Existing LibreTranslate backend
 
 ---
 

@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: February 1, 2026
-**Session Status**: Phase 23a Collections ↔ Media Library Sync COMPLETE ✅ | Phase 22 Collection Translations COMPLETE ✅ | Phase 21 Collections Enhancement COMPLETE ✅
+**Session Status**: Phase 24 Translation View COMPLETE ✅ | Phase 23a Collections ↔ Media Library Sync COMPLETE ✅ | Phase 22 Collection Translations COMPLETE ✅
 
 ---
 
@@ -596,6 +596,25 @@ TourStack uses a **modular content block system** where tours and stops are comp
 > - `docs/collections-media-sync.md` - Full documentation
 
 > **Data Flow:** When a collection with AI-analyzed images is saved, the analysis automatically syncs to corresponding Media Library records (matched by URL).
+
+### Phase 24: Translation View ✅ (Feb 1, 2026)
+- [x] **Languages.tsx** - New standalone Translation Tools page
+- [x] **Tabbed Provider Interface** - Following Audio.tsx pattern
+- [x] **LibreTranslate Active** - Using existing translate.ts backend
+- [x] **9 Languages** - en, es, fr, de, it, pt, ja, ko, zh
+- [x] **Two-Panel Translation** - Source → Target with swap button
+- [x] **File Translation** - Support for txt, docx, pdf, etc.
+- [x] **Quick Phrases** - Museum-specific phrases (Wayfinding, Safety, Audio Guide, Accessibility)
+- [x] **Translation History** - Session-based history with recall
+- [x] **8 Provider Placeholders** - DeepL, Google, Azure, Amazon, Argos, OpenNMT, Bergamot, Marian
+
+> **Key Files:**
+> - `app/src/pages/Languages.tsx` - Main translation view (1,266 lines)
+> - `app/src/App.tsx` - Updated route from ComingSoon to Languages
+
+> **Provider Categories:**
+> - **Cloud APIs**: DeepL (best quality), Google Cloud, Microsoft Azure, Amazon Translate
+> - **Self-Hosted**: LibreTranslate (active), Argos, OpenNMT, Bergamot, Marian NMT
 
 ### 🎯 Phase 17: Stop Navigation & Links (Planned)
 - [ ] **Next/Previous Buttons** - Navigate between stops

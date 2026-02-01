@@ -7,6 +7,7 @@ import { Collections } from './pages/Collections';
 import { CollectionDetail } from './pages/CollectionDetail';
 import { Settings } from './pages/Settings';
 import { Audio } from './pages/Audio';
+import { Languages } from './pages/Languages';
 import { ApiFeeds } from './pages/ApiFeeds';
 import { AIAssistance } from './pages/AIAssistance';
 import { Media } from './pages/Media';
@@ -43,7 +44,7 @@ function App() {
                 <Route path="/collections/:id" element={<CollectionDetail />} />
                 <Route path="/templates" element={<ComingSoon title="Templates" />} />
                 <Route path="/media" element={<Media />} />
-                <Route path="/languages" element={<ComingSoon title="Languages" />} />
+                <Route path="/languages" element={<Languages />} />
                 <Route path="/audio" element={<Audio />} />
                 <Route path="/analytics" element={<ComingSoon title="Analytics" />} />
                 <Route path="/api" element={<ApiFeeds />} />
