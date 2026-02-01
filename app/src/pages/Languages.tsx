@@ -1022,6 +1022,31 @@ function GoogleCloudTab() {
     const [apiStatus, setApiStatus] = useState<{ available: boolean; reason?: string } | null>(null);
     const [charCount, setCharCount] = useState(0);
     const [history, setHistory] = useState<TranslationHistoryItem[]>([]);
+    const [apiNeedsSetup, setApiNeedsSetup] = useState(false);
+
+    // Fallback languages when API key doesn't have Translation API enabled
+    const FALLBACK_LANGUAGES: GoogleLanguage[] = [
+        { code: 'en', name: 'English' },
+        { code: 'es', name: 'Spanish' },
+        { code: 'fr', name: 'French' },
+        { code: 'de', name: 'German' },
+        { code: 'it', name: 'Italian' },
+        { code: 'pt', name: 'Portuguese' },
+        { code: 'ja', name: 'Japanese' },
+        { code: 'ko', name: 'Korean' },
+        { code: 'zh', name: 'Chinese' },
+        { code: 'ar', name: 'Arabic' },
+        { code: 'hi', name: 'Hindi' },
+        { code: 'ru', name: 'Russian' },
+        { code: 'nl', name: 'Dutch' },
+        { code: 'pl', name: 'Polish' },
+        { code: 'tr', name: 'Turkish' },
+        { code: 'vi', name: 'Vietnamese' },
+        { code: 'th', name: 'Thai' },
+        { code: 'el', name: 'Greek' },
+        { code: 'he', name: 'Hebrew' },
+        { code: 'id', name: 'Indonesian' },
+    ];
 
     // Fetch supported languages on mount
     useEffect(() => {
@@ -1031,28 +1056,25 @@ function GoogleCloudTab() {
                 if (response.ok) {
                     const data = await response.json();
                     setLanguages(data.languages || []);
+                    setApiStatus({ available: true });
+                } else {
+                    // API not enabled - use fallback languages
+                    console.warn('Google Translate API not available, using fallback languages');
+                    setLanguages(FALLBACK_LANGUAGES);
+                    setApiNeedsSetup(true);
+                    setApiStatus({ available: true }); // Still allow translation attempts
                 }
             } catch (err) {
                 console.error('Failed to fetch languages:', err);
+                setLanguages(FALLBACK_LANGUAGES);
+                setApiNeedsSetup(true);
+                setApiStatus({ available: true });
             } finally {
                 setIsLoadingLanguages(false);
             }
         };
 
-        const checkStatus = async () => {
-            try {
-                const response = await fetch('/api/google-translate/status');
-                if (response.ok) {
-                    const data = await response.json();
-                    setApiStatus(data);
-                }
-            } catch (err) {
-                setApiStatus({ available: false, reason: 'Failed to connect' });
-            }
-        };
-
         fetchLanguages();
-        checkStatus();
     }, []);
 
     // Track character count
@@ -1156,12 +1178,36 @@ function GoogleCloudTab() {
 
     return (
         <div className="max-w-6xl mx-auto space-y-6">
+            {/* API Setup Warning */}
+            {apiNeedsSetup && (
+                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <h4 className="font-medium text-amber-400 mb-1">Enable Cloud Translation API</h4>
+                            <p className="text-sm text-[var(--color-text-muted)] mb-2">
+                                To use Google Cloud Translation, enable the <b>Cloud Translation API</b> in your Google Cloud Console
+                                and update your API key restrictions to include it.
+                            </p>
+                            <a
+                                href="https://console.cloud.google.com/apis/library/translate.googleapis.com"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-sm text-amber-400 hover:text-amber-300"
+                            >
+                                Open Google Cloud Console <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* API Status Banner */}
             <div className="flex items-center justify-between p-3 bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 rounded-xl">
                 <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <div className={`w-2 h-2 rounded-full ${apiNeedsSetup ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`} />
                     <span className="text-sm text-[var(--color-text-secondary)]">
-                        Google Cloud Translation API - {languages.length} languages
+                        Google Cloud Translation API - {languages.length} languages {apiNeedsSetup && '(using fallback list)'}
                     </span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
@@ -1327,43 +1373,45 @@ function GoogleCloudTab() {
             </div>
 
             {/* Translation History */}
-            {history.length > 0 && (
-                <div className="bg-[var(--color-bg-elevated)] rounded-xl border border-[var(--color-border-default)] p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                        <Clock className="w-4 h-4 text-[var(--color-text-muted)]" />
-                        <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
-                            Recent Translations
-                        </h3>
+            {
+                history.length > 0 && (
+                    <div className="bg-[var(--color-bg-elevated)] rounded-xl border border-[var(--color-border-default)] p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Clock className="w-4 h-4 text-[var(--color-text-muted)]" />
+                            <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
+                                Recent Translations
+                            </h3>
+                        </div>
+                        <div className="space-y-2">
+                            {history.slice(0, 5).map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => {
+                                        setSourceText(item.sourceText);
+                                        setSourceLang(item.sourceLang);
+                                        setTargetLang(item.targetLang);
+                                    }}
+                                    className="w-full text-left p-3 bg-[var(--color-bg-surface)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-all"
+                                >
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-xs font-medium rounded">
+                                            {getLanguageName(item.sourceLang)}
+                                        </span>
+                                        <span className="text-[var(--color-text-muted)]">→</span>
+                                        <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 text-xs font-medium rounded">
+                                            {getLanguageName(item.targetLang)}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-[var(--color-text-primary)] truncate">
+                                        "{item.sourceText}" → "{item.translatedText}"
+                                    </p>
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <div className="space-y-2">
-                        {history.slice(0, 5).map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => {
-                                    setSourceText(item.sourceText);
-                                    setSourceLang(item.sourceLang);
-                                    setTargetLang(item.targetLang);
-                                }}
-                                className="w-full text-left p-3 bg-[var(--color-bg-surface)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-all"
-                            >
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-xs font-medium rounded">
-                                        {getLanguageName(item.sourceLang)}
-                                    </span>
-                                    <span className="text-[var(--color-text-muted)]">→</span>
-                                    <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 text-xs font-medium rounded">
-                                        {getLanguageName(item.targetLang)}
-                                    </span>
-                                </div>
-                                <p className="text-sm text-[var(--color-text-primary)] truncate">
-                                    "{item.sourceText}" → "{item.translatedText}"
-                                </p>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }
 
