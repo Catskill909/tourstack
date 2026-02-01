@@ -297,7 +297,7 @@ export function Languages() {
 
     return (
         <div className="h-full flex flex-col">
-            {/* Header */}
+            {/* Header with inline Provider Selector */}
             <div className="px-6 py-4 border-b border-[var(--color-border-default)]">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -311,15 +311,14 @@ export function Languages() {
                             </p>
                         </div>
                     </div>
+                    {/* Provider Selector - right side of header */}
+                    <ProviderSelector
+                        tabs={tabs}
+                        activeTab={activeTab}
+                        onSelectTab={setActiveTab}
+                    />
                 </div>
             </div>
-
-            {/* Provider Selector */}
-            <ProviderSelector
-                tabs={tabs}
-                activeTab={activeTab}
-                onSelectTab={setActiveTab}
-            />
 
             {/* Content */}
             <div className="flex-1 overflow-auto p-6">
@@ -387,44 +386,39 @@ function ProviderSelector({ tabs, activeTab, onSelectTab }: ProviderSelectorProp
 
     return (
         <>
-            {/* Current Selection Bar */}
-            <div className="px-6 py-3 border-b border-[var(--color-border-default)]">
-                <button
-                    onClick={() => setIsOpen(true)}
-                    className="flex items-center gap-3 px-4 py-2.5 bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border-default)] rounded-xl transition-all group w-full max-w-md"
-                >
-                    {activeProvider && (
-                        <>
-                            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${typeColors[activeProvider.type]} flex items-center justify-center shadow-sm`}>
-                                <activeProvider.icon className="w-4 h-4 text-white" />
-                            </div>
-                            <div className="flex-1 text-left">
-                                <div className="flex items-center gap-2">
-                                    <span className="font-medium text-[var(--color-text-primary)]">
-                                        {activeProvider.name}
-                                    </span>
-                                    {activeProvider.status === 'active' ? (
-                                        <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-medium rounded">
-                                            ACTIVE
-                                        </span>
-                                    ) : (
-                                        <span className="px-1.5 py-0.5 bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] text-[10px] font-medium rounded">
-                                            SOON
-                                        </span>
-                                    )}
-                                </div>
-                                <span className="text-xs text-[var(--color-text-muted)]">
-                                    {typeLabels[activeProvider.type]}
+            {/* Provider Selection Button */}
+            <button
+                onClick={() => setIsOpen(true)}
+                className="flex items-center gap-3 px-4 py-2 bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border-default)] rounded-xl transition-all group"
+            >
+                {activeProvider && (
+                    <>
+                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${typeColors[activeProvider.type]} flex items-center justify-center shadow-sm`}>
+                            <activeProvider.icon className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="text-left">
+                            <div className="flex items-center gap-2">
+                                <span className="font-medium text-[var(--color-text-primary)]">
+                                    {activeProvider.name}
                                 </span>
+                                {activeProvider.status === 'active' ? (
+                                    <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-medium rounded">
+                                        ACTIVE
+                                    </span>
+                                ) : (
+                                    <span className="px-1.5 py-0.5 bg-[var(--color-bg-hover)] text-[var(--color-text-muted)] text-[10px] font-medium rounded">
+                                        SOON
+                                    </span>
+                                )}
                             </div>
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] group-hover:bg-[var(--color-bg-subtle)] transition-all ml-auto">
-                                <span className="text-xs font-medium text-[var(--color-text-secondary)]">More</span>
-                                <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)] transition-colors" />
-                            </div>
-                        </>
-                    )}
-                </button>
-            </div>
+                            <span className="text-xs text-[var(--color-text-muted)]">
+                                {typeLabels[activeProvider.type]}
+                            </span>
+                        </div>
+                        <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)] transition-colors ml-2" />
+                    </>
+                )}
+            </button>
 
             {/* Provider Selection Modal */}
             {isOpen && (
