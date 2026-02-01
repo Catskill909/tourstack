@@ -20,8 +20,9 @@ import collectionsRouter from './routes/collections.js';
 import visitorRouter from './routes/visitor.js';
 import visionRouter from './routes/vision.js';
 import geminiRouter from './routes/gemini.js';
+import googleTranslateRouter from './routes/google-translate.js';
 import authRouter from './routes/auth.js';
-import { sessionMiddleware, requireAuth } from './middleware/auth.js'; 
+import { sessionMiddleware, requireAuth } from './middleware/auth.js';
 
 
 
@@ -70,6 +71,7 @@ app.use('/api/feeds', requireAuth, feedsRouter);
 app.use('/api/collections', requireAuth, collectionsRouter);
 app.use('/api/vision', requireAuth, visionRouter);
 app.use('/api/gemini', requireAuth, geminiRouter);
+app.use('/api/google-translate', requireAuth, googleTranslateRouter);
 
 // In production, serve the built frontend
 if (process.env.NODE_ENV === 'production') {

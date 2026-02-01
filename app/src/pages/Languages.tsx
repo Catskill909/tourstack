@@ -116,12 +116,12 @@ const tabs: Tab[] = [
         id: 'google',
         name: 'Google Cloud',
         icon: Globe,
-        status: 'coming_soon',
-        description: 'Google Cloud Translation API - 100+ languages',
+        status: 'active',
+        description: 'Google Cloud Translation API - 135+ languages',
         type: 'paid',
         docUrl: 'https://cloud.google.com/translate/docs',
-        features: ['135+ Languages', 'Neural MT', 'AutoML Custom', 'Document AI'],
-        pricing: '$20 per million characters',
+        features: ['135+ Languages', 'Neural MT', 'Auto-Detect', 'Batch Translation'],
+        pricing: 'Free: 500K chars/mo, then $20/million',
         apiUrl: 'translation.googleapis.com/language/translate/v2',
     },
     {
@@ -343,6 +343,8 @@ export function Languages() {
                         onQuickPhrase={handleQuickPhrase}
                         onClearSource={() => { setSourceText(''); setTranslatedText(''); }}
                     />
+                ) : activeTab === 'google' ? (
+                    <GoogleCloudTab />
                 ) : (
                     <ComingSoonTab tab={tabs.find(t => t.id === activeTab)!} />
                 )}
@@ -990,6 +992,374 @@ function FileTranslationTab() {
                     </h3>
                     <div className="max-h-96 overflow-auto p-4 bg-[var(--color-bg-surface)] rounded-lg">
                         <pre className="text-sm text-[var(--color-text-primary)] whitespace-pre-wrap">{result}</pre>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ============================================================================
+// GOOGLE CLOUD TAB COMPONENT
+// ============================================================================
+
+interface GoogleLanguage {
+    code: string;
+    name: string;
+}
+
+function GoogleCloudTab() {
+    const [sourceText, setSourceText] = useState('');
+    const [translatedText, setTranslatedText] = useState('');
+    const [sourceLang, setSourceLang] = useState('auto');
+    const [targetLang, setTargetLang] = useState('es');
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [copySuccess, setCopySuccess] = useState(false);
+    const [autoDetectedLang, setAutoDetectedLang] = useState<string | null>(null);
+    const [languages, setLanguages] = useState<GoogleLanguage[]>([]);
+    const [isLoadingLanguages, setIsLoadingLanguages] = useState(true);
+    const [apiStatus, setApiStatus] = useState<{ available: boolean; reason?: string } | null>(null);
+    const [charCount, setCharCount] = useState(0);
+    const [history, setHistory] = useState<TranslationHistoryItem[]>([]);
+
+    // Fetch supported languages on mount
+    useEffect(() => {
+        const fetchLanguages = async () => {
+            try {
+                const response = await fetch('/api/google-translate/languages');
+                if (response.ok) {
+                    const data = await response.json();
+                    setLanguages(data.languages || []);
+                }
+            } catch (err) {
+                console.error('Failed to fetch languages:', err);
+            } finally {
+                setIsLoadingLanguages(false);
+            }
+        };
+
+        const checkStatus = async () => {
+            try {
+                const response = await fetch('/api/google-translate/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    setApiStatus(data);
+                }
+            } catch (err) {
+                setApiStatus({ available: false, reason: 'Failed to connect' });
+            }
+        };
+
+        fetchLanguages();
+        checkStatus();
+    }, []);
+
+    // Track character count
+    useEffect(() => {
+        setCharCount(sourceText.length);
+    }, [sourceText]);
+
+    const handleTranslate = async () => {
+        if (!sourceText.trim()) return;
+
+        setIsTranslating(true);
+        setError(null);
+        setAutoDetectedLang(null);
+
+        try {
+            const response = await fetch('/api/google-translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: sourceText,
+                    sourceLang: sourceLang,
+                    targetLang: targetLang,
+                }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Translation failed');
+            }
+
+            const data = await response.json();
+            setTranslatedText(data.translatedText);
+
+            if (data.detectedSourceLanguage) {
+                setAutoDetectedLang(data.detectedSourceLanguage);
+            }
+
+            // Add to history
+            setHistory(prev => [{
+                id: Date.now().toString(),
+                sourceText: sourceText,
+                sourceLang: data.detectedSourceLanguage || sourceLang,
+                targetLang,
+                translatedText: data.translatedText,
+                timestamp: new Date(),
+            }, ...prev.slice(0, 9)]);
+
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Translation failed');
+        } finally {
+            setIsTranslating(false);
+        }
+    };
+
+    const handleSwapLanguages = () => {
+        if (sourceLang === 'auto') return; // Can't swap with auto-detect
+        const tempLang = sourceLang;
+        const tempText = sourceText;
+        setSourceLang(targetLang);
+        setTargetLang(tempLang);
+        setSourceText(translatedText);
+        setTranslatedText(tempText);
+    };
+
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(translatedText);
+            setCopySuccess(true);
+            setTimeout(() => setCopySuccess(false), 2000);
+        } catch (err) {
+            console.error('Copy failed:', err);
+        }
+    };
+
+    const handleQuickPhrase = (phrase: string) => {
+        setSourceText(phrase);
+    };
+
+    const getLanguageName = (code: string) => {
+        if (code === 'auto') return 'Auto-Detect';
+        const lang = languages.find(l => l.code === code);
+        return lang?.name || code;
+    };
+
+    // Show error if API not available
+    if (apiStatus && !apiStatus.available) {
+        return (
+            <div className="max-w-4xl mx-auto">
+                <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-xl text-center">
+                    <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-2">
+                        Google Translate API Not Available
+                    </h3>
+                    <p className="text-[var(--color-text-muted)]">
+                        {apiStatus.reason || 'Please check your GOOGLE_VISION_API_KEY configuration.'}
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="max-w-6xl mx-auto space-y-6">
+            {/* API Status Banner */}
+            <div className="flex items-center justify-between p-3 bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/20 rounded-xl">
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-sm text-[var(--color-text-secondary)]">
+                        Google Cloud Translation API - {languages.length} languages
+                    </span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-[var(--color-text-muted)]">
+                    <span>Free tier: 500K chars/month</span>
+                    <span className="px-2 py-0.5 bg-[var(--color-bg-surface)] rounded">
+                        {charCount.toLocaleString()} chars
+                    </span>
+                </div>
+            </div>
+
+            {/* Language Selectors */}
+            <div className="flex items-center gap-4">
+                <div className="flex-1">
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                        Translate from
+                    </label>
+                    <select
+                        value={sourceLang}
+                        onChange={(e) => setSourceLang(e.target.value)}
+                        disabled={isLoadingLanguages}
+                        className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    >
+                        <option value="auto">🔍 Auto-Detect</option>
+                        {languages.map(lang => (
+                            <option key={lang.code} value={lang.code}>{lang.name}</option>
+                        ))}
+                    </select>
+                    {autoDetectedLang && sourceLang === 'auto' && (
+                        <p className="mt-1 text-xs text-violet-400">
+                            Detected: {getLanguageName(autoDetectedLang)}
+                        </p>
+                    )}
+                </div>
+
+                <button
+                    onClick={handleSwapLanguages}
+                    disabled={sourceLang === 'auto'}
+                    className="mt-6 p-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={sourceLang === 'auto' ? "Can't swap with auto-detect" : "Swap languages"}
+                >
+                    <ArrowRightLeft className="w-5 h-5 text-[var(--color-text-secondary)]" />
+                </button>
+
+                <div className="flex-1">
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                        Translate into
+                    </label>
+                    <select
+                        value={targetLang}
+                        onChange={(e) => setTargetLang(e.target.value)}
+                        disabled={isLoadingLanguages}
+                        className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    >
+                        {languages.map(lang => (
+                            <option key={lang.code} value={lang.code}>{lang.name}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            {/* Translation Panels */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Source Text */}
+                <div className="relative">
+                    <textarea
+                        value={sourceText}
+                        onChange={(e) => setSourceText(e.target.value)}
+                        placeholder="Enter text to translate..."
+                        className="w-full h-64 p-4 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+                    />
+                    {sourceText && (
+                        <button
+                            onClick={() => { setSourceText(''); setTranslatedText(''); }}
+                            className="absolute top-3 right-3 p-1.5 bg-[var(--color-bg-surface)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-all"
+                            title="Clear text"
+                        >
+                            <X className="w-4 h-4 text-[var(--color-text-muted)]" />
+                        </button>
+                    )}
+                    <div className="absolute bottom-3 left-4 text-xs text-[var(--color-text-muted)]">
+                        {sourceText.length.toLocaleString()} characters
+                    </div>
+                </div>
+
+                {/* Translated Text */}
+                <div className="relative">
+                    <div className="w-full h-64 p-4 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl overflow-auto">
+                        {isTranslating ? (
+                            <div className="flex items-center justify-center h-full">
+                                <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+                            </div>
+                        ) : error ? (
+                            <div className="flex items-center gap-2 text-red-400">
+                                <AlertCircle className="w-5 h-5" />
+                                <span>{error}</span>
+                            </div>
+                        ) : translatedText ? (
+                            <p className="text-[var(--color-text-primary)] whitespace-pre-wrap">{translatedText}</p>
+                        ) : (
+                            <p className="text-[var(--color-text-muted)]">Translation will appear here...</p>
+                        )}
+                    </div>
+                    {translatedText && !isTranslating && (
+                        <button
+                            onClick={handleCopy}
+                            className="absolute top-3 right-3 p-1.5 bg-[var(--color-bg-elevated)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-all flex items-center gap-1.5"
+                            title="Copy to clipboard"
+                        >
+                            {copySuccess ? (
+                                <>
+                                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                                    <span className="text-xs text-emerald-400">Copied!</span>
+                                </>
+                            ) : (
+                                <Copy className="w-4 h-4 text-[var(--color-text-muted)]" />
+                            )}
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Translate Button */}
+            <div className="flex justify-center">
+                <button
+                    onClick={handleTranslate}
+                    disabled={!sourceText.trim() || isTranslating}
+                    className="px-8 py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium rounded-xl hover:from-violet-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/20"
+                >
+                    {isTranslating ? (
+                        <span className="flex items-center gap-2">
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Translating...
+                        </span>
+                    ) : (
+                        'Translate with Google Cloud'
+                    )}
+                </button>
+            </div>
+
+            {/* Quick Phrases */}
+            <div className="bg-[var(--color-bg-elevated)] rounded-xl border border-[var(--color-border-default)] p-4">
+                <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-3">
+                    Quick Phrases for Museums
+                </h3>
+                <div className="space-y-3">
+                    {QUICK_PHRASES.map((category) => (
+                        <div key={category.category}>
+                            <p className="text-xs text-[var(--color-text-muted)] mb-2">{category.category}</p>
+                            <div className="flex flex-wrap gap-2">
+                                {category.phrases.map((phrase) => (
+                                    <button
+                                        key={phrase}
+                                        onClick={() => handleQuickPhrase(phrase)}
+                                        className="px-3 py-1.5 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:border-violet-500/30 transition-all"
+                                    >
+                                        {phrase}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Translation History */}
+            {history.length > 0 && (
+                <div className="bg-[var(--color-bg-elevated)] rounded-xl border border-[var(--color-border-default)] p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Clock className="w-4 h-4 text-[var(--color-text-muted)]" />
+                        <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
+                            Recent Translations
+                        </h3>
+                    </div>
+                    <div className="space-y-2">
+                        {history.slice(0, 5).map((item) => (
+                            <button
+                                key={item.id}
+                                onClick={() => {
+                                    setSourceText(item.sourceText);
+                                    setSourceLang(item.sourceLang);
+                                    setTargetLang(item.targetLang);
+                                }}
+                                className="w-full text-left p-3 bg-[var(--color-bg-surface)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-all"
+                            >
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="px-1.5 py-0.5 bg-violet-500/20 text-violet-400 text-xs font-medium rounded">
+                                        {getLanguageName(item.sourceLang)}
+                                    </span>
+                                    <span className="text-[var(--color-text-muted)]">→</span>
+                                    <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-400 text-xs font-medium rounded">
+                                        {getLanguageName(item.targetLang)}
+                                    </span>
+                                </div>
+                                <p className="text-sm text-[var(--color-text-primary)] truncate">
+                                    "{item.sourceText}" → "{item.translatedText}"
+                                </p>
+                            </button>
+                        ))}
                     </div>
                 </div>
             )}
