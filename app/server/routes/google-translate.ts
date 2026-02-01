@@ -302,7 +302,7 @@ router.get('/languages', async (req, res) => {
 // STATUS CHECK
 // ============================================================================
 
-router.get('/status', async (req, res) => {
+router.get('/status', async (_req, res) => {
     const hasApiKey = !!API_KEY;
 
     if (!hasApiKey) {
