@@ -84,9 +84,21 @@ const QUICK_PHRASES = [
     { category: 'Accessibility', phrases: ['Wheelchair accessible', 'Assistance available', 'Service animals welcome', 'Large print available'] },
 ];
 
-// Tab configuration
+// Tab configuration - ACTIVE services listed first
 const tabs: Tab[] = [
     // === ACTIVE PROVIDERS ===
+    {
+        id: 'google',
+        name: 'Google Cloud',
+        icon: Globe,
+        status: 'active',
+        description: 'Google Cloud Translation API - 135+ languages',
+        type: 'paid',
+        docUrl: 'https://cloud.google.com/translate/docs',
+        features: ['135+ Languages', 'Neural MT', 'Auto-Detect', 'Batch Translation'],
+        pricing: 'Free: 500K chars/mo, then $20/million',
+        apiUrl: 'translation.googleapis.com/language/translate/v2',
+    },
     {
         id: 'libretranslate',
         name: 'LibreTranslate',
@@ -99,7 +111,7 @@ const tabs: Tab[] = [
         pricing: 'Free (self-hosted)',
         apiUrl: 'translate.supersoul.top',
     },
-    // === PAID CLOUD PROVIDERS ===
+    // === PAID CLOUD PROVIDERS (Coming Soon) ===
     {
         id: 'deepl',
         name: 'DeepL',
@@ -111,18 +123,6 @@ const tabs: Tab[] = [
         features: ['31 Languages', 'Best Quality', 'Formality Control', 'Glossaries'],
         pricing: 'Free: 500K chars/mo, Pro: $5.49/mo',
         apiUrl: 'api-free.deepl.com/v2/translate',
-    },
-    {
-        id: 'google',
-        name: 'Google Cloud',
-        icon: Globe,
-        status: 'active',
-        description: 'Google Cloud Translation API - 135+ languages',
-        type: 'paid',
-        docUrl: 'https://cloud.google.com/translate/docs',
-        features: ['135+ Languages', 'Neural MT', 'Auto-Detect', 'Batch Translation'],
-        pricing: 'Free: 500K chars/mo, then $20/million',
-        apiUrl: 'translation.googleapis.com/language/translate/v2',
     },
     {
         id: 'azure',
@@ -525,27 +525,35 @@ interface ProviderCardProps {
 }
 
 function ProviderCard({ tab, isActive, typeColors, onSelect }: ProviderCardProps) {
+    const isActiveProvider = tab.status === 'active';
+
     return (
         <button
             onClick={onSelect}
             className={`
-                flex items-start gap-3 p-3 rounded-xl border transition-all text-left w-full
+                flex items-start gap-3 p-3 rounded-xl border transition-all text-left w-full relative
                 ${isActive
-                    ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/40'
-                    : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:bg-[var(--color-bg-hover)] hover:border-[var(--color-border-hover)]'
+                    ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/40 ring-2 ring-[var(--color-accent-primary)]/30'
+                    : isActiveProvider
+                        ? 'bg-emerald-500/5 border-emerald-500/30 hover:bg-emerald-500/10 hover:border-emerald-500/50'
+                        : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:bg-[var(--color-bg-hover)] hover:border-[var(--color-border-hover)] opacity-75'
                 }
             `}
         >
-            <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${typeColors[tab.type]} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+            {/* Active glow indicator */}
+            {isActiveProvider && !isActive && (
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500/5 to-transparent pointer-events-none" />
+            )}
+            <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${typeColors[tab.type]} flex items-center justify-center flex-shrink-0 shadow-sm ${isActiveProvider ? 'ring-2 ring-emerald-400/40' : ''}`}>
                 <tab.icon className="w-5 h-5 text-white" />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 relative">
                 <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-[var(--color-text-primary)] truncate">
+                    <span className={`font-medium truncate ${isActiveProvider ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-muted)]'}`}>
                         {tab.name}
                     </span>
                     {tab.status === 'active' ? (
-                        <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-medium rounded flex-shrink-0">
+                        <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded flex-shrink-0 animate-pulse">
                             ACTIVE
                         </span>
                     ) : (
@@ -554,11 +562,11 @@ function ProviderCard({ tab, isActive, typeColors, onSelect }: ProviderCardProps
                         </span>
                     )}
                 </div>
-                <p className="text-xs text-[var(--color-text-muted)] line-clamp-2">
+                <p className={`text-xs line-clamp-2 ${isActiveProvider ? 'text-[var(--color-text-secondary)]' : 'text-[var(--color-text-muted)]'}`}>
                     {tab.description}
                 </p>
                 {tab.pricing && (
-                    <p className="text-xs text-[var(--color-text-secondary)] mt-1 font-medium">
+                    <p className={`text-xs mt-1 font-medium ${isActiveProvider ? 'text-emerald-400' : 'text-[var(--color-text-muted)]'}`}>
                         {tab.pricing}
                     </p>
                 )}
