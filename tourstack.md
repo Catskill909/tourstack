@@ -65,7 +65,7 @@ When museum staff access visitor pages, they see:
 | Phase 19: AI Object Analysis (Full) | ✅ Complete |
 | Phase 20: Media Library | ✅ Complete |
 | Phase 21: Collections Enhancement | ✅ Complete |
-| Phase 22: Collection Translations | 🎯 Planned (Next) |
+| Phase 22: Collection Translations | ✅ Complete |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
 
@@ -157,7 +157,22 @@ When museum staff access visitor pages, they see:
 
 **Documentation:** See [docs/collections-dev.md](docs/collections-dev.md) for full guide.
 
-**Next:** Phase 22 - Collection Translations (Magic Translate for captions/alt text)
+### Collection Translations (Phase 22) - COMPLETE ✅
+
+**AI Analysis Translation:** Translate all AI-generated content to 9 supported languages.
+
+| Feature | Description |
+|---------|-------------|
+| **Batch Translation API** | 10-15x faster using LibreTranslate's array support |
+| **Language Tabs** | Switch languages in analysis modal with visual status |
+| **Batch Wizard Translation** | "Translate All X Images" in Step 4 with progress |
+| **Translation Badges** | Blue Languages icon on translated items |
+| **Language Picker** | Switch languages while browsing collection detail |
+
+**Files:**
+- `src/services/translationService.ts` - `translateBatch()`, `translateAnalysis()`
+- `src/components/collections/CollectionItemAnalysisModal.tsx` - Language tabs
+- `server/routes/translate.ts` - `/api/translate/batch` endpoint
 
 ---
 

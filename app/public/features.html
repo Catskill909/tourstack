@@ -13,6 +13,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="tourstack-logo.png">
 
     <style>
         :root {
@@ -57,6 +58,10 @@
         section {
             padding: 12vh 0;
             border-bottom: 1px solid var(--border-color);
+        }
+
+        #features {
+            padding-top: 15vh;
         }
 
         /* --- Big Block Headers --- */
@@ -352,6 +357,26 @@
             </div>
         </div>
     </div>
+    </div>
+
+    <div class="scroll-indicator" id="scrollIndicator">
+        <svg class="scroll-chevron" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 13l5 5 5-5M7 6l5 5 5-5" />
+        </svg>
+    </div>
+    </div>
+
+    <script>
+        // Scroll Opacity Logic for Indicator
+        window.addEventListener('scroll', () => {
+            const indicator = document.getElementById('scrollIndicator');
+            if (indicator) {
+                const scrollPos = window.scrollY;
+                const opacity = Math.max(0, 1 - (scrollPos / 300)); // Fade out over 300px
+                indicator.style.opacity = opacity;
+            }
+        });
+    </script>
 
     <style>
         .hero {
@@ -436,131 +461,69 @@
             flex-direction: column;
             justify-content: center;
         }
+
+        /* Animation Styles */
+        .feature-card {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .feature-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #features {
+            padding-top: 8vh;
+        }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .scroll-chevron {
+            width: 24px;
+            height: 24px;
+            stroke: var(--text-primary);
+            stroke-width: 1.5;
+            fill: none;
+            animation: scrollBounce 2.5s infinite;
+        }
+
+        @keyframes scrollBounce {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-5px);
+            }
+
+            60% {
+                transform: translateY(-3px);
+            }
+        }
     </style>
 
-    <section id="features" class="container">
-
-        <div class="feature-grid">
-            <!-- Card 01: Positioning -->
-            <div class="feature-card">
-                <span class="card-num">01 / POSITIONING</span>
-                <h3>Modality Infrastructure</h3>
-                <p>7-tier positioning framework designed for any environment. Seamless handoff between indoor stones and
-                    outdoor gardens.</p>
-                <div class="tech-list">
-                    <span class="tech-tag">BLE</span>
-                    <span class="tech-tag">GPS</span>
-                    <span class="tech-tag">UWB</span>
-                    <span class="tech-tag">NFC</span>
-                    <span class="tech-tag">QR</span>
-                    <span class="tech-tag">WiFi</span>
-                </div>
-            </div>
-
-            <!-- Card 02: AI Translation -->
-            <div class="feature-card">
-                <span class="card-num">02 / LINGUISTICS</span>
-                <h3>Magic Translate</h3>
-                <p>One-click AI orchestration localizing exhibition layers into 30+ languages, maintaining curatorial
-                    nuance.</p>
-                <div class="tech-list">
-                    <span class="tech-tag">LibreTranslate</span>
-                    <span class="tech-tag">OpenAI</span>
-                    <span class="tech-tag">i18next</span>
-                </div>
-            </div>
-
-            <!-- Card 03: Audio Engine -->
-            <div class="feature-card">
-                <span class="card-num">03 / AUDIO</span>
-                <h3>Studio Voice</h3>
-                <p>Museum-grade synthetic speech utilizing v2.5 models. 3,000+ human-grade timbres with 75ms latency.
-                </p>
-                <div class="tech-list">
-                    <span class="tech-tag">ElevenLabs</span>
-                    <span class="tech-tag">Deepgram</span>
-                    <span class="tech-tag">Aura</span>
-                </div>
-            </div>
-
-            <!-- Card 04: CMS Logic -->
-            <div class="feature-card">
-                <span class="card-num">04 / CONTENT</span>
-                <h3>Block-Based CMS</h3>
-                <p>Modular content block system: Timeline galleries, responsive maps, rich text, and cinematic triggers.
-                </p>
-                <div class="tech-list">
-                    <span class="tech-tag">React 19</span>
-                    <span class="tech-tag">Prisma</span>
-                    <span class="tech-tag">SQLite</span>
-                </div>
-            </div>
-
-            <!-- Card 05: Data Layer -->
-            <div class="feature-card">
-                <span class="card-num">05 / PERSISTENCE</span>
-                <h3>Universal JSON</h3>
-                <p>Pure, structured data portability. Consistent delivery across native mobile, web, and archival repos.
-                </p>
-                <div class="tech-list">
-                    <span class="tech-tag">Docker</span>
-                    <span class="tech-tag">Coolify</span>
-                    <span class="tech-tag">Volumes</span>
-                </div>
-            </div>
-
-            <!-- Card 06: Insights -->
-            <div class="feature-card">
-                <span class="card-num">06 / ANALYTICS</span>
-                <h3>Spatial Insights</h3>
-                <p>Quantifiable dwell-time analytics and spatial heatmaps. Data-driven visitor flow understanding.</p>
-                <div class="tech-list">
-                    <span class="tech-tag">Zustand</span>
-                    <span class="tech-tag">Heatmaps</span>
-                    <span class="tech-tag">Flow</span>
-                </div>
-            </div>
-
-            <!-- Card 07: Visitor Mode -->
-            <div class="feature-card">
-                <span class="card-num">07 / DELIVERY</span>
-                <h3>Kiosk & Visitor</h3>
-                <p>Unified visitor experience across personal phones, shared tablets, and fixed kiosks. One-click tour
-                    launch from admin.</p>
-                <div class="tech-list">
-                    <span class="tech-tag">PWA</span>
-                    <span class="tech-tag">Fullscreen</span>
-                    <span class="tech-tag">Offline</span>
-                </div>
-            </div>
-
-            <!-- Card 08: Media Library -->
-            <div class="feature-card">
-                <span class="card-num">08 / ASSETS</span>
-                <h3>Media Library</h3>
-                <p>Centralized asset management with AI-powered tagging, bulk operations, and usage tracking across all
-                    tours.</p>
-                <div class="tech-list">
-                    <span class="tech-tag">Gemini</span>
-                    <span class="tech-tag">Vision AI</span>
-                    <span class="tech-tag">Sync</span>
-                </div>
-            </div>
-
-            <!-- Card 09: AI Tools -->
-            <div class="feature-card">
-                <span class="card-num">09 / INTELLIGENCE</span>
-                <h3>AI Assistance</h3>
-                <p>Forensic-grade artifact analysis. Visual DNA extraction, OCR text recognition, and smart cataloging
-                    for collections.</p>
-                <div class="tech-list">
-                    <span class="tech-tag">Google Vision</span>
-                    <span class="tech-tag">Gemini</span>
-                    <span class="tech-tag">OCR</span>
-                </div>
-            </div>
-        </div>
-    </section>
+    <div id="react-root" style="min-height: 50vh; display: flex; align-items: center; justify-content: center;">Loading
+        experience...</div>
 
     <!-- Modal: Technical Gallery -->
     <div id="galleryModal" class="modal-overlay">
@@ -593,6 +556,123 @@
             </div>
         </div>
     </footer>
+
+    <script type="importmap">
+        {
+          "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client?deps=react@18.2.0",
+            "framer-motion": "https://esm.sh/framer-motion@10.16.4?deps=react@18.2.0,react-dom@18.2.0"
+          }
+        }
+    </script>
+
+    <script type="module">
+        import * as React from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { motion } from 'framer-motion';
+
+        try {
+            const features = [
+                {
+                    num: "01 / POSITIONING",
+                    title: "Modality Infrastructure",
+                    desc: "7-tier positioning framework designed for any environment. Seamless handoff between indoor stones and outdoor gardens.",
+                    tags: ["BLE", "GPS", "UWB", "NFC", "QR", "WiFi"]
+                },
+                {
+                    num: "02 / LINGUISTICS",
+                    title: "Magic Translate",
+                    desc: "One-click AI orchestration localizing exhibition layers into 30+ languages, maintaining curatorial nuance.",
+                    tags: ["LibreTranslate", "OpenAI", "i18next"]
+                },
+                {
+                    num: "03 / AUDIO",
+                    title: "Studio Voice",
+                    desc: "Museum-grade synthetic speech utilizing v2.5 models. 3,000+ human-grade timbres with 75ms latency.",
+                    tags: ["ElevenLabs", "Deepgram", "Aura"]
+                },
+                {
+                    num: "04 / CONTENT",
+                    title: "Block-Based CMS",
+                    desc: "Modular content block system: Timeline galleries, responsive maps, rich text, and cinematic triggers.",
+                    tags: ["React 19", "Prisma", "SQLite"]
+                },
+                {
+                    num: "05 / PERSISTENCE",
+                    title: "Universal JSON",
+                    desc: "Pure, structured data portability. Consistent delivery across native mobile, web, and archival repos.",
+                    tags: ["Docker", "Coolify", "Volumes"]
+                },
+                {
+                    num: "06 / ANALYTICS",
+                    title: "Spatial Insights",
+                    desc: "Quantifiable dwell-time analytics and spatial heatmaps. Data-driven visitor flow understanding.",
+                    tags: ["Zustand", "Heatmaps", "Flow"]
+                },
+                {
+                    num: "07 / DELIVERY",
+                    title: "Kiosk & Visitor",
+                    desc: "Unified visitor experience across personal phones, shared tablets, and fixed kiosks. One-click tour launch from admin.",
+                    tags: ["PWA", "Fullscreen", "Offline"]
+                },
+                {
+                    num: "08 / ASSETS",
+                    title: "Media Library",
+                    desc: "Centralized asset management with AI-powered tagging, bulk operations, and usage tracking across all tours.",
+                    tags: ["Gemini", "Vision AI", "Sync"]
+                },
+                {
+                    num: "09 / INTELLIGENCE",
+                    title: "AI Assistance",
+                    desc: "Forensic-grade artifact analysis. Visual DNA extraction, OCR text recognition, and smart cataloging for collections.",
+                    tags: ["Google Vision", "Gemini", "OCR"]
+                }
+            ];
+
+            const FeatureCard = ({ feature, index }) => {
+                return React.createElement(motion.div, {
+                    className: "feature-card",
+                    initial: { opacity: 0, y: 50 },
+                    whileInView: { opacity: 1, y: 0 },
+                    viewport: { once: true, margin: "-100px" },
+                    transition: {
+                        duration: 0.8,
+                        delay: index * 0.1,
+                        ease: [0.16, 1, 0.3, 1]
+                    }
+                }, [
+                    React.createElement("span", { className: "card-num", key: "num" }, feature.num),
+                    React.createElement("h3", { key: "title" }, feature.title),
+                    React.createElement("p", { key: "desc" }, feature.desc),
+                    React.createElement("div", { className: "tech-list", key: "tags" },
+                        feature.tags.map(tag => React.createElement("span", { className: "tech-tag", key: tag }, tag))
+                    )
+                ]);
+            };
+
+            const FeaturesApp = () => {
+                return React.createElement("section", { id: "features", className: "container" },
+                    React.createElement("div", { className: "feature-grid" },
+                        features.map((feature, index) =>
+                            React.createElement(FeatureCard, { key: index, feature: feature, index: index })
+                        )
+                    )
+                );
+            };
+
+            const rootElement = document.getElementById('react-root');
+            if (rootElement) {
+                const root = createRoot(rootElement);
+                root.render(React.createElement(FeaturesApp));
+            } else {
+                console.error("React root element not found");
+            }
+        } catch (error) {
+            console.error("Error initializing React app:", error);
+            document.getElementById('react-root').innerHTML = '<div style="color:white;text-align:center;padding:50px">Error loading interactive content.</div>';
+        }
+    </script>
 
     <script>
         function openModal() {

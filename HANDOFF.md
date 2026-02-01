@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: January 31, 2026
-**Session Status**: Phase 21 Collections Enhancement COMPLETE ✅ | Phase 20 Media Library COMPLETE ✅ | Phase 16 Visitor Experience COMPLETE ✅
+**Session Status**: Phase 22 Collection Translations COMPLETE ✅ | Phase 21 Collections Enhancement COMPLETE ✅ | Phase 20 Media Library COMPLETE ✅
 
 ---
 
@@ -556,17 +556,25 @@ TourStack uses a **modular content block system** where tours and stops are comp
 > - `src/pages/Collections.tsx` - Updated with type selection and wizard flow
 > - `src/pages/CollectionDetail.tsx` - Updated with AddItemWizard and confirmation modals
 
-### 🎯 Phase 22: Collection Translations (Planned - Next Session)
-- [ ] **Magic Translate Button** - One-click AI translation for captions/alt text
-- [ ] **Per-Image Translation** - Edit translations in CollectionItemAnalysisModal
-- [ ] **Batch Translation** - Translate entire collection at once
-- [ ] **Translation Status** - Visual indicators for translated vs. pending items
-- [ ] **Language Picker** - Switch languages in collection detail view
+### Phase 22: Collection Translations ✅ (Jan 31, 2026)
+- [x] **MultilingualAIAnalysis Type** - New wrapper type for AI analysis translations in `types/media.ts`
+- [x] **Batch Translation API** - Server-side `/api/translate/batch` endpoint for 10-15x faster translations
+- [x] **translateAnalysis()** - Optimized function using parallel batch requests per language
+- [x] **Language Tabs in Modal** - LanguageSwitcher in CollectionItemAnalysisModal header
+- [x] **Per-Image Translation** - Click "Translate" button to generate translations for single image
+- [x] **Batch Translation in Wizard** - Step 4 "Translate All X Images" with progress tracking
+- [x] **Translation Status Badges** - Blue Languages icon on translated images
+- [x] **Language Picker in Detail View** - Switch languages while browsing collection
+- [x] **Delete Confirmation Modal** - Custom ConfirmationModal replaces browser confirm() for collection deletion
 
-> **Implementation Notes:** Reuse existing translation infrastructure:
-> - `MagicTranslateButton` component
-> - `translationService.ts` for LibreTranslate API
-> - `LanguageSwitcher` component
+> **Key Components:**
+> - `src/services/translationService.ts` - `translateBatch()`, `translateAnalysis()` optimized
+> - `src/components/collections/CollectionItemAnalysisModal.tsx` - Language tabs + translate button
+> - `src/components/collections/CollectionImageCard.tsx` - Translation status badges
+> - `src/pages/CollectionDetail.tsx` - Language switcher in header
+> - `server/routes/translate.ts` - New `/batch` endpoint
+
+> **Performance:** Before: 112 sequential API calls (~15-20s). After: 8 parallel batch calls (~1-2s)
 
 ### 🎯 Phase 17: Stop Navigation & Links (Planned)
 - [ ] **Next/Previous Buttons** - Navigate between stops

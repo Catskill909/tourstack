@@ -3,6 +3,7 @@ import { Plus, Search, LayoutGrid, Image as ImageIcon, Trash2, Volume2, Pencil, 
 import { useNavigate } from 'react-router-dom';
 import { collectionService, type Collection } from '../lib/collectionService';
 import { CollectionTypeModal, ImageCollectionWizard, type CollectionTypeOption } from '../components/collections';
+import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 
 export function Collections() {
     const navigate = useNavigate();
@@ -19,6 +20,10 @@ export function Collections() {
     const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
     const [editName, setEditName] = useState('');
     const [editDesc, setEditDesc] = useState('');
+
+    // Delete Confirmation State
+    const [deleteTarget, setDeleteTarget] = useState<Collection | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         loadCollections();
@@ -58,15 +63,22 @@ export function Collections() {
         navigate(`/collections/${collectionId}`);
     }
 
-    async function handleDelete(id: string, e: React.MouseEvent) {
+    function handleDelete(collection: Collection, e: React.MouseEvent) {
         e.stopPropagation();
-        if (confirm('Are you sure you want to delete this collection?')) {
-            try {
-                await collectionService.delete(id);
-                loadCollections();
-            } catch (error) {
-                console.error('Failed to delete collection:', error);
-            }
+        setDeleteTarget(collection);
+    }
+
+    async function confirmDelete() {
+        if (!deleteTarget) return;
+        setIsDeleting(true);
+        try {
+            await collectionService.delete(deleteTarget.id);
+            setDeleteTarget(null);
+            loadCollections();
+        } catch (error) {
+            console.error('Failed to delete collection:', error);
+        } finally {
+            setIsDeleting(false);
         }
     }
 
@@ -170,7 +182,7 @@ export function Collections() {
                                         <Pencil className="w-4 h-4" />
                                     </button>
                                     <button
-                                        onClick={(e) => handleDelete(collection.id, e)}
+                                        onClick={(e) => handleDelete(collection, e)}
                                         className="p-2 text-[var(--color-text-muted)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                         title="Delete collection"
                                     >
@@ -336,6 +348,19 @@ export function Collections() {
                     </div>
                 </div>
             )}
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmationModal
+                isOpen={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={confirmDelete}
+                title="Delete Collection"
+                message={`Are you sure you want to delete "${deleteTarget?.name}"? This will permanently remove all ${deleteTarget?.items?.length || 0} items in this collection.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+                isLoading={isDeleting}
+            />
         </div>
     );
 }

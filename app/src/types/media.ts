@@ -58,6 +58,42 @@ export interface AIAnalysisResult {
   estimatedLocation?: string;
 }
 
+/**
+ * Multilingual wrapper for AI analysis results.
+ * Stores translations of translatable text fields from AIAnalysisResult.
+ */
+export interface MultilingualAIAnalysis {
+  /** Original AI analysis (source language, typically English) */
+  original: AIAnalysisResult;
+
+  /** Source language code (defaults to 'en') */
+  sourceLanguage: string;
+
+  /** Languages this analysis has been translated to */
+  translatedLanguages: string[];
+
+  /** Translated titles by language code */
+  suggestedTitle?: { [lang: string]: string };
+
+  /** Translated descriptions by language code */
+  description?: { [lang: string]: string };
+
+  /** Translated tags by language code (array per language) */
+  tags?: { [lang: string]: string[] };
+
+  /** Translated mood by language code */
+  mood?: { [lang: string]: string };
+
+  /** Translated lighting by language code */
+  lighting?: { [lang: string]: string };
+
+  /** Translated artStyle by language code */
+  artStyle?: { [lang: string]: string };
+
+  /** Translated estimatedLocation by language code */
+  estimatedLocation?: { [lang: string]: string };
+}
+
 // Helper to determine media type from MIME type
 export function getMediaType(mimeType: string): MediaType {
   if (mimeType.startsWith('image/')) return 'image';

@@ -1,10 +1,12 @@
-import { Sparkles, Loader2, AlertCircle, X, Eye } from 'lucide-react';
-import type { AIAnalysisResult } from '../../types/media';
+import { Sparkles, Loader2, AlertCircle, X, Eye, Languages } from 'lucide-react';
+import type { AIAnalysisResult, MultilingualAIAnalysis } from '../../types/media';
 
 interface CollectionImageCardProps {
   imageUrl: string;
   alt?: string;
   aiMetadata?: AIAnalysisResult;
+  aiTranslations?: MultilingualAIAnalysis;
+  viewLanguage?: string;
   analysisStatus?: 'pending' | 'analyzing' | 'complete' | 'error';
   onClick?: () => void;
   onRemove?: () => void;
@@ -16,6 +18,8 @@ export function CollectionImageCard({
   imageUrl,
   alt,
   aiMetadata,
+  aiTranslations,
+  viewLanguage = 'en',
   analysisStatus,
   onClick,
   onRemove,
@@ -29,6 +33,27 @@ export function CollectionImageCard({
   };
 
   const hasAnalysis = aiMetadata && analysisStatus === 'complete';
+  const hasTranslations = aiTranslations && aiTranslations.translatedLanguages.length > 1;
+
+  // Get translated text with fallback to original
+  const getTranslatedText = (field: keyof Pick<MultilingualAIAnalysis, 'suggestedTitle' | 'description' | 'mood' | 'artStyle'>) => {
+    if (aiTranslations?.[field]?.[viewLanguage]) {
+      return aiTranslations[field]![viewLanguage];
+    }
+    // Fallback to original
+    if (aiMetadata && field in aiMetadata) {
+      return aiMetadata[field as keyof AIAnalysisResult] as string | undefined;
+    }
+    return undefined;
+  };
+
+  // Get translated tags with fallback
+  const getTranslatedTags = (): string[] => {
+    if (aiTranslations?.tags?.[viewLanguage]) {
+      return aiTranslations.tags[viewLanguage];
+    }
+    return aiMetadata?.tags || [];
+  };
 
   return (
     <div
@@ -50,17 +75,17 @@ export function CollectionImageCard({
       {hasAnalysis && (
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="absolute bottom-0 left-0 right-0 p-3">
-            {/* Title */}
-            {aiMetadata.suggestedTitle && (
+            {/* Title - with translation support */}
+            {getTranslatedText('suggestedTitle') && (
               <p className="text-white text-sm font-medium line-clamp-1 mb-1">
-                {aiMetadata.suggestedTitle}
+                {getTranslatedText('suggestedTitle')}
               </p>
             )}
 
-            {/* Tags */}
-            {aiMetadata.tags && aiMetadata.tags.length > 0 && (
+            {/* Tags - with translation support */}
+            {getTranslatedTags().length > 0 && (
               <div className="flex flex-wrap gap-1">
-                {aiMetadata.tags.slice(0, 4).map((tag, i) => (
+                {getTranslatedTags().slice(0, 4).map((tag, i) => (
                   <span
                     key={i}
                     className="text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded"
@@ -68,9 +93,9 @@ export function CollectionImageCard({
                     {tag}
                   </span>
                 ))}
-                {aiMetadata.tags.length > 4 && (
+                {getTranslatedTags().length > 4 && (
                   <span className="text-[10px] text-white/70">
-                    +{aiMetadata.tags.length - 4}
+                    +{getTranslatedTags().length - 4}
                   </span>
                 )}
               </div>
@@ -144,19 +169,29 @@ export function CollectionImageCard({
         </button>
       )}
 
-      {/* Visual DNA indicators (compact) */}
-      {hasAnalysis && (aiMetadata.mood || aiMetadata.artStyle) && (
+      {/* Visual DNA indicators (compact) - with translation support */}
+      {hasAnalysis && (getTranslatedText('mood') || getTranslatedText('artStyle')) && (
         <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {aiMetadata.mood && (
+          {getTranslatedText('mood') && (
             <span className="text-[10px] bg-purple-500/80 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">
-              {aiMetadata.mood}
+              {getTranslatedText('mood')}
             </span>
           )}
-          {aiMetadata.artStyle && (
+          {getTranslatedText('artStyle') && (
             <span className="text-[10px] bg-amber-500/80 text-white px-1.5 py-0.5 rounded backdrop-blur-sm">
-              {aiMetadata.artStyle}
+              {getTranslatedText('artStyle')}
             </span>
           )}
+        </div>
+      )}
+
+      {/* Translation Badge */}
+      {hasTranslations && (
+        <div
+          className="absolute top-2 right-10 p-1.5 bg-blue-500 rounded-lg shadow-lg"
+          title={`Translated to ${aiTranslations.translatedLanguages.length} languages`}
+        >
+          <Languages className="w-3 h-3 text-white" />
         </div>
       )}
     </div>

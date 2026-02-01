@@ -13,9 +13,14 @@ import {
   Tag,
   Type,
   Loader2,
+  Languages,
+  Check,
+  AlertCircle,
 } from 'lucide-react';
-import { useState } from 'react';
-import type { AIAnalysisResult } from '../../types/media';
+import { useState, useEffect } from 'react';
+import type { AIAnalysisResult, MultilingualAIAnalysis } from '../../types/media';
+import { LanguageSwitcher } from '../LanguageSwitcher';
+import { translateAnalysis, SUPPORTED_LANGUAGES } from '../../services/translationService';
 
 interface CollectionItem {
   id: string;
@@ -23,6 +28,7 @@ interface CollectionItem {
   alt?: { [lang: string]: string };
   caption?: { [lang: string]: string };
   aiMetadata?: AIAnalysisResult;
+  aiTranslations?: MultilingualAIAnalysis;
 }
 
 interface CollectionItemAnalysisModalProps {
@@ -33,6 +39,10 @@ interface CollectionItemAnalysisModalProps {
   currentIndex?: number;
   onNavigate?: (index: number) => void;
   onAnalyze?: (item: CollectionItem) => Promise<AIAnalysisResult | null>;
+  /** Available languages for translation (defaults to SUPPORTED_LANGUAGES) */
+  availableLanguages?: string[];
+  /** Callback when translations are generated */
+  onTranslationsChange?: (itemId: string, translations: MultilingualAIAnalysis) => void;
 }
 
 export function CollectionItemAnalysisModal({
@@ -43,16 +53,94 @@ export function CollectionItemAnalysisModal({
   currentIndex = 0,
   onNavigate,
   onAnalyze,
+  availableLanguages = SUPPORTED_LANGUAGES,
+  onTranslationsChange,
 }: CollectionItemAnalysisModalProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [localAnalysis, setLocalAnalysis] = useState<AIAnalysisResult | null>(null);
+  const [activeLanguage, setActiveLanguage] = useState('en');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translateStatus, setTranslateStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [localTranslations, setLocalTranslations] = useState<MultilingualAIAnalysis | null>(null);
+
+  // Reset state when item changes
+  useEffect(() => {
+    setLocalAnalysis(null);
+    setLocalTranslations(null);
+    setActiveLanguage('en');
+    setTranslateStatus('idle');
+  }, [item?.id]);
 
   if (!isOpen || !item) return null;
 
   const analysis = localAnalysis || item.aiMetadata;
+  const translations = localTranslations || item.aiTranslations;
   const hasNavigation = items.length > 1 && onNavigate;
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex < items.length - 1;
+
+  // Helper to get translated content or fall back to original
+  const getTranslatedText = (field: keyof MultilingualAIAnalysis): string | undefined => {
+    if (translations && translations[field]) {
+      const fieldData = translations[field] as { [lang: string]: string } | undefined;
+      if (fieldData && fieldData[activeLanguage]) {
+        return fieldData[activeLanguage];
+      }
+    }
+    // Fall back to original analysis
+    if (analysis && field in analysis) {
+      return (analysis as unknown as Record<string, unknown>)[field] as string | undefined;
+    }
+    return undefined;
+  };
+
+  // Helper to get translated tags
+  const getTranslatedTags = (): string[] => {
+    if (translations?.tags?.[activeLanguage]) {
+      return translations.tags[activeLanguage];
+    }
+    return analysis?.tags || [];
+  };
+
+  // Check if a language has translations
+  const hasTranslation = (lang: string): boolean => {
+    return translations?.translatedLanguages?.includes(lang) || lang === 'en';
+  };
+
+  // Build content map for LanguageSwitcher
+  const translationContentMap: { [lang: string]: string } = {};
+  availableLanguages.forEach(lang => {
+    translationContentMap[lang] = hasTranslation(lang) ? 'has content' : '';
+  });
+
+  // Handle translation
+  const handleTranslate = async () => {
+    if (!analysis || isTranslating) return;
+
+    setIsTranslating(true);
+    setTranslateStatus('idle');
+
+    try {
+      const targetLangs = availableLanguages.filter(l => l !== 'en');
+      const result = await translateAnalysis(analysis, 'en', targetLangs);
+      setLocalTranslations(result);
+      setTranslateStatus('success');
+
+      // Notify parent of translations
+      if (onTranslationsChange && item) {
+        onTranslationsChange(item.id, result);
+      }
+
+      // Reset status after 3 seconds
+      setTimeout(() => setTranslateStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Translation failed:', error);
+      setTranslateStatus('error');
+      setTimeout(() => setTranslateStatus('idle'), 3000);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   const handleNavigate = (direction: 'prev' | 'next') => {
     if (!onNavigate) return;
@@ -156,19 +244,72 @@ export function CollectionItemAnalysisModal({
           <div className="lg:w-1/2 flex flex-col max-h-[50vh] lg:max-h-[90vh]">
             {/* Header */}
             <div className="p-6 border-b border-[var(--color-border-default)] flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-500/10 rounded-lg">
-                  <Sparkles className="w-5 h-5 text-green-500" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
-                    AI Analysis
-                  </h2>
-                  <p className="text-sm text-[var(--color-text-muted)]">
-                    Powered by Gemini Vision
-                  </p>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-500/10 rounded-lg">
+                    <Sparkles className="w-5 h-5 text-green-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-[var(--color-text-primary)]">
+                      AI Analysis
+                    </h2>
+                    <p className="text-sm text-[var(--color-text-muted)]">
+                      Powered by Gemini Vision
+                    </p>
+                  </div>
                 </div>
               </div>
+
+              {/* Language Tabs and Translate Button */}
+              {analysis && (
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <LanguageSwitcher
+                    availableLanguages={availableLanguages}
+                    activeLanguage={activeLanguage}
+                    onChange={setActiveLanguage}
+                    contentMap={translationContentMap}
+                    size="sm"
+                    showStatus={true}
+                  />
+
+                  <button
+                    onClick={handleTranslate}
+                    disabled={isTranslating || !analysis}
+                    className={`
+                      inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all
+                      ${translateStatus === 'success'
+                        ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                        : translateStatus === 'error'
+                          ? 'bg-red-500/10 text-red-500 border border-red-500/20'
+                          : 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border border-[var(--color-accent-primary)]/20 hover:bg-[var(--color-accent-primary)]/20'
+                      }
+                      disabled:opacity-50 disabled:cursor-not-allowed
+                    `}
+                  >
+                    {isTranslating ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Translating...</span>
+                      </>
+                    ) : translateStatus === 'success' ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Translated!</span>
+                      </>
+                    ) : translateStatus === 'error' ? (
+                      <>
+                        <AlertCircle className="w-4 h-4" />
+                        <span>Failed</span>
+                      </>
+                    ) : (
+                      <>
+                        <Languages className="w-4 h-4" />
+                        <span>Translate</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Content */}
@@ -202,31 +343,41 @@ export function CollectionItemAnalysisModal({
               ) : (
                 <>
                   {/* Suggested Title */}
-                  {analysis.suggestedTitle && (
+                  {(analysis.suggestedTitle || getTranslatedText('suggestedTitle')) && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-1.5">
                         <Type className="w-4 h-4 text-[var(--color-text-muted)]" />
                         <label className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
                           Suggested Title
                         </label>
+                        {activeLanguage !== 'en' && hasTranslation(activeLanguage) && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] uppercase">
+                            {activeLanguage}
+                          </span>
+                        )}
                       </div>
                       <p className="text-xl font-semibold text-[var(--color-text-primary)]">
-                        {analysis.suggestedTitle}
+                        {getTranslatedText('suggestedTitle') || analysis.suggestedTitle}
                       </p>
                     </div>
                   )}
 
                   {/* Description */}
-                  {analysis.description && (
+                  {(analysis.description || getTranslatedText('description')) && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-1.5">
                         <FileText className="w-4 h-4 text-[var(--color-text-muted)]" />
                         <label className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
                           Description
                         </label>
+                        {activeLanguage !== 'en' && hasTranslation(activeLanguage) && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] uppercase">
+                            {activeLanguage}
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
-                        {analysis.description}
+                        {getTranslatedText('description') || analysis.description}
                       </p>
                     </div>
                   )}
@@ -283,41 +434,56 @@ export function CollectionItemAnalysisModal({
                   {/* Visual DNA */}
                   {(analysis.mood || analysis.lighting || analysis.artStyle || analysis.estimatedLocation) && (
                     <div className="space-y-2">
-                      <label className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
-                        Visual DNA
-                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <label className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
+                          Visual DNA
+                        </label>
+                        {activeLanguage !== 'en' && hasTranslation(activeLanguage) && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] uppercase">
+                            {activeLanguage}
+                          </span>
+                        )}
+                      </div>
                       <div className="grid grid-cols-2 gap-3">
-                        {analysis.mood && (
+                        {(analysis.mood || getTranslatedText('mood')) && (
                           <div className="p-3 bg-[var(--color-bg-elevated)] rounded-xl">
                             <p className="text-xs text-[var(--color-text-muted)] mb-1">Mood</p>
-                            <p className="text-sm font-medium text-[var(--color-text-primary)]">{analysis.mood}</p>
+                            <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                              {getTranslatedText('mood') || analysis.mood}
+                            </p>
                           </div>
                         )}
-                        {analysis.lighting && (
+                        {(analysis.lighting || getTranslatedText('lighting')) && (
                           <div className="p-3 bg-[var(--color-bg-elevated)] rounded-xl">
                             <div className="flex items-center gap-1 mb-1">
                               <Sun className="w-3 h-3 text-[var(--color-text-muted)]" />
                               <p className="text-xs text-[var(--color-text-muted)]">Lighting</p>
                             </div>
-                            <p className="text-sm font-medium text-[var(--color-text-primary)]">{analysis.lighting}</p>
+                            <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                              {getTranslatedText('lighting') || analysis.lighting}
+                            </p>
                           </div>
                         )}
-                        {analysis.artStyle && (
+                        {(analysis.artStyle || getTranslatedText('artStyle')) && (
                           <div className="p-3 bg-[var(--color-bg-elevated)] rounded-xl">
                             <div className="flex items-center gap-1 mb-1">
                               <Brush className="w-3 h-3 text-[var(--color-text-muted)]" />
                               <p className="text-xs text-[var(--color-text-muted)]">Style</p>
                             </div>
-                            <p className="text-sm font-medium text-[var(--color-text-primary)]">{analysis.artStyle}</p>
+                            <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                              {getTranslatedText('artStyle') || analysis.artStyle}
+                            </p>
                           </div>
                         )}
-                        {analysis.estimatedLocation && (
+                        {(analysis.estimatedLocation || getTranslatedText('estimatedLocation')) && (
                           <div className="p-3 bg-[var(--color-bg-elevated)] rounded-xl">
                             <div className="flex items-center gap-1 mb-1">
                               <MapPin className="w-3 h-3 text-[var(--color-text-muted)]" />
                               <p className="text-xs text-[var(--color-text-muted)]">Context</p>
                             </div>
-                            <p className="text-sm font-medium text-[var(--color-text-primary)]">{analysis.estimatedLocation}</p>
+                            <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                              {getTranslatedText('estimatedLocation') || analysis.estimatedLocation}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -325,16 +491,21 @@ export function CollectionItemAnalysisModal({
                   )}
 
                   {/* Tags */}
-                  {analysis.tags && analysis.tags.length > 0 && (
+                  {(analysis.tags && analysis.tags.length > 0) || getTranslatedTags().length > 0 ? (
                     <div className="space-y-2">
                       <div className="flex items-center gap-1.5">
                         <Tag className="w-4 h-4 text-[var(--color-text-muted)]" />
                         <label className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wide">
                           Visual Tags
                         </label>
+                        {activeLanguage !== 'en' && hasTranslation(activeLanguage) && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] uppercase">
+                            {activeLanguage}
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        {analysis.tags.map((tag, i) => (
+                        {getTranslatedTags().map((tag, i) => (
                           <span
                             key={i}
                             className="text-sm px-3 py-1.5 bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-lg border border-[var(--color-accent-primary)]/20"
@@ -344,7 +515,7 @@ export function CollectionItemAnalysisModal({
                         ))}
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
                   {/* OCR Text */}
                   {analysis.text && (

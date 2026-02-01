@@ -12,9 +12,12 @@ import {
   ChevronRight,
   AlertCircle,
   CheckCircle2,
+  Languages,
+  Globe,
 } from 'lucide-react';
 import { collectionService } from '../../lib/collectionService';
-import type { AIAnalysisResult } from '../../types/media';
+import type { AIAnalysisResult, MultilingualAIAnalysis } from '../../types/media';
+import { translateAnalysis, SUPPORTED_LANGUAGES } from '../../services/translationService';
 
 interface ImageUpload {
   id: string;
@@ -23,6 +26,8 @@ interface ImageUpload {
   analysis?: AIAnalysisResult;
   analysisStatus: 'pending' | 'analyzing' | 'complete' | 'error';
   error?: string;
+  translations?: MultilingualAIAnalysis;
+  translationStatus?: 'pending' | 'translating' | 'complete' | 'error';
 }
 
 interface ImageCollectionWizardProps {
@@ -39,6 +44,10 @@ export function ImageCollectionWizard({ isOpen, onClose, onSuccess }: ImageColle
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Translation state
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(['en']);
+  const [isTranslatingAll, setIsTranslatingAll] = useState(false);
+  const [translatedCount, setTranslatedCount] = useState(0);
 
   // Dropzone setup
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -141,6 +150,61 @@ export function ImageCollectionWizard({ isOpen, onClose, onSuccess }: ImageColle
     setIsAnalyzingAll(false);
   };
 
+  // Translate all analyzed images
+  const handleTranslateAll = async () => {
+    const targetLangs = selectedLanguages.filter((l) => l !== 'en');
+    if (targetLangs.length === 0) return;
+
+    setIsTranslatingAll(true);
+    setTranslatedCount(0);
+
+    const analyzedImages = images.filter(
+      (img) => img.analysisStatus === 'complete' && img.analysis && !img.translations
+    );
+
+    for (let i = 0; i < analyzedImages.length; i++) {
+      const img = analyzedImages[i];
+      if (!img.analysis) continue;
+
+      // Update status to translating
+      setImages((prev) =>
+        prev.map((item) =>
+          item.id === img.id ? { ...item, translationStatus: 'translating' } : item
+        )
+      );
+
+      try {
+        const translations = await translateAnalysis(img.analysis, 'en', targetLangs);
+        setImages((prev) =>
+          prev.map((item) =>
+            item.id === img.id
+              ? { ...item, translations, translationStatus: 'complete' }
+              : item
+          )
+        );
+        setTranslatedCount((c) => c + 1);
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Translation failed';
+        console.error('Translation failed:', errorMessage);
+        setImages((prev) =>
+          prev.map((item) =>
+            item.id === img.id ? { ...item, translationStatus: 'error' } : item
+          )
+        );
+      }
+    }
+
+    setIsTranslatingAll(false);
+  };
+
+  // Toggle language selection
+  const toggleLanguage = (lang: string) => {
+    if (lang === 'en') return; // Always keep English selected
+    setSelectedLanguages((prev) =>
+      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]
+    );
+  };
+
   // Create collection
   const handleCreate = async () => {
     if (!collectionName.trim() || images.length === 0) return;
@@ -166,14 +230,40 @@ export function ImageCollectionWizard({ isOpen, onClose, onSuccess }: ImageColle
 
           const mediaData = await response.json();
 
+          // Build multilingual alt and caption from translations
+          const alt: { [lang: string]: string } = {};
+          const caption: { [lang: string]: string } = {};
+
+          if (img.analysis?.suggestedTitle) {
+            alt['en'] = img.analysis.suggestedTitle;
+          }
+          if (img.analysis?.description) {
+            caption['en'] = img.analysis.description;
+          }
+
+          // Add translated alt/caption from translations
+          if (img.translations) {
+            if (img.translations.suggestedTitle) {
+              Object.entries(img.translations.suggestedTitle).forEach(([lang, text]) => {
+                if (text) alt[lang] = text;
+              });
+            }
+            if (img.translations.description) {
+              Object.entries(img.translations.description).forEach(([lang, text]) => {
+                if (text) caption[lang] = text;
+              });
+            }
+          }
+
           return {
             id: crypto.randomUUID(),
             type: 'image' as const,
             url: mediaData.url,
             order: index,
-            alt: img.analysis?.suggestedTitle ? { en: img.analysis.suggestedTitle } : undefined,
-            caption: img.analysis?.description ? { en: img.analysis.description } : undefined,
+            alt: Object.keys(alt).length > 0 ? alt : undefined,
+            caption: Object.keys(caption).length > 0 ? caption : undefined,
             aiMetadata: img.analysis,
+            aiTranslations: img.translations,
           };
         })
       );
@@ -205,6 +295,8 @@ export function ImageCollectionWizard({ isOpen, onClose, onSuccess }: ImageColle
     setCollectionDescription('');
     setImages([]);
     setError(null);
+    setSelectedLanguages(['en']);
+    setTranslatedCount(0);
     onClose();
   };
 
@@ -565,9 +657,116 @@ export function ImageCollectionWizard({ isOpen, onClose, onSuccess }: ImageColle
                     Review & Create
                   </h3>
                   <p className="text-sm text-[var(--color-text-muted)]">
-                    Review your collection before creating
+                    Review your collection and optionally translate to other languages
                   </p>
                 </div>
+
+                {/* Translation Section */}
+                {analyzedCount > 0 && (
+                  <div className="bg-[var(--color-bg-elevated)] rounded-xl p-6 border border-[var(--color-border-default)]">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 bg-[var(--color-accent-primary)]/10 rounded-lg">
+                        <Globe className="w-5 h-5 text-[var(--color-accent-primary)]" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-[var(--color-text-primary)]">
+                          Translation (Optional)
+                        </p>
+                        <p className="text-sm text-[var(--color-text-muted)]">
+                          Translate AI analysis to other languages
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Language Selection */}
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                        Select languages to translate:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {SUPPORTED_LANGUAGES.map((lang) => {
+                          const isSelected = selectedLanguages.includes(lang);
+                          const isEnglish = lang === 'en';
+                          return (
+                            <button
+                              key={lang}
+                              onClick={() => toggleLanguage(lang)}
+                              disabled={isEnglish || isTranslatingAll}
+                              className={`
+                                inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all
+                                ${isSelected
+                                  ? 'bg-[var(--color-accent-primary)] text-white'
+                                  : 'bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50'
+                                }
+                                ${isEnglish ? 'opacity-70 cursor-not-allowed' : ''}
+                              `}
+                            >
+                              <span className="uppercase">{lang}</span>
+                              {isSelected && <Check className="w-3 h-3" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Translate Button */}
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-[var(--color-text-muted)]">
+                        {images.filter((i) => i.translationStatus === 'complete').length} of{' '}
+                        {analyzedCount} images translated
+                      </div>
+                      <button
+                        onClick={handleTranslateAll}
+                        disabled={
+                          isTranslatingAll ||
+                          selectedLanguages.length <= 1 ||
+                          images.filter((i) => i.translationStatus === 'complete').length ===
+                            analyzedCount
+                        }
+                        className={`
+                          flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors
+                          ${isTranslatingAll ||
+                          selectedLanguages.length <= 1 ||
+                          images.filter((i) => i.translationStatus === 'complete').length ===
+                            analyzedCount
+                            ? 'bg-[var(--color-bg-surface)] text-[var(--color-text-muted)] cursor-not-allowed'
+                            : 'bg-[var(--color-accent-primary)] text-white hover:bg-[var(--color-accent-primary)]/90'
+                          }
+                        `}
+                      >
+                        {isTranslatingAll ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Translating... ({translatedCount}/{analyzedCount})
+                          </>
+                        ) : images.filter((i) => i.translationStatus === 'complete').length ===
+                          analyzedCount ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Translated
+                          </>
+                        ) : (
+                          <>
+                            <Languages className="w-4 h-4" />
+                            Translate All
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Progress Bar */}
+                    {isTranslatingAll && (
+                      <div className="mt-4">
+                        <div className="h-2 bg-[var(--color-bg-surface)] rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-[var(--color-accent-primary)] transition-all duration-300"
+                            style={{ width: `${(translatedCount / analyzedCount) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Collection Summary */}
                 <div className="bg-[var(--color-bg-elevated)] rounded-xl p-6 border border-[var(--color-border-default)]">
@@ -624,11 +823,24 @@ export function ImageCollectionWizard({ isOpen, onClose, onSuccess }: ImageColle
                           )}
                         </div>
                       )}
-                      {img.analysisStatus === 'complete' && (
-                        <div className="absolute top-1 right-1 p-1 bg-green-500 rounded-md">
-                          <Sparkles className="w-2 h-2 text-white" />
-                        </div>
-                      )}
+                      {/* Status Badges */}
+                      <div className="absolute top-1 right-1 flex items-center gap-1">
+                        {img.analysisStatus === 'complete' && (
+                          <div className="p-1 bg-green-500 rounded-md" title="AI Analyzed">
+                            <Sparkles className="w-2 h-2 text-white" />
+                          </div>
+                        )}
+                        {img.translationStatus === 'complete' && (
+                          <div className="p-1 bg-[var(--color-accent-primary)] rounded-md" title="Translated">
+                            <Languages className="w-2 h-2 text-white" />
+                          </div>
+                        )}
+                        {img.translationStatus === 'translating' && (
+                          <div className="p-1 bg-blue-500 rounded-md" title="Translating...">
+                            <Loader2 className="w-2 h-2 text-white animate-spin" />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

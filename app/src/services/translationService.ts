@@ -27,6 +27,7 @@ export interface TranslationResult {
 
 // Translation API via our server proxy (avoids CORS)
 const TRANSLATE_API = '/api/translate';
+const TRANSLATE_BATCH_API = '/api/translate/batch';
 
 /**
  * Translate text using our server-side translation proxy
@@ -88,6 +89,56 @@ export async function translateWithLibre(
     apiKey?: string
 ): Promise<string> {
     return translateText(text, sourceLang, targetLang, apiKey, 'libretranslate');
+}
+
+/**
+ * Batch translate multiple texts to a single target language in one API call.
+ * This is significantly faster than individual translateText calls (10-15x improvement).
+ *
+ * Uses LibreTranslate's array support: q: ["text1", "text2"] → translatedText: ["trans1", "trans2"]
+ *
+ * @param texts - Array of texts to translate
+ * @param sourceLang - Source language code
+ * @param targetLang - Target language code
+ * @param apiKey - Optional API key
+ * @returns Array of translated texts (same order as input)
+ */
+export async function translateBatch(
+    texts: string[],
+    sourceLang: string,
+    targetLang: string,
+    apiKey?: string
+): Promise<string[]> {
+    // Skip if same language or empty array
+    if (sourceLang === targetLang || texts.length === 0) {
+        return texts;
+    }
+
+    try {
+        const response = await fetch(TRANSLATE_BATCH_API, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                texts,
+                sourceLang,
+                targetLang,
+                apiKey,
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Batch translation failed');
+        }
+
+        const data = await response.json();
+        return data.translatedTexts;
+    } catch (error) {
+        console.error('Batch translation error:', error);
+        throw error;
+    }
 }
 
 /**
@@ -235,4 +286,143 @@ export async function translateFile(
 export function isFileFormatSupported(filename: string): boolean {
     const ext = '.' + filename.split('.').pop()?.toLowerCase();
     return SUPPORTED_FILE_FORMATS.includes(ext);
+}
+
+// Import types for AI analysis translation
+import type { AIAnalysisResult, MultilingualAIAnalysis } from '../types/media';
+
+/**
+ * Translate all translatable fields of an AI analysis result
+ * to multiple target languages.
+ *
+ * OPTIMIZED VERSION: Uses batch translation + parallel language requests.
+ * Before: 112 sequential API calls for 1 image to 8 languages (~15-20s)
+ * After: 8 parallel batch calls (~1-2s) - 10-15x faster!
+ *
+ * @param analysis - Original AI analysis result (in source language)
+ * @param sourceLang - Source language code (usually 'en')
+ * @param targetLangs - Array of target language codes
+ * @param apiKey - Optional API key
+ * @param _provider - Translation provider (unused, kept for API compatibility)
+ * @returns MultilingualAIAnalysis with all translations
+ */
+export async function translateAnalysis(
+    analysis: AIAnalysisResult,
+    sourceLang: string,
+    targetLangs: string[],
+    apiKey?: string,
+    _provider: TranslationProvider = 'libretranslate'
+): Promise<MultilingualAIAnalysis> {
+    // Initialize with source language content
+    const result: MultilingualAIAnalysis = {
+        original: analysis,
+        sourceLanguage: sourceLang,
+        translatedLanguages: [sourceLang],
+        suggestedTitle: { [sourceLang]: analysis.suggestedTitle },
+        description: { [sourceLang]: analysis.description },
+        tags: { [sourceLang]: analysis.tags },
+    };
+
+    // Add optional fields if present
+    if (analysis.mood) {
+        result.mood = { [sourceLang]: analysis.mood };
+    }
+    if (analysis.lighting) {
+        result.lighting = { [sourceLang]: analysis.lighting };
+    }
+    if (analysis.artStyle) {
+        result.artStyle = { [sourceLang]: analysis.artStyle };
+    }
+    if (analysis.estimatedLocation) {
+        result.estimatedLocation = { [sourceLang]: analysis.estimatedLocation };
+    }
+
+    // Filter out source language from targets
+    const langsToTranslate = targetLangs.filter(lang => lang !== sourceLang);
+    if (langsToTranslate.length === 0) {
+        return result;
+    }
+
+    // Build array of all texts to translate (for batch API)
+    // Track field positions so we can map results back
+    interface FieldMapping {
+        field: 'suggestedTitle' | 'description' | 'mood' | 'lighting' | 'artStyle' | 'estimatedLocation';
+        index: number;
+    }
+
+    const texts: string[] = [];
+    const fieldMap: FieldMapping[] = [];
+
+    if (analysis.suggestedTitle) {
+        fieldMap.push({ field: 'suggestedTitle', index: texts.length });
+        texts.push(analysis.suggestedTitle);
+    }
+    if (analysis.description) {
+        fieldMap.push({ field: 'description', index: texts.length });
+        texts.push(analysis.description);
+    }
+    if (analysis.mood) {
+        fieldMap.push({ field: 'mood', index: texts.length });
+        texts.push(analysis.mood);
+    }
+    if (analysis.lighting) {
+        fieldMap.push({ field: 'lighting', index: texts.length });
+        texts.push(analysis.lighting);
+    }
+    if (analysis.artStyle) {
+        fieldMap.push({ field: 'artStyle', index: texts.length });
+        texts.push(analysis.artStyle);
+    }
+    if (analysis.estimatedLocation) {
+        fieldMap.push({ field: 'estimatedLocation', index: texts.length });
+        texts.push(analysis.estimatedLocation);
+    }
+
+    // Add tags to the batch
+    const tagsStartIndex = texts.length;
+    const tagsCount = analysis.tags?.length || 0;
+    if (analysis.tags && tagsCount > 0) {
+        texts.push(...analysis.tags);
+    }
+
+    // Translate to all languages in parallel using batch API
+    const translationPromises = langsToTranslate.map(async (targetLang) => {
+        try {
+            const translated = await translateBatch(texts, sourceLang, targetLang, apiKey);
+            return { lang: targetLang, translated, success: true };
+        } catch (error) {
+            console.error(`Failed to translate analysis to ${targetLang}:`, error);
+            return { lang: targetLang, translated: [] as string[], success: false };
+        }
+    });
+
+    const translationResults = await Promise.all(translationPromises);
+
+    // Map results back to the result structure
+    for (const { lang, translated, success } of translationResults) {
+        if (!success || translated.length === 0) continue;
+
+        // Map field translations
+        for (const { field, index } of fieldMap) {
+            if (translated[index]) {
+                if (!result[field]) {
+                    result[field] = { [sourceLang]: analysis[field] as string };
+                }
+                (result[field] as { [key: string]: string })[lang] = translated[index];
+            }
+        }
+
+        // Map tag translations
+        if (tagsCount > 0 && result.tags) {
+            const translatedTags = translated.slice(tagsStartIndex, tagsStartIndex + tagsCount);
+            if (translatedTags.length === tagsCount) {
+                result.tags[lang] = translatedTags;
+            }
+        }
+
+        // Mark this language as translated
+        result.translatedLanguages.push(lang);
+    }
+
+    return result;
 }

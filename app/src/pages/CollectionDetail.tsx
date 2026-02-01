@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Download, Globe, Mic2, Eye, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Download, Globe, Mic2, Eye, Sparkles, Languages } from 'lucide-react';
 import { collectionService, type CollectionItem, type AudioCollectionItem, type ImageCollectionItem } from '../lib/collectionService';
 import { TextPreviewModal } from '../components/TextPreviewModal';
 import { CollectionItemAnalysisModal, AddItemWizard } from '../components/collections';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
-import type { AIAnalysisResult } from '../types/media';
+import type { AIAnalysisResult, MultilingualAIAnalysis } from '../types/media';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { SUPPORTED_LANGUAGES } from '../services/translationService';
 
 // Helper to format file size
 function formatFileSize(bytes: number): string {
@@ -57,6 +59,9 @@ export function CollectionDetail() {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Language view state for image collections
+    const [viewLanguage, setViewLanguage] = useState('en');
 
     useEffect(() => {
         if (id) loadCollection(id);
@@ -141,7 +146,7 @@ export function CollectionDetail() {
     return (
         <div className="space-y-6 max-w-5xl mx-auto">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate('/collections')}
@@ -156,25 +161,39 @@ export function CollectionDetail() {
                         </p>
                     </div>
                 </div>
-                {!isAudioCollection && (
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors disabled:opacity-50"
-                    >
-                        {isSaving ? (
-                            <>
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                <span>Saving...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Save className="w-4 h-4" />
-                                <span>Save Changes</span>
-                            </>
-                        )}
-                    </button>
-                )}
+                <div className="flex items-center gap-3">
+                    {/* Language Switcher for Image Collections */}
+                    {!isAudioCollection && items.some(i =>
+                        i.type === 'image' && (i as ImageCollectionItem & { aiTranslations?: MultilingualAIAnalysis }).aiTranslations
+                    ) && (
+                        <LanguageSwitcher
+                            availableLanguages={SUPPORTED_LANGUAGES}
+                            activeLanguage={viewLanguage}
+                            onChange={setViewLanguage}
+                            size="sm"
+                            showStatus={false}
+                        />
+                    )}
+                    {!isAudioCollection && (
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors disabled:opacity-50"
+                        >
+                            {isSaving ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <span>Saving...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Save className="w-4 h-4" />
+                                    <span>Save Changes</span>
+                                </>
+                            )}
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Audio Collection: Source Text */}
@@ -294,8 +313,30 @@ export function CollectionDetail() {
                 /* Items Grid - Image Gallery */
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {items.map((item, index) => {
-                        const imageItem = item as ImageCollectionItem & { aiMetadata?: AIAnalysisResult };
+                        const imageItem = item as ImageCollectionItem & { aiMetadata?: AIAnalysisResult; aiTranslations?: MultilingualAIAnalysis };
                         const hasAI = !!imageItem.aiMetadata;
+                        const hasTranslations = !!imageItem.aiTranslations;
+
+                        // Get translated content based on viewLanguage
+                        const getTitle = () => {
+                            if (hasTranslations && imageItem.aiTranslations?.suggestedTitle?.[viewLanguage]) {
+                                return imageItem.aiTranslations.suggestedTitle[viewLanguage];
+                            }
+                            return imageItem.aiMetadata?.suggestedTitle || '';
+                        };
+                        const getTags = () => {
+                            if (hasTranslations && imageItem.aiTranslations?.tags?.[viewLanguage]) {
+                                return imageItem.aiTranslations.tags[viewLanguage];
+                            }
+                            return imageItem.aiMetadata?.tags || [];
+                        };
+                        const getCaption = () => {
+                            if (imageItem.caption?.[viewLanguage]) {
+                                return imageItem.caption[viewLanguage];
+                            }
+                            return imageItem.caption?.en || '';
+                        };
+
                         return (
                             <div
                                 key={item.id}
@@ -303,30 +344,37 @@ export function CollectionDetail() {
                                 onClick={() => setSelectedItemIndex(index)}
                             >
                                 {item.type === 'image' ? (
-                                    <img src={imageItem.url} alt={imageItem.caption?.en || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                    <img src={imageItem.url} alt={getCaption()} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-[var(--color-bg-surface)]">
                                         <span className="text-[var(--color-text-muted)]">{item.type}</span>
                                     </div>
                                 )}
 
-                                {/* AI Badge */}
-                                {hasAI && (
-                                    <div className="absolute top-2 right-2 p-1.5 bg-green-500 rounded-lg shadow-lg">
-                                        <Sparkles className="w-3 h-3 text-white" />
-                                    </div>
-                                )}
+                                {/* Status Badges */}
+                                <div className="absolute top-2 right-2 flex items-center gap-1">
+                                    {hasAI && (
+                                        <div className="p-1.5 bg-green-500 rounded-lg shadow-lg" title="AI Analyzed">
+                                            <Sparkles className="w-3 h-3 text-white" />
+                                        </div>
+                                    )}
+                                    {hasTranslations && (
+                                        <div className="p-1.5 bg-[var(--color-accent-primary)] rounded-lg shadow-lg" title="Translated">
+                                            <Languages className="w-3 h-3 text-white" />
+                                        </div>
+                                    )}
+                                </div>
 
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
                                     {/* AI metadata preview on hover */}
-                                    {hasAI && imageItem.aiMetadata?.suggestedTitle && (
+                                    {hasAI && getTitle() && (
                                         <p className="text-white text-sm font-medium truncate mb-1">
-                                            {imageItem.aiMetadata.suggestedTitle}
+                                            {getTitle()}
                                         </p>
                                     )}
-                                    {hasAI && imageItem.aiMetadata?.tags && imageItem.aiMetadata.tags.length > 0 && (
+                                    {hasAI && getTags().length > 0 && (
                                         <div className="flex flex-wrap gap-1 mb-2">
-                                            {imageItem.aiMetadata.tags.slice(0, 3).map((tag, i) => (
+                                            {getTags().slice(0, 3).map((tag, i) => (
                                                 <span key={i} className="text-[10px] bg-white/20 text-white px-1.5 py-0.5 rounded">
                                                     {tag}
                                                 </span>
@@ -334,7 +382,7 @@ export function CollectionDetail() {
                                         </div>
                                     )}
                                     <p className="text-white/80 text-xs truncate">
-                                        {imageItem.caption?.en || (hasAI ? 'Click to view analysis' : 'No caption')}
+                                        {getCaption() || (hasAI ? 'Click to view analysis' : 'No caption')}
                                     </p>
                                     <button
                                         onClick={(e) => {
@@ -390,6 +438,7 @@ export function CollectionDetail() {
                         alt: (items[selectedItemIndex] as ImageCollectionItem).alt,
                         caption: (items[selectedItemIndex] as ImageCollectionItem).caption,
                         aiMetadata: (items[selectedItemIndex] as ImageCollectionItem & { aiMetadata?: AIAnalysisResult }).aiMetadata,
+                        aiTranslations: (items[selectedItemIndex] as ImageCollectionItem & { aiTranslations?: MultilingualAIAnalysis }).aiTranslations,
                     }}
                     items={items.filter(i => i.type === 'image').map(i => ({
                         id: i.id,
@@ -397,6 +446,7 @@ export function CollectionDetail() {
                         alt: (i as ImageCollectionItem).alt,
                         caption: (i as ImageCollectionItem).caption,
                         aiMetadata: (i as ImageCollectionItem & { aiMetadata?: AIAnalysisResult }).aiMetadata,
+                        aiTranslations: (i as ImageCollectionItem & { aiTranslations?: MultilingualAIAnalysis }).aiTranslations,
                     }))}
                     currentIndex={items.filter(i => i.type === 'image').findIndex(i => i.id === items[selectedItemIndex].id)}
                     onNavigate={(index) => {
@@ -405,6 +455,15 @@ export function CollectionDetail() {
                         if (item) {
                             setSelectedItemIndex(items.findIndex(i => i.id === item.id));
                         }
+                    }}
+                    availableLanguages={SUPPORTED_LANGUAGES}
+                    onTranslationsChange={(itemId, translations) => {
+                        // Update the item with new translations
+                        setItems(prev => prev.map(item =>
+                            item.id === itemId
+                                ? { ...item, aiTranslations: translations } as CollectionItem
+                                : item
+                        ));
                     }}
                 />
             )}

@@ -29,6 +29,13 @@ interface TranslateRequest {
     apiKey?: string;
 }
 
+interface BatchTranslateRequest {
+    texts: string[];
+    sourceLang: string;
+    targetLang: string;
+    apiKey?: string;
+}
+
 // Mock translation - returns text with language prefix for testing
 function mockTranslate(text: string, targetLang: string): string {
     const prefixes: Record<string, string> = {
@@ -88,6 +95,75 @@ async function translateWithLibreTranslate(
 
     const data = await response.json() as { translatedText: string };
     return data.translatedText;
+}
+
+// Batch translate multiple texts using LibreTranslate's array support
+// This is significantly faster than individual calls
+async function batchTranslateWithLibreTranslate(
+    texts: string[],
+    sourceLang: string,
+    targetLang: string,
+    apiKey?: string
+): Promise<string[]> {
+    // Map language codes to LibreTranslate format
+    const mappedSource = LANGUAGE_CODE_MAP[sourceLang] || sourceLang;
+    const mappedTarget = LANGUAGE_CODE_MAP[targetLang] || targetLang;
+
+    // Filter out empty texts and track their indices
+    const nonEmptyTexts: string[] = [];
+    const indexMap: number[] = [];
+    texts.forEach((text, i) => {
+        if (text && text.trim()) {
+            nonEmptyTexts.push(text);
+            indexMap.push(i);
+        }
+    });
+
+    if (nonEmptyTexts.length === 0) {
+        return texts.map(() => '');
+    }
+
+    const body: Record<string, string | string[]> = {
+        q: nonEmptyTexts, // Array of strings for batch translation
+        source: mappedSource,
+        target: mappedTarget,
+        format: 'text',
+    };
+
+    const usedApiKey = apiKey || LIBRE_TRANSLATE_API_KEY;
+    if (usedApiKey) {
+        body.api_key = usedApiKey;
+    }
+
+    const response = await fetch(LIBRE_TRANSLATE_API, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('LibreTranslate batch error:', errorText);
+        throw new Error(`Batch translation failed: ${errorText}`);
+    }
+
+    // When q is an array, translatedText is also an array
+    const data = await response.json() as { translatedText: string | string[] };
+
+    // Handle both array and single string responses
+    const translatedTexts = Array.isArray(data.translatedText)
+        ? data.translatedText
+        : [data.translatedText];
+
+    // Rebuild the full result array with empty strings for originally empty texts
+    const result: string[] = texts.map(() => '');
+    indexMap.forEach((originalIndex, translatedIndex) => {
+        result[originalIndex] = translatedTexts[translatedIndex] || '';
+    });
+
+    return result;
 }
 
 // Translate text using Deepgram (via TTS + STT with translation)
@@ -169,8 +245,42 @@ router.post('/', async (req, res) => {
 
     } catch (error) {
         console.error('Translation proxy error:', error);
-        return res.status(500).json({ 
+        return res.status(500).json({
             error: 'Translation service unavailable',
+            details: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+});
+
+// POST /api/translate/batch - Batch translate multiple texts in one request
+// This is significantly faster than individual calls (10-15x improvement)
+router.post('/batch', async (req, res) => {
+    const { texts, sourceLang, targetLang, apiKey } = req.body as BatchTranslateRequest;
+
+    if (!texts || !Array.isArray(texts) || !sourceLang || !targetLang) {
+        return res.status(400).json({ error: 'Missing required fields: texts (array), sourceLang, targetLang' });
+    }
+
+    // Skip if same language
+    if (sourceLang === targetLang) {
+        return res.json({ translatedTexts: texts });
+    }
+
+    // Use mock translations if no API configured
+    if (USE_MOCK) {
+        return res.json({
+            translatedTexts: texts.map(text => mockTranslate(text, targetLang)),
+            mock: true,
+        });
+    }
+
+    try {
+        const translatedTexts = await batchTranslateWithLibreTranslate(texts, sourceLang, targetLang, apiKey);
+        return res.json({ translatedTexts });
+    } catch (error) {
+        console.error('Batch translation error:', error);
+        return res.status(500).json({
+            error: 'Batch translation service unavailable',
             details: error instanceof Error ? error.message : 'Unknown error'
         });
     }

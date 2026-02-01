@@ -413,49 +413,229 @@ LIBRETRANSLATE_URL=http://localhost:5000  # Translation (or hosted)
 
 ---
 
-## Next Development: Collection Translations
+## Collection Translations (Phase 22)
 
-**Status:** Planned (Next Session)
+**Status:** ✅ Implemented
 
-Image collections need multilingual support for captions and alt text.
+Full multilingual translation support for AI analysis content in image collections.
 
-### Planned Features
+### Features
 
-- **Magic Translate Button** - One-click AI translation for all text fields
-- **Per-Image Language Switching** - View/edit captions in any supported language
-- **Batch Translation** - Translate entire collection at once
-- **Translation Status Indicators** - Visual badges showing translated vs. pending
-- **Language Picker in Detail View** - Switch languages while viewing collection
+- **AI Analysis Translation** - Translate all AI-generated fields (title, description, tags, mood, style, etc.)
+- **Per-Image Language Switching** - View/edit translations via language tabs in analysis modal
+- **Batch Translation** - Translate all images in Step 4 of wizard before creation
+- **Translation Status Indicators** - Blue badge with Languages icon shows translated items
+- **Language Picker in Detail View** - Switch languages while viewing collection content
 
-### Implementation Approach
+### Supported Languages
 
-1. Extend `ImageCollectionItem` with multilingual caption/alt:
-   ```typescript
-   interface ImageCollectionItem {
-     caption: { [lang: string]: string };  // Already multilingual
-     alt: { [lang: string]: string };      // Already multilingual
-     // Add translation status tracking
-     translationStatus?: {
-       [lang: string]: 'pending' | 'translated' | 'reviewed';
-     };
-   }
-   ```
+```typescript
+SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh']
+```
 
-2. Reuse existing translation infrastructure:
-   - `MagicTranslateButton` component
-   - `translationService.ts` for LibreTranslate API
-   - `LanguageSwitcher` component for selection
+### Type Definitions
 
-3. Add translation UI to:
-   - `CollectionItemAnalysisModal` - Per-image translation
-   - `CollectionDetail` - Batch translation for all items
-   - `ImageCollectionWizard` Step 4 - Optional translation before creation
+#### MultilingualAIAnalysis
+
+Wrapper type for storing translations of AI analysis results:
+
+```typescript
+// In /app/src/types/media.ts
+export interface MultilingualAIAnalysis {
+  /** Original AI analysis (source language) */
+  original: AIAnalysisResult;
+
+  /** Source language code (defaults to 'en') */
+  sourceLanguage: string;
+
+  /** Languages this analysis has been translated to */
+  translatedLanguages: string[];
+
+  /** Translated fields - keyed by language code */
+  suggestedTitle?: { [lang: string]: string };
+  description?: { [lang: string]: string };
+  tags?: { [lang: string]: string[] };
+  mood?: { [lang: string]: string };
+  lighting?: { [lang: string]: string };
+  artStyle?: { [lang: string]: string };
+  estimatedLocation?: { [lang: string]: string };
+}
+```
+
+#### ImageCollectionItem Extension
+
+```typescript
+// In /app/src/lib/collectionService.ts
+export interface ImageCollectionItem extends BaseCollectionItem {
+    type: 'image';
+    url: string;
+    alt?: { [lang: string]: string };
+    caption?: { [lang: string]: string };
+    credit?: string;
+    aiMetadata?: AIAnalysisResult;
+    aiTranslations?: MultilingualAIAnalysis;  // NEW: Stores translations
+}
+```
+
+### Translation Service
+
+#### translateAnalysis()
+
+Batch translates all AI analysis fields to multiple target languages:
+
+```typescript
+// In /app/src/services/translationService.ts
+export async function translateAnalysis(
+    analysis: AIAnalysisResult,
+    sourceLang: string,
+    targetLangs: string[],
+    apiKey?: string,
+    provider: TranslationProvider = 'libretranslate'
+): Promise<MultilingualAIAnalysis>
+```
+
+**Translated Fields:**
+- `suggestedTitle` - AI-generated title
+- `description` - Image description
+- `tags` - Array of keywords (each tag translated individually)
+- `mood` - Emotional tone
+- `lighting` - Lighting description
+- `artStyle` - Artistic style
+- `estimatedLocation` - Context/setting
+
+**Rate Limiting:** 50-100ms delays between API calls to respect LibreTranslate limits.
+
+### Component Updates
+
+#### CollectionItemAnalysisModal
+
+**File:** `src/components/collections/CollectionItemAnalysisModal.tsx`
+
+Added:
+- `LanguageSwitcher` in header showing available languages
+- "Translate" button to initiate translation
+- State management for `activeLanguage`, `isTranslating`, `localTranslations`
+- Helper functions: `getTranslatedText()`, `getTranslatedTags()`, `hasTranslation()`
+- All display sections updated to use translated content based on active language
+
+**New Props:**
+```typescript
+interface Props {
+  // ... existing props
+  tourLanguages?: string[];        // Languages available for translation
+  aiTranslations?: MultilingualAIAnalysis;
+  onTranslationsChange?: (translations: MultilingualAIAnalysis) => void;
+}
+```
+
+#### ImageCollectionWizard
+
+**File:** `src/components/collections/ImageCollectionWizard.tsx`
+
+Step 4 (Review) now includes:
+- Language selection checkboxes (select which languages to translate to)
+- "Translate All X Images" batch button
+- Progress indicator: "X of Y translated"
+- Translation status badges on image grid
+
+**State Added:**
+- `selectedLanguages: string[]` - Languages selected for translation
+- `isTranslatingAll: boolean` - Batch translation in progress
+- `translatedCount: number` - Progress counter
+
+**ImageUpload Interface Extended:**
+```typescript
+interface ImageUpload {
+  // ... existing fields
+  translations?: MultilingualAIAnalysis;
+  translationStatus?: 'pending' | 'translating' | 'complete' | 'error';
+}
+```
+
+#### CollectionDetail
+
+**File:** `src/pages/CollectionDetail.tsx`
+
+Added:
+- `viewLanguage` state for language switching
+- `LanguageSwitcher` in header (only shown when items have translations)
+- Image grid displays translated content based on selected language
+- Translation status badges (Languages icon)
+
+#### CollectionImageCard
+
+**File:** `src/components/collections/CollectionImageCard.tsx`
+
+Added:
+- Props: `aiTranslations`, `viewLanguage`
+- Blue Languages badge when translations exist
+- `getTranslatedText()` and `getTranslatedTags()` helpers
+- All hover overlay content uses translations when available
+
+### UI Components
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ AI Analysis                                    [X]          │
+│ Powered by Gemini Vision                                    │
+├─────────────────────────────────────────────────────────────┤
+│ [EN ✓] [ES ○] [ZH ○] [FR ○]  [✨ Translate]                │
+├─────────────────────────────────────────────────────────────┤
+│ ┌─────────────┐  │  SUGGESTED TITLE                        │
+│ │             │  │  Peaceful Bird Sculpture                │
+│ │   IMAGE     │  │                                         │
+│ │             │  │  DESCRIPTION                            │
+│ └─────────────┘  │  This is an outdoor, folk-art...        │
+│     1 / 4        │                                         │
+│                  │  DOMINANT COLORS  OBJECTS DETECTED      │
+│                  │  [●] White  [●] Green  [bird] [flowers] │
+└─────────────────────────────────────────────────────────────┘
+
+Language Tab States:
+- ✓ Green check = Has translation content
+- ○ Empty circle = No translation yet
+- Active tab = Highlighted with accent color
+```
+
+### Workflow
+
+#### Creating Collection with Translations
+
+1. Upload images → AI Analysis → Navigate to Step 4 (Review)
+2. Select target languages via checkboxes
+3. Click "Translate All X Images" button
+4. Wait for batch translation to complete
+5. Review translations by clicking on images
+6. Click "Create Collection" - translations saved with items
+
+#### Viewing Translated Collections
+
+1. Open collection detail page
+2. Language switcher appears if any items have translations
+3. Click language tab to switch view
+4. Image cards update to show translated titles/tags
+5. Click image to open analysis modal with full translation
+
+#### Adding Translations to Existing Items
+
+1. Open collection detail
+2. Click on an image to open analysis modal
+3. Use language tabs to switch between languages
+4. Click "Translate" button to generate missing translations
+5. Translations auto-save via `onTranslationsChange` callback
+
+### Backward Compatibility
+
+- `aiTranslations` field is optional - existing collections work unchanged
+- When undefined, display logic uses `aiMetadata` directly (English/source)
+- Language switcher only appears when items have translations
+- No database migration needed (JSON field stores new structure)
 
 ### Reference Components
 
-- [MagicTranslateButton.tsx](../app/src/components/MagicTranslateButton.tsx) - Existing translate button
+- [MagicTranslateButton.tsx](../app/src/components/MagicTranslateButton.tsx) - Existing translate button pattern
 - [translationService.ts](../app/src/services/translationService.ts) - Translation API service
-- [LanguageSwitcher.tsx](../app/src/components/LanguageSwitcher.tsx) - Language selection dropdown
+- [LanguageSwitcher.tsx](../app/src/components/LanguageSwitcher.tsx) - Pill-style language tabs
 
 ---
 

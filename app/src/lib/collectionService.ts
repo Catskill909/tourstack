@@ -1,4 +1,4 @@
-import type { AIAnalysisResult } from '../types/media';
+import type { AIAnalysisResult, MultilingualAIAnalysis } from '../types/media';
 
 // Base collection item interface
 export interface BaseCollectionItem {
@@ -14,6 +14,8 @@ export interface ImageCollectionItem extends BaseCollectionItem {
     caption?: { [lang: string]: string };
     credit?: string;
     aiMetadata?: AIAnalysisResult;
+    /** Multilingual translations of AI analysis fields */
+    aiTranslations?: MultilingualAIAnalysis;
 }
 
 // Audio collection item (for audio_collection type)
