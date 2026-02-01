@@ -299,49 +299,17 @@ router.get('/languages', async (req, res) => {
 });
 
 // ============================================================================
-// STATUS CHECK
+// STATUS CHECK - Lightweight, no external API call
 // ============================================================================
 
 router.get('/status', async (_req, res) => {
+    // Just check if API key is configured - don't hit Google API to avoid rate limits
     const hasApiKey = !!API_KEY;
 
-    if (!hasApiKey) {
-        return res.json({
-            available: false,
-            reason: 'GOOGLE_VISION_API_KEY not configured'
-        });
-    }
-
-    // Quick test to verify API key works
-    try {
-        const response = await fetch(
-            `${TRANSLATE_API_URL}/languages?key=${API_KEY}&target=en`,
-            {
-                method: 'GET',
-                headers: { 'Referer': 'http://localhost:3000' }
-            }
-        );
-
-        const data = await response.json() as LanguagesResponse;
-
-        if (data.error) {
-            return res.json({
-                available: false,
-                reason: data.error.message
-            });
-        }
-
-        res.json({
-            available: true,
-            languageCount: data.data?.languages?.length || 0
-        });
-
-    } catch (error) {
-        res.json({
-            available: false,
-            reason: 'Failed to connect to Google Translate API'
-        });
-    }
+    res.json({
+        available: hasApiKey,
+        reason: hasApiKey ? undefined : 'GOOGLE_VISION_API_KEY not configured'
+    });
 });
 
 export default router;
