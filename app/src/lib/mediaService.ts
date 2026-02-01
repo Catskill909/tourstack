@@ -1,5 +1,5 @@
 // Media Library Service
-import type { Media, MediaUsage, AIAnalysisResult } from '../types/media';
+import type { Media, MediaUsage, AIAnalysisResult, MultilingualAIAnalysis } from '../types/media';
 
 const API_BASE = '/api/media';
 
@@ -23,7 +23,7 @@ export const mediaService = {
   },
 
   // Update media metadata
-  async update(id: string, data: Partial<Pick<Media, 'alt' | 'caption' | 'tags'>>): Promise<Media> {
+  async update(id: string, data: Partial<Pick<Media, 'alt' | 'caption' | 'tags' | 'aiMetadata' | 'aiTranslations'>>): Promise<Media> {
     const response = await fetch(`${API_BASE}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -31,6 +31,38 @@ export const mediaService = {
     });
     if (!response.ok) {
       throw new Error('Failed to update media');
+    }
+    return response.json();
+  },
+
+  // Sync AI metadata from collections to media by URL
+  async syncByUrl(
+    url: string,
+    aiMetadata?: AIAnalysisResult,
+    aiTranslations?: MultilingualAIAnalysis
+  ): Promise<{ synced: boolean; media?: Media; reason?: string }> {
+    const response = await fetch(`${API_BASE}/sync-by-url`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, aiMetadata, aiTranslations }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to sync media');
+    }
+    return response.json();
+  },
+
+  // Batch sync multiple items from collections
+  async syncBatch(
+    items: Array<{ url: string; aiMetadata?: AIAnalysisResult; aiTranslations?: MultilingualAIAnalysis }>
+  ): Promise<{ success: boolean; synced: number; notFound: number }> {
+    const response = await fetch(`${API_BASE}/sync-batch`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to batch sync media');
     }
     return response.json();
   },

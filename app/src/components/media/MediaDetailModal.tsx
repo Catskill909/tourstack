@@ -6,7 +6,7 @@ import { VideoPreview } from './VideoPreview';
 import { MediaUsageList } from './MediaUsageList';
 import { ImageAnalysisPanel } from './ImageAnalysisPanel';
 import { mediaService } from '../../lib/mediaService';
-import type { Media, MediaType } from '../../types/media';
+import type { Media, MediaType, AIAnalysisResult } from '../../types/media';
 import { getMediaType, formatFileSize, formatDuration } from '../../types/media';
 
 interface MediaDetailModalProps {
@@ -21,6 +21,7 @@ export function MediaDetailModal({ media, onClose, onUpdate, onDelete }: MediaDe
   const [caption, setCaption] = useState(media.caption || '');
   const [tags, setTags] = useState<string[]>(media.tags);
   const [tagInput, setTagInput] = useState('');
+  const [aiMetadata, setAiMetadata] = useState<AIAnalysisResult | undefined>(media.aiMetadata);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -34,9 +35,10 @@ export function MediaDetailModal({ media, onClose, onUpdate, onDelete }: MediaDe
     const changed =
       alt !== (media.alt || '') ||
       caption !== (media.caption || '') ||
-      JSON.stringify(tags) !== JSON.stringify(media.tags);
+      JSON.stringify(tags) !== JSON.stringify(media.tags) ||
+      JSON.stringify(aiMetadata) !== JSON.stringify(media.aiMetadata);
     setHasChanges(changed);
-  }, [alt, caption, tags, media]);
+  }, [alt, caption, tags, aiMetadata, media]);
 
   // Handle escape key
   useEffect(() => {
@@ -57,7 +59,7 @@ export function MediaDetailModal({ media, onClose, onUpdate, onDelete }: MediaDe
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      const updated = await mediaService.update(media.id, { alt, caption, tags });
+      const updated = await mediaService.update(media.id, { alt, caption, tags, aiMetadata });
       onUpdate(updated);
       setHasChanges(false);
     } catch (err) {
@@ -102,6 +104,11 @@ export function MediaDetailModal({ media, onClose, onUpdate, onDelete }: MediaDe
   // Apply AI description as caption
   const handleApplyDescription = useCallback((description: string) => {
     setCaption(description);
+  }, []);
+
+  // Handle AI analysis completion - store for saving
+  const handleAnalysisComplete = useCallback((analysis: AIAnalysisResult) => {
+    setAiMetadata(analysis);
   }, []);
 
   const TYPE_ICONS: Record<MediaType, typeof Image> = {
@@ -335,8 +342,10 @@ export function MediaDetailModal({ media, onClose, onUpdate, onDelete }: MediaDe
                 {type === 'image' && (
                   <ImageAnalysisPanel
                     imageUrl={media.url}
+                    initialAnalysis={aiMetadata}
                     onApplyTags={handleApplyTags}
                     onApplyDescription={handleApplyDescription}
+                    onAnalysisComplete={handleAnalysisComplete}
                   />
                 )}
               </div>

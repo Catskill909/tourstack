@@ -12,6 +12,9 @@ export interface Media {
   width?: number;    // Image width in pixels
   height?: number;   // Image height in pixels
   duration?: number; // Audio/video duration in seconds
+  // AI Analysis (Phase 23 - Collections ↔ Media Library Sync)
+  aiMetadata?: AIAnalysisResult;
+  aiTranslations?: MultilingualAIAnalysis;
   createdAt: string;
   updatedAt: string;
 }

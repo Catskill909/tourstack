@@ -90,6 +90,8 @@ function parseMedia(m: Media) {
     return {
         ...m,
         tags: m.tags ? JSON.parse(m.tags) : [],
+        aiMetadata: m.aiMetadata ? JSON.parse(m.aiMetadata) : undefined,
+        aiTranslations: m.aiTranslations ? JSON.parse(m.aiTranslations) : undefined,
     };
 }
 
@@ -293,7 +295,7 @@ router.get('/:id', async (req: Request<IdParams>, res: Response) => {
 // PUT /api/media/:id - Update media metadata
 router.put('/:id', async (req: Request<IdParams>, res: Response) => {
     try {
-        const { alt, caption, tags } = req.body;
+        const { alt, caption, tags, aiMetadata, aiTranslations } = req.body;
 
         const media = await prisma.media.update({
             where: { id: req.params.id },
@@ -301,6 +303,8 @@ router.put('/:id', async (req: Request<IdParams>, res: Response) => {
                 alt: alt !== undefined ? alt : undefined,
                 caption: caption !== undefined ? caption : undefined,
                 tags: tags !== undefined ? JSON.stringify(tags) : undefined,
+                aiMetadata: aiMetadata !== undefined ? JSON.stringify(aiMetadata) : undefined,
+                aiTranslations: aiTranslations !== undefined ? JSON.stringify(aiTranslations) : undefined,
             },
         });
 
@@ -379,6 +383,96 @@ router.get('/:id/usage', async (req: Request<IdParams>, res: Response) => {
     } catch (error) {
         console.error('Error fetching media usage:', error);
         res.status(500).json({ error: 'Failed to fetch media usage' });
+    }
+});
+
+// PUT /api/media/sync-by-url - Sync AI metadata from collections to media library by URL
+// Used for auto-sync when a collection is saved
+router.put('/sync-by-url', async (req: Request, res: Response) => {
+    try {
+        const { url, aiMetadata, aiTranslations } = req.body;
+
+        if (!url) {
+            res.status(400).json({ error: 'URL is required' });
+            return;
+        }
+
+        // Find media by URL
+        const media = await prisma.media.findFirst({
+            where: { url },
+        });
+
+        if (!media) {
+            // Media not found in library - this is OK, just skip
+            res.json({ synced: false, reason: 'Media not found in library' });
+            return;
+        }
+
+        // Update with AI metadata
+        const updated = await prisma.media.update({
+            where: { id: media.id },
+            data: {
+                aiMetadata: aiMetadata ? JSON.stringify(aiMetadata) : undefined,
+                aiTranslations: aiTranslations ? JSON.stringify(aiTranslations) : undefined,
+            },
+        });
+
+        res.json({ synced: true, media: parseMedia(updated) });
+    } catch (error) {
+        console.error('Error syncing media by URL:', error);
+        res.status(500).json({ error: 'Failed to sync media' });
+    }
+});
+
+// PUT /api/media/sync-batch - Batch sync multiple items from collections
+router.put('/sync-batch', async (req: Request, res: Response) => {
+    try {
+        const { items } = req.body as {
+            items: Array<{
+                url: string;
+                aiMetadata?: unknown;
+                aiTranslations?: unknown;
+            }>;
+        };
+
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            res.status(400).json({ error: 'No items provided' });
+            return;
+        }
+
+        const results = { synced: 0, notFound: 0 };
+
+        for (const item of items) {
+            if (!item.url) continue;
+
+            const media = await prisma.media.findFirst({
+                where: { url: item.url },
+            });
+
+            if (!media) {
+                results.notFound++;
+                continue;
+            }
+
+            await prisma.media.update({
+                where: { id: media.id },
+                data: {
+                    aiMetadata: item.aiMetadata ? JSON.stringify(item.aiMetadata) : undefined,
+                    aiTranslations: item.aiTranslations ? JSON.stringify(item.aiTranslations) : undefined,
+                },
+            });
+
+            results.synced++;
+        }
+
+        res.json({
+            success: true,
+            message: `Synced ${results.synced} items, ${results.notFound} not found in media library`,
+            ...results,
+        });
+    } catch (error) {
+        console.error('Error batch syncing media:', error);
+        res.status(500).json({ error: 'Failed to batch sync media' });
     }
 });
 

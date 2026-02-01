@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: January 31, 2026
-**Session Status**: Phase 22 Collection Translations COMPLETE ✅ | Phase 21 Collections Enhancement COMPLETE ✅ | Phase 20 Media Library COMPLETE ✅
+**Last Updated**: February 1, 2026
+**Session Status**: Phase 23a Collections ↔ Media Library Sync COMPLETE ✅ | Phase 22 Collection Translations COMPLETE ✅ | Phase 21 Collections Enhancement COMPLETE ✅
 
 ---
 
@@ -576,6 +576,27 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 > **Performance:** Before: 112 sequential API calls (~15-20s). After: 8 parallel batch calls (~1-2s)
 
+### Phase 23a: Collections ↔ Media Library Sync ✅ (Feb 1, 2026)
+- [x] **Database Schema** - Added `aiMetadata` and `aiTranslations` fields to Media model
+- [x] **TypeScript Types** - Updated Media interface with AI analysis fields
+- [x] **Media API Enhancement** - PUT endpoint now accepts AI metadata
+- [x] **Sync Endpoints** - New `/api/media/sync-by-url` and `/api/media/sync-batch` endpoints
+- [x] **Media Library Persistence** - AI analysis now saved when clicking "Save Changes"
+- [x] **Initial Analysis Support** - ImageAnalysisPanel loads existing analysis from database
+- [x] **Auto-Sync on Collection Save** - Collections automatically sync AI metadata to Media Library
+- [x] **Documentation** - Comprehensive `docs/collections-media-sync.md` guide
+
+> **Key Components:**
+> - `app/prisma/schema.prisma` - Media model with aiMetadata, aiTranslations fields
+> - `app/src/types/media.ts` - Updated Media interface
+> - `app/server/routes/media.ts` - Sync endpoints
+> - `app/server/routes/collections.ts` - Auto-sync on create/update
+> - `app/src/components/media/ImageAnalysisPanel.tsx` - initialAnalysis + onAnalysisComplete
+> - `app/src/components/media/MediaDetailModal.tsx` - Tracks and saves aiMetadata
+> - `docs/collections-media-sync.md` - Full documentation
+
+> **Data Flow:** When a collection with AI-analyzed images is saved, the analysis automatically syncs to corresponding Media Library records (matched by URL).
+
 ### 🎯 Phase 17: Stop Navigation & Links (Planned)
 - [ ] **Next/Previous Buttons** - Navigate between stops
 - [ ] **Stop List View** - See all stops in tour
@@ -712,6 +733,7 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | Bulk Actions | `app/src/components/media/MediaBulkActions.tsx` |
 | Media API Routes | `app/server/routes/media.ts` |
 | Media Docs | `docs/media-view.md` |
+| Collections ↔ Media Sync | `docs/collections-media-sync.md` |
 | **Kiosk & Visitor Launch** | |
 | Kiosk Dev Guide | `docs/kiosk-dev.md` |
 | Tour Card (Run button) | `app/src/components/TourCard.tsx` |

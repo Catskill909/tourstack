@@ -6,6 +6,59 @@ import { prisma } from '../db.js';
 
 const router = Router();
 
+// Type for collection image items with AI metadata
+interface ImageCollectionItem {
+    type: 'image';
+    url: string;
+    aiMetadata?: Record<string, unknown>;
+    aiTranslations?: Record<string, unknown>;
+}
+
+/**
+ * Sync AI metadata from collection items to Media Library
+ * Called after collection create/update to keep systems in sync
+ */
+async function syncToMediaLibrary(items: unknown[]): Promise<{ synced: number; notFound: number }> {
+    const results = { synced: 0, notFound: 0 };
+
+    // Filter for image items with AI metadata and local URLs
+    const imageItems = (items as ImageCollectionItem[]).filter(
+        (item) =>
+            item.type === 'image' &&
+            item.url?.startsWith('/uploads/') &&
+            (item.aiMetadata || item.aiTranslations)
+    );
+
+    for (const item of imageItems) {
+        try {
+            // Find media by URL
+            const media = await prisma.media.findFirst({
+                where: { url: item.url },
+            });
+
+            if (!media) {
+                results.notFound++;
+                continue;
+            }
+
+            // Update with AI metadata
+            await prisma.media.update({
+                where: { id: media.id },
+                data: {
+                    aiMetadata: item.aiMetadata ? JSON.stringify(item.aiMetadata) : undefined,
+                    aiTranslations: item.aiTranslations ? JSON.stringify(item.aiTranslations) : undefined,
+                },
+            });
+
+            results.synced++;
+        } catch (err) {
+            console.error(`Failed to sync item ${item.url} to media library:`, err);
+        }
+    }
+
+    return results;
+}
+
 // Type for route params
 interface IdParams {
     id: string;
@@ -70,6 +123,7 @@ router.get('/:id', async (req: Request<IdParams>, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
     try {
         const data = req.body;
+        const items = data.items || [];
 
         const collection = await prisma.collection.create({
             data: {
@@ -77,12 +131,18 @@ router.post('/', async (req: Request, res: Response) => {
                 name: data.name,
                 description: data.description || '',
                 type: data.type || 'gallery',
-                items: JSON.stringify(data.items || []),
+                items: JSON.stringify(items),
                 sourceLanguage: data.sourceLanguage || null,
                 texts: data.texts ? JSON.stringify(data.texts) : null,
                 ttsSettings: data.ttsSettings ? JSON.stringify(data.ttsSettings) : null,
             },
         });
+
+        // Auto-sync AI metadata to Media Library (Phase 23)
+        if (items.length > 0) {
+            const syncResult = await syncToMediaLibrary(items);
+            console.log(`Collection ${collection.id} created - synced ${syncResult.synced} items to Media Library`);
+        }
 
         res.status(201).json(parseCollection(collection));
     } catch (error) {
@@ -110,6 +170,12 @@ router.put('/:id', async (req: Request<IdParams>, res: Response) => {
             where: { id: req.params.id },
             data: updateData,
         });
+
+        // Auto-sync AI metadata to Media Library (Phase 23)
+        if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+            const syncResult = await syncToMediaLibrary(data.items);
+            console.log(`Collection ${collection.id} updated - synced ${syncResult.synced} items to Media Library`);
+        }
 
         res.json(parseCollection(collection));
     } catch (error) {

@@ -38,7 +38,7 @@ When museum staff access visitor pages, they see:
 
 ---
 
-## Project Status (January 2026)
+## Project Status (February 2026)
 
 | Phase | Status |
 |-------|--------|
@@ -66,6 +66,7 @@ When museum staff access visitor pages, they see:
 | Phase 20: Media Library | ✅ Complete |
 | Phase 21: Collections Enhancement | ✅ Complete |
 | Phase 22: Collection Translations | ✅ Complete |
+| Phase 23a: Collections ↔ Media Library Sync | ✅ Complete |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
 
@@ -173,6 +174,34 @@ When museum staff access visitor pages, they see:
 - `src/services/translationService.ts` - `translateBatch()`, `translateAnalysis()`
 - `src/components/collections/CollectionItemAnalysisModal.tsx` - Language tabs
 - `server/routes/translate.ts` - `/api/translate/batch` endpoint
+
+### Collections ↔ Media Library Sync (Phase 23a) - COMPLETE ✅
+
+**Unified Metadata:** AI analysis and translations now flow from Collections to Media Library.
+
+| Feature | Description |
+|---------|-------------|
+| **Database Fields** | `aiMetadata` and `aiTranslations` added to Media model |
+| **Sync Endpoints** | `/api/media/sync-by-url` and `/api/media/sync-batch` |
+| **Auto-Sync** | Collections automatically sync to Media Library on save |
+| **Media Library Persistence** | AI analysis saved when clicking "Save Changes" |
+| **Initial Analysis** | ImageAnalysisPanel loads existing analysis from database |
+
+**Data Flow:**
+```
+Collections → AI Analyze → Translate → Save → Auto-Sync → Media Library
+                                              ↓
+                                    (matches by URL: /uploads/images/)
+```
+
+**Files:**
+- `app/prisma/schema.prisma` - Media model with new fields
+- `app/server/routes/media.ts` - Sync endpoints
+- `app/server/routes/collections.ts` - Auto-sync on create/update
+- `app/src/components/media/ImageAnalysisPanel.tsx` - Load/save analysis
+- `app/src/components/media/MediaDetailModal.tsx` - Tracks aiMetadata state
+
+**Documentation:** See [docs/collections-media-sync.md](docs/collections-media-sync.md) for full guide.
 
 ---
 

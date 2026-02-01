@@ -6,20 +6,26 @@ import type { AIAnalysisResult } from '../../types/media';
 
 interface ImageAnalysisPanelProps {
   imageUrl: string;
+  /** Existing AI analysis (loaded from database) */
+  initialAnalysis?: AIAnalysisResult;
   onApplyTags?: (tags: string[]) => void;
   onApplyDescription?: (description: string) => void;
   onApplyTitle?: (title: string) => void;
+  /** Callback when analysis is complete - use to persist to database */
+  onAnalysisComplete?: (analysis: AIAnalysisResult) => void;
 }
 
 export function ImageAnalysisPanel({
   imageUrl,
+  initialAnalysis,
   onApplyTags,
   onApplyDescription,
   onApplyTitle,
+  onAnalysisComplete,
 }: ImageAnalysisPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(null);
+  const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(initialAnalysis || null);
   const [error, setError] = useState<string | null>(null);
 
   const handleAnalyze = async () => {
@@ -28,6 +34,10 @@ export function ImageAnalysisPanel({
       setError(null);
       const result = await mediaService.analyzeImage(imageUrl);
       setAnalysis(result);
+      // Notify parent so they can persist the analysis
+      if (onAnalysisComplete) {
+        onAnalysisComplete(result);
+      }
     } catch (err) {
       setError('Failed to analyze image. Make sure the Gemini API key is configured.');
       console.error(err);
