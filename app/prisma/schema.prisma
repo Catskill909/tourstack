@@ -15,19 +15,19 @@ datasource db {
 // MUSEUM
 // =============================================================================
 model Museum {
-  id        String   @id @default(cuid())
-  name      String
-  location  String?
-  logo      String?
-  
+  id       String  @id @default(cuid())
+  name     String
+  location String?
+  logo     String?
+
   // Branding stored as JSON
-  branding  String?  // JSON: { primaryColor, secondaryColor }
-  
-  tours     Tour[]
-  templates Template[]
+  branding String? // JSON: { primaryColor, secondaryColor }
+
+  tours       Tour[]
+  templates   Template[]
   collections Collection[]
-  settings  AppSettings?
-  
+  settings    AppSettings?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -36,22 +36,22 @@ model Museum {
 // TEMPLATE
 // =============================================================================
 model Template {
-  id          String   @id @default(cuid())
-  museumId    String?
-  museum      Museum?  @relation(fields: [museumId], references: [id])
-  
+  id       String  @id @default(cuid())
+  museumId String?
+  museum   Museum? @relation(fields: [museumId], references: [id])
+
   name        String
   description String
   icon        String
-  builtIn     Boolean  @default(false)
-  
+  builtIn     Boolean @default(false)
+
   // Custom fields stored as JSON array
-  customFields String  // JSON: CustomField[]
-  
-  tours       Tour[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  customFields String // JSON: CustomField[]
+
+  tours Tour[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // =============================================================================
@@ -59,42 +59,49 @@ model Template {
 // =============================================================================
 model Tour {
   id         String   @id @default(cuid())
-  slug       String?  // URL-friendly identifier, e.g., "timeline-gallery-tour" (unique enforced in code)
+  slug       String? // URL-friendly identifier, e.g., "timeline-gallery-tour" (unique enforced in code)
   museumId   String
   museum     Museum   @relation(fields: [museumId], references: [id])
   templateId String
   template   Template @relation(fields: [templateId], references: [id])
-  
-  status     String   @default("draft") // draft, review, testing, scheduled, published, paused, archived
-  
+
+  status String @default("draft") // draft, review, testing, scheduled, published, paused, archived
+
   // Multilingual fields stored as JSON
-  title       String  // JSON: { [lang]: string }
+  title       String // JSON: { [lang]: string }
   heroImage   String
-  description String  // JSON: { [lang]: string }
-  
+  description String // JSON: { [lang]: string }
+
   // Settings
-  languages        String  // JSON: string[]
-  primaryLanguage  String  @default("en")
-  duration         Int     // minutes
-  difficulty       String  @default("general") // accessible, family, general, academic, children
-  
+  languages       String // JSON: string[]
+  primaryLanguage String @default("en")
+  duration        Int // minutes
+  difficulty      String @default("general") // accessible, family, general, academic, children
+
   // Translation settings
   defaultTranslationProvider String @default("libretranslate") // libretranslate, deepgram
-  
+
   // Positioning
-  primaryPositioningMethod String  // qr_code, gps, ble_beacon, etc.
+  primaryPositioningMethod String // qr_code, gps, ble_beacon, etc.
   backupPositioningMethod  String?
-  
+
   // Accessibility stored as JSON
-  accessibility String  // JSON: { wheelchairAccessible, audioDescriptions, etc. }
-  
+  accessibility String // JSON: { wheelchairAccessible, audioDescriptions, etc. }
+
   // Publishing
-  publishedAt          DateTime?
-  scheduledPublishAt   DateTime?
-  version              Int       @default(1)
-  
-  stops     Stop[]
-  
+  publishedAt        DateTime?
+  scheduledPublishAt DateTime?
+  version            Int       @default(1)
+
+  // Concierge Settings (Phase 26.2 - Per-Tour AI)
+  conciergeEnabled      Boolean @default(true) // Enable AI chatbot for this tour
+  conciergePersona      String? // null = inherit museum default
+  conciergeWelcome      String? // JSON: { en: "Welcome!", es: "¡Bienvenido!" }
+  conciergeCollections  String? // JSON: string[] of linked collection IDs
+  conciergeQuickActions String? // JSON: array of tour-specific quick actions
+
+  stops Stop[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -103,42 +110,42 @@ model Tour {
 // STOP
 // =============================================================================
 model Stop {
-  id      String @id @default(cuid())
-  slug    String?  // URL-friendly identifier, e.g., "entrance-hall"
-  tourId  String
-  tour    Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
-  
-  order   Int
-  type    String @default("mandatory") // mandatory, optional, bonus, secret
-  
+  id     String  @id @default(cuid())
+  slug   String? // URL-friendly identifier, e.g., "entrance-hall"
+  tourId String
+  tour   Tour    @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  order Int
+  type  String @default("mandatory") // mandatory, optional, bonus, secret
+
   // Multilingual base fields
-  title       String  // JSON: { [lang]: string }
+  title       String // JSON: { [lang]: string }
   image       String
-  description String  // JSON: { [lang]: string }
-  
+  description String // JSON: { [lang]: string }
+
   // Custom field values
-  customFieldValues String  // JSON: { [fieldId]: value }
-  
+  customFieldValues String // JSON: { [fieldId]: value }
+
   // Positioning configs stored as JSON
-  primaryPositioning String   // JSON: PositioningConfig
-  backupPositioning  String?  // JSON: PositioningConfig
-  triggers           String   // JSON: TriggerSettings
-  
+  primaryPositioning String // JSON: PositioningConfig
+  backupPositioning  String? // JSON: PositioningConfig
+  triggers           String // JSON: TriggerSettings
+
   // Content stored as JSON
-  content String  // JSON: LocalizedContent
-  
+  content String // JSON: LocalizedContent
+
   // Interactive elements
-  interactive String?  // JSON: InteractiveElements
-  
+  interactive String? // JSON: InteractiveElements
+
   // Links
-  links String  // JSON: Array<{ label, url, type, openInApp }>
-  
+  links String // JSON: Array<{ label, url, type, openInApp }>
+
   // Accessibility
-  accessibility String  // JSON: accessibility options
-  
+  accessibility String // JSON: accessibility options
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([tourId])
 }
 
@@ -146,24 +153,24 @@ model Stop {
 // APP SETTINGS
 // =============================================================================
 model AppSettings {
-  id        String  @id @default(cuid())
-  museumId  String  @unique
-  museum    Museum  @relation(fields: [museumId], references: [id])
-  
+  id       String @id @default(cuid())
+  museumId String @unique
+  museum   Museum @relation(fields: [museumId], references: [id])
+
   // Map settings as JSON
-  maps String  // JSON: { googleMapsApiKey, googleMapsEnabled, openStreetMapEnabled, defaultMapProvider }
-  
+  maps String // JSON: { googleMapsApiKey, googleMapsEnabled, openStreetMapEnabled, defaultMapProvider }
+
   // Positioning provider settings as JSON
-  positioning String  // JSON: { estimoteApiKey, kontaktApiKey, customBleEnabled }
-  
+  positioning String // JSON: { estimoteApiKey, kontaktApiKey, customBleEnabled }
+
   // Media settings as JSON
-  media String  // JSON: { cloudinaryCloudName, cloudinaryApiKey, maxUploadSizeMb }
-  
+  media String // JSON: { cloudinaryCloudName, cloudinaryApiKey, maxUploadSizeMb }
+
   // General settings
-  defaultLanguage    String @default("en")
+  defaultLanguage    String  @default("en")
   supportedLanguages String // JSON: string[]
   analyticsEnabled   Boolean @default(true)
-  
+
   updatedAt DateTime @updatedAt
 }
 
@@ -171,26 +178,26 @@ model AppSettings {
 // MEDIA LIBRARY
 // =============================================================================
 model Media {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  filename  String
-  mimeType  String
-  size      Int      // bytes
-  url       String
+  filename String
+  mimeType String
+  size     Int // bytes
+  url      String
 
   // Dimensions & Duration
-  width     Int?     // Image width in pixels
-  height    Int?     // Image height in pixels
-  duration  Float?   // Audio/video duration in seconds
+  width    Int? // Image width in pixels
+  height   Int? // Image height in pixels
+  duration Float? // Audio/video duration in seconds
 
   // Metadata
-  alt       String?
-  caption   String?
-  tags      String?  // JSON: string[]
+  alt     String?
+  caption String?
+  tags    String? // JSON: string[]
 
   // AI Analysis (Phase 23 - Collections ↔ Media Library Sync)
-  aiMetadata     String?  // JSON: AIAnalysisResult
-  aiTranslations String?  // JSON: MultilingualAIAnalysis
+  aiMetadata     String? // JSON: AIAnalysisResult
+  aiTranslations String? // JSON: MultilingualAIAnalysis
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -200,20 +207,87 @@ model Media {
 // COLLECTION
 // =============================================================================
 model Collection {
-  id          String   @id @default(cuid())
-  museumId    String?
-  museum      Museum?  @relation(fields: [museumId], references: [id])
-  
+  id       String  @id @default(cuid())
+  museumId String?
+  museum   Museum? @relation(fields: [museumId], references: [id])
+
   name        String
   description String?
-  type        String   @default("gallery") // gallery, dataset, audio_collection
-  items       String   // JSON: CollectionItem[]
-  
+  type        String  @default("gallery") // gallery, dataset, audio_collection
+  items       String // JSON: CollectionItem[]
+
   // Audio collection specific fields
-  sourceLanguage String?  // Primary language code (e.g., 'en')
-  texts          String?  // JSON: { [lang: string]: string } - per-language text
-  ttsSettings    String?  // JSON: { provider, format, sampleRate, autoTranslate }
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  sourceLanguage String? // Primary language code (e.g., 'en')
+  texts          String? // JSON: { [lang: string]: string } - per-language text
+  ttsSettings    String? // JSON: { provider, format, sampleRate, autoTranslate }
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// =============================================================================
+// AI CONCIERGE CONFIGURATION (Phase 26)
+// =============================================================================
+model ConciergeConfig {
+  id       String  @id @default(cuid())
+  museumId String?
+  enabled  Boolean @default(false)
+
+  // Persona & Appearance
+  persona        String  @default("friendly") // friendly, professional, fun, scholarly, custom
+  customPersona  String? // Custom system prompt if persona = "custom"
+  welcomeMessage String  @default("{}") // JSON: { en: "Welcome!", es: "¡Bienvenido!" }
+
+  // Languages
+  primaryLanguage  String  @default("en")
+  enabledLanguages String  @default("[\"en\"]") // JSON: string[]
+  autoTranslate    Boolean @default(true)
+
+  // Behavior
+  showNewChat   Boolean @default(true)
+  showSources   Boolean @default(false)
+  allowFeedback Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  knowledgeSources ConciergeKnowledge[]
+  quickActions     ConciergeQuickAction[]
+}
+
+model ConciergeKnowledge {
+  id       String          @id @default(cuid())
+  configId String
+  config   ConciergeConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  sourceType     String // "document_collection", "tour", "manual_faq", "text"
+  sourceId       String? // Reference to collection or tour ID
+  title          String
+  content        String // Extracted/cached text content
+  characterCount Int
+
+  enabled  Boolean @default(true)
+  priority Int     @default(0) // Higher = more weight in context
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([configId])
+}
+
+model ConciergeQuickAction {
+  id       String          @id @default(cuid())
+  configId String
+  config   ConciergeConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  question String // JSON: { en: "What are your hours?", es: "¿Cuáles son sus horarios?" }
+  category String // "hours", "accessibility", "services", "general"
+  icon     String? // Lucide icon name
+  order    Int     @default(0)
+
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([configId])
 }

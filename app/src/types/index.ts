@@ -562,6 +562,17 @@ export interface Stop {
 }
 
 // =============================================================================
+// TOUR QUICK ACTION (Per-Tour AI Concierge)
+// =============================================================================
+export interface TourQuickAction {
+  id: string;
+  question: { [lang: string]: string }; // Multilingual question text
+  category: 'hours' | 'accessibility' | 'services' | 'exhibitions' | 'general';
+  order: number;
+  enabled: boolean;
+}
+
+// =============================================================================
 // TOUR
 // =============================================================================
 export type TourStatus = 'draft' | 'review' | 'testing' | 'scheduled' | 'published' | 'paused' | 'archived';
@@ -614,6 +625,13 @@ export interface Tour {
   publishedAt?: string;
   scheduledPublishAt?: string;
   version: number;
+
+  // Concierge Settings (Phase 26.2 - Per-Tour AI)
+  conciergeEnabled?: boolean;                    // Enable AI chatbot for this tour
+  conciergePersona?: string | null;              // null = inherit museum default
+  conciergeWelcome?: { [lang: string]: string }; // Multilingual welcome message
+  conciergeCollections?: string[];               // Linked document collection IDs
+  conciergeQuickActions?: TourQuickAction[];     // Tour-specific quick actions
 
   // Analytics
   analytics?: {

@@ -69,6 +69,8 @@ When museum staff access visitor pages, they see:
 | Phase 23a: Collections ↔ Media Library Sync | ✅ Complete |
 | Phase 24: Translation View | ✅ Complete |
 | Phase 25: Document Collections | ✅ Complete |
+| Phase 26.1: AI Museum Concierge | ✅ Complete |
+| Phase 26.2: Per-Tour AI Concierge | 🎯 NEXT |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
 
@@ -252,6 +254,51 @@ Collections → AI Analyze → Translate → Save → Auto-Sync → Media Librar
 - `app/src/components/collections/DocumentAIToolsPanel.tsx` - AI tools with fullWidth prop
 - `app/server/routes/documents.ts` - Text extraction via officeparser
 - `docs/ai-chatbot-documents-dev.md` - Full documentation
+
+### AI Museum Concierge (Phase 26.1) - COMPLETE ✅
+
+**New Feature:** Museum-wide AI chatbot with configurable persona, knowledge sources, and quick actions.
+
+| Feature | Description |
+|---------|-------------|
+| **Admin Page** | `/concierge` route with full configuration UI |
+| **Persona Selection** | Friendly, Professional, Fun, Scholarly, Custom |
+| **Welcome Message** | Multilingual JSON storage |
+| **Language Config** | EN, ES, FR, DE toggles with primary language |
+| **Knowledge Sources** | Import from document collections |
+| **Quick Actions** | Add, delete, drag-reorder with multilingual labels |
+| **Translate All** | Google Translate API integration |
+| **Test Concierge** | Preview chat responses |
+| **ChatDrawer** | Visitor-facing chat with dynamic config |
+
+**Database Tables:**
+- `ConciergeConfig` - Main configuration (persona, languages, welcome)
+- `ConciergeKnowledge` - Knowledge sources from documents
+- `ConciergeQuickAction` - Quick action buttons
+
+**Files:**
+- `app/src/pages/Concierge.tsx` - Admin configuration page
+- `app/src/lib/conciergeService.ts` - API client
+- `app/server/routes/concierge.ts` - API routes
+- `docs/ai-chatbot-documents-dev.md` - Full documentation
+
+### Per-Tour AI Concierge (Phase 26.2) - NEXT 🎯
+
+**Vision:** Each tour gets its own AI chatbot that knows specifically about THAT tour.
+
+**Planned Features:**
+- Concierge fields on Tour model (enabled, persona, welcome, collections)
+- Tour concierge settings UI (new tab in Tour Editor)
+- Tour-specific knowledge context (title, description, stops, text blocks)
+- Linked document collections per tour
+- Future: Location-aware responses using positioning tech
+
+**Knowledge Sources Per Tour:**
+1. Tour content (title, description, stop titles, text blocks)
+2. Linked document collections (PDFs, extracted text)
+3. AI analysis results (summary, facts, FAQ, tags)
+
+**Documentation:** See [docs/ai-chatbot-documents-dev.md](docs/ai-chatbot-documents-dev.md)
 
 ---
 

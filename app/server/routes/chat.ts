@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { prisma } from '../db.js';
 
 const router = express.Router();
 
@@ -21,6 +22,102 @@ if (!GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+// Persona prompts for different AI personalities
+const PERSONA_PROMPTS: Record<string, string> = {
+    friendly: 'You are a warm, welcoming museum guide who loves sharing knowledge in an approachable way.',
+    professional: 'You are a knowledgeable museum guide who provides precise, well-structured information.',
+    fun: 'You are an enthusiastic, family-friendly museum guide who makes learning exciting and uses simple language.',
+    scholarly: 'You are an expert curator who provides detailed, academic insights with historical context.',
+};
+
+/**
+ * Build knowledge context from a specific tour and its linked collections
+ */
+async function buildTourKnowledge(tourId: string): Promise<{ context: string; tourTitle: string; persona: string | null }> {
+    try {
+        // Fetch tour with stops
+        const tour = await prisma.tour.findUnique({
+            where: { id: tourId },
+            include: { stops: { orderBy: { order: 'asc' } } }
+        });
+
+        if (!tour) {
+            return { context: '', tourTitle: '', persona: null };
+        }
+
+        const titleObj = JSON.parse(tour.title);
+        const tourTitle = titleObj.en || Object.values(titleObj)[0] || 'Tour';
+        const descObj = JSON.parse(tour.description);
+        const tourDesc = descObj.en || Object.values(descObj)[0] || '';
+
+        const parts: string[] = [];
+
+        // Add tour overview
+        parts.push(`# Tour: ${tourTitle}\n\n${tourDesc}`);
+
+        // Add all stop content
+        for (const stop of tour.stops) {
+            const stopTitle = JSON.parse(stop.title);
+            const stopDesc = JSON.parse(stop.description);
+            const stopContent = JSON.parse(stop.content);
+
+            parts.push(`\n## Stop ${stop.order + 1}: ${stopTitle.en || Object.values(stopTitle)[0]}`);
+
+            if (stopDesc.en || Object.values(stopDesc)[0]) {
+                parts.push(stopDesc.en || Object.values(stopDesc)[0]);
+            }
+
+            // Extract text from content blocks
+            if (Array.isArray(stopContent)) {
+                for (const block of stopContent) {
+                    if (block.type === 'text' && block.content) {
+                        const text = block.content.en || Object.values(block.content)[0] || '';
+                        if (text) parts.push(text);
+                    }
+                }
+            }
+        }
+
+        // Add linked document collections
+        if (tour.conciergeCollections) {
+            const collectionIds = JSON.parse(tour.conciergeCollections) as string[];
+
+            for (const collectionId of collectionIds) {
+                const collection = await prisma.collection.findUnique({
+                    where: { id: collectionId }
+                });
+
+                if (collection && collection.items) {
+                    const items = JSON.parse(collection.items);
+                    parts.push(`\n## Documents: ${collection.name}`);
+
+                    for (const item of items) {
+                        if (item.metadata?.extractedText) {
+                            parts.push(`\n### ${item.metadata.fileName || 'Document'}\n${item.metadata.extractedText}`);
+                        }
+                        // Include AI analysis if available
+                        if (item.metadata?.aiAnalysis?.summary) {
+                            parts.push(`**Summary:** ${item.metadata.aiAnalysis.summary}`);
+                        }
+                        if (item.metadata?.aiAnalysis?.facts?.length) {
+                            parts.push(`**Key Facts:**\n${item.metadata.aiAnalysis.facts.map((f: string) => `- ${f}`).join('\n')}`);
+                        }
+                    }
+                }
+            }
+        }
+
+        return {
+            context: parts.join('\n\n'),
+            tourTitle,
+            persona: tour.conciergePersona
+        };
+    } catch (error) {
+        console.error('Error building tour knowledge:', error);
+        return { context: '', tourTitle: '', persona: null };
+    }
+}
 
 /**
  * Load all .txt files from the knowledge directory
@@ -54,12 +151,12 @@ function loadKnowledgeBase(): { context: string; files: string[] } {
  * 
  * Handle visitor chat requests, grounded in knowledge base documents
  * 
- * Body: { message: string, language?: string, conversationId?: string }
+ * Body: { message: string, language?: string, tourId?: string }
  * Returns: { response: string, sources: string[] }
  */
 router.post('/', async (req, res) => {
     try {
-        const { message, language = 'en' } = req.body;
+        const { message, language = 'en', tourId } = req.body;
 
         if (!message) {
             return res.status(400).json({ error: 'Message is required' });
@@ -71,20 +168,46 @@ router.post('/', async (req, res) => {
             });
         }
 
-        // Load knowledge base
-        const { context, files } = loadKnowledgeBase();
+        let context = '';
+        let sources: string[] = [];
+        let personaPrompt = PERSONA_PROMPTS.friendly;
+        let contextType = 'museum';
+
+        // If tourId provided, build tour-specific knowledge
+        if (tourId) {
+            const tourKnowledge = await buildTourKnowledge(tourId);
+            if (tourKnowledge.context) {
+                context = tourKnowledge.context;
+                contextType = 'tour';
+                sources = [`Tour: ${tourKnowledge.tourTitle}`];
+
+                // Use tour-specific persona if set
+                if (tourKnowledge.persona && PERSONA_PROMPTS[tourKnowledge.persona]) {
+                    personaPrompt = PERSONA_PROMPTS[tourKnowledge.persona];
+                }
+            }
+        }
+
+        // Fall back to museum-wide knowledge base if no tour context
+        if (!context) {
+            const kb = loadKnowledgeBase();
+            context = kb.context;
+            sources = kb.files;
+        }
 
         // Build grounded system prompt
-        const systemPrompt = `You are a friendly and helpful museum concierge assistant. Your role is to answer visitor questions about the museum using ONLY the information provided below.
+        const systemPrompt = `${personaPrompt}
+
+Your role is to answer visitor questions about ${contextType === 'tour' ? 'this specific tour' : 'the museum'} using ONLY the information provided below.
 
 IMPORTANT RULES:
-1. ONLY answer based on the museum information provided below
+1. ONLY answer based on the ${contextType} information provided below
 2. If the answer is NOT in the provided information, politely say you don't have that specific information and suggest asking a museum staff member
 3. Be concise, friendly, and helpful
 4. Format responses for easy reading on mobile devices
-5. If asked about something completely unrelated to the museum, politely redirect to museum-related topics
+5. If asked about something completely unrelated to ${contextType === 'tour' ? 'the tour' : 'the museum'}, politely redirect to relevant topics
 
-MUSEUM INFORMATION:
+${contextType.toUpperCase()} INFORMATION:
 ${context || 'No knowledge base documents have been uploaded yet. Please ask a museum staff member for assistance.'}`;
 
         // Generate response
@@ -133,7 +256,7 @@ ${context || 'No knowledge base documents have been uploaded yet. Please ask a m
 
         res.json({
             response,
-            sources: files,
+            sources,
             language
         });
 

@@ -1,32 +1,500 @@
 # AI Chatbot & Documents Collection Development Plan
 
-> **Phase 25 COMPLETE ✅ | Phase 26 PLANNED 🎯**  
-> Staff document tools complete + Visitor concierge needs admin configuration  
-> **Last Updated:** February 1, 2026
+> **Phase 25 COMPLETE | Phase 26.1 COMPLETE | Phase 26.2 COMPLETE ✅**
+> Museum-wide concierge + Per-tour concierge with full feature parity
+> **Last Updated:** February 2, 2026
 
 ---
 
-## 📋 Phase Summary
+# ✅ PHASE 26.2 COMPLETE - Per-Tour AI Concierge
+
+## What Was Built
+
+Each tour now has its own **full-featured AI Chatbot** tab with:
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Enable/Disable | ✅ | Toggle AI for this tour |
+| Persona | ✅ | 6 options including "Inherit Museum Default" |
+| Welcome Message | ✅ | Per-tour customizable |
+| **Quick Actions** | ✅ | Add, delete, drag-reorder |
+| **Knowledge Sources** | ✅ | Import modal + list with delete |
+| **Translate All** | ✅ | Translates to tour's languages |
+| **Test Chatbot** | ✅ | Full test panel with response |
+
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Tour AI Chatbot Knowledge                     │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Tour Content (automatic)                                     │
+│     - Tour title & description                                   │
+│     - All stop content (titles, descriptions, text blocks)       │
+│                                                                  │
+│  2. Linked Document Collections (user selects)                   │
+│     - Museum info (hours, services, contact)                     │
+│     - Artist biographies                                         │
+│     - Exhibit deep-dives                                         │
+│     - Any uploaded PDFs/documents with extracted text            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Files Modified
+
+| File | Changes |
+|------|---------|
+| `app/prisma/schema.prisma` | Added `conciergeQuickActions` field |
+| `app/src/types/index.ts` | Added `TourQuickAction` interface |
+| `app/server/routes/tours.ts` | Parse/save conciergeQuickActions JSON |
+| `app/src/components/TourConciergeTab.tsx` | **Complete rebuild** with all features |
+
+## Database Schema (Tour Concierge Fields)
+
+```sql
+-- Tour table concierge columns:
+conciergeEnabled      INTEGER NOT NULL DEFAULT 1   -- Enable/disable
+conciergePersona      TEXT                         -- null = inherit museum
+conciergeWelcome      TEXT                         -- JSON multilingual
+conciergeCollections  TEXT                         -- JSON array of collection IDs
+conciergeQuickActions TEXT                         -- JSON array of quick actions
+```
+
+## Quick Actions JSON Structure
+
+```typescript
+interface TourQuickAction {
+  id: string;
+  question: { [lang: string]: string }; // Multilingual
+  category: 'hours' | 'accessibility' | 'services' | 'exhibitions' | 'general';
+  order: number;
+  enabled: boolean;
+}
+```
+
+## Usage Workflow
+
+### Step 1: Create Document Collections
+1. Go to **Collections** page
+2. Create "Documents" type collections:
+   - "Museum Info" (hours, services, contact)
+   - "Artist Biographies"
+   - "Exhibit Research"
+
+### Step 2: Configure Tour AI
+1. Open a tour → **AI Chatbot** tab
+2. Set persona (or inherit museum default)
+3. Add custom welcome message
+4. Click **Import** to link document collections
+5. Add tour-specific **Quick Actions**
+6. **Click "Save Changes"**
+
+### Step 3: Test
+Use the Test Chatbot panel to ask questions - the AI will know:
+- Everything about the tour's stops
+- Everything in linked document collections
+
+---
+
+# 🗄️ DEEP DATABASE & PRISMA AUDIT
+
+## Database Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        TourStack Database                           │
+├─────────────────────────────────────────────────────────────────────┤
+│  Location:  /Users/paulhenshaw/Desktop/TourStack/app/data/dev.db   │
+│  Type:      SQLite                                                  │
+│  ORM:       Prisma 5.21.1                                          │
+│  Client:    Generated to src/generated/prisma/                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+## Key Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `app/.env` | DATABASE_URL="file:./data/dev.db" |
+| `app/prisma/schema.prisma` | Database schema definition |
+| `app/server/db.ts` | Prisma client singleton |
+| `app/src/generated/prisma/` | Auto-generated Prisma client |
+
+## Current Schema (13 Tables)
+
+### Core Tables
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `Museum` | Single museum owner | id, name, branding (JSON) |
+| `Template` | Tour templates | customFields (JSON) |
+| `Tour` | Tours | title (JSON), languages (JSON), concierge fields |
+| `Stop` | Tour stops | content (JSON), triggers (JSON) |
+| `AppSettings` | Global settings | maps (JSON), positioning (JSON) |
+
+### Media & Collections
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `Media` | Media library | aiMetadata (JSON), aiTranslations (JSON) |
+| `Collection` | Galleries/datasets | items (JSON), texts (JSON) |
+
+### AI Concierge (Phase 26)
+| Table | Purpose | Key Fields |
+|-------|---------|------------|
+| `ConciergeConfig` | Museum-wide AI settings | welcomeMessage (JSON), enabledLanguages (JSON) |
+| `ConciergeKnowledge` | Imported knowledge | content, characterCount |
+| `ConciergeQuickAction` | Quick action buttons | question (JSON), category |
+
+---
+
+## 🚨 CRITICAL: Prisma vs SQLite Sync Issues
+
+### The Problem We Hit
+```
+❌ prisma db push said "already in sync"
+❌ But columns weren't actually in SQLite!
+❌ Used --force-reset which WIPED the database!
+```
+
+### Why This Happened
+1. **Migration table is OUT OF SYNC** - Only 2 migrations recorded:
+   - `20260117154655_init`
+   - `20260117224757_add_collections`
+   
+2. **But 4 migration folders exist!**
+   - `20260117154655_init/`
+   - `20260117224757_add_collections/`
+   - `20260125052857_add_slugs_for_readable_urls/` ← NOT IN DB!
+   - `20260130001213_add_media_dimensions/` ← NOT IN DB!
+
+3. **Columns were added via `db push` or manual SQL** without proper migrations
+
+### Current State (MESSY)
+```sql
+-- Tour table has columns added multiple ways:
+"defaultTranslationProvider" -- via migration or db push?
+"slug"                       -- via migration (but not recorded!)
+"conciergeEnabled"           -- via manual ALTER TABLE
+"conciergePersona"           -- via manual ALTER TABLE
+"conciergeWelcome"           -- via manual ALTER TABLE
+"conciergeCollections"       -- via manual ALTER TABLE
+```
+
+---
+
+## ✅ SAFE DATABASE CHANGE PROCEDURES
+
+### For Development (RECOMMENDED)
+
+**Option A: `prisma db push` (Quick, No Migration)**
+```bash
+cd /Users/paulhenshaw/Desktop/TourStack/app
+npx prisma db push
+```
+- ✅ Fast, no migration files
+- ✅ Good for dev/prototyping
+- ⚠️ Can't rollback
+- ⚠️ May lose data if columns removed
+- ❌ NEVER use `--force-reset` (wipes database!)
+
+**Option B: Manual SQL (Direct Control)**
+```bash
+cd /Users/paulhenshaw/Desktop/TourStack/app
+sqlite3 data/dev.db "ALTER TABLE Tour ADD COLUMN newField TEXT;"
+```
+- ✅ Full control
+- ✅ No Prisma sync issues
+- ⚠️ Must regenerate Prisma client: `npx prisma generate`
+- ⚠️ Schema must match what you add
+
+### For Production (PROPER MIGRATIONS)
+
+**Create a Migration:**
+```bash
+cd /Users/paulhenshaw/Desktop/TourStack/app
+npx prisma migrate dev --name your_migration_name
+```
+- ✅ Creates SQL file in migrations/
+- ✅ Recorded in _prisma_migrations
+- ✅ Can be applied to production
+- ⚠️ Takes longer
+
+**Apply Migration to Production:**
+```bash
+npx prisma migrate deploy
+```
+
+---
+
+## 📋 JSON Field Patterns
+
+TourStack uses **JSON strings** in SQLite for flexible multilingual content.
+
+### Common JSON Patterns
+
+```typescript
+// Multilingual text
+{
+  "en": "Welcome!",
+  "es": "¡Bienvenido!",
+  "fr": "Bienvenue!"
+}
+
+// Array of IDs
+["coll_123", "coll_456"]
+
+// Complex nested
+{
+  "wheelchairAccessible": true,
+  "audioDescriptions": true,
+  "signLanguage": false
+}
+```
+
+### Parsing in Routes
+```typescript
+// Reading JSON from DB
+const collections = tour.conciergeCollections 
+  ? JSON.parse(tour.conciergeCollections) 
+  : [];
+
+// Writing JSON to DB
+await prisma.tour.update({
+  where: { id },
+  data: {
+    conciergeCollections: JSON.stringify(collectionIds)
+  }
+});
+```
+
+---
+
+## 🔧 Quick Reference Commands
+
+```bash
+# Navigate to app directory FIRST (critical!)
+cd /Users/paulhenshaw/Desktop/TourStack/app
+
+# View current database schema
+sqlite3 data/dev.db ".schema"
+
+# View specific table
+sqlite3 data/dev.db "PRAGMA table_info(Tour);"
+
+# Count records
+sqlite3 data/dev.db "SELECT COUNT(*) FROM Tour;"
+
+# Regenerate Prisma client (after schema changes)
+npx prisma generate
+
+# Push schema changes (dev only)
+npx prisma db push
+
+# Reset database and seed (DESTRUCTIVE!)
+npx prisma db push --force-reset && npx tsx prisma/seed.ts
+
+# Open Prisma Studio (GUI)
+npx prisma studio
+```
+
+---
+
+## 🎯 Phase 26.2 Database Requirements
+
+### Current Tour Concierge Fields (DONE)
+```prisma
+// In Tour model - already added
+conciergeEnabled     Boolean @default(true)
+conciergePersona     String?
+conciergeWelcome     String? // JSON multilingual
+conciergeCollections String? // JSON array of collection IDs
+```
+
+### NEEDED: Tour Quick Actions
+
+**Option 1: JSON field on Tour (SIMPLER)**
+```prisma
+// Add to Tour model
+conciergeQuickActions String? // JSON array of quick actions
+```
+
+JSON structure:
+```json
+[
+  {
+    "id": "qa_123",
+    "question": { "en": "Where's the gift shop?", "es": "¿Dónde está la tienda?" },
+    "category": "services",
+    "order": 0,
+    "enabled": true
+  }
+]
+```
+
+**Option 2: Separate table (MORE RELATIONAL)**
+```prisma
+model TourQuickAction {
+  id       String @id @default(cuid())
+  tourId   String
+  tour     Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  question String // JSON multilingual
+  category String
+  order    Int    @default(0)
+  enabled  Boolean @default(true)
+  createdAt DateTime @default(now())
+  
+  @@index([tourId])
+}
+```
+
+**RECOMMENDATION: Option 1 (JSON field)**
+- Matches existing pattern (conciergeCollections is JSON)
+- Simpler API - just update Tour
+- No new migration table drama
+- Can always migrate to table later if needed
+
+---
+
+## 🚨 DEEP AUDIT: Phase 26.2 Status (Feb 2, 2026)
+
+### What We Have Working at `/concierge` (Museum-Wide)
+
+| Feature | Component | Status |
+|---------|-----------|--------|
+| Enable/Disable toggle | ✅ | Working |
+| Persona selection | ✅ | 5 presets + custom |
+| Welcome Message (multilingual) | ✅ | JSON storage |
+| Language config (EN/ES/FR/DE) | ✅ | Toggle buttons |
+| Auto-translate responses | ✅ | Checkbox |
+| **Quick Actions** | ✅ | Add, delete, drag-reorder |
+| **Translate All** button | ✅ | Bulk translate quick actions |
+| **Knowledge Sources** | ✅ | Import document collections |
+| **Test Concierge** | ✅ | Live preview with response |
+| **Import Collection Modal** | ✅ | Select & import docs |
+
+### What TourConciergeTab Currently Has (INCOMPLETE)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Enable/Disable toggle | ✅ | Working |
+| Persona selection | ✅ | But missing "Custom" option |
+| Welcome Message | ⚠️ | Single language only |
+| Link Document Collections | ⚠️ | Checkboxes but not same UX |
+| Test Chat | ⚠️ | Basic, no quick actions |
+| **Quick Actions** | ❌ MISSING | Need per-tour quick actions |
+| **Translate All** | ❌ MISSING | No bulk translate |
+| **Knowledge Sources list** | ❌ MISSING | No visual of what's imported |
+| **Import Modal** | ❌ MISSING | Different UX pattern |
+
+### The Problem
+
+I tried to build a **simplified** TourConciergeTab but it's **too different** from the working `/concierge` page. We should **reuse** the existing patterns, not reinvent them.
+
+---
+
+## 🎯 IMPLEMENTED: Full Feature Parity ✅
+
+**TourStack is a SWISS ARMY KNIFE platform!**
+
+Each tour can be completely different:
+- Different museum floors
+- Indoor vs outdoor tours
+- Different subject matter (art, history, nature)
+- Different audiences (kids, scholars, general)
+- Different technologies and contexts
+
+**ONE SIZE FITS ALL IS WRONG** - Each tour NEEDS its own:
+- ✅ Quick Actions (tour-specific questions)
+- ✅ Knowledge Sources (tour-specific documents)  
+- ✅ Persona (different tone per tour)
+- ✅ Translate All (tour-specific translations)
+
+---
+
+## ✅ Phase 26.2 Implementation (COMPLETED Feb 2, 2026)
+
+### Step 1: Database ✅ DONE
+- [x] Add `conciergeEnabled`, `conciergePersona`, `conciergeWelcome`, `conciergeCollections` to Tour model
+- [x] Add `conciergeQuickActions` JSON field on Tour (simpler than new table)
+
+### Step 2: API ✅ DONE
+- [x] Update `/api/chat` to accept `tourId`
+- [x] Build tour-specific knowledge from stops + linked collections
+- [x] Parse/save quick actions in tours.ts routes (JSON field approach)
+
+### Step 3: UI ✅ DONE
+- [x] Rebuild `TourConciergeTab` with FULL features:
+  - Quick Actions (add/delete/drag-reorder)
+  - Knowledge Sources (import modal + list)
+  - Test Chat panel
+  - Translate All button
+  - Persona selector with "Inherit Museum Default"
+  - Welcome message editor
+
+### Step 4: ChatDrawer Integration ✅ DONE
+- [x] Accept `tourId` prop
+- [x] Pass to `/api/chat`
+
+---
+
+## 🔧 Final Implementation Details
+
+### Database: JSON Field Approach (Simpler)
+```prisma
+// Tour model - concierge fields:
+conciergeEnabled      Boolean @default(true)
+conciergePersona      String?
+conciergeWelcome      String? // JSON multilingual
+conciergeCollections  String? // JSON array of collection IDs
+conciergeQuickActions String? // JSON array of TourQuickAction
+```
+
+### TourConciergeTab.tsx - Complete Rebuild
+- Uses `conciergeService.PERSONAS` for consistency
+- Uses `conciergeService.QUICK_ACTION_CATEGORIES` for consistency
+- Local state management (not API calls for each action)
+- Single "Save Changes" button for all changes
+- Full drag-and-drop reordering
+- Import modal for linking collections
+
+### Chat API Knowledge Building
+```typescript
+// In chat.ts - buildTourKnowledge():
+1. Load tour title + description
+2. Load all stop content (titles, descriptions, text blocks)
+3. Load linked collections (conciergeCollections)
+   - Extract text from documents
+   - Include AI analysis summaries
+4. Return combined context for Gemini
+```
+- Left column: Persona, Welcome, Languages
+- Right column: Quick Actions, Knowledge Sources, Test Chat
+
+---
+
+## Phase Summary
 
 | Phase | Feature | Status |
 |-------|---------|--------|
-| **Phase 25** | Documents Collection (Staff Tools) | ✅ **Complete** |
-| **Phase 26** | AI Museum Concierge Configuration | 🎯 **Next Session** |
+| **Phase 25** | Documents Collection (Staff Tools) | COMPLETE ✅ |
+| **Phase 26.1** | Museum-Wide AI Concierge | COMPLETE ✅ |
+| **Phase 26.2** | Per-Tour AI Concierge | COMPLETE ✅ |
+| **Phase 26.3** | AI Analysis Integration | PLANNED |
+| **Phase 27** | Location-Aware AI Responses | FUTURE VISION |
 
 ---
 
-## ✅ PHASE 25: Documents Collection (COMPLETE)
+## PHASE 25: Documents Collection (COMPLETE)
 
 ### What's Implemented
 
 | Feature | Status |
 |---------|--------|
-| DocumentCollectionWizard | ✅ 3-step upload wizard |
-| Multi-format extraction | ✅ PDF, DOCX, DOC, RTF, ODT, PPTX |
-| DocumentAIToolsPanel | ✅ Full-width with Single/Batch modes |
-| AI Tools (Summarize/Facts/FAQ/Tags) | ✅ Working |
-| Batch document selection | ✅ Checkbox UI |
-| Auto-save persistence | ✅ Immediate DB save |
+| DocumentCollectionWizard | 3-step upload wizard |
+| Multi-format extraction | PDF, DOCX, DOC, RTF, ODT, PPTX |
+| DocumentAIToolsPanel | Full-width with Single/Batch modes |
+| AI Tools (Summarize/Facts/FAQ/Tags) | Working |
+| Batch document selection | Checkbox UI |
+| Auto-save persistence | Immediate DB save |
 
 ### Key Files
 
@@ -39,499 +507,322 @@
 
 ---
 
-# 🎯 PHASE 26: AI MUSEUM CONCIERGE (NEXT SESSION)
+## PHASE 26.1: Museum-Wide AI Concierge (COMPLETE)
 
-> **Vision:** Give museums a powerful, intuitive interface to configure their AI concierge - importing document collections as knowledge, setting default questions, customizing behavior, and providing multilingual visitor assistance.
+### What's Working
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| `/concierge` admin page | Working | Full configuration UI |
+| Persona selection | Working | Friendly, Professional, Fun, Scholarly, Custom |
+| Welcome message | Working | Multilingual JSON storage |
+| Language configuration | Working | EN, ES, FR, DE toggles |
+| Knowledge Sources | Working | Import from document collections |
+| Quick Actions | Working | Add, delete, drag-reorder |
+| Translate All | Working | Google Translate API |
+| Test Concierge | Working | Preview chat responses |
+| ChatDrawer integration | Working | Fetches dynamic config |
+
+### Database Tables
+
+```sql
+ConciergeConfig       -- Main configuration
+ConciergeKnowledge    -- Knowledge sources (document imports)
+ConciergeQuickAction  -- Quick action buttons
+```
+
+### Key Files
+
+| Component | Path |
+|-----------|------|
+| Admin Page | `app/src/pages/Concierge.tsx` |
+| Service Client | `app/src/lib/conciergeService.ts` |
+| API Routes | `app/server/routes/concierge.ts` |
+| Chat Drawer | `app/src/components/chat/ChatDrawer.tsx` |
+
+### Bug Fixes Applied (See ai-concierge-bug.md)
+
+1. **500 Error** - Database tables didn't exist, created manually with SQL
+2. **Import modal empty** - Filter was `'documents'` but type is `'document_collection'`
+3. **Quick action text missing** - JSON `question` field wasn't being parsed
 
 ---
 
-## 🏗️ Architecture Overview
+## PHASE 26.2: Per-Tour AI Concierge (COMPLETE ✅)
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                         AI MUSEUM CONCIERGE SYSTEM                               │
-├──────────────────────────────────────────┬──────────────────────────────────────┤
-│    ADMIN CONFIGURATION (Staff)           │    VISITOR EXPERIENCE (Public)       │
-│    ┌────────────────────────────────┐    │    ┌────────────────────────────┐    │
-│    │  🎛️ Concierge Settings         │    │    │  💬 Chat Drawer             │    │
-│    │  - Enable/Disable             │────│───▶│  - Slide-in from right     │    │
-│    │  - Persona/Tone               │    │    │  - Quick action buttons    │    │
-│    │  - Welcome message            │    │    │  - Message history         │    │
-│    └────────────────────────────────┘    │    │  - Multilingual auto-detect│    │
-│                   ↓                      │    └────────────────────────────┘    │
-│    ┌────────────────────────────────┐    │                  ↑                   │
-│    │  📚 Knowledge Sources          │    │    ┌────────────────────────────┐    │
-│    │  - Import document collections │───│───▶│  🤖 Gemini RAG Engine       │    │
-│    │  - Add tour content           │    │    │  - Context from knowledge   │    │
-│    │  - Manual FAQ entries          │    │    │  - Grounded responses      │    │
-│    │  - External URLs (scrape?)    │    │    │  - Magic Translation       │    │
-│    └────────────────────────────────┘    │    └────────────────────────────┘    │
-│                   ↓                      │                                      │
-│    ┌────────────────────────────────┐    │                                      │
-│    │  ❓ Quick Actions / Suggested  │    │                                      │
-│    │  - Default question buttons    │────│────────────────────▶ Displayed to    │
-│    │  - Categorized (Hours, Access) │    │                      visitors        │
-│    │  - Drag-and-drop reorder      │    │                                      │
-│    │  - Translate to all languages │    │                                      │
-│    └────────────────────────────────┘    │                                      │
-└──────────────────────────────────────────┴──────────────────────────────────────┘
-```
+### Vision
 
----
+Each tour gets its own AI chatbot that knows specifically about THAT tour. Visitors on "Ancient Egypt" get an Egypt expert. Visitors on "Modern Art" get an art critic.
 
-## 📱 NEW VIEW: `/concierge` (Admin Configuration)
+**This is the TourStack SWISS ARMY KNIFE approach** - one platform, infinite configurations per tour!
 
-### Layout Design
+### What Was Built (Feb 2, 2026)
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│  🤖 AI Concierge Configuration                          [Preview] [Save]        │
-├────────────────────────────────────┬────────────────────────────────────────────┤
-│                                    │                                            │
-│  SIDEBAR (Settings)                │  MAIN PANEL (Content Management)           │
-│  ┌────────────────────────────┐    │  ┌────────────────────────────────────────┐│
-│  │ 🔘 Status                  │    │  │  📚 Knowledge Sources              [+] ││
-│  │    ○ Enabled   ● Disabled  │    │  │                                        ││
-│  │                            │    │  │  ┌─────────────────────────────────┐   ││
-│  │ 🎭 Persona                 │    │  │  │ 📁 Museum Policies Collection  ⋮│   ││
-│  │    [Friendly Docent    ▾]  │    │  │  │    15 documents • 24,500 chars │   ││
-│  │    ○ Friendly Docent       │    │  │  └─────────────────────────────────┘   ││
-│  │    ○ Professional Guide    │    │  │  ┌─────────────────────────────────┐   ││
-│  │    ○ Fun Family-Friendly   │    │  │  │ 📁 Exhibition Guide 2026       ⋮│   ││
-│  │    ○ Scholarly Expert      │    │  │  │    8 documents • 12,300 chars  │   ││
-│  │    ○ Custom...             │    │  │  └─────────────────────────────────┘   ││
-│  │                            │    │  │  ┌─────────────────────────────────┐   ││
-│  │ 👋 Welcome Message         │    │  │  │ 🔗 Tour: Ancient Egypt         ⋮│   ││
-│  │    [Welcome to the ABC..   │    │  │  │    12 stops • 8,200 chars      │   ││
-│  │     ...type any question!] │    │  │  └─────────────────────────────────┘   ││
-│  │                            │    │  │                                        ││
-│  │ 🌐 Languages               │    │  │  ┌──────────────────────────────────┐  ││
-│  │    ✓ English (primary)     │    │  │  │ + Import Document Collection    │  ││
-│  │    ✓ Spanish               │    │  │  │ + Add Tour Content              │  ││
-│  │    ✓ French                │    │  │  │ + Add Manual FAQ                │  ││
-│  │    ✓ German                │    │  │  └──────────────────────────────────┘  ││
-│  │    + Add language...       │    │  │                                        ││
-│  │                            │    │  ├────────────────────────────────────────┤│
-│  │ ⚙️ Behavior                │    │  │  ❓ Quick Actions (Suggested Questions)││
-│  │    □ Show "New Chat"       │    │  │                                        ││
-│  │    □ Auto-translate Q's    │    │  │  ┌───────────────────────────────────┐ ││
-│  │    □ Show source docs      │    │  │  │ ☰  🕐 What are your hours?       │ ││
-│  │    □ Allow feedback        │    │  │  │     Category: Hours & Admission  │ ││
-│  │                            │    │  │  └───────────────────────────────────┘ ││
-│  │                            │    │  │  ┌───────────────────────────────────┐ ││
-│  └────────────────────────────┘    │  │  │ ☰  ♿ Accessibility services?     │ ││
-│                                    │  │  │     Category: Accessibility       │ ││
-│                                    │  │  └───────────────────────────────────┘ ││
-│                                    │  │  ┌───────────────────────────────────┐ ││
-│                                    │  │  │ ☰  🎧 Do you have audio guides?   │ ││
-│                                    │  │  │     Category: Visitor Services    │ ││
-│                                    │  │  └───────────────────────────────────┘ ││
-│                                    │  │                                        ││
-│                                    │  │  [+ Add Quick Action] [🌐 Translate All]│
-│                                    │  └────────────────────────────────────────┘│
-└────────────────────────────────────┴────────────────────────────────────────────┘
-```
+| Feature | Component | Status |
+|---------|-----------|--------|
+| Quick Actions | Add/delete/drag-reorder per-tour | ✅ COMPLETE |
+| Knowledge Sources | Import collections + list + delete | ✅ COMPLETE |
+| Persona Selector | Inherit default or override | ✅ COMPLETE |
+| Welcome Message | Multilingual per-tour | ✅ COMPLETE |
+| Test Chat | Full preview panel | ✅ COMPLETE |
+| Translate All | Uses tour's languages | ✅ COMPLETE |
 
----
+### Files Modified
 
-## 📋 Implementation Checklist
+| File | Change |
+|------|--------|
+| `schema.prisma` | Added `conciergeQuickActions String?` |
+| `types/index.ts` | Added `TourQuickAction` interface |
+| `routes/tours.ts` | Parse/save quick actions JSON |
+| `components/TourConciergeTab.tsx` | Complete rebuild |
 
-### 1. Database Schema Updates
+### Knowledge Sources Per Tour
+
+The tour-specific AI will automatically pull knowledge from:
+
+1. **Tour Content**
+   - Tour title, description
+   - All stop titles and descriptions
+   - Text content blocks from each stop
+
+2. **Linked Document Collections**
+   - PDFs uploaded for that tour
+   - Extracted text from documents
+
+3. **AI Analysis Results** (NEW!)
+   - Summary generated by Gemini
+   - Key facts extracted
+   - FAQ Q&A pairs
+   - Auto-generated tags
+
+### Database Changes (APPLIED)
 
 ```prisma
-model ConciergeConfig {
-  id              String   @id @default(uuid())
-  museumId        String?  
-  enabled         Boolean  @default(false)
-  
-  // Persona & Appearance
-  persona         String   @default("friendly")  // friendly, professional, fun, scholarly, custom
-  customPersona   String?                        // Custom system prompt if persona = "custom"
-  welcomeMessage  Json     @default("{}")        // { en: "Welcome!", es: "¡Bienvenido!" }
-  
-  // Languages
-  primaryLanguage String   @default("en")
-  enabledLanguages String[] @default(["en"])
-  autoTranslate   Boolean  @default(true)
-  
-  // Behavior
-  showNewChat     Boolean  @default(true)
-  showSources     Boolean  @default(false)
-  allowFeedback   Boolean  @default(false)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  knowledgeSources ConciergeKnowledge[]
-  quickActions     ConciergeQuickAction[]
-}
+model Tour {
+  // ... existing fields ...
 
-model ConciergeKnowledge {
-  id              String   @id @default(uuid())
-  configId        String
-  config          ConciergeConfig @relation(fields: [configId], references: [id])
-  
-  sourceType      String   // "document_collection", "tour", "manual_faq", "text"
-  sourceId        String?  // Reference to collection or tour ID
-  title           String
-  content         String   @db.Text  // Extracted/cached text content
-  characterCount  Int
-  
-  enabled         Boolean  @default(true)
-  priority        Int      @default(0)  // Higher = more weight in context
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model ConciergeQuickAction {
-  id              String   @id @default(uuid())
-  configId        String
-  config          ConciergeConfig @relation(fields: [configId], references: [id])
-  
-  question        Json     // { en: "What are your hours?", es: "¿Cuáles son sus horarios?" }
-  category        String   // "hours", "accessibility", "services", "general"
-  icon            String?  // Lucide icon name
-  order           Int      @default(0)
-  
-  enabled         Boolean  @default(true)
-  createdAt       DateTime @default(now())
+  // Concierge Settings
+  conciergeEnabled      Boolean @default(true)
+  conciergePersona      String? // null = inherit museum default
+  conciergeWelcome      String? // JSON: { en: "...", es: "..." }
+  conciergeCollections  String? // JSON: string[] of linked collection IDs
+  conciergeQuickActions String? // JSON: TourQuickAction[]
 }
 ```
 
-### 2. API Endpoints
+### UI Implementation
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/concierge/config` | GET | Get concierge configuration |
-| `/api/concierge/config` | PUT | Update configuration |
-| `/api/concierge/knowledge` | GET | List knowledge sources |
-| `/api/concierge/knowledge` | POST | Add knowledge source |
-| `/api/concierge/knowledge/:id` | DELETE | Remove knowledge source |
-| `/api/concierge/knowledge/import/:collectionId` | POST | Import document collection |
-| `/api/concierge/quick-actions` | GET | List quick actions |
-| `/api/concierge/quick-actions` | POST | Add quick action |
-| `/api/concierge/quick-actions/:id` | PUT | Update quick action |
-| `/api/concierge/quick-actions/:id` | DELETE | Delete quick action |
-| `/api/concierge/quick-actions/reorder` | PUT | Reorder quick actions |
-| `/api/concierge/quick-actions/translate` | POST | Translate all to languages |
-| `/api/concierge/preview` | POST | Test chat with current config |
+**Tab in Tour Editor** (User-approved approach)
+```
+Tour Editor Tabs:
+[Overview] [Stops] [Settings] [AI Chatbot]
+                                    ^
+                                    IMPLEMENTED
+```
 
-### 3. Frontend Components
+### Implementation (ALL COMPLETE ✅)
 
-| Component | Path | Purpose |
-|-----------|------|---------|
-| `Concierge.tsx` | `app/src/pages/Concierge.tsx` | Main configuration page |
-| `ConciergeSettings.tsx` | `app/src/components/concierge/ConciergeSettings.tsx` | Sidebar settings panel |
-| `KnowledgeSourceList.tsx` | `app/src/components/concierge/KnowledgeSourceList.tsx` | Knowledge management |
-| `KnowledgeImportModal.tsx` | `app/src/components/concierge/KnowledgeImportModal.tsx` | Import from collections |
-| `QuickActionEditor.tsx` | `app/src/components/concierge/QuickActionEditor.tsx` | Quick action CRUD |
-| `QuickActionCard.tsx` | `app/src/components/concierge/QuickActionCard.tsx` | Draggable action card |
-| `ConciergePreview.tsx` | `app/src/components/concierge/ConciergePreview.tsx` | Live preview modal |
-| `ChatDrawer.tsx` | `app/src/components/chat/ChatDrawer.tsx` | Update to use config |
+1. ✅ Add concierge fields to Tour model in schema.prisma
+2. ✅ Manually add columns via SQL (Prisma migration issues)
+3. ✅ Create `TourConciergeTab` component with full features
+4. ✅ Add "AI Chatbot" tab to tour editor
+5. ✅ Update `/api/chat` to accept `tourId` parameter
+6. ✅ Build knowledge context from tour + linked collections
+7. ✅ Update ChatDrawer to pass current `tourId`
 
 ---
 
-## 🎭 Persona System
+## PHASE 26.3: AI Analysis Integration (PLANNED)
 
-### Built-in Personas
+### Current Problem
 
-| Persona | Style | Best For |
-|---------|-------|----------|
-| **Friendly Docent** | Warm, welcoming, uses emoji occasionally | General museums |
-| **Professional Guide** | Formal, precise, factual | Corporate, historical |
-| **Fun Family-Friendly** | Playful, uses simple language, enthusiastic | Children's museums |
-| **Scholarly Expert** | Academic, detailed, cites sources | University, research |
-| **Custom** | User-defined system prompt | Full control |
+Document import only pulls `extractedText`. The rich AI analysis is being ignored!
 
-### Persona Prompt Templates
+### Solution: Enhanced Knowledge Import
 
 ```typescript
-const PERSONA_PROMPTS = {
-  friendly: `You are a friendly museum docent. Be warm and welcoming. 
-    Use casual language but remain informative. Occasionally use emoji 
-    to be approachable. Keep answers concise but helpful.`,
-    
-  professional: `You are a professional museum guide. Maintain a formal 
-    but approachable tone. Provide accurate, factual information. 
-    Be concise and direct in your responses.`,
-    
-  fun: `You are a fun, family-friendly museum guide! Use simple words 
-    that kids can understand. Be enthusiastic and encouraging! 
-    Add fun facts when relevant. Keep things light and exciting!`,
-    
-  scholarly: `You are an expert museum scholar. Provide detailed, 
-    academic-quality information. Reference relevant historical context 
-    and scholarly interpretations when appropriate. Maintain intellectual rigor.`,
-};
-```
+async function buildKnowledgeFromCollection(collection) {
+  const parts = [];
 
----
+  for (const doc of collection.items) {
+    const analysis = doc.metadata?.aiAnalysis;
 
-## 🔗 Knowledge Source Integration
+    parts.push(`
+## ${doc.metadata.fileName}
 
-### Import from Document Collections
+### Summary
+${analysis?.summary || 'No summary available'}
 
-```typescript
-async function importDocumentCollection(collectionId: string) {
-  // 1. Fetch collection with all documents
-  const collection = await collectionService.getById(collectionId);
-  
-  // 2. Extract text from each document
-  const combinedText = collection.items
-    .filter(item => item.metadata.extractedText)
-    .map(item => `## ${item.metadata.fileName}\n\n${item.metadata.extractedText}`)
-    .join('\n\n---\n\n');
-  
-  // 3. Create knowledge source
-  return prisma.conciergeKnowledge.create({
-    data: {
-      configId: config.id,
-      sourceType: 'document_collection',
-      sourceId: collectionId,
-      title: collection.name,
-      content: combinedText,
-      characterCount: combinedText.length,
-    }
-  });
-}
-```
+### Key Facts
+${analysis?.facts?.map(f => `- ${f}`).join('\n') || 'No facts extracted'}
 
-### Import from Tour Content
+### Frequently Asked Questions
+${analysis?.faq?.map(q => `Q: ${q.question}\nA: ${q.answer}`).join('\n\n') || 'No FAQ generated'}
 
-```typescript
-async function importTourContent(tourId: string) {
-  // 1. Fetch tour with all stops
-  const tour = await prisma.tour.findUnique({
-    where: { id: tourId },
-    include: { stops: true }
-  });
-  
-  // 2. Extract text from tour and stops
-  const tourText = `# ${tour.title.en || tour.title}\n\n${tour.description?.en || ''}`;
-  
-  const stopsText = tour.stops.map(stop => {
-    const blocks = stop.content || [];
-    const textBlocks = blocks.filter(b => b.type === 'text');
-    return `## ${stop.title?.en || stop.title}\n\n${textBlocks.map(b => b.content?.en).join('\n')}`;
-  }).join('\n\n');
-  
-  const combinedText = `${tourText}\n\n---\n\n${stopsText}`;
-  
-  return prisma.conciergeKnowledge.create({
-    data: {
-      configId: config.id,
-      sourceType: 'tour',
-      sourceId: tourId,
-      title: tour.title.en || tour.title,
-      content: combinedText,
-      characterCount: combinedText.length,
-    }
-  });
-}
-```
-
----
-
-## ❓ Quick Actions System
-
-### Category Icons & Colors
-
-| Category | Icon | Color | Examples |
-|----------|------|-------|----------|
-| Hours & Admission | `Clock` | Blue | "What are your hours?", "How much is admission?" |
-| Accessibility | `Accessibility` | Purple | "Do you have wheelchairs?", "Is there an elevator?" |
-| Visitor Services | `HelpCircle` | Green | "Where's the café?", "Do you have audio guides?" |
-| Exhibitions | `Gallery` | Orange | "What's on display now?", "Current exhibitions?" |
-| General | `MessageCircle` | Gray | Custom questions |
-
-### Translation Integration
-
-Quick actions use Magic Translation to generate all language versions:
-
-```typescript
-async function translateQuickAction(questionEn: string, languages: string[]) {
-  const translations = { en: questionEn };
-  
-  for (const lang of languages) {
-    if (lang !== 'en') {
-      const result = await translateBatch([questionEn], 'en', lang);
-      translations[lang] = result[0];
-    }
+### Full Document Text
+${doc.metadata.extractedText || ''}
+    `);
   }
-  
-  return translations;
+
+  return parts.join('\n\n---\n\n');
 }
 ```
 
+### Benefits
+
+- **Smarter responses**: AI has structured Q&A, not just raw text
+- **Better context**: Summary gives quick overview
+- **Factual accuracy**: Key facts are pre-validated
+- **FAQ matching**: Common questions already answered
+
 ---
 
-## 🌐 Multilingual Chat Flow
+## PHASE 27: Location-Aware AI Responses (FUTURE VISION)
 
-```mermaid
-sequenceDiagram
-    participant V as Visitor
-    participant C as ChatDrawer
-    participant A as API /chat
-    participant G as Gemini
-    participant T as Translation
-    
-    V->>C: Types question (any language)
-    C->>A: POST /api/chat { message, detectedLang }
-    A->>T: Translate to English (if needed)
-    T-->>A: English version
-    A->>G: Generate response (with knowledge context)
-    G-->>A: English response
-    A->>T: Translate to visitor's language
-    T-->>A: Localized response
-    A-->>C: { response, sources }
-    C->>V: Display response
+### The Dream
+
+Visitor asks: *"Where is the cafeteria?"*
+
+**Without positioning:**
+> "The cafeteria is on the third floor near the main elevator."
+
+**With positioning:**
+> "You're currently on the first floor near the Egyptian Gallery. Head toward the main lobby, take the elevator to the third floor, and the cafeteria will be on your right. It's about a 2-minute walk."
+
+### Positioning Infrastructure (Already In Schema!)
+
+```prisma
+// Tour level
+primaryPositioningMethod String  // qr_code, gps, ble_beacon, wifi, nfc
+backupPositioningMethod  String?
+
+// Stop level
+primaryPositioning String   // JSON: { type, coordinates, beaconId, qrCode }
+backupPositioning  String?
+
+// Settings
+positioning String  // JSON: { estimoteApiKey, kontaktApiKey, customBleEnabled }
+```
+
+### Supported Positioning Methods
+
+| Method | Indoor | Outdoor | Accuracy | Setup Effort |
+|--------|--------|---------|----------|--------------|
+| **QR Code** | Yes | Yes | Exact (scan location) | Low |
+| **GPS** | No | Yes | 5-10m | None |
+| **BLE Beacons** | Yes | No | 1-3m | Medium |
+| **WiFi Triangulation** | Yes | No | 3-5m | Medium |
+| **NFC Tags** | Yes | Yes | Exact (tap location) | Low |
+
+### Location-Aware Chat API
+
+```typescript
+POST /api/chat
+{
+  "message": "Where is the cafeteria?",
+  "tourId": "tour-123",
+  "language": "en",
+  "position": {
+    "method": "ble_beacon",
+    "stopId": "stop-456",
+    "floor": 1,
+    "zone": "egyptian-gallery",
+    "coordinates": { "lat": 40.7, "lng": -74.0 }
+  }
+}
+```
+
+### Future Venue Data Model
+
+```prisma
+model VenueFloor {
+  id          String @id
+  museumId    String
+  floorNumber Int
+  name        String        // "Ground Floor", "Second Floor"
+  mapImage    String?       // Floor plan image
+  zones       VenueZone[]
+  pois        VenuePOI[]    // Points of Interest
+}
+
+model VenuePOI {
+  id          String @id
+  floorId     String
+  name        String        // "Main Cafeteria", "Gift Shop"
+  type        String        // cafeteria, restroom, elevator, exit
+  coordinates String        // JSON: { x, y } on floor map
+  description String?
+}
+```
+
+### AI Directions Prompt
+
+```
+You are a museum concierge with knowledge of the venue layout.
+
+VISITOR LOCATION:
+- Floor: ${position.floor}
+- Zone: ${position.zone}
+- Near: ${nearestStop.title}
+
+When giving directions:
+1. Reference the visitor's current location
+2. Use landmarks they can see
+3. Give step-by-step walking directions
+4. Estimate walking time
+5. Mention accessibility options if relevant
 ```
 
 ---
 
-## 🎨 Visitor Chat UI Updates
+## Implementation Roadmap
 
-### ChatDrawer Enhancements
+### NOW (Phase 26.2)
+- [ ] Add concierge fields to Tour model
+- [ ] Create tour concierge settings UI
+- [ ] Update chat API for tour-specific context
+- [ ] Auto-build knowledge from tour content
 
-```
-┌─────────────────────────────────────┐
-│  💬 Museum Concierge          [✕]  │
-├─────────────────────────────────────┤
-│                                     │
-│  👋 Welcome to the ABC Museum!      │
-│  I'm here to help with any          │
-│  questions about your visit.        │
-│                                     │
-│  ─────────────────────────────────  │
-│                                     │
-│  Quick Questions:                   │
-│  ┌───────────────────────────────┐  │
-│  │ 🕐 What are your hours?       │  │
-│  └───────────────────────────────┘  │
-│  ┌───────────────────────────────┐  │
-│  │ ♿ Accessibility services     │  │
-│  └───────────────────────────────┘  │
-│  ┌───────────────────────────────┐  │
-│  │ 🎧 Audio guides available?    │  │
-│  └───────────────────────────────┘  │
-│                                     │
-│  ─────────────────────────────────  │
-│                                     │
-│  ┌───────────────────────────────┐  │
-│  │ Type your question...     [→] │  │
-│  └───────────────────────────────┘  │
-│                                     │
-│  [🔄 New Chat]  [🌐 ES ▾]           │
-└─────────────────────────────────────┘
-```
+### NEXT (Phase 26.3)
+- [ ] Enhance document import with AI analysis
+- [ ] Include FAQ, facts, summary in knowledge
+- [ ] Re-import existing collections with enhanced data
+
+### FUTURE (Phase 27)
+- [ ] Venue floor/POI data models
+- [ ] Position detection integration
+- [ ] Location-aware chat prompts
+- [ ] Walking directions generation
+- [ ] Indoor navigation UI
 
 ---
 
-## 📂 File Structure (Phase 26)
+## TourStack Vision
 
-```
-/app/
-├── src/
-│   ├── pages/
-│   │   └── Concierge.tsx              # NEW: /concierge route
-│   │
-│   ├── components/
-│   │   ├── concierge/
-│   │   │   ├── ConciergeSettings.tsx   # Settings sidebar
-│   │   │   ├── KnowledgeSourceList.tsx # Knowledge management
-│   │   │   ├── KnowledgeImportModal.tsx# Import from collections
-│   │   │   ├── QuickActionEditor.tsx   # Quick action CRUD
-│   │   │   ├── QuickActionCard.tsx     # Draggable card
-│   │   │   ├── ConciergePreview.tsx    # Preview modal
-│   │   │   └── PersonaSelector.tsx     # Persona dropdown
-│   │   │
-│   │   └── chat/
-│   │       └── ChatDrawer.tsx          # UPDATE: Use config
-│   │
-│   └── lib/
-│       └── conciergeService.ts         # NEW: API client
-│
-├── server/
-│   └── routes/
-│       ├── concierge.ts                # NEW: Config + knowledge APIs
-│       └── chat.ts                     # UPDATE: Use knowledge context
-│
-└── prisma/
-    └── schema.prisma                   # UPDATE: Add models
-```
+### For Museum Staff
+- Modern, cutting-edge tour creation tools
+- AI-assisted content generation & translation
+- Document analysis & knowledge extraction
+- Easy chatbot configuration per tour
+- Analytics and visitor insights
+
+### For Museum Visitors
+- Engaging, personalized tour experiences
+- Instant AI help in any language
+- Context-aware assistance based on location
+- Quick answers to common questions
+- Seamless multilingual support
+
+**The Swiss Army Knife for Museums** - everything needed to create, manage, and deliver world-class visitor experiences.
 
 ---
 
-## ✅ Implementation Order
+## Related Documentation
 
-### Step 1: Database & API (Foundation)
-- [ ] Add Prisma models (ConciergeConfig, ConciergeKnowledge, ConciergeQuickAction)
-- [ ] Run `prisma db push`
-- [ ] Create `server/routes/concierge.ts` with all endpoints
-- [ ] Register route in `server/index.ts`
-- [ ] Create `conciergeService.ts` client
-
-### Step 2: Admin UI (Core)
-- [ ] Create `Concierge.tsx` page layout
-- [ ] Build `ConciergeSettings.tsx` sidebar
-- [ ] Build `KnowledgeSourceList.tsx` with cards
-- [ ] Build `KnowledgeImportModal.tsx` with collection picker
-
-### Step 3: Quick Actions (Configuration)
-- [ ] Build `QuickActionCard.tsx` with drag handle
-- [ ] Build `QuickActionEditor.tsx` modal
-- [ ] Implement drag-and-drop reordering
-- [ ] Add "Translate All" functionality
-
-### Step 4: Chat Integration (Visitor)
-- [ ] Update `chat.ts` to use ConciergeConfig
-- [ ] Update `chat.ts` to include knowledge context in prompt
-- [ ] Update `ChatDrawer.tsx` to fetch config
-- [ ] Display dynamic quick actions
-- [ ] Add language detection + translation
-
-### Step 5: Testing & Polish
-- [ ] Test import from document collections
-- [ ] Test import from tours
-- [ ] Test multilingual chat
-- [ ] Test persona switching
-- [ ] Add loading states and error handling
-
----
-
-## 🔐 Environment Variables
-
-```env
-# Existing
-GEMINI_API_KEY=...           # Gemini 2.0 Flash
-GOOGLE_VISION_API_KEY=...    # Also used for Translation
-
-# Optional new
-CONCIERGE_MAX_CONTEXT=15000  # Max characters in context (default: 15000)
-```
-
----
-
-## 📚 Related Documentation
-
-- [Collections Development](file:///Users/paulhenshaw/Desktop/TourStack/docs/collections-dev.md)
-- [Translation Services](file:///Users/paulhenshaw/Desktop/TourStack/docs/translations-dev.md)
-- [AI Tools](file:///Users/paulhenshaw/Desktop/TourStack/docs/ai-tools.md)
-- [HANDOFF](file:///Users/paulhenshaw/Desktop/TourStack/HANDOFF.md)
-
----
-
-## 💡 Future Enhancements (Post Phase 26)
-
-| Feature | Description | Priority |
-|---------|-------------|----------|
-| **Voice Concierge** | Voice input + ElevenLabs TTS response | Medium |
-| **Chatbot Block** | Embed chat in tour stops | Medium |
-| **Analytics** | Track common questions, feedback | Low |
-| **Learning Mode** | Improve from visitor feedback | Low |
-| **Multi-tenant** | Different configs per museum | Low |
+- [Bug Audit](./ai-concierge-bug.md) - Phase 26.1 debugging log
+- [Collections Development](./collections-dev.md)
+- [Translation Services](./translations-dev.md)
+- [HANDOFF](../HANDOFF.md)
 
 ---
 

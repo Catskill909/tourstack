@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Sparkles, Clock, Accessibility, HelpCircle, Image as ImageIcon } from 'lucide-react';
+import * as conciergeService from '../../lib/conciergeService';
+import type { ParsedConciergeConfig, ParsedQuickAction } from '../../lib/conciergeService';
 
 interface Message {
     id: string;
@@ -13,9 +15,20 @@ interface ChatDrawerProps {
     isOpen: boolean;
     onClose: () => void;
     language?: string;
+    tourId?: string;  // Optional: pass to get tour-specific AI responses
 }
 
-const QUICK_ACTIONS = [
+// Category icons mapping
+const CATEGORY_ICONS: Record<string, typeof Clock> = {
+    hours: Clock,
+    accessibility: Accessibility,
+    services: HelpCircle,
+    exhibitions: ImageIcon,
+    general: MessageCircle,
+};
+
+// Default quick actions fallback
+const DEFAULT_QUICK_ACTIONS = [
     { icon: '🚻', label: 'Restrooms', question: 'Where are the restrooms?' },
     { icon: '🍽️', label: 'Food & Drink', question: 'Is there a café or restaurant?' },
     { icon: '♿', label: 'Accessibility', question: 'What accessibility features do you have?' },
@@ -24,12 +37,29 @@ const QUICK_ACTIONS = [
     { icon: '🅿️', label: 'Parking', question: 'Where can I park?' },
 ];
 
-export function ChatDrawer({ isOpen, onClose, language = 'en' }: ChatDrawerProps) {
+export function ChatDrawer({ isOpen, onClose, language = 'en', tourId }: ChatDrawerProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [config, setConfig] = useState<ParsedConciergeConfig | null>(null);
+    const [configLoading, setConfigLoading] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    // Fetch concierge config
+    useEffect(() => {
+        async function loadConfig() {
+            try {
+                const data = await conciergeService.getConfig();
+                setConfig(data);
+            } catch (error) {
+                console.error('Failed to load concierge config:', error);
+            } finally {
+                setConfigLoading(false);
+            }
+        }
+        loadConfig();
+    }, []);
 
     // Scroll to bottom when messages change
     useEffect(() => {
@@ -42,6 +72,16 @@ export function ChatDrawer({ isOpen, onClose, language = 'en' }: ChatDrawerProps
             setTimeout(() => inputRef.current?.focus(), 300);
         }
     }, [isOpen]);
+
+    // Get welcome message for current language
+    const welcomeMessage = config?.welcomeMessage?.[language] || config?.welcomeMessage?.en || "Hi! I'm your museum concierge.";
+
+    // Get quick actions for current language
+    const quickActions = config?.quickActions?.filter((a: ParsedQuickAction) => a.enabled !== false).map((action: ParsedQuickAction) => ({
+        id: action.id,
+        category: action.category,
+        question: action.question[language] || action.question.en || '',
+    })) || [];
 
     const sendMessage = async (text: string) => {
         if (!text.trim() || loading) return;
@@ -61,7 +101,7 @@ export function ChatDrawer({ isOpen, onClose, language = 'en' }: ChatDrawerProps
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text, language })
+                body: JSON.stringify({ message: text, language, tourId })
             });
 
             if (!res.ok) throw new Error('Failed to get response');
@@ -152,24 +192,46 @@ export function ChatDrawer({ isOpen, onClose, language = 'en' }: ChatDrawerProps
                                         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
                                             <MessageCircle className="w-8 h-8 text-amber-400" />
                                         </div>
-                                        <p className="text-zinc-300 mb-1">Hi! I'm your museum concierge.</p>
+                                        <p className="text-zinc-300 mb-1">{welcomeMessage}</p>
                                         <p className="text-zinc-500 text-sm">How can I help you today?</p>
                                     </div>
 
                                     <div className="space-y-2">
                                         <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Quick Questions</p>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {QUICK_ACTIONS.map(action => (
-                                                <button
-                                                    key={action.label}
-                                                    onClick={() => handleQuickAction(action.question)}
-                                                    className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-left text-sm transition-colors"
-                                                >
-                                                    <span>{action.icon}</span>
-                                                    <span className="text-zinc-300">{action.label}</span>
-                                                </button>
-                                            ))}
-                                        </div>
+                                        {configLoading ? (
+                                            <div className="flex justify-center py-4">
+                                                <Loader2 className="w-5 h-5 text-zinc-500 animate-spin" />
+                                            </div>
+                                        ) : quickActions.length > 0 ? (
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {quickActions.map(action => {
+                                                    const CategoryIcon = CATEGORY_ICONS[action.category] || MessageCircle;
+                                                    return (
+                                                        <button
+                                                            key={action.id}
+                                                            onClick={() => handleQuickAction(action.question)}
+                                                            className="flex items-center gap-3 px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-left text-sm transition-colors"
+                                                        >
+                                                            <CategoryIcon className="w-4 h-4 text-amber-400" />
+                                                            <span className="text-zinc-300">{action.question}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {DEFAULT_QUICK_ACTIONS.map(action => (
+                                                    <button
+                                                        key={action.label}
+                                                        onClick={() => handleQuickAction(action.question)}
+                                                        className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-left text-sm transition-colors"
+                                                    >
+                                                        <span>{action.icon}</span>
+                                                        <span className="text-zinc-300">{action.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </>
                             ) : (

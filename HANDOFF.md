@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: February 1, 2026
-**Session Status**: Phase 25 Document Collections COMPLETE ✅ | Phase 24 Translation View COMPLETE ✅ | Phase 23a Collections ↔ Media Library Sync COMPLETE ✅
+**Last Updated**: February 2, 2026
+**Session Status**: Phase 26.1 AI Museum Concierge COMPLETE ✅ | Phase 25 Document Collections COMPLETE ✅ | Phase 26.2 Per-Tour Concierge NEXT
 
 ---
 
@@ -644,6 +644,44 @@ TourStack uses a **modular content block system** where tours and stops are comp
 > | PowerPoint | `.pptx` | officeparser |
 > | Plain Text | `.txt` | Browser (client-side) |
 
+### Phase 26.1: AI Museum Concierge ✅ (Feb 2, 2026)
+- [x] **Admin Configuration Page** - `/concierge` route with full configuration UI
+- [x] **Persona Selection** - Friendly, Professional, Fun, Scholarly, Custom personas
+- [x] **Welcome Message** - Multilingual JSON storage with per-language messages
+- [x] **Language Configuration** - EN, ES, FR, DE toggles with primary language
+- [x] **Knowledge Sources** - Import from document collections with extracted text
+- [x] **Quick Actions** - Add, delete, drag-reorder buttons with multilingual labels
+- [x] **Translate All** - Google Translate API for bulk translation
+- [x] **Test Concierge** - Preview chat responses with configured knowledge
+- [x] **ChatDrawer Integration** - Fetches dynamic config for visitor-facing chat
+
+> **Database Tables:**
+> - `ConciergeConfig` - Main configuration (persona, languages, welcome message)
+> - `ConciergeKnowledge` - Knowledge sources (document imports, priority)
+> - `ConciergeQuickAction` - Quick action buttons (question JSON, category, order)
+
+> **Key Files:**
+> - `app/src/pages/Concierge.tsx` - Admin configuration page
+> - `app/src/lib/conciergeService.ts` - API client for concierge endpoints
+> - `app/server/routes/concierge.ts` - API routes for config, knowledge, quick actions
+> - `app/src/components/chat/ChatDrawer.tsx` - Visitor-facing chat integration
+
+> **Bug Fixes Applied:**
+> - 500 error: Database tables didn't exist, created via SQL
+> - Import modal empty: Filter was `'documents'` but type is `'document_collection'`
+> - Quick action text missing: JSON `question` field wasn't being parsed
+
+> **Documentation:** See [docs/ai-chatbot-documents-dev.md](docs/ai-chatbot-documents-dev.md)
+
+### 🎯 Phase 26.2: Per-Tour AI Concierge (NEXT)
+- [ ] Add concierge fields to Tour model (conciergeEnabled, conciergePersona, conciergeWelcome, conciergeCollections)
+- [ ] Create tour concierge settings UI (new tab in Tour Editor)
+- [ ] Update chat API for tour-specific context
+- [ ] Auto-build knowledge from tour content (title, description, stops, text blocks)
+- [ ] Link document collections to specific tours
+
+> **Vision:** Each tour gets its own AI chatbot that knows specifically about THAT tour. Visitors on "Ancient Egypt" get an Egypt expert.
+
 ### 🎯 Phase 17: Stop Navigation & Links (Planned)
 - [ ] **Next/Previous Buttons** - Navigate between stops
 - [ ] **Stop List View** - See all stops in tour
@@ -772,6 +810,13 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | AI Tools Panel | `app/src/components/collections/DocumentAIToolsPanel.tsx` |
 | Documents API | `app/server/routes/documents.ts` |
 | Documents Dev Guide | `docs/ai-chatbot-documents-dev.md` |
+| **AI Concierge** | |
+| Concierge Admin Page | `app/src/pages/Concierge.tsx` |
+| Concierge Service | `app/src/lib/conciergeService.ts` |
+| Concierge API Routes | `app/server/routes/concierge.ts` |
+| Chat Drawer | `app/src/components/chat/ChatDrawer.tsx` |
+| Concierge Dev Guide | `docs/ai-chatbot-documents-dev.md` |
+| Concierge Bug Audit | `docs/ai-concierge-bug.md` |
 | **Media Library** | |
 | Media Page | `app/src/pages/Media.tsx` |
 | Media Service | `app/src/lib/mediaService.ts` |

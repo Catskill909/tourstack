@@ -13,6 +13,7 @@ import {
     Volume2,
     Plug,
     Sparkles,
+    Bot,
     ChevronLeft,
     ChevronRight
 } from 'lucide-react';
@@ -30,6 +31,7 @@ const navItems = [
     { to: '/api', icon: Plug, label: 'API & Feeds' },
     { to: '/tools', icon: QrCode, label: 'Tools' },
     { to: '/ai-assistance', icon: Sparkles, label: 'AI Assistance' },
+    { to: '/concierge', icon: Bot, label: 'AI Concierge' },
 ];
 
 const bottomNavItems = [

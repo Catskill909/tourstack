@@ -12,6 +12,7 @@ import { ApiFeeds } from './pages/ApiFeeds';
 import { AIAssistance } from './pages/AIAssistance';
 import { Media } from './pages/Media';
 import { VisitorStop } from './pages/VisitorStop';
+import Concierge from './pages/Concierge';
 import { Docs } from './pages/Docs';
 import { Login } from './pages/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -50,6 +51,7 @@ function App() {
                 <Route path="/api" element={<ApiFeeds />} />
                 <Route path="/tools" element={<ComingSoon title="Tools" />} />
                 <Route path="/ai-assistance" element={<AIAssistance />} />
+                <Route path="/concierge" element={<Concierge />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/help" element={<ComingSoon title="Help" />} />
               </Routes>

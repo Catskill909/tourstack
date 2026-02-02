@@ -62,6 +62,10 @@ function parseTour(tour: Tour & { stops?: Stop[] }) {
         description: JSON.parse(tour.description),
         languages: JSON.parse(tour.languages),
         accessibility: JSON.parse(tour.accessibility),
+        // Concierge fields (Phase 26.2)
+        conciergeWelcome: tour.conciergeWelcome ? JSON.parse(tour.conciergeWelcome) : null,
+        conciergeCollections: tour.conciergeCollections ? JSON.parse(tour.conciergeCollections) : [],
+        conciergeQuickActions: tour.conciergeQuickActions ? JSON.parse(tour.conciergeQuickActions) : [],
         stops: tour.stops?.map(parseStop) || [],
     };
 }
@@ -187,6 +191,13 @@ router.put('/:id', async (req: Request<IdParams>, res: Response) => {
         if (data.primaryPositioningMethod !== undefined) updateData.primaryPositioningMethod = data.primaryPositioningMethod;
         if (data.backupPositioningMethod !== undefined) updateData.backupPositioningMethod = data.backupPositioningMethod;
         if (data.publishedAt !== undefined) updateData.publishedAt = data.publishedAt ? new Date(data.publishedAt) : null;
+
+        // Concierge fields (Phase 26.2)
+        if (data.conciergeEnabled !== undefined) updateData.conciergeEnabled = data.conciergeEnabled;
+        if (data.conciergePersona !== undefined) updateData.conciergePersona = data.conciergePersona;
+        if (data.conciergeWelcome !== undefined) updateData.conciergeWelcome = JSON.stringify(data.conciergeWelcome);
+        if (data.conciergeCollections !== undefined) updateData.conciergeCollections = JSON.stringify(data.conciergeCollections);
+        if (data.conciergeQuickActions !== undefined) updateData.conciergeQuickActions = JSON.stringify(data.conciergeQuickActions);
 
         // Update stops separately if provided
         if (data.stops !== undefined) {

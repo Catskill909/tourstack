@@ -1,13 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, Pencil, Settings, Check, X, Languages, Loader2, Play, Eye, ExternalLink, Monitor } from 'lucide-react';
+import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, Pencil, Settings, Check, X, Languages, Loader2, Play, Eye, ExternalLink, Monitor, MapPin, Bot } from 'lucide-react';
 import { translateWithLibre } from '../services/translationService';
 import { useToursStore } from '../stores/useToursStore';
 import { StopEditor } from '../components/StopEditor';
 import { PositioningEditorModal } from '../components/PositioningEditorModal';
 import { EditTourModal } from '../components/EditTourModal';
 import { KioskLauncherModal } from '../components/KioskLauncherModal';
+import { TourConciergeTab } from '../components/TourConciergeTab';
 import type { Stop, Tour, PositioningConfig } from '../types';
+
+// Tab definitions
+type TabId = 'stops' | 'ai-chatbot';
+const tabs: { id: TabId; name: string; icon: typeof MapPin }[] = [
+    { id: 'stops', name: 'Stops', icon: MapPin },
+    { id: 'ai-chatbot', name: 'AI Chatbot', icon: Bot },
+];
 
 // ============================================
 // STOPS API SERVICE - Uses database, not localStorage
@@ -89,6 +97,9 @@ export function TourDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { tours, fetchTours, updateTour } = useToursStore();
+
+    // Tab state
+    const [activeTab, setActiveTab] = useState<TabId>('stops');
 
     const [tour, setTour] = useState<Tour | null>(null);
     const [stops, setStops] = useState<Stop[]>([]);
@@ -421,11 +432,10 @@ export function TourDetail() {
                     <button
                         onClick={handleLaunchTour}
                         disabled={isLaunching || stops.length === 0}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                            tour.status === 'published'
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${tour.status === 'published'
                                 ? 'bg-green-600 hover:bg-green-700 text-white'
                                 : 'bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]'
-                        } ${(isLaunching || stops.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            } ${(isLaunching || stops.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         title={stops.length === 0 ? 'Add stops to enable launch' : (tour.status === 'published' ? 'Run tour in visitor mode' : 'Preview tour (staff only)')}
                     >
                         {isLaunching ? (
@@ -454,187 +464,217 @@ export function TourDetail() {
                     >
                         <Settings className="w-5 h-5" />
                     </button>
-                    <button
-                        onClick={() => setShowAddStop(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors"
-                    >
-                        <Plus className="w-4 h-4" />
-                        <span>Add Stop</span>
-                    </button>
-                </div>
-            </div>
-
-            {/* Stops List */}
-            {/* ... preserved list code ... */}
-            <div className="space-y-3">
-                {stops.length === 0 ? (
-                    <div className="text-center py-16 bg-[var(--color-bg-elevated)] rounded-xl border-2 border-dashed border-[var(--color-border-default)]">
-                        <QrCode className="w-12 h-12 text-[var(--color-text-muted)] mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">No stops yet</h3>
-                        <p className="text-[var(--color-text-muted)] mb-4">Add your first stop to build this tour</p>
+                    {activeTab === 'stops' && (
                         <button
                             onClick={() => setShowAddStop(true)}
-                            className="px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90"
+                            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors"
                         >
-                            Add First Stop
+                            <Plus className="w-4 h-4" />
+                            <span>Add Stop</span>
                         </button>
-                    </div>
-                ) : (
-                    stops.map((stop, index) => (
-                        <div
-                            key={stop.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, stop.id)}
-                            onDragEnd={handleDragEnd}
-                            onDragOver={(e) => handleDragOver(e, stop.id)}
-                            onDragLeave={handleDragLeave}
-                            onDrop={(e) => handleDrop(e, stop.id)}
-                            className={`flex items-center gap-4 p-4 bg-[var(--color-bg-elevated)] border rounded-xl transition-all group ${dragOverStopId === stop.id
-                                ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/5 scale-[1.02]'
-                                : draggedStopId === stop.id
-                                    ? 'border-[var(--color-accent-primary)]/50 opacity-50'
-                                    : 'border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50'
-                                }`}
-                        >
-                            {/* Drag Handle & Order */}
-                            <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
-                                <GripVertical className="w-5 h-5 cursor-grab active:cursor-grabbing" />
-                                <span className="w-6 h-6 flex items-center justify-center text-sm font-medium bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-full">
-                                    {index + 1}
-                                </span>
-                            </div>
-
-                            {/* Stop Info */}
-                            <div className="flex-1 min-w-0">
-                                {editingTitleStopId === stop.id ? (
-                                    /* Edit mode - shown when pencil is clicked */
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            ref={titleInputRef}
-                                            type="text"
-                                            value={editingTitleValue[tour?.primaryLanguage || 'en'] || editingTitleValue['en'] || ''}
-                                            onChange={(e) => setEditingTitleValue({
-                                                ...editingTitleValue,
-                                                [tour?.primaryLanguage || 'en']: e.target.value
-                                            })}
-                                            onKeyDown={handleTitleKeyDown}
-                                            className="flex-1 px-2 py-1 bg-[var(--color-bg-surface)] border border-[var(--color-accent-primary)] rounded text-[var(--color-text-primary)] focus:outline-none text-sm font-medium"
-                                            placeholder="Stop title..."
-                                        />
-                                        {(tour?.languages?.length || 0) > 1 && (
-                                            <button
-                                                onClick={translateStopTitle}
-                                                disabled={isTranslatingTitle}
-                                                className="p-1.5 hover:bg-[var(--color-accent-primary)]/10 rounded text-[var(--color-accent-primary)] disabled:opacity-50"
-                                                title="Translate to all languages"
-                                            >
-                                                {isTranslatingTitle ? (
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                ) : (
-                                                    <Languages className="w-4 h-4" />
-                                                )}
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={saveEditingTitle}
-                                            className="p-1.5 hover:bg-green-500/10 rounded text-green-500"
-                                            title="Save (Enter)"
-                                        >
-                                            <Check className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={cancelEditingTitle}
-                                            className="p-1.5 hover:bg-red-500/10 rounded text-red-400"
-                                            title="Cancel (Esc)"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    /* Display mode - plain text with visible pencil icon */
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="font-medium text-[var(--color-text-primary)] truncate">
-                                            {getStopTitle(stop)}
-                                        </h3>
-                                        <button
-                                            onClick={() => startEditingTitle(stop)}
-                                            className="p-1 hover:bg-[var(--color-bg-hover)] rounded text-[var(--color-text-muted)] hover:text-[var(--color-accent-primary)]"
-                                            title="Edit title"
-                                        >
-                                            <Pencil className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                )}
-                                <p className="text-sm text-[var(--color-text-muted)] truncate">
-                                    {stop.type} • {stop.primaryPositioning.method.replace('_', ' ')}
-                                </p>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={() => setShowQRModal(stop.id)}
-                                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)]"
-                                    title="Positioning Settings"
-                                >
-                                    <QrCode className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => handleEditStop(stop)}
-                                    className="p-2 hover:bg-[var(--color-accent-primary)]/10 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-accent-primary)]"
-                                    title="Edit Stop Content"
-                                >
-                                    <Pencil className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => handleDeleteStop(stop.id)}
-                                    className="p-2 hover:bg-red-500/10 rounded-lg text-[var(--color-text-secondary)] hover:text-red-500"
-                                    title="Delete"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    ))
-                )}
+                    )}
+                </div>
             </div>
 
-            {/* Add Stop Modal */}
-            {showAddStop && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] w-full max-w-md p-6 shadow-xl">
-                        <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">Add New Stop</h2>
-                        <form onSubmit={handleAddStop} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Stop Title</label>
-                                <input
-                                    type="text"
-                                    required
-                                    autoFocus
-                                    value={newStopTitle}
-                                    onChange={e => setNewStopTitle(e.target.value)}
-                                    className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
-                                    placeholder="e.g. The Rosetta Stone"
-                                />
-                            </div>
-                            <div className="flex gap-3 pt-2">
+            {/* Tabs */}
+            <div className="flex gap-2 border-b border-[var(--color-border-default)] pb-3">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${activeTab === tab.id
+                                ? 'bg-[var(--color-accent-primary)] text-white'
+                                : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
+                            }`}
+                    >
+                        <tab.icon className="w-4 h-4" />
+                        {tab.name}
+                    </button>
+                ))}
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === 'stops' ? (
+                <>
+                    {/* Stops List */}
+                    {/* ... preserved list code ... */}
+                    <div className="space-y-3">
+                        {stops.length === 0 ? (
+                            <div className="text-center py-16 bg-[var(--color-bg-elevated)] rounded-xl border-2 border-dashed border-[var(--color-border-default)]">
+                                <QrCode className="w-12 h-12 text-[var(--color-text-muted)] mx-auto mb-4" />
+                                <h3 className="text-lg font-medium text-[var(--color-text-primary)] mb-2">No stops yet</h3>
+                                <p className="text-[var(--color-text-muted)] mb-4">Add your first stop to build this tour</p>
                                 <button
-                                    type="button"
-                                    onClick={() => setShowAddStop(false)}
-                                    className="flex-1 px-4 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-lg hover:bg-[var(--color-bg-hover)]"
+                                    onClick={() => setShowAddStop(true)}
+                                    className="px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90"
                                 >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex-1 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90"
-                                >
-                                    Add Stop
+                                    Add First Stop
                                 </button>
                             </div>
-                        </form>
+                        ) : (
+                            stops.map((stop, index) => (
+                                <div
+                                    key={stop.id}
+                                    draggable
+                                    onDragStart={(e) => handleDragStart(e, stop.id)}
+                                    onDragEnd={handleDragEnd}
+                                    onDragOver={(e) => handleDragOver(e, stop.id)}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={(e) => handleDrop(e, stop.id)}
+                                    className={`flex items-center gap-4 p-4 bg-[var(--color-bg-elevated)] border rounded-xl transition-all group ${dragOverStopId === stop.id
+                                        ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/5 scale-[1.02]'
+                                        : draggedStopId === stop.id
+                                            ? 'border-[var(--color-accent-primary)]/50 opacity-50'
+                                            : 'border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50'
+                                        }`}
+                                >
+                                    {/* Drag Handle & Order */}
+                                    <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
+                                        <GripVertical className="w-5 h-5 cursor-grab active:cursor-grabbing" />
+                                        <span className="w-6 h-6 flex items-center justify-center text-sm font-medium bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-full">
+                                            {index + 1}
+                                        </span>
+                                    </div>
+
+                                    {/* Stop Info */}
+                                    <div className="flex-1 min-w-0">
+                                        {editingTitleStopId === stop.id ? (
+                                            /* Edit mode - shown when pencil is clicked */
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    ref={titleInputRef}
+                                                    type="text"
+                                                    value={editingTitleValue[tour?.primaryLanguage || 'en'] || editingTitleValue['en'] || ''}
+                                                    onChange={(e) => setEditingTitleValue({
+                                                        ...editingTitleValue,
+                                                        [tour?.primaryLanguage || 'en']: e.target.value
+                                                    })}
+                                                    onKeyDown={handleTitleKeyDown}
+                                                    className="flex-1 px-2 py-1 bg-[var(--color-bg-surface)] border border-[var(--color-accent-primary)] rounded text-[var(--color-text-primary)] focus:outline-none text-sm font-medium"
+                                                    placeholder="Stop title..."
+                                                />
+                                                {(tour?.languages?.length || 0) > 1 && (
+                                                    <button
+                                                        onClick={translateStopTitle}
+                                                        disabled={isTranslatingTitle}
+                                                        className="p-1.5 hover:bg-[var(--color-accent-primary)]/10 rounded text-[var(--color-accent-primary)] disabled:opacity-50"
+                                                        title="Translate to all languages"
+                                                    >
+                                                        {isTranslatingTitle ? (
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                        ) : (
+                                                            <Languages className="w-4 h-4" />
+                                                        )}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={saveEditingTitle}
+                                                    className="p-1.5 hover:bg-green-500/10 rounded text-green-500"
+                                                    title="Save (Enter)"
+                                                >
+                                                    <Check className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={cancelEditingTitle}
+                                                    className="p-1.5 hover:bg-red-500/10 rounded text-red-400"
+                                                    title="Cancel (Esc)"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            /* Display mode - plain text with visible pencil icon */
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-medium text-[var(--color-text-primary)] truncate">
+                                                    {getStopTitle(stop)}
+                                                </h3>
+                                                <button
+                                                    onClick={() => startEditingTitle(stop)}
+                                                    className="p-1 hover:bg-[var(--color-bg-hover)] rounded text-[var(--color-text-muted)] hover:text-[var(--color-accent-primary)]"
+                                                    title="Edit title"
+                                                >
+                                                    <Pencil className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        )}
+                                        <p className="text-sm text-[var(--color-text-muted)] truncate">
+                                            {stop.type} • {stop.primaryPositioning.method.replace('_', ' ')}
+                                        </p>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => setShowQRModal(stop.id)}
+                                            className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)]"
+                                            title="Positioning Settings"
+                                        >
+                                            <QrCode className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleEditStop(stop)}
+                                            className="p-2 hover:bg-[var(--color-accent-primary)]/10 rounded-lg text-[var(--color-text-secondary)] hover:text-[var(--color-accent-primary)]"
+                                            title="Edit Stop Content"
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteStop(stop.id)}
+                                            className="p-2 hover:bg-red-500/10 rounded-lg text-[var(--color-text-secondary)] hover:text-red-500"
+                                            title="Delete"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
-                </div>
+
+                    {/* Add Stop Modal */}
+                    {showAddStop && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                            <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] w-full max-w-md p-6 shadow-xl">
+                                <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-4">Add New Stop</h2>
+                                <form onSubmit={handleAddStop} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1">Stop Title</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            autoFocus
+                                            value={newStopTitle}
+                                            onChange={e => setNewStopTitle(e.target.value)}
+                                            className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+                                            placeholder="e.g. The Rosetta Stone"
+                                        />
+                                    </div>
+                                    <div className="flex gap-3 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAddStop(false)}
+                                            className="flex-1 px-4 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-lg hover:bg-[var(--color-bg-hover)]"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="flex-1 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90"
+                                        >
+                                            Add Stop
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </>
+            ) : (
+                /* AI Chatbot Tab */
+                <TourConciergeTab
+                    tour={tour}
+                    onUpdate={handleUpdateTour}
+                />
             )}
 
             {/* Positioning Editor Modal */}

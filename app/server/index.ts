@@ -23,6 +23,7 @@ import geminiRouter from './routes/gemini.js';
 import googleTranslateRouter from './routes/google-translate.js';
 import chatRouter from './routes/chat.js';
 import documentsRouter from './routes/documents.js';
+import conciergeRouter from './routes/concierge.js';
 import authRouter from './routes/auth.js';
 import { sessionMiddleware, requireAuth } from './middleware/auth.js';
 
@@ -76,6 +77,7 @@ app.use('/api/vision', requireAuth, visionRouter);
 app.use('/api/gemini', requireAuth, geminiRouter);
 app.use('/api/documents', requireAuth, documentsRouter);
 app.use('/api/google-translate', requireAuth, googleTranslateRouter);
+app.use('/api/concierge', requireAuth, conciergeRouter);
 
 // In production, serve the built frontend
 if (process.env.NODE_ENV === 'production') {
