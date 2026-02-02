@@ -3,6 +3,7 @@ import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Globe, AlertCircle, Loader2, ChevronLeft, ChevronRight, Settings, Maximize, RotateCcw } from 'lucide-react';
 import { StopContentBlock } from '../components/blocks/StopContentBlock';
 import { DisplaySettingsPanel, type DisplaySettings } from '../components/DisplaySettingsPanel';
+import { ChatDrawer, ChatFloatingButton } from '../components/chat/ChatDrawer';
 import type { Stop, ContentBlock } from '../types';
 
 // API returns tour with full stop objects (not just IDs)
@@ -58,6 +59,7 @@ export function VisitorStop() {
         showDescriptions: true,
     });
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
 
     // Check if user is staff (simplified - could use auth system later)
     const isStaff = localStorage.getItem('tourstack_staff') === 'true';
@@ -508,6 +510,16 @@ export function VisitorStop() {
                     <Maximize className="w-5 h-5" />
                 </button>
             )}
+
+            {/* Museum Concierge Chat */}
+            {!isKioskMode && (
+                <ChatFloatingButton onClick={() => setIsChatOpen(true)} />
+            )}
+            <ChatDrawer
+                isOpen={isChatOpen}
+                onClose={() => setIsChatOpen(false)}
+                language={language}
+            />
         </div>
     );
 }

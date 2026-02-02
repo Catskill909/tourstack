@@ -80,4 +80,78 @@ router.post('/analyze', async (req, res) => {
     }
 });
 
+// Analyze text from documents
+router.post('/analyze-text', async (req, res) => {
+    try {
+        const { text, prompt, tool } = req.body;
+
+        if (!text) {
+            return res.status(400).json({ error: 'No text data provided' });
+        }
+
+        if (!GEMINI_API_KEY) {
+            return res.status(500).json({ error: 'Server configuration error: Gemini API Key missing' });
+        }
+
+        // Build a structured prompt based on the tool type
+        let systemPrompt = '';
+        switch (tool) {
+            case 'summarize':
+                systemPrompt = `Analyze the following document and provide a concise 2-3 sentence summary suitable for a museum exhibit label. Return ONLY a JSON object with a single "result" field containing the summary string.
+
+Document:
+${text}`;
+                break;
+            case 'facts':
+                systemPrompt = `Extract key facts from the following document: dates, names, locations, measurements, and important details. Return ONLY a JSON object with a single "result" field containing an array of fact strings.
+
+Document:
+${text}`;
+                break;
+            case 'faq':
+                systemPrompt = `Generate 5 FAQ questions that a museum visitor might ask about this content, with clear answers. Return ONLY a JSON object with a single "result" field containing an array of objects, each with "question" and "answer" fields.
+
+Document:
+${text}`;
+                break;
+            case 'tags':
+                systemPrompt = `Generate 5-10 relevant keyword tags for cataloging and search purposes. Return ONLY a JSON object with a single "result" field containing an array of tag strings.
+
+Document:
+${text}`;
+                break;
+            default:
+                systemPrompt = `${prompt}
+
+Return your response as a JSON object with a single "result" field.
+
+Document:
+${text}`;
+        }
+
+        const result = await model.generateContent(systemPrompt);
+        const response = await result.response;
+        const responseText = response.text();
+
+        // Parse JSON
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (e) {
+            console.error("Failed to parse Gemini JSON response:", responseText);
+            // Try to extract result from the response
+            return res.json({ result: responseText });
+        }
+
+        res.json(data);
+
+    } catch (error: any) {
+        console.error('Gemini Text Analysis Error:', error);
+        res.status(500).json({
+            error: 'Failed to analyze text with Gemini',
+            details: error.message
+        });
+    }
+});
+
 export default router;

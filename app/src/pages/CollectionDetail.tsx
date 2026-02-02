@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Download, Globe, Mic2, Eye, Sparkles, Languages } from 'lucide-react';
-import { collectionService, type CollectionItem, type AudioCollectionItem, type ImageCollectionItem } from '../lib/collectionService';
+import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Download, Globe, Mic2, Eye, Sparkles, Languages, FileText } from 'lucide-react';
+import { collectionService, type CollectionItem, type AudioCollectionItem, type ImageCollectionItem, type DocumentCollectionItem } from '../lib/collectionService';
 import { TextPreviewModal } from '../components/TextPreviewModal';
-import { CollectionItemAnalysisModal, AddItemWizard } from '../components/collections';
+import { CollectionItemAnalysisModal, AddItemWizard, DocumentAIToolsPanel } from '../components/collections';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import type { AIAnalysisResult, MultilingualAIAnalysis } from '../types/media';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
@@ -63,6 +63,9 @@ export function CollectionDetail() {
     // Language view state for image collections
     const [viewLanguage, setViewLanguage] = useState('en');
 
+    // Document collection state
+    const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
+
     useEffect(() => {
         if (id) loadCollection(id);
     }, [id]);
@@ -93,6 +96,19 @@ export function CollectionDetail() {
             console.error('Failed to save collection:', error);
         } finally {
             setIsSaving(false);
+        }
+    }
+
+    // Auto-save without modal (for AI analysis updates)
+    async function autoSaveItems(updatedItems: CollectionItem[]) {
+        if (!collection) return;
+        try {
+            await collectionService.update(collection.id, {
+                items: updatedItems
+            });
+            console.log('Auto-saved collection with AI analysis');
+        } catch (error) {
+            console.error('Failed to auto-save collection:', error);
         }
     }
 
@@ -142,6 +158,7 @@ export function CollectionDetail() {
     if (!collection) return <div className="p-6 text-center text-red-500">Collection not found</div>;
 
     const isAudioCollection = collection.type === 'audio_collection';
+    const isDocumentCollection = collection.type === 'document_collection';
 
     return (
         <div className="space-y-6 max-w-5xl mx-auto">
@@ -157,7 +174,7 @@ export function CollectionDetail() {
                     <div>
                         <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{collection.name}</h1>
                         <p className="text-[var(--color-text-muted)] text-sm">
-                            {items.length} items • {isAudioCollection ? 'Audio Collection' : collection.type}
+                            {items.length} items • {isAudioCollection ? 'Audio Collection' : isDocumentCollection ? 'Document Collection' : collection.type}
                         </p>
                     </div>
                 </div>
@@ -166,15 +183,15 @@ export function CollectionDetail() {
                     {!isAudioCollection && items.some(i =>
                         i.type === 'image' && (i as ImageCollectionItem & { aiTranslations?: MultilingualAIAnalysis }).aiTranslations
                     ) && (
-                        <LanguageSwitcher
-                            availableLanguages={SUPPORTED_LANGUAGES}
-                            activeLanguage={viewLanguage}
-                            onChange={setViewLanguage}
-                            size="sm"
-                            showStatus={false}
-                        />
-                    )}
-                    {!isAudioCollection && (
+                            <LanguageSwitcher
+                                availableLanguages={SUPPORTED_LANGUAGES}
+                                activeLanguage={viewLanguage}
+                                onChange={setViewLanguage}
+                                size="sm"
+                                showStatus={false}
+                            />
+                        )}
+                    {(!isAudioCollection || isDocumentCollection) && (
                         <button
                             onClick={handleSave}
                             disabled={isSaving}
@@ -308,6 +325,95 @@ export function CollectionDetail() {
                             </div>
                         </div>
                     ))}
+                </div>
+            ) : isDocumentCollection ? (
+                /* Document Collection - Vertical Layout */
+                <div className="space-y-6">
+                    {/* Compact Documents Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                        {(items as DocumentCollectionItem[]).map((item) => (
+                            <div
+                                key={item.id}
+                                onClick={() => setSelectedDocId(item.id)}
+                                className={`
+                                    flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
+                                    ${selectedDocId === item.id
+                                        ? 'bg-amber-500/10 border-amber-500 ring-1 ring-amber-500/30'
+                                        : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:border-amber-500/50'
+                                    }
+                                `}
+                            >
+                                <div className={`p-2 rounded-lg shrink-0 ${item.metadata.aiAnalysis ? 'bg-green-500/10' : 'bg-amber-500/10'}`}>
+                                    {item.metadata.aiAnalysis ? (
+                                        <Sparkles className="w-4 h-4 text-green-500" />
+                                    ) : (
+                                        <FileText className="w-4 h-4 text-amber-500" />
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm text-[var(--color-text-primary)] truncate">
+                                        {item.metadata.fileName}
+                                    </p>
+                                    <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                                        <span>{(item.metadata.fileSize / 1024).toFixed(0)} KB</span>
+                                        {item.metadata.extractedText && (
+                                            <span className="text-green-500">• Ready</span>
+                                        )}
+                                        {item.metadata.aiAnalysis && (
+                                            <span className="text-green-500">• AI</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        confirmDeleteItem(item.id);
+                                    }}
+                                    className="p-1.5 hover:bg-red-500/10 rounded-lg text-[var(--color-text-muted)] hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                    title="Delete"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        ))}
+
+                        {/* Add Item Button - Compact */}
+                        <button
+                            onClick={() => setShowAddItemWizard(true)}
+                            className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-[var(--color-border-dash)] rounded-xl hover:border-amber-500/50 hover:bg-amber-500/5 transition-all text-[var(--color-text-muted)] hover:text-amber-500"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span className="text-sm font-medium">Add Documents</span>
+                        </button>
+                    </div>
+
+                    {/* AI Tools Panel - Full Width */}
+                    <DocumentAIToolsPanel
+                        documents={items as DocumentCollectionItem[]}
+                        selectedDocId={selectedDocId}
+                        onUpdateDocument={(docId, aiAnalysis) => {
+                            const updatedItems = items.map(item =>
+                                item.id === docId
+                                    ? { ...item, metadata: { ...(item as DocumentCollectionItem).metadata, aiAnalysis } } as CollectionItem
+                                    : item
+                            );
+                            setItems(updatedItems);
+                            autoSaveItems(updatedItems);
+                        }}
+                        onBatchUpdateDocuments={(updates) => {
+                            console.log('Batch updates received:', updates.length);
+                            const updatedItems = items.map(item => {
+                                const update = updates.find(u => u.id === item.id);
+                                if (update) {
+                                    return { ...item, metadata: { ...(item as DocumentCollectionItem).metadata, aiAnalysis: update.aiAnalysis } } as CollectionItem;
+                                }
+                                return item;
+                            });
+                            setItems(updatedItems);
+                            autoSaveItems(updatedItems);
+                        }}
+                        fullWidth
+                    />
                 </div>
             ) : (
                 /* Items Grid - Image Gallery */

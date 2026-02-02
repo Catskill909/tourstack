@@ -68,6 +68,7 @@ When museum staff access visitor pages, they see:
 | Phase 22: Collection Translations | ✅ Complete |
 | Phase 23a: Collections ↔ Media Library Sync | ✅ Complete |
 | Phase 24: Translation View | ✅ Complete |
+| Phase 25: Document Collections | ✅ Complete |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
 
@@ -224,6 +225,33 @@ Collections → AI Analyze → Translate → Save → Auto-Sync → Media Librar
 **Files:**
 - `app/src/pages/Languages.tsx` - Main translation view
 - `app/server/routes/translate.ts` - Existing LibreTranslate backend
+
+### Document Collections (Phase 25) - COMPLETE ✅
+
+**New Feature:** Upload and analyze documents (PDF, DOCX, RTF, etc.) with AI-powered tools.
+
+| Feature | Description |
+|---------|-------------|
+| **Multi-Format Extraction** | PDF, DOCX, DOC, RTF, ODT, PPTX via `officeparser` |
+| **Text Extraction API** | `POST /api/documents/extract-text-base64` endpoint |
+| **AI Tools Panel** | Full-width panel with Single/Batch modes |
+| **4 AI Tools** | Summarize, Extract Facts, Generate FAQ, Auto-Tag |
+| **Batch Selection** | Checkbox UI for selecting specific documents |
+| **Batch Results** | Success/failure status per document processed |
+| **Auto-Save** | AI analysis results persist to database immediately |
+| **Compact Grid** | 4-column responsive document layout |
+
+**AI Tools:**
+- **Summarize** - 2-3 sentence museum-style summary
+- **Extract Facts** - Key facts, dates, names as bullet points
+- **Generate FAQ** - 5 visitor Q&A questions
+- **Auto-Tag** - 8-12 keyword tags for cataloging
+
+**Files:**
+- `app/src/components/collections/DocumentCollectionWizard.tsx` - 3-step upload wizard
+- `app/src/components/collections/DocumentAIToolsPanel.tsx` - AI tools with fullWidth prop
+- `app/server/routes/documents.ts` - Text extraction via officeparser
+- `docs/ai-chatbot-documents-dev.md` - Full documentation
 
 ---
 

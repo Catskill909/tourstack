@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: February 1, 2026
-**Session Status**: Phase 24 Translation View COMPLETE ✅ | Phase 23a Collections ↔ Media Library Sync COMPLETE ✅ | Phase 22 Collection Translations COMPLETE ✅
+**Session Status**: Phase 25 Document Collections COMPLETE ✅ | Phase 24 Translation View COMPLETE ✅ | Phase 23a Collections ↔ Media Library Sync COMPLETE ✅
 
 ---
 
@@ -616,6 +616,34 @@ TourStack uses a **modular content block system** where tours and stops are comp
 > - **Cloud APIs**: DeepL (best quality), Google Cloud, Microsoft Azure, Amazon Translate
 > - **Self-Hosted**: LibreTranslate (active), Argos, OpenNMT, Bergamot, Marian NMT
 
+### Phase 25: Document Collections ✅ (Feb 1, 2026)
+- [x] **DocumentCollectionWizard** - Simplified 3-step wizard: Details → Upload → Review
+- [x] **Multi-Format Text Extraction** - PDF, DOCX, DOC, RTF, ODT, PPTX via `officeparser`
+- [x] **Server-Side Extraction API** - `POST /api/documents/extract-text-base64` endpoint
+- [x] **AI Analysis Tools** - Summarize, Extract Facts, Generate FAQ, Auto-Tag
+- [x] **DocumentAIToolsPanel** - Full-width panel with Single/Batch modes
+- [x] **Batch Document Selection** - Checkbox UI for selecting specific documents
+- [x] **Batch Results Display** - Success/failure status per document processed
+- [x] **Auto-Save Persistence** - AI analysis results save to database immediately
+- [x] **Compact Document Grid** - 4-column responsive layout on collection detail
+
+> **Key Components:**
+> - `src/components/collections/DocumentCollectionWizard.tsx` - 3-step upload wizard
+> - `src/components/collections/DocumentAIToolsPanel.tsx` - AI tools with fullWidth support
+> - `src/pages/CollectionDetail.tsx` - Integrated document view with AI panel
+> - `server/routes/documents.ts` - Text extraction API using officeparser
+> - `server/routes/gemini.ts` - `POST /api/gemini/analyze-text` for AI tools
+
+> **Supported Document Formats:**
+> | Format | Extension | Method |
+> |--------|-----------|--------|
+> | PDF | `.pdf` | officeparser |
+> | Word | `.docx`, `.doc` | officeparser |
+> | Rich Text | `.rtf` | officeparser |
+> | OpenDocument | `.odt` | officeparser |
+> | PowerPoint | `.pptx` | officeparser |
+> | Plain Text | `.txt` | Browser (client-side) |
+
 ### 🎯 Phase 17: Stop Navigation & Links (Planned)
 - [ ] **Next/Previous Buttons** - Navigate between stops
 - [ ] **Stop List View** - See all stops in tour
@@ -739,6 +767,11 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | AddItemWizard | `app/src/components/collections/AddItemWizard.tsx` |
 | ConfirmationModal | `app/src/components/ui/ConfirmationModal.tsx` |
 | Collections Dev Guide | `docs/collections-dev.md` |
+| **Document Collections** | |
+| Document Wizard | `app/src/components/collections/DocumentCollectionWizard.tsx` |
+| AI Tools Panel | `app/src/components/collections/DocumentAIToolsPanel.tsx` |
+| Documents API | `app/server/routes/documents.ts` |
+| Documents Dev Guide | `docs/ai-chatbot-documents-dev.md` |
 | **Media Library** | |
 | Media Page | `app/src/pages/Media.tsx` |
 | Media Service | `app/src/lib/mediaService.ts` |

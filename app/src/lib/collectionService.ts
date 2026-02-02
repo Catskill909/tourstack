@@ -43,9 +43,26 @@ export interface LegacyCollectionItem extends BaseCollectionItem {
     caption?: string;
 }
 
-export type CollectionItem = ImageCollectionItem | AudioCollectionItem | LegacyCollectionItem;
+// Document collection item
+export interface DocumentCollectionItem extends BaseCollectionItem {
+    type: 'document';
+    url: string;
+    metadata: {
+        fileName: string;
+        fileSize: number;
+        extractedText?: string;
+        aiAnalysis?: {
+            summary?: string;
+            facts?: string[];
+            faq?: Array<{ question: string; answer: string }>;
+            tags?: string[];
+        };
+    };
+}
 
-export type CollectionType = 'gallery' | 'dataset' | 'audio_collection';
+export type CollectionItem = ImageCollectionItem | AudioCollectionItem | DocumentCollectionItem | LegacyCollectionItem;
+
+export type CollectionType = 'gallery' | 'dataset' | 'audio_collection' | 'document_collection';
 
 // TTS settings for audio collections
 export interface TTSSettings {

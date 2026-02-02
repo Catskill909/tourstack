@@ -53,15 +53,15 @@ const COLLECTION_TYPES = [
   {
     id: 'documents' as const,
     label: 'Documents',
-    description: 'Document collections with OCR & summarization',
+    description: 'Document collections with AI analysis & summarization',
     icon: FileText,
-    color: 'gray',
-    bgColor: 'bg-gray-500/10',
-    hoverBg: 'hover:bg-gray-500/20',
-    textColor: 'text-gray-400',
-    borderColor: 'border-gray-500/30',
-    available: false,
-    features: ['PDF support', 'OCR extraction', 'AI summaries'],
+    color: 'amber',
+    bgColor: 'bg-amber-500/10',
+    hoverBg: 'hover:bg-amber-500/20',
+    textColor: 'text-amber-500',
+    borderColor: 'border-amber-500/30',
+    available: true,
+    features: ['PDF/DOCX/TXT', 'AI Summarize', 'Extract Facts'],
   },
 ];
 
@@ -154,11 +154,10 @@ export function CollectionTypeModal({ isOpen, onClose, onSelect }: CollectionTyp
                       {type.features.map((feature, i) => (
                         <span
                           key={i}
-                          className={`text-xs px-2 py-1 rounded-full ${
-                            type.available
+                          className={`text-xs px-2 py-1 rounded-full ${type.available
                               ? `${type.bgColor} ${type.textColor}`
                               : 'bg-[var(--color-bg-surface)] text-[var(--color-text-muted)]'
-                          }`}
+                            }`}
                         >
                           {feature}
                         </span>

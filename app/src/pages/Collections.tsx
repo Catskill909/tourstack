@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, LayoutGrid, Image as ImageIcon, Trash2, Volume2, Pencil, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { collectionService, type Collection } from '../lib/collectionService';
-import { CollectionTypeModal, ImageCollectionWizard, type CollectionTypeOption } from '../components/collections';
+import { CollectionTypeModal, ImageCollectionWizard, DocumentCollectionWizard, type CollectionTypeOption } from '../components/collections';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 
 export function Collections() {
@@ -11,10 +11,10 @@ export function Collections() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Collection Creation State
     const [showTypeModal, setShowTypeModal] = useState(false);
     const [showImageWizard, setShowImageWizard] = useState(false);
-    const [showPlaceholderModal, setShowPlaceholderModal] = useState<'video' | 'documents' | null>(null);
+    const [showDocumentWizard, setShowDocumentWizard] = useState(false);
+    const [showPlaceholderModal, setShowPlaceholderModal] = useState<'video' | null>(null);
 
     // Edit Collection State
     const [editingCollection, setEditingCollection] = useState<Collection | null>(null);
@@ -50,15 +50,18 @@ export function Collections() {
                 // Navigate to Audio TTS page for audio collection creation
                 navigate('/audio');
                 break;
-            case 'video':
             case 'documents':
-                setShowPlaceholderModal(type);
+                setShowDocumentWizard(true);
+                break;
+            case 'video':
+                setShowPlaceholderModal('video');
                 break;
         }
     }
 
     function handleCollectionCreated(collectionId: string) {
         setShowImageWizard(false);
+        setShowDocumentWizard(false);
         loadCollections();
         navigate(`/collections/${collectionId}`);
     }
@@ -162,8 +165,8 @@ export function Collections() {
                         >
                             <div className="flex items-start justify-between mb-4">
                                 <div className={`p-3 rounded-lg ${collection.type === 'audio_collection'
-                                        ? 'bg-purple-500/10 text-purple-500'
-                                        : 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]'
+                                    ? 'bg-purple-500/10 text-purple-500'
+                                    : 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]'
                                     }`}>
                                     {collection.type === 'audio_collection' ? (
                                         <Volume2 className="w-6 h-6" />
@@ -221,13 +224,19 @@ export function Collections() {
                 onSuccess={handleCollectionCreated}
             />
 
+            {/* Document Collection Wizard */}
+            <DocumentCollectionWizard
+                isOpen={showDocumentWizard}
+                onClose={() => setShowDocumentWizard(false)}
+                onSuccess={handleCollectionCreated}
+            />
+
             {/* Placeholder Modal for Video/Documents */}
             {showPlaceholderModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] w-full max-w-md p-6 shadow-xl text-center">
-                        <div className={`inline-flex p-4 rounded-xl mb-4 ${
-                            showPlaceholderModal === 'video' ? 'bg-red-500/10' : 'bg-gray-500/10'
-                        }`}>
+                        <div className={`inline-flex p-4 rounded-xl mb-4 ${showPlaceholderModal === 'video' ? 'bg-red-500/10' : 'bg-gray-500/10'
+                            }`}>
                             {showPlaceholderModal === 'video' ? (
                                 <svg className="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -266,8 +275,8 @@ export function Collections() {
                         <div className="flex items-center justify-between p-4 border-b border-[var(--color-border-default)]">
                             <div className="flex items-center gap-3">
                                 <div className={`p-2 rounded-lg ${editingCollection.type === 'audio_collection'
-                                        ? 'bg-purple-500/10 text-purple-500'
-                                        : 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]'
+                                    ? 'bg-purple-500/10 text-purple-500'
+                                    : 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]'
                                     }`}>
                                     {editingCollection.type === 'audio_collection' ? (
                                         <Volume2 className="w-5 h-5" />

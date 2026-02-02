@@ -21,6 +21,8 @@ import visitorRouter from './routes/visitor.js';
 import visionRouter from './routes/vision.js';
 import geminiRouter from './routes/gemini.js';
 import googleTranslateRouter from './routes/google-translate.js';
+import chatRouter from './routes/chat.js';
+import documentsRouter from './routes/documents.js';
 import authRouter from './routes/auth.js';
 import { sessionMiddleware, requireAuth } from './middleware/auth.js';
 
@@ -51,6 +53,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Public API routes (no auth required)
 app.use('/api/auth', authRouter);
 app.use('/api/visitor', visitorRouter);
+app.use('/api/chat', chatRouter); // Museum concierge - public for visitors
 
 // Health check (public)
 app.get('/api/health', (_req, res) => {
@@ -71,6 +74,7 @@ app.use('/api/feeds', requireAuth, feedsRouter);
 app.use('/api/collections', requireAuth, collectionsRouter);
 app.use('/api/vision', requireAuth, visionRouter);
 app.use('/api/gemini', requireAuth, geminiRouter);
+app.use('/api/documents', requireAuth, documentsRouter);
 app.use('/api/google-translate', requireAuth, googleTranslateRouter);
 
 // In production, serve the built frontend
