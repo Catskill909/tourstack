@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import type { ConciergeKnowledge } from '../../src/generated/prisma/index.js';
 import { prisma } from '../db.js';
 
 const router = Router();
@@ -458,7 +457,7 @@ Answer the visitor's question based ONLY on the knowledge base above. If you can
             })
         });
 
-        const data = await response.json();
+        const data = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
         const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || 'I apologize, I was unable to process your question.';
 
         res.json({
