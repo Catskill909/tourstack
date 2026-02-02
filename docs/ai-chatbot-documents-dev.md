@@ -1,336 +1,537 @@
 # AI Chatbot & Documents Collection Development Plan
 
-> **Phase 25: Documents Collection + AI Museum Concierge**  
-> Staff tools for content creation + Visitor chatbot for logistics  
+> **Phase 25 COMPLETE ✅ | Phase 26 PLANNED 🎯**  
+> Staff document tools complete + Visitor concierge needs admin configuration  
 > **Last Updated:** February 1, 2026
 
 ---
 
-## 📋 Quick Reference
+## 📋 Phase Summary
 
-| Feature | Location | Users | Status |
-|---------|----------|-------|--------|
-| **Documents Collection** | `/collections` → Documents type | Staff/Curators | ✅ Implemented |
-| **Chat Block (Concierge)** | Tour stops, visitor drawer | Visitors | ✅ Core Implemented |
-
-**Tech Stack:** Gemini 2.0 Flash, SQLite/Prisma, officeparser (PDF/DOCX/RTF extraction)
+| Phase | Feature | Status |
+|-------|---------|--------|
+| **Phase 25** | Documents Collection (Staff Tools) | ✅ **Complete** |
+| **Phase 26** | AI Museum Concierge Configuration | 🎯 **Next Session** |
 
 ---
 
-## ✅ Implementation Checklist
+## ✅ PHASE 25: Documents Collection (COMPLETE)
 
-### Museum Concierge (Chat Block) - ✅ Complete
-- [x] Create `/app/uploads/knowledge/` directory
-- [x] Create `server/routes/chat.ts` endpoint
-- [x] Build system prompt with grounded context
-- [x] Add language detection + translation
-- [x] Register route in `server/index.ts`
-- [x] Create `ChatDrawer.tsx` component
-- [x] Add Framer Motion slide-in animation
-- [x] Create quick action buttons
-- [x] Integrate into Visitor view
-- [x] Add "New Chat" reset button
-- [ ] **Admin: Configurable Quick Actions** (Settings page)
-- [ ] Add `chatbot` block type to types
-- [ ] Create `ChatbotBlockEditor.tsx`
+### What's Implemented
 
-### Documents Collection (Staff Tools) - ✅ Core Complete
-- [x] Enable "Documents" type in `CollectionTypeModal.tsx`
-- [x] Create `DocumentCollectionWizard.tsx` (simplified 3-step wizard)
-- [x] Add PDF/DOCX/DOC/RTF/ODT/PPTX text extraction via `officeparser`
-- [x] Create `/api/documents/extract-text-base64` endpoint
-- [x] Create `/api/gemini/analyze-text` endpoint
-- [x] Build `DocumentAIToolsPanel.tsx` with fullWidth layout option
-- [x] Integrate AI tools into `CollectionDetail.tsx`
-- [ ] Update Prisma schema for document-specific fields
+| Feature | Status |
+|---------|--------|
+| DocumentCollectionWizard | ✅ 3-step upload wizard |
+| Multi-format extraction | ✅ PDF, DOCX, DOC, RTF, ODT, PPTX |
+| DocumentAIToolsPanel | ✅ Full-width with Single/Batch modes |
+| AI Tools (Summarize/Facts/FAQ/Tags) | ✅ Working |
+| Batch document selection | ✅ Checkbox UI |
+| Auto-save persistence | ✅ Immediate DB save |
 
-### Testing & Polish
-- [x] Test chat with sample knowledge docs
-- [x] Test multilingual responses
-- [x] Verify document text extraction (PDF, DOCX, TXT)
-- [x] Test AI analysis tools (Summarize, Facts, FAQ, Tags)
-- [ ] Add batch "Run All Tools" for all documents
+### Key Files
+
+| Component | Path |
+|-----------|------|
+| Document Wizard | `app/src/components/collections/DocumentCollectionWizard.tsx` |
+| AI Tools Panel | `app/src/components/collections/DocumentAIToolsPanel.tsx` |
+| Documents API | `app/server/routes/documents.ts` |
+| Gemini Analysis | `app/server/routes/gemini.ts` |
 
 ---
 
-## 🔧 Part 1: Documents Collection (Staff Tools) - IMPLEMENTED
+# 🎯 PHASE 26: AI MUSEUM CONCIERGE (NEXT SESSION)
 
-### Supported Document Formats
+> **Vision:** Give museums a powerful, intuitive interface to configure their AI concierge - importing document collections as knowledge, setting default questions, customizing behavior, and providing multilingual visitor assistance.
 
-| Format | Extension | Extraction Method |
-|--------|-----------|-------------------|
-| **PDF** | `.pdf` | officeparser (server-side) |
-| **Word (Modern)** | `.docx` | officeparser (server-side) |
-| **Word (Legacy)** | `.doc` | officeparser (server-side) |
-| **Rich Text** | `.rtf` | officeparser (server-side) |
-| **OpenDocument** | `.odt` | officeparser (server-side) |
-| **PowerPoint** | `.pptx` | officeparser (server-side) |
-| **Plain Text** | `.txt` | Browser FileReader API |
+---
 
-### Document Collection Wizard (Simplified)
-
-The wizard is now streamlined to 3 steps:
+## 🏗️ Architecture Overview
 
 ```
-Step 1: Details      → Name, description
-Step 2: Upload       → Drag & drop documents (multiple formats)
-Step 3: Review       → Verify text extraction status
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         AI MUSEUM CONCIERGE SYSTEM                               │
+├──────────────────────────────────────────┬──────────────────────────────────────┤
+│    ADMIN CONFIGURATION (Staff)           │    VISITOR EXPERIENCE (Public)       │
+│    ┌────────────────────────────────┐    │    ┌────────────────────────────┐    │
+│    │  🎛️ Concierge Settings         │    │    │  💬 Chat Drawer             │    │
+│    │  - Enable/Disable             │────│───▶│  - Slide-in from right     │    │
+│    │  - Persona/Tone               │    │    │  - Quick action buttons    │    │
+│    │  - Welcome message            │    │    │  - Message history         │    │
+│    └────────────────────────────────┘    │    │  - Multilingual auto-detect│    │
+│                   ↓                      │    └────────────────────────────┘    │
+│    ┌────────────────────────────────┐    │                  ↑                   │
+│    │  📚 Knowledge Sources          │    │    ┌────────────────────────────┐    │
+│    │  - Import document collections │───│───▶│  🤖 Gemini RAG Engine       │    │
+│    │  - Add tour content           │    │    │  - Context from knowledge   │    │
+│    │  - Manual FAQ entries          │    │    │  - Grounded responses      │    │
+│    │  - External URLs (scrape?)    │    │    │  - Magic Translation       │    │
+│    └────────────────────────────────┘    │    └────────────────────────────┘    │
+│                   ↓                      │                                      │
+│    ┌────────────────────────────────┐    │                                      │
+│    │  ❓ Quick Actions / Suggested  │    │                                      │
+│    │  - Default question buttons    │────│────────────────────▶ Displayed to    │
+│    │  - Categorized (Hours, Access) │    │                      visitors        │
+│    │  - Drag-and-drop reorder      │    │                                      │
+│    │  - Translate to all languages │    │                                      │
+│    └────────────────────────────────┘    │                                      │
+└──────────────────────────────────────────┴──────────────────────────────────────┘
 ```
 
-**Key Components:**
-- `DocumentCollectionWizard.tsx` - 3-step upload wizard
-- `DocumentAIToolsPanel.tsx` - Full-width AI tools panel
-- `CollectionDetail.tsx` - Integrated document view with AI panel
+---
 
-### AI Tools Panel (Full-Width Layout)
+## 📱 NEW VIEW: `/concierge` (Admin Configuration)
 
-The AI tools panel now uses a responsive full-width layout:
+### Layout Design
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  📄 Documents (compact grid - 4 columns)                                     │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐        │
-│  │ doc1.pdf     │ │ doc2.docx    │ │ doc3.txt     │ │ + Add Docs   │        │
-│  │ 245 KB • AI  │ │ 89 KB • Ready│ │ 12 KB • AI   │ │              │        │
-│  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘        │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  🤖 AI Document Tools                                     [Single] [Batch]  │
-├────────────────────────────────────┬────────────────────────────────────────┤
-│  📄 selected-doc.pdf               │  Analysis Results                      │
-│  12,456 characters extracted       │                                        │
-│                                    │  ▼ Summary                             │
-│  ┌────────────┐ ┌────────────┐     │    This document describes...          │
-│  │ Summarize  │ │ Extract    │     │                                        │
-│  │ ✓          │ │ Facts ✓    │     │  ▼ Facts (8)                          │
-│  └────────────┘ └────────────┘     │    • Founded in 1967                   │
-│  ┌────────────┐ ┌────────────┐     │    • Located in Sullivan County        │
-│  │ Generate   │ │ Auto-Tag   │     │                                        │
-│  │ FAQ ✓      │ │ ✓          │     │  ▼ Tags (12)                          │
-│  └────────────┘ └────────────┘     │    [museum] [history] [exhibition]     │
-│                                    │                                        │
-│  [✨ Run All Tools]                │                                        │
-└────────────────────────────────────┴────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│  🤖 AI Concierge Configuration                          [Preview] [Save]        │
+├────────────────────────────────────┬────────────────────────────────────────────┤
+│                                    │                                            │
+│  SIDEBAR (Settings)                │  MAIN PANEL (Content Management)           │
+│  ┌────────────────────────────┐    │  ┌────────────────────────────────────────┐│
+│  │ 🔘 Status                  │    │  │  📚 Knowledge Sources              [+] ││
+│  │    ○ Enabled   ● Disabled  │    │  │                                        ││
+│  │                            │    │  │  ┌─────────────────────────────────┐   ││
+│  │ 🎭 Persona                 │    │  │  │ 📁 Museum Policies Collection  ⋮│   ││
+│  │    [Friendly Docent    ▾]  │    │  │  │    15 documents • 24,500 chars │   ││
+│  │    ○ Friendly Docent       │    │  │  └─────────────────────────────────┘   ││
+│  │    ○ Professional Guide    │    │  │  ┌─────────────────────────────────┐   ││
+│  │    ○ Fun Family-Friendly   │    │  │  │ 📁 Exhibition Guide 2026       ⋮│   ││
+│  │    ○ Scholarly Expert      │    │  │  │    8 documents • 12,300 chars  │   ││
+│  │    ○ Custom...             │    │  │  └─────────────────────────────────┘   ││
+│  │                            │    │  │  ┌─────────────────────────────────┐   ││
+│  │ 👋 Welcome Message         │    │  │  │ 🔗 Tour: Ancient Egypt         ⋮│   ││
+│  │    [Welcome to the ABC..   │    │  │  │    12 stops • 8,200 chars      │   ││
+│  │     ...type any question!] │    │  │  └─────────────────────────────────┘   ││
+│  │                            │    │  │                                        ││
+│  │ 🌐 Languages               │    │  │  ┌──────────────────────────────────┐  ││
+│  │    ✓ English (primary)     │    │  │  │ + Import Document Collection    │  ││
+│  │    ✓ Spanish               │    │  │  │ + Add Tour Content              │  ││
+│  │    ✓ French                │    │  │  │ + Add Manual FAQ                │  ││
+│  │    ✓ German                │    │  │  └──────────────────────────────────┘  ││
+│  │    + Add language...       │    │  │                                        ││
+│  │                            │    │  ├────────────────────────────────────────┤│
+│  │ ⚙️ Behavior                │    │  │  ❓ Quick Actions (Suggested Questions)││
+│  │    □ Show "New Chat"       │    │  │                                        ││
+│  │    □ Auto-translate Q's    │    │  │  ┌───────────────────────────────────┐ ││
+│  │    □ Show source docs      │    │  │  │ ☰  🕐 What are your hours?       │ ││
+│  │    □ Allow feedback        │    │  │  │     Category: Hours & Admission  │ ││
+│  │                            │    │  │  └───────────────────────────────────┘ ││
+│  │                            │    │  │  ┌───────────────────────────────────┐ ││
+│  └────────────────────────────┘    │  │  │ ☰  ♿ Accessibility services?     │ ││
+│                                    │  │  │     Category: Accessibility       │ ││
+│                                    │  │  └───────────────────────────────────┘ ││
+│                                    │  │  ┌───────────────────────────────────┐ ││
+│                                    │  │  │ ☰  🎧 Do you have audio guides?   │ ││
+│                                    │  │  │     Category: Visitor Services    │ ││
+│                                    │  │  └───────────────────────────────────┘ ││
+│                                    │  │                                        ││
+│                                    │  │  [+ Add Quick Action] [🌐 Translate All]│
+│                                    │  └────────────────────────────────────────┘│
+└────────────────────────────────────┴────────────────────────────────────────────┘
 ```
 
-### AI Tool Endpoints
+---
 
-**`POST /api/gemini/analyze-text`**
+## 📋 Implementation Checklist
+
+### 1. Database Schema Updates
+
+```prisma
+model ConciergeConfig {
+  id              String   @id @default(uuid())
+  museumId        String?  
+  enabled         Boolean  @default(false)
+  
+  // Persona & Appearance
+  persona         String   @default("friendly")  // friendly, professional, fun, scholarly, custom
+  customPersona   String?                        // Custom system prompt if persona = "custom"
+  welcomeMessage  Json     @default("{}")        // { en: "Welcome!", es: "¡Bienvenido!" }
+  
+  // Languages
+  primaryLanguage String   @default("en")
+  enabledLanguages String[] @default(["en"])
+  autoTranslate   Boolean  @default(true)
+  
+  // Behavior
+  showNewChat     Boolean  @default(true)
+  showSources     Boolean  @default(false)
+  allowFeedback   Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  knowledgeSources ConciergeKnowledge[]
+  quickActions     ConciergeQuickAction[]
+}
+
+model ConciergeKnowledge {
+  id              String   @id @default(uuid())
+  configId        String
+  config          ConciergeConfig @relation(fields: [configId], references: [id])
+  
+  sourceType      String   // "document_collection", "tour", "manual_faq", "text"
+  sourceId        String?  // Reference to collection or tour ID
+  title           String
+  content         String   @db.Text  // Extracted/cached text content
+  characterCount  Int
+  
+  enabled         Boolean  @default(true)
+  priority        Int      @default(0)  // Higher = more weight in context
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ConciergeQuickAction {
+  id              String   @id @default(uuid())
+  configId        String
+  config          ConciergeConfig @relation(fields: [configId], references: [id])
+  
+  question        Json     // { en: "What are your hours?", es: "¿Cuáles son sus horarios?" }
+  category        String   // "hours", "accessibility", "services", "general"
+  icon            String?  // Lucide icon name
+  order           Int      @default(0)
+  
+  enabled         Boolean  @default(true)
+  createdAt       DateTime @default(now())
+}
+```
+
+### 2. API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/concierge/config` | GET | Get concierge configuration |
+| `/api/concierge/config` | PUT | Update configuration |
+| `/api/concierge/knowledge` | GET | List knowledge sources |
+| `/api/concierge/knowledge` | POST | Add knowledge source |
+| `/api/concierge/knowledge/:id` | DELETE | Remove knowledge source |
+| `/api/concierge/knowledge/import/:collectionId` | POST | Import document collection |
+| `/api/concierge/quick-actions` | GET | List quick actions |
+| `/api/concierge/quick-actions` | POST | Add quick action |
+| `/api/concierge/quick-actions/:id` | PUT | Update quick action |
+| `/api/concierge/quick-actions/:id` | DELETE | Delete quick action |
+| `/api/concierge/quick-actions/reorder` | PUT | Reorder quick actions |
+| `/api/concierge/quick-actions/translate` | POST | Translate all to languages |
+| `/api/concierge/preview` | POST | Test chat with current config |
+
+### 3. Frontend Components
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| `Concierge.tsx` | `app/src/pages/Concierge.tsx` | Main configuration page |
+| `ConciergeSettings.tsx` | `app/src/components/concierge/ConciergeSettings.tsx` | Sidebar settings panel |
+| `KnowledgeSourceList.tsx` | `app/src/components/concierge/KnowledgeSourceList.tsx` | Knowledge management |
+| `KnowledgeImportModal.tsx` | `app/src/components/concierge/KnowledgeImportModal.tsx` | Import from collections |
+| `QuickActionEditor.tsx` | `app/src/components/concierge/QuickActionEditor.tsx` | Quick action CRUD |
+| `QuickActionCard.tsx` | `app/src/components/concierge/QuickActionCard.tsx` | Draggable action card |
+| `ConciergePreview.tsx` | `app/src/components/concierge/ConciergePreview.tsx` | Live preview modal |
+| `ChatDrawer.tsx` | `app/src/components/chat/ChatDrawer.tsx` | Update to use config |
+
+---
+
+## 🎭 Persona System
+
+### Built-in Personas
+
+| Persona | Style | Best For |
+|---------|-------|----------|
+| **Friendly Docent** | Warm, welcoming, uses emoji occasionally | General museums |
+| **Professional Guide** | Formal, precise, factual | Corporate, historical |
+| **Fun Family-Friendly** | Playful, uses simple language, enthusiastic | Children's museums |
+| **Scholarly Expert** | Academic, detailed, cites sources | University, research |
+| **Custom** | User-defined system prompt | Full control |
+
+### Persona Prompt Templates
 
 ```typescript
-interface AnalyzeTextRequest {
-  text: string;               // Extracted document text
-  tool: 'summarize' | 'facts' | 'faq' | 'tags';
-}
-
-interface AnalyzeTextResponse {
-  result: string | string[] | Array<{ question: string; answer: string }>;
-}
+const PERSONA_PROMPTS = {
+  friendly: `You are a friendly museum docent. Be warm and welcoming. 
+    Use casual language but remain informative. Occasionally use emoji 
+    to be approachable. Keep answers concise but helpful.`,
+    
+  professional: `You are a professional museum guide. Maintain a formal 
+    but approachable tone. Provide accurate, factual information. 
+    Be concise and direct in your responses.`,
+    
+  fun: `You are a fun, family-friendly museum guide! Use simple words 
+    that kids can understand. Be enthusiastic and encouraging! 
+    Add fun facts when relevant. Keep things light and exciting!`,
+    
+  scholarly: `You are an expert museum scholar. Provide detailed, 
+    academic-quality information. Reference relevant historical context 
+    and scholarly interpretations when appropriate. Maintain intellectual rigor.`,
+};
 ```
 
-**Tool Prompts:**
+---
 
-| Tool | Output Format | Description |
-|------|---------------|-------------|
-| `summarize` | `{ result: string }` | 2-3 sentence museum-style summary |
-| `facts` | `{ result: string[] }` | Array of key facts, dates, names |
-| `faq` | `{ result: [{question, answer}] }` | 5 visitor FAQ questions |
-| `tags` | `{ result: string[] }` | 8-12 keyword tags for cataloging |
+## 🔗 Knowledge Source Integration
 
-### Document Extraction Endpoint
-
-**`POST /api/documents/extract-text-base64`**
+### Import from Document Collections
 
 ```typescript
-interface ExtractTextRequest {
-  data: string;      // Base64-encoded file content
-  fileName: string;  // Original filename with extension
-  mimeType: string;  // MIME type (for detection)
-}
-
-interface ExtractTextResponse {
-  success: boolean;
-  text: string;
-  characterCount: number;
-  fileName: string;
+async function importDocumentCollection(collectionId: string) {
+  // 1. Fetch collection with all documents
+  const collection = await collectionService.getById(collectionId);
+  
+  // 2. Extract text from each document
+  const combinedText = collection.items
+    .filter(item => item.metadata.extractedText)
+    .map(item => `## ${item.metadata.fileName}\n\n${item.metadata.extractedText}`)
+    .join('\n\n---\n\n');
+  
+  // 3. Create knowledge source
+  return prisma.conciergeKnowledge.create({
+    data: {
+      configId: config.id,
+      sourceType: 'document_collection',
+      sourceId: collectionId,
+      title: collection.name,
+      content: combinedText,
+      characterCount: combinedText.length,
+    }
+  });
 }
 ```
 
----
-
-## 🤖 Part 2: Chat Block (Museum Concierge) - IMPLEMENTED
-
-### Knowledge Base
-
-Documents in `/app/uploads/knowledge/` power the concierge:
-
-| File | Content |
-|------|---------|
-| `general-info.txt` | Hours, admission, location, parking |
-| `accessibility.txt` | Wheelchair access, elevators, assistive devices |
-| `facilities.txt` | Restrooms, café, gift shop, coat check |
-| `policies.txt` | Photography, bags, strollers, service animals |
-
-### Chat Drawer Implementation
-
-The `ChatDrawer.tsx` component provides:
-- Framer Motion slide-in from right
-- Quick action buttons (configurable)
-- Message history with bubbles
-- "New Chat" reset functionality
-- Multilingual support via Google Translate
-
-### Chat API
-
-**`POST /api/chat`**
+### Import from Tour Content
 
 ```typescript
-interface ChatRequest {
-  message: string;
-  language?: string;  // ISO language code
-}
-
-interface ChatResponse {
-  response: string;
-  sources: string[];  // Knowledge doc filenames used
+async function importTourContent(tourId: string) {
+  // 1. Fetch tour with all stops
+  const tour = await prisma.tour.findUnique({
+    where: { id: tourId },
+    include: { stops: true }
+  });
+  
+  // 2. Extract text from tour and stops
+  const tourText = `# ${tour.title.en || tour.title}\n\n${tour.description?.en || ''}`;
+  
+  const stopsText = tour.stops.map(stop => {
+    const blocks = stop.content || [];
+    const textBlocks = blocks.filter(b => b.type === 'text');
+    return `## ${stop.title?.en || stop.title}\n\n${textBlocks.map(b => b.content?.en).join('\n')}`;
+  }).join('\n\n');
+  
+  const combinedText = `${tourText}\n\n---\n\n${stopsText}`;
+  
+  return prisma.conciergeKnowledge.create({
+    data: {
+      configId: config.id,
+      sourceType: 'tour',
+      sourceId: tourId,
+      title: tour.title.en || tour.title,
+      content: combinedText,
+      characterCount: combinedText.length,
+    }
+  });
 }
 ```
 
 ---
 
-## 🏗️ Architecture
+## ❓ Quick Actions System
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    GEMINI 2.0 FLASH                             │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   STAFF TOOLS (Collections)        VISITOR CONCIERGE (Tours)    │
-│   ┌─────────────────────────┐      ┌─────────────────────────┐  │
-│   │ ✅ Summarize docs       │      │ ✅ Answer logistics Q's │  │
-│   │ ✅ Extract facts        │      │ ✅ Quick action buttons │  │
-│   │ ✅ Generate FAQs        │      │ ✅ Multilingual         │  │
-│   │ ✅ Auto-tag documents   │      │ ✅ Grounded in knowledge│  │
-│   │ ✅ Batch processing     │      │    docs only            │  │
-│   └─────────────────────────┘      └─────────────────────────┘  │
-│              ↓                                ↓                  │
-│                                                                  │
-│   Document Upload                  Knowledge Folder              │
-│        ↓                                  ↓                      │
-│   /api/documents/extract-text      /api/chat                     │
-│        ↓                                  ↓                      │
-│   officeparser                     Gemini with context           │
-│        ↓                                  ↓                      │
-│   /api/gemini/analyze-text         Translated response           │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+### Category Icons & Colors
+
+| Category | Icon | Color | Examples |
+|----------|------|-------|----------|
+| Hours & Admission | `Clock` | Blue | "What are your hours?", "How much is admission?" |
+| Accessibility | `Accessibility` | Purple | "Do you have wheelchairs?", "Is there an elevator?" |
+| Visitor Services | `HelpCircle` | Green | "Where's the café?", "Do you have audio guides?" |
+| Exhibitions | `Gallery` | Orange | "What's on display now?", "Current exhibitions?" |
+| General | `MessageCircle` | Gray | Custom questions |
+
+### Translation Integration
+
+Quick actions use Magic Translation to generate all language versions:
+
+```typescript
+async function translateQuickAction(questionEn: string, languages: string[]) {
+  const translations = { en: questionEn };
+  
+  for (const lang of languages) {
+    if (lang !== 'en') {
+      const result = await translateBatch([questionEn], 'en', lang);
+      translations[lang] = result[0];
+    }
+  }
+  
+  return translations;
+}
 ```
 
 ---
 
-## 📂 File Structure
+## 🌐 Multilingual Chat Flow
+
+```mermaid
+sequenceDiagram
+    participant V as Visitor
+    participant C as ChatDrawer
+    participant A as API /chat
+    participant G as Gemini
+    participant T as Translation
+    
+    V->>C: Types question (any language)
+    C->>A: POST /api/chat { message, detectedLang }
+    A->>T: Translate to English (if needed)
+    T-->>A: English version
+    A->>G: Generate response (with knowledge context)
+    G-->>A: English response
+    A->>T: Translate to visitor's language
+    T-->>A: Localized response
+    A-->>C: { response, sources }
+    C->>V: Display response
+```
+
+---
+
+## 🎨 Visitor Chat UI Updates
+
+### ChatDrawer Enhancements
+
+```
+┌─────────────────────────────────────┐
+│  💬 Museum Concierge          [✕]  │
+├─────────────────────────────────────┤
+│                                     │
+│  👋 Welcome to the ABC Museum!      │
+│  I'm here to help with any          │
+│  questions about your visit.        │
+│                                     │
+│  ─────────────────────────────────  │
+│                                     │
+│  Quick Questions:                   │
+│  ┌───────────────────────────────┐  │
+│  │ 🕐 What are your hours?       │  │
+│  └───────────────────────────────┘  │
+│  ┌───────────────────────────────┐  │
+│  │ ♿ Accessibility services     │  │
+│  └───────────────────────────────┘  │
+│  ┌───────────────────────────────┐  │
+│  │ 🎧 Audio guides available?    │  │
+│  └───────────────────────────────┘  │
+│                                     │
+│  ─────────────────────────────────  │
+│                                     │
+│  ┌───────────────────────────────┐  │
+│  │ Type your question...     [→] │  │
+│  └───────────────────────────────┘  │
+│                                     │
+│  [🔄 New Chat]  [🌐 ES ▾]           │
+└─────────────────────────────────────┘
+```
+
+---
+
+## 📂 File Structure (Phase 26)
 
 ```
 /app/
 ├── src/
+│   ├── pages/
+│   │   └── Concierge.tsx              # NEW: /concierge route
+│   │
 │   ├── components/
-│   │   ├── chat/
-│   │   │   └── ChatDrawer.tsx          # Visitor chat drawer
-│   │   └── collections/
-│   │       ├── DocumentCollectionWizard.tsx  # 3-step upload wizard
-│   │       ├── DocumentAIToolsPanel.tsx      # AI tools with fullWidth support
-│   │       └── index.ts                       # Barrel exports
-│   └── pages/
-│       └── CollectionDetail.tsx        # Document collection view
+│   │   ├── concierge/
+│   │   │   ├── ConciergeSettings.tsx   # Settings sidebar
+│   │   │   ├── KnowledgeSourceList.tsx # Knowledge management
+│   │   │   ├── KnowledgeImportModal.tsx# Import from collections
+│   │   │   ├── QuickActionEditor.tsx   # Quick action CRUD
+│   │   │   ├── QuickActionCard.tsx     # Draggable card
+│   │   │   ├── ConciergePreview.tsx    # Preview modal
+│   │   │   └── PersonaSelector.tsx     # Persona dropdown
+│   │   │
+│   │   └── chat/
+│   │       └── ChatDrawer.tsx          # UPDATE: Use config
+│   │
+│   └── lib/
+│       └── conciergeService.ts         # NEW: API client
 │
 ├── server/
-│   ├── routes/
-│   │   ├── chat.ts                     # /api/chat endpoint
-│   │   ├── documents.ts                # /api/documents/* endpoints
-│   │   └── gemini.ts                   # /api/gemini/analyze-text
-│   └── index.ts                        # Route registration
+│   └── routes/
+│       ├── concierge.ts                # NEW: Config + knowledge APIs
+│       └── chat.ts                     # UPDATE: Use knowledge context
 │
-└── uploads/
-    └── knowledge/                      # Chat knowledge base
-        ├── general-info.txt
-        ├── accessibility.txt
-        ├── facilities.txt
-        └── policies.txt
+└── prisma/
+    └── schema.prisma                   # UPDATE: Add models
 ```
 
 ---
 
-## 🎨 UI/UX Improvements
+## ✅ Implementation Order
 
-### Document Collection Layout (Redesigned)
+### Step 1: Database & API (Foundation)
+- [ ] Add Prisma models (ConciergeConfig, ConciergeKnowledge, ConciergeQuickAction)
+- [ ] Run `prisma db push`
+- [ ] Create `server/routes/concierge.ts` with all endpoints
+- [ ] Register route in `server/index.ts`
+- [ ] Create `conciergeService.ts` client
 
-**Before:** Side-by-side layout with wasted vertical space
-- Documents list: 2/3 width, stacked vertically
-- AI panel: 1/3 width, cramped sidebar
+### Step 2: Admin UI (Core)
+- [ ] Create `Concierge.tsx` page layout
+- [ ] Build `ConciergeSettings.tsx` sidebar
+- [ ] Build `KnowledgeSourceList.tsx` with cards
+- [ ] Build `KnowledgeImportModal.tsx` with collection picker
 
-**After:** Vertical layout with full-width utilization
-- Documents: Compact 4-column grid at top
-- AI Tools: Full-width panel below with 2-column results layout
-- Tools: 4-column grid for tool buttons
-- Tab switcher: Inline in header for cleaner look
+### Step 3: Quick Actions (Configuration)
+- [ ] Build `QuickActionCard.tsx` with drag handle
+- [ ] Build `QuickActionEditor.tsx` modal
+- [ ] Implement drag-and-drop reordering
+- [ ] Add "Translate All" functionality
 
-### Key Layout Changes
+### Step 4: Chat Integration (Visitor)
+- [ ] Update `chat.ts` to use ConciergeConfig
+- [ ] Update `chat.ts` to include knowledge context in prompt
+- [ ] Update `ChatDrawer.tsx` to fetch config
+- [ ] Display dynamic quick actions
+- [ ] Add language detection + translation
 
-| Element | Before | After |
-|---------|--------|-------|
-| Document cards | Full-width rows | Compact grid (4 cols) |
-| AI panel | Narrow sidebar | Full-width below |
-| Tool buttons | 2x2 grid | 1x4 grid (horizontal) |
-| Results | Stacked accordions | 2-column layout |
-| Tab switcher | Full-width row | Inline pill buttons |
-
----
-
-## 🔑 Dependencies
-
-### New Package: `officeparser`
-
-```bash
-npm install officeparser
-```
-
-Provides unified text extraction for:
-- PDF (via internal pdf.js)
-- DOCX, DOC (Office Open XML)
-- RTF (Rich Text Format)
-- ODT (OpenDocument)
-- PPTX (PowerPoint)
-- XLSX (Excel)
-
----
-
-## 💡 Future Ideas
-
-| Feature | Description | Priority |
-|---------|-------------|----------|
-| **Write Label Tool** | Generate visitor-friendly exhibit labels | Medium |
-| **Translate All** | Batch translate to configured languages | Medium |
-| **Admin Quick Actions** | Settings page for chat button config | Low |
-| **Voice Concierge** | Voice input → TTS response (ElevenLabs) | Low |
-| **Chatbot Block Type** | Embed chat in tour stops | Low |
-| **OCR for Images** | Extract text from scanned documents | Medium |
-
----
-
-## 📚 Related Docs
-
-- [Collections Development](file:///Users/paulhenshaw/Desktop/TourStack/docs/collections-dev.md)
-- [AI Tools](file:///Users/paulhenshaw/Desktop/TourStack/docs/ai-tools.md)
-- [Translation Services](file:///Users/paulhenshaw/Desktop/TourStack/docs/translations-dev.md)
-- [README](file:///Users/paulhenshaw/Desktop/TourStack/README.md) - Critical startup info
+### Step 5: Testing & Polish
+- [ ] Test import from document collections
+- [ ] Test import from tours
+- [ ] Test multilingual chat
+- [ ] Test persona switching
+- [ ] Add loading states and error handling
 
 ---
 
 ## 🔐 Environment Variables
 
 ```env
+# Existing
 GEMINI_API_KEY=...           # Gemini 2.0 Flash
 GOOGLE_VISION_API_KEY=...    # Also used for Translation
+
+# Optional new
+CONCIERGE_MAX_CONTEXT=15000  # Max characters in context (default: 15000)
 ```
+
+---
+
+## 📚 Related Documentation
+
+- [Collections Development](file:///Users/paulhenshaw/Desktop/TourStack/docs/collections-dev.md)
+- [Translation Services](file:///Users/paulhenshaw/Desktop/TourStack/docs/translations-dev.md)
+- [AI Tools](file:///Users/paulhenshaw/Desktop/TourStack/docs/ai-tools.md)
+- [HANDOFF](file:///Users/paulhenshaw/Desktop/TourStack/HANDOFF.md)
+
+---
+
+## 💡 Future Enhancements (Post Phase 26)
+
+| Feature | Description | Priority |
+|---------|-------------|----------|
+| **Voice Concierge** | Voice input + ElevenLabs TTS response | Medium |
+| **Chatbot Block** | Embed chat in tour stops | Medium |
+| **Analytics** | Track common questions, feedback | Low |
+| **Learning Mode** | Improve from visitor feedback | Low |
+| **Multi-tenant** | Different configs per museum | Low |
 
 ---
 
