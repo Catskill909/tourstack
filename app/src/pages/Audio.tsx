@@ -2231,8 +2231,8 @@ function GoogleCloudTab({
     };
 
     // Handle voice preview
-    const handlePreviewVoice = async (voiceId?: string) => {
-        const id = voiceId || selectedVoice;
+    const handlePreviewVoice = async (voiceId?: string | React.MouseEvent) => {
+        const id = (typeof voiceId === 'string' ? voiceId : undefined) || selectedVoice;
         if (!id) return;
         try {
             setPreviewingVoice(id);

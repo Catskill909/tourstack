@@ -374,7 +374,7 @@ router.get('/formats', (_req: Request, res: Response) => {
 });
 
 // GET /api/google-tts/languages - Get supported languages
-router.get('/languages', async (req: Request, res: Response) => {
+router.get('/languages', async (_req: Request, res: Response) => {
     const apiKey = getApiKey();
     if (!apiKey) {
         return res.status(500).json({ error: 'Google API key not configured' });
