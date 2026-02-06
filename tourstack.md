@@ -70,6 +70,7 @@ When museum staff access visitor pages, they see:
 | Phase 24: Translation View | ✅ Complete |
 | Phase 25: Document Collections | ✅ Complete |
 | Phase 26.1: AI Museum Concierge | ✅ Complete |
+| Phase 27: Google Cloud TTS Integration | ✅ Complete |
 | Phase 26.2: Per-Tour AI Concierge | 🎯 NEXT |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
@@ -281,6 +282,25 @@ Collections → AI Analyze → Translate → Save → Auto-Sync → Media Librar
 - `app/src/lib/conciergeService.ts` - API client
 - `app/server/routes/concierge.ts` - API routes
 - `docs/ai-chatbot-documents-dev.md` - Full documentation
+
+### Google Cloud TTS Integration (Phase 27) - COMPLETE ✅
+
+**New Feature:** Third TTS provider using Google Cloud Text-to-Speech REST API.
+
+| Feature | Description |
+|---------|-------------|
+| **Neural2 + Standard Voices** | Filtered from 400+ voices, 10 languages |
+| **3 Output Formats** | MP3, WAV (LINEAR16), OGG Opus |
+| **Voice Preview** | Listen to any voice before generating |
+| **Speaking Rate & Pitch** | Adjustable rate (0.25-4.0) and pitch (-20 to 20) |
+| **Batch Collections** | Multi-language batch generation with auto-translation |
+| **Shared API Key** | Reuses `GOOGLE_VISION_API_KEY` (Vision + Translate + TTS) |
+| **Voice Caching** | Server-side 1-hour cache for voice list |
+
+**Files:**
+- `app/server/routes/google-tts.ts` - Backend Express route
+- `app/src/services/googleTtsService.ts` - Frontend service layer
+- `app/src/pages/Audio.tsx` - GoogleCloudTab component
 
 ### Per-Tour AI Concierge (Phase 26.2) - NEXT 🎯
 
@@ -572,6 +592,13 @@ Audio guide (MP3 upload with **3 size variants**):
    - Native language voices (Italian voices for Italian, etc.)
    - Models: Multilingual v2, Flash v2.5, Turbo v2.5
    - Voice settings: Stability and similarity boost sliders
+ - **Google Cloud TTS** neural text-to-speech
+   - 10 languages: en, es, fr, de, it, ja, nl, ko, pt, zh
+   - Neural2 + Standard voice types (filtered from 400+)
+   - Output formats: MP3, WAV (LINEAR16), OGG Opus
+   - Sample rates: 16kHz, 24kHz, 44.1kHz, 48kHz
+   - Speaking rate (0.25-4.0) and pitch (-20 to 20) controls
+   - Reuses existing `GOOGLE_VISION_API_KEY`
  - **Auto-Translation** (LibreTranslate)
    - Supported: en, es, fr, de, it, pt, ja, ko, zh
    - Language availability indicators (✓) in dropdowns

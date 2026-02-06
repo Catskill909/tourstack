@@ -20,6 +20,9 @@ The **Audio** section in TourStack's side navigation provides a centralized hub 
 | ElevenLabs Native Voices | Complete |
 | ElevenLabs Auto-Translate | Complete |
 | Language Availability Modal | Complete |
+| Google Cloud TTS Integration | Complete |
+| Google Cloud Neural2 + Standard Voices | Complete |
+| Google Cloud Batch Collections | Complete |
 | Whisper Integration | Coming Soon |
 
 ---
@@ -47,12 +50,13 @@ Help
 
 ## Tab Structure
 
-The Audio page will have 3 provider tabs:
+The Audio page has provider tabs:
 
 | Tab | Status | Provider |
 |-----|--------|----------|
 | **Deepgram** | ✅ Active | Aura-2 TTS with 40+ voices |
 | **ElevenLabs** | ✅ Active | Premium multilingual TTS |
+| **Google Cloud** | ✅ Active | Neural2 + Standard TTS with 400+ voices |
 | **Whisper** | 🔜 Coming Soon | Speech-to-text |
 
 ---
@@ -364,7 +368,94 @@ GET  /v1/models                    // List available models
 - Voice cloning requires Creator+ plan
 - Higher quality audio on paid tiers only
 
-### Phase 5: Whisper Integration (Future)
+### Phase 5: Google Cloud TTS Integration ✅ COMPLETE
+
+> **Status:** Fully Implemented (February 6, 2026)
+
+#### 5.1 Google Cloud TTS Overview
+
+Google Cloud Text-to-Speech provides neural voices via REST API:
+- **10 languages** with BCP-47 code mapping (en→en-US, es→es-ES, etc.)
+- **Neural2 + Standard** voice types (filtered from 400+ available voices)
+- **Shared API key** - reuses `GOOGLE_VISION_API_KEY` (same as Vision + Google Translate)
+- **No SDK needed** - uses `texttospeech.googleapis.com/v1` REST endpoints with `fetch`
+
+#### 5.2 Google Cloud TTS Features ✅ IMPLEMENTED
+
+**Core TTS Generation:**
+- [x] Text input with voice preview
+- [x] Language dropdown (10 languages with voice count per language)
+- [x] Voice dropdown (filtered by language, showing type + gender)
+- [x] Format selector (MP3, WAV/LINEAR16, OGG Opus)
+- [x] Sample rate selector (16kHz, 24kHz, 44.1kHz, 48kHz)
+- [x] Speaking rate slider (0.25-4.0, default 1.0)
+- [x] Pitch slider (-20 to 20, default 0)
+- [x] Generate button with progress indicator
+- [x] Audio player and download
+
+**Batch Collection Generation:**
+- [x] "Create Collection" button opens AudioCollectionModal
+- [x] Multi-language selection with auto-translation via LibreTranslate
+- [x] Per-language voice selection
+- [x] Generated files tracked in metadata and appear in Generated Files list
+
+#### 5.3 Google Cloud TTS Audio Formats
+
+| Format | ID | Extension | Notes |
+|--------|----|-----------|-------|
+| **MP3** | MP3 | .mp3 | Default, widely compatible |
+| **WAV (PCM)** | LINEAR16 | .wav | Uncompressed, highest quality |
+| **OGG Opus** | OGG_OPUS | .ogg | Good quality/size balance |
+
+#### 5.4 Google Cloud TTS API Endpoints
+
+```typescript
+// Backend routes (server/routes/google-tts.ts)
+GET  /api/google-tts/status       // Check API key validity
+GET  /api/google-tts/voices       // List voices (filtered Neural2 + Standard)
+GET  /api/google-tts/formats      // Static format list
+GET  /api/google-tts/languages    // Supported languages
+POST /api/google-tts/generate     // Single TTS generation
+GET  /api/google-tts/files        // List generated files
+DELETE /api/google-tts/files/:id  // Delete a generated file
+POST /api/google-tts/preview      // Voice preview
+POST /api/google-tts/generate-batch // Batch multilingual generation
+```
+
+#### 5.5 Google Cloud TTS Key Implementation Details
+
+**API Key:** Reuses `GOOGLE_VISION_API_KEY` environment variable. Requires HTTP Referer header restriction set to `http://localhost:3000`.
+
+**Voice Caching:** Server caches the voice list for 1 hour to avoid repeated API calls. The Google API returns 400+ voices; we filter to Standard + Neural2 only.
+
+**Language Code Mapping:**
+```typescript
+const LANGUAGE_CODE_MAP = {
+    'en': 'en-US', 'es': 'es-ES', 'fr': 'fr-FR', 'de': 'de-DE',
+    'it': 'it-IT', 'ja': 'ja-JP', 'nl': 'nl-NL', 'ko': 'ko-KR',
+    'pt': 'pt-BR', 'zh': 'cmn-CN',
+};
+```
+
+**Text Limit:** Google Cloud TTS has a 5,000-byte limit per request. The backend validates and rejects text exceeding this limit.
+
+**Base64 Response:** Unlike Deepgram/ElevenLabs which stream binary audio, Google returns base64 JSON (`{ audioContent: "..." }`). Decoded server-side and saved to file.
+
+**File Storage:** Same as other providers: `/uploads/audio/generated/` with `google-tts-metadata.json` for persistence.
+
+#### 5.6 Google Cloud TTS Files
+
+| Purpose | File Path |
+|---------|-----------|
+| Backend Route | `app/server/routes/google-tts.ts` |
+| Frontend Service | `app/src/services/googleTtsService.ts` |
+| Audio Page Tab | `app/src/pages/Audio.tsx` (GoogleCloudTab) |
+| Collection Modal | `app/src/components/AudioCollectionModal.tsx` |
+| Collection Detail | `app/src/pages/CollectionDetail.tsx` |
+
+---
+
+### Phase 6: Whisper Integration (Future)
 - [ ] STT for transcription verification
 - [ ] Audio-to-text for existing tour audio
 - [ ] Subtitle/caption generation
@@ -380,7 +471,7 @@ To enable seamless switching between TTS providers in content blocks, implement 
 ```typescript
 // Unified TTS Provider Interface
 interface TTSProvider {
-  id: string;                    // 'deepgram' | 'elevenlabs' | 'whisper'
+  id: string;                    // 'deepgram' | 'elevenlabs' | 'google_cloud' | 'whisper'
   name: string;
   enabled: boolean;
   
@@ -445,18 +536,18 @@ interface Voice {
 
 **Auto-Translate Supported Languages:**
 
-| Language | LibreTranslate | Deepgram TTS | ElevenLabs TTS |
-|----------|----------------|--------------|----------------|
-| English | ✅ | ✅ | ✅ |
-| Spanish | ✅ | ✅ | ✅ |
-| French | ✅ | ✅ | ✅ |
-| German | ✅ | ✅ | ✅ |
-| Italian | ✅ | ✅ | ✅ |
-| Japanese | ✅ | ✅ | ✅ |
-| Portuguese | ✅ | ❌ | ✅ |
-| Korean | ✅ | ❌ | ✅ |
-| Chinese | ✅ | ❌ | ✅ |
-| **Dutch** | ❌ | ✅ | ✅ |
+| Language | LibreTranslate | Deepgram TTS | ElevenLabs TTS | Google Cloud TTS |
+|----------|----------------|--------------|----------------|-----------------|
+| English | ✅ | ✅ | ✅ | ✅ |
+| Spanish | ✅ | ✅ | ✅ | ✅ |
+| French | ✅ | ✅ | ✅ | ✅ |
+| German | ✅ | ✅ | ✅ | ✅ |
+| Italian | ✅ | ✅ | ✅ | ✅ |
+| Japanese | ✅ | ✅ | ✅ | ✅ |
+| Portuguese | ✅ | ❌ | ✅ | ✅ |
+| Korean | ✅ | ❌ | ✅ | ✅ |
+| Chinese | ✅ | ❌ | ✅ | ✅ |
+| **Dutch** | ❌ | ✅ | ✅ | ✅ |
 
 > **Note:** Dutch (nl) is NOT supported by LibreTranslate. Users must provide pre-translated Dutch text.
 
@@ -804,4 +895,4 @@ const onEnded = () => {
 
 *Document created: January 2026*
 *Last updated: February 6, 2026*
-*Status: Phase 1 Complete ✅*
+*Status: Phase 1-5 Complete ✅ (Deepgram + ElevenLabs + Google Cloud TTS)*

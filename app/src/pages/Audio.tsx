@@ -68,6 +68,7 @@ import {
 } from '../services/audioService';
 
 import * as elevenlabsService from '../services/elevenlabsService';
+import * as googleTtsService from '../services/googleTtsService';
 
 // Tab system for TTS providers
 type TabId =
@@ -122,11 +123,11 @@ const tabs: Tab[] = [
         id: 'google',
         name: 'Google Cloud',
         icon: Volume2,
-        status: 'coming_soon',
-        description: 'Google Cloud Text-to-Speech - WaveNet & Neural2 voices',
+        status: 'active',
+        description: 'Google Cloud Text-to-Speech - Neural2 & Standard voices, 50+ languages',
         type: 'paid',
         docUrl: 'https://cloud.google.com/text-to-speech/docs',
-        features: ['50+ Languages', '400+ Voices', 'WaveNet Quality', 'Neural2 Voices'],
+        features: ['50+ Languages', 'Neural2 Voices', 'Standard Voices', 'MP3/WAV/OGG'],
     },
     {
         id: 'polly',
@@ -279,12 +280,33 @@ export function Audio() {
     const [elSuccessModal, setElSuccessModal] = useState<elevenlabsService.GeneratedAudio | null>(null);
     const elGeneratedFilesRef = useRef<HTMLDivElement>(null);
 
+    // Google Cloud TTS state
+    const [gglStatus, setGglStatus] = useState<googleTtsService.GoogleTtsStatus | null>(null);
+    const [gglVoices, setGglVoices] = useState<googleTtsService.GoogleTtsVoicesResponse | null>(null);
+    const [gglFormats, setGglFormats] = useState<googleTtsService.GoogleTtsFormatsResponse | null>(null);
+    const [gglLanguages, setGglLanguages] = useState<googleTtsService.GoogleTtsLanguage[]>([]);
+    const [gglAudioFiles, setGglAudioFiles] = useState<googleTtsService.GoogleTtsGeneratedAudio[]>([]);
+    const [gglText, setGglText] = useState('');
+    const [gglSelectedVoice, setGglSelectedVoice] = useState('');
+    const [gglSelectedVoiceName, setGglSelectedVoiceName] = useState('');
+    const [gglSelectedLanguage, setGglSelectedLanguage] = useState('en');
+    const [gglSelectedFormat, setGglSelectedFormat] = useState('MP3');
+    const [gglSelectedSampleRate, setGglSelectedSampleRate] = useState(24000);
+    const [gglIsGenerating, setGglIsGenerating] = useState(false);
+    const [gglGenerateError, setGglGenerateError] = useState<string | null>(null);
+    const [gglPreviewingVoice, setGglPreviewingVoice] = useState<string | null>(null);
+    const [gglPlayingId, setGglPlayingId] = useState<string | null>(null);
+    const [gglPlayerAudio, setGglPlayerAudio] = useState<HTMLAudioElement | null>(null);
+    const [gglSuccessModal, setGglSuccessModal] = useState<googleTtsService.GoogleTtsGeneratedAudio | null>(null);
+    const [gglDataLoaded, setGglDataLoaded] = useState(false);
+    const gglGeneratedFilesRef = useRef<HTMLDivElement>(null);
+
     // Unavailable language modal state
     const [unavailableLangModal, setUnavailableLangModal] = useState<{ name: string; code: string } | null>(null);
 
     // Audio Collection Modal state
     const [showCollectionModal, setShowCollectionModal] = useState(false);
-    const [collectionModalProvider, setCollectionModalProvider] = useState<'deepgram' | 'elevenlabs'>('deepgram');
+    const [collectionModalProvider, setCollectionModalProvider] = useState<'deepgram' | 'elevenlabs' | 'google_cloud'>('deepgram');
 
     // Text Preview Modal state
     const [textPreviewModal, setTextPreviewModal] = useState<{
@@ -343,6 +365,41 @@ export function Audio() {
         }
         loadData();
     }, []);
+
+    // Lazy-load Google Cloud TTS data when tab becomes active
+    useEffect(() => {
+        if (activeTab !== 'google' || gglDataLoaded) return;
+
+        async function loadGoogleData() {
+            try {
+                const [statusData, voicesData, formatsData, languagesData, filesData] = await Promise.all([
+                    googleTtsService.getStatus(),
+                    googleTtsService.getVoices(),
+                    googleTtsService.getFormats(),
+                    googleTtsService.getLanguages(),
+                    googleTtsService.getAudioFiles(),
+                ]);
+                setGglStatus(statusData);
+                setGglVoices(voicesData);
+                setGglFormats(formatsData);
+                setGglLanguages(languagesData);
+                setGglAudioFiles(filesData);
+                setGglDataLoaded(true);
+
+                // Set default voice if available
+                const enVoices = voicesData.voices?.['en'] || [];
+                if (enVoices.length > 0) {
+                    setGglSelectedVoice(enVoices[0].id);
+                    setGglSelectedVoiceName(enVoices[0].displayName);
+                }
+            } catch (err) {
+                console.log('Google TTS not configured or error:', err);
+                setGglStatus({ configured: false, error: 'Failed to load Google TTS data' });
+                setGglDataLoaded(true);
+            }
+        }
+        loadGoogleData();
+    }, [activeTab, gglDataLoaded]);
 
     // Cleanup audio on unmount
     useEffect(() => {
@@ -706,6 +763,46 @@ export function Audio() {
                         }}
                         onShowTextPreview={(data) => setTextPreviewModal(data)}
                     />
+                ) : activeTab === 'google' ? (
+                    <GoogleCloudTab
+                        status={gglStatus}
+                        voices={gglVoices}
+                        formats={gglFormats}
+                        languages={gglLanguages}
+                        audioFiles={gglAudioFiles}
+                        text={gglText}
+                        setText={setGglText}
+                        selectedVoice={gglSelectedVoice}
+                        setSelectedVoice={setGglSelectedVoice}
+                        selectedVoiceName={gglSelectedVoiceName}
+                        setSelectedVoiceName={setGglSelectedVoiceName}
+                        selectedLanguage={gglSelectedLanguage}
+                        setSelectedLanguage={setGglSelectedLanguage}
+                        selectedFormat={gglSelectedFormat}
+                        setSelectedFormat={setGglSelectedFormat}
+                        selectedSampleRate={gglSelectedSampleRate}
+                        setSelectedSampleRate={setGglSelectedSampleRate}
+                        isGenerating={gglIsGenerating}
+                        setIsGenerating={setGglIsGenerating}
+                        generateError={gglGenerateError}
+                        setGenerateError={setGglGenerateError}
+                        previewingVoice={gglPreviewingVoice}
+                        setPreviewingVoice={setGglPreviewingVoice}
+                        playingId={gglPlayingId}
+                        setPlayingId={setGglPlayingId}
+                        playerAudio={gglPlayerAudio}
+                        setPlayerAudio={setGglPlayerAudio}
+                        successModal={gglSuccessModal}
+                        setSuccessModal={setGglSuccessModal}
+                        setAudioFiles={setGglAudioFiles}
+                        generatedFilesRef={gglGeneratedFilesRef}
+                        dataLoaded={gglDataLoaded}
+                        onOpenCollectionModal={() => {
+                            setCollectionModalProvider('google_cloud');
+                            setShowCollectionModal(true);
+                        }}
+                        onShowTextPreview={(data) => setTextPreviewModal(data)}
+                    />
                 ) : (
                     <ComingSoonTab tab={tabs.find(t => t.id === activeTab)!} />
                 )}
@@ -715,12 +812,14 @@ export function Audio() {
             <AudioCollectionModal
                 isOpen={showCollectionModal}
                 onClose={() => setShowCollectionModal(false)}
-                text={collectionModalProvider === 'deepgram' ? text : elText}
+                text={collectionModalProvider === 'deepgram' ? text : collectionModalProvider === 'elevenlabs' ? elText : gglText}
                 provider={collectionModalProvider}
                 voices={collectionModalProvider === 'deepgram' ? voices : null}
-                formats={collectionModalProvider === 'deepgram' ? formats : null}
-                defaultFormat={collectionModalProvider === 'deepgram' ? selectedFormat : elSelectedFormat}
-                defaultSampleRate={collectionModalProvider === 'deepgram' ? selectedSampleRate : 44100}
+                formats={collectionModalProvider === 'deepgram' ? formats : collectionModalProvider === 'google_cloud' ? gglFormats : null}
+                defaultFormat={collectionModalProvider === 'deepgram' ? selectedFormat : collectionModalProvider === 'elevenlabs' ? elSelectedFormat : gglSelectedFormat}
+                defaultSampleRate={collectionModalProvider === 'deepgram' ? selectedSampleRate : collectionModalProvider === 'google_cloud' ? gglSelectedSampleRate : 44100}
+                googleVoices={collectionModalProvider === 'google_cloud' ? gglVoices?.voices ?? null : undefined}
+                googleLanguages={collectionModalProvider === 'google_cloud' ? gglLanguages : undefined}
                 onSuccess={(collectionId) => {
                     // Don't close modal here - let the success state show first
                     // Modal will close when user clicks "Stay & Continue" or navigates to collection
@@ -2035,6 +2134,566 @@ function ElevenLabsTab({
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+// Google Cloud TTS Tab Component
+interface GoogleCloudTabProps {
+    status: googleTtsService.GoogleTtsStatus | null;
+    voices: googleTtsService.GoogleTtsVoicesResponse | null;
+    formats: googleTtsService.GoogleTtsFormatsResponse | null;
+    languages: googleTtsService.GoogleTtsLanguage[];
+    audioFiles: googleTtsService.GoogleTtsGeneratedAudio[];
+    text: string;
+    setText: (text: string) => void;
+    selectedVoice: string;
+    setSelectedVoice: (voice: string) => void;
+    selectedVoiceName: string;
+    setSelectedVoiceName: (name: string) => void;
+    selectedLanguage: string;
+    setSelectedLanguage: (lang: string) => void;
+    selectedFormat: string;
+    setSelectedFormat: (format: string) => void;
+    selectedSampleRate: number;
+    setSelectedSampleRate: (rate: number) => void;
+    isGenerating: boolean;
+    setIsGenerating: (v: boolean) => void;
+    generateError: string | null;
+    setGenerateError: (err: string | null) => void;
+    previewingVoice: string | null;
+    setPreviewingVoice: (v: string | null) => void;
+    playingId: string | null;
+    setPlayingId: (id: string | null) => void;
+    playerAudio: HTMLAudioElement | null;
+    setPlayerAudio: (a: HTMLAudioElement | null) => void;
+    successModal: googleTtsService.GoogleTtsGeneratedAudio | null;
+    setSuccessModal: (a: googleTtsService.GoogleTtsGeneratedAudio | null) => void;
+    setAudioFiles: React.Dispatch<React.SetStateAction<googleTtsService.GoogleTtsGeneratedAudio[]>>;
+    generatedFilesRef: React.RefObject<HTMLDivElement | null>;
+    dataLoaded: boolean;
+    onOpenCollectionModal: () => void;
+    onShowTextPreview: (data: { title: string; text: string; language?: string; voiceName?: string }) => void;
+}
+
+function GoogleCloudTab({
+    status,
+    voices,
+    formats,
+    languages,
+    audioFiles,
+    text,
+    setText,
+    selectedVoice,
+    setSelectedVoice,
+    selectedVoiceName,
+    setSelectedVoiceName,
+    selectedLanguage,
+    setSelectedLanguage,
+    selectedFormat,
+    setSelectedFormat,
+    selectedSampleRate,
+    setSelectedSampleRate,
+    isGenerating,
+    setIsGenerating,
+    generateError,
+    setGenerateError,
+    previewingVoice,
+    setPreviewingVoice,
+    playingId,
+    setPlayingId,
+    playerAudio,
+    setPlayerAudio,
+    successModal,
+    setSuccessModal,
+    setAudioFiles,
+    generatedFilesRef,
+    dataLoaded,
+    onOpenCollectionModal,
+    onShowTextPreview,
+}: GoogleCloudTabProps) {
+    const isConfigured = status?.configured && status?.valid;
+
+    // Get voices for selected language
+    const currentVoices = voices?.voices?.[selectedLanguage] || [];
+
+    // Handle language change
+    const handleLanguageChange = (lang: string) => {
+        setSelectedLanguage(lang);
+        const langVoices = voices?.voices?.[lang] || [];
+        if (langVoices.length > 0) {
+            setSelectedVoice(langVoices[0].id);
+            setSelectedVoiceName(langVoices[0].displayName);
+        }
+    };
+
+    // Handle voice preview
+    const handlePreviewVoice = async (voiceId?: string) => {
+        const id = voiceId || selectedVoice;
+        if (!id) return;
+        try {
+            setPreviewingVoice(id);
+            const blob = await googleTtsService.previewVoice(id);
+            const url = URL.createObjectURL(blob);
+            const audio = new window.Audio(url);
+            audio.onended = () => {
+                setPreviewingVoice(null);
+                URL.revokeObjectURL(url);
+            };
+            audio.onerror = () => {
+                setPreviewingVoice(null);
+                URL.revokeObjectURL(url);
+            };
+            await audio.play();
+        } catch (err) {
+            console.error('Preview error:', err);
+            setPreviewingVoice(null);
+        }
+    };
+
+    // Handle generate
+    const handleGenerate = async () => {
+        if (!text.trim() || !selectedVoice) return;
+
+        try {
+            setIsGenerating(true);
+            setGenerateError(null);
+
+            let textToSpeak = text.trim();
+
+            // Auto-translate if target language is different from English
+            if (selectedLanguage !== 'en' && selectedLanguage in TRANSLATION_LANGUAGE_MAP) {
+                try {
+                    const targetLang = TRANSLATION_LANGUAGE_MAP[selectedLanguage];
+                    textToSpeak = await translateText(text.trim(), 'en', targetLang);
+                } catch (translateErr) {
+                    console.warn('Translation failed, using original text:', translateErr);
+                }
+            }
+
+            const result = await googleTtsService.generateAudio({
+                text: textToSpeak,
+                voiceId: selectedVoice,
+                voiceName: selectedVoiceName,
+                encoding: selectedFormat,
+                sampleRate: selectedSampleRate,
+            });
+
+            setAudioFiles(prev => [result, ...prev]);
+            setSuccessModal(result);
+        } catch (err) {
+            setGenerateError(err instanceof Error ? err.message : 'Generation failed');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    // Handle file playback
+    const handlePlayFile = async (file: googleTtsService.GoogleTtsGeneratedAudio) => {
+        if (playerAudio) playerAudio.pause();
+
+        if (playingId === file.id) {
+            setPlayingId(null);
+            return;
+        }
+
+        const audio = new window.Audio(file.fileUrl);
+        audio.onended = () => setPlayingId(null);
+        audio.onerror = () => setPlayingId(null);
+
+        setPlayerAudio(audio);
+        setPlayingId(file.id);
+        await audio.play();
+    };
+
+    // Handle file deletion
+    const handleDeleteFile = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this audio file?')) return;
+
+        try {
+            await googleTtsService.deleteAudioFile(id);
+            setAudioFiles(prev => prev.filter(f => f.id !== id));
+            if (playingId === id && playerAudio) {
+                playerAudio.pause();
+                setPlayingId(null);
+            }
+        } catch (err) {
+            console.error('Delete error:', err);
+        }
+    };
+
+    // Handle refresh
+    const handleRefresh = async () => {
+        try {
+            const files = await googleTtsService.getAudioFiles();
+            setAudioFiles(files);
+        } catch (err) {
+            console.error('Refresh error:', err);
+        }
+    };
+
+    if (!dataLoaded) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-[var(--color-accent-primary)]" />
+            </div>
+        );
+    }
+
+    if (!isConfigured) {
+        return (
+            <div className="max-w-2xl mx-auto">
+                <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] p-8 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-amber-500/20 flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-8 h-8 text-amber-500" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
+                        Google Cloud TTS Not Configured
+                    </h3>
+                    <p className="text-[var(--color-text-muted)] mb-4">
+                        {status?.error || 'Set GOOGLE_VISION_API_KEY environment variable and enable the Cloud Text-to-Speech API in your Google Cloud project.'}
+                    </p>
+                    {status?.hint && (
+                        <p className="text-sm text-[var(--color-text-muted)]">{status.hint}</p>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="max-w-4xl mx-auto space-y-6">
+            {/* Success Modal */}
+            {successModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[var(--color-bg-surface)] rounded-2xl shadow-2xl max-w-md w-full p-6 border border-[var(--color-border-default)]">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                                <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">Audio Generated!</h3>
+                                <p className="text-sm text-[var(--color-text-muted)]">{successModal.voiceName} - Google Cloud TTS</p>
+                            </div>
+                        </div>
+                        <div className="space-y-2 text-sm mb-4">
+                            <div className="flex justify-between">
+                                <span className="text-[var(--color-text-muted)]">File Size</span>
+                                <span className="text-[var(--color-text-secondary)]">{googleTtsService.formatFileSize(successModal.fileSize)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-[var(--color-text-muted)]">Format</span>
+                                <span className="text-[var(--color-text-secondary)]">{successModal.encoding}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-[var(--color-text-muted)]">Sample Rate</span>
+                                <span className="text-[var(--color-text-secondary)]">{(successModal.sampleRate / 1000).toFixed(0)} kHz</span>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                setSuccessModal(null);
+                                setTimeout(() => generatedFilesRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                            }}
+                            className="w-full px-4 py-2.5 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors font-medium"
+                        >
+                            Got it
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Generator Card */}
+            <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] p-6">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                        <Volume2 className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">Text-to-Speech Generator</h2>
+                        <p className="text-sm text-[var(--color-text-muted)]">Google Cloud Neural2 & Standard TTS</p>
+                    </div>
+                </div>
+
+                {/* Text Input */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Text to Convert</label>
+                    <textarea
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        placeholder="Enter the text you want to convert to speech..."
+                        className="w-full h-32 px-4 py-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/50 resize-none"
+                    />
+                    <div className="flex justify-between mt-1">
+                        <span className="text-xs text-[var(--color-text-muted)]">
+                            {selectedLanguage !== 'en' && selectedLanguage in TRANSLATION_LANGUAGE_MAP ? 'Auto-translates from English' : ''}
+                        </span>
+                        <span className="text-xs text-[var(--color-text-muted)]">{text.length} characters</span>
+                    </div>
+                </div>
+
+                {/* Controls Row */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    {/* Language */}
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">Language</label>
+                        <select
+                            value={selectedLanguage}
+                            onChange={(e) => handleLanguageChange(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/50"
+                        >
+                            {languages.map(lang => (
+                                <option key={lang.code} value={lang.code}>
+                                    {getLanguageDisplayName(lang.name, lang.code)} ({lang.voiceCount} voices)
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Voice */}
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">Voice</label>
+                        <select
+                            value={selectedVoice}
+                            onChange={(e) => {
+                                setSelectedVoice(e.target.value);
+                                const voice = currentVoices.find(v => v.id === e.target.value);
+                                setSelectedVoiceName(voice?.displayName || e.target.value);
+                            }}
+                            className="w-full px-3 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/50"
+                        >
+                            {currentVoices.map(voice => (
+                                <option key={voice.id} value={voice.id}>
+                                    {voice.displayName} ({voice.ssmlGender?.toLowerCase()}) - {voice.type}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Format */}
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">Format</label>
+                        <select
+                            value={selectedFormat}
+                            onChange={(e) => setSelectedFormat(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/50"
+                        >
+                            {(formats?.formats || []).map(fmt => (
+                                <option key={fmt.id} value={fmt.id}>{fmt.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Sample Rate */}
+                    <div>
+                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-1.5">Sample Rate</label>
+                        <select
+                            value={selectedSampleRate}
+                            onChange={(e) => setSelectedSampleRate(Number(e.target.value))}
+                            className="w-full px-3 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-primary)]/50"
+                        >
+                            {(formats?.sampleRates || []).map(rate => (
+                                <option key={rate.id} value={rate.id}>{rate.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Error Display */}
+                {generateError && (
+                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                        <span className="text-sm text-red-400">{generateError}</span>
+                    </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-3">
+                    <button
+                        onClick={handlePreviewVoice}
+                        disabled={!selectedVoice || previewingVoice !== null}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-surface)] transition-colors disabled:opacity-50"
+                    >
+                        {previewingVoice ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Play className="w-4 h-4" />
+                        )}
+                        Preview Voice
+                    </button>
+
+                    <button
+                        onClick={handleGenerate}
+                        disabled={!text.trim() || !selectedVoice || isGenerating}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors disabled:opacity-50 font-medium"
+                    >
+                        {isGenerating ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Volume2 className="w-4 h-4" />
+                        )}
+                        Generate Audio
+                    </button>
+
+                    <button
+                        onClick={onOpenCollectionModal}
+                        disabled={!text.trim()}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-purple-600/20 border border-purple-500/30 text-purple-400 rounded-lg hover:bg-purple-600/30 transition-colors disabled:opacity-50 font-medium"
+                    >
+                        <FolderPlus className="w-4 h-4" />
+                        Create Collection
+                    </button>
+                </div>
+            </div>
+
+            {/* Voice Gallery */}
+            <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 className="font-semibold text-[var(--color-text-primary)]">Voice Gallery</h2>
+                        <p className="text-sm text-[var(--color-text-muted)]">
+                            {currentVoices.length} voices available in {languages.find(l => l.googleCode === selectedLanguage)?.name || selectedLanguage}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-96 overflow-y-auto p-1">
+                    {currentVoices.map((voice) => {
+                        const gender = voice.ssmlGender?.toLowerCase() || 'neutral';
+                        const isNeural2 = voice.type === 'Neural2';
+
+                        return (
+                            <div
+                                key={voice.id}
+                                onClick={() => {
+                                    setSelectedVoice(voice.id);
+                                    setSelectedVoiceName(voice.displayName);
+                                }}
+                                className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer ${selectedVoice === voice.id
+                                    ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 shadow-lg'
+                                    : 'border-transparent bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] hover:shadow-md'
+                                    }`}
+                            >
+                                {/* Neural2 Badge */}
+                                {isNeural2 && (
+                                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full">
+                                        Neural2
+                                    </span>
+                                )}
+
+                                <div className="flex flex-col items-center text-center pt-1">
+                                    {/* Avatar */}
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${gender === 'female'
+                                        ? 'bg-gradient-to-br from-pink-400 to-rose-500'
+                                        : gender === 'male'
+                                            ? 'bg-gradient-to-br from-blue-400 to-indigo-500'
+                                            : 'bg-gradient-to-br from-purple-400 to-violet-500'
+                                        }`}>
+                                        <User className="w-6 h-6 text-white" />
+                                    </div>
+
+                                    {/* Name */}
+                                    <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate w-full mb-0.5">
+                                        {voice.displayName}
+                                    </span>
+
+                                    {/* Gender & Type */}
+                                    <span className="text-xs text-[var(--color-text-muted)] capitalize mb-2">
+                                        {gender} · {voice.type}
+                                    </span>
+
+                                    {/* Preview Button */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handlePreviewVoice(voice.id);
+                                        }}
+                                        disabled={previewingVoice === voice.id}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-hover)] transition-all disabled:opacity-50"
+                                    >
+                                        {previewingVoice === voice.id ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Play className="w-3 h-3" />
+                                        )}
+                                        Preview
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Generated Files */}
+            <div ref={generatedFilesRef} className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] p-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">Generated Files</h3>
+                    <button
+                        onClick={handleRefresh}
+                        className="p-2 hover:bg-[var(--color-bg-elevated)] rounded-lg transition-colors"
+                        title="Refresh"
+                    >
+                        <RefreshCw className="w-4 h-4 text-[var(--color-text-muted)]" />
+                    </button>
+                </div>
+
+                {audioFiles.length === 0 ? (
+                    <p className="text-center text-[var(--color-text-muted)] py-8">No audio files generated yet</p>
+                ) : (
+                    <div className="space-y-2">
+                        {audioFiles.map(file => (
+                            <div key={file.id} className="flex items-center gap-3 p-3 bg-[var(--color-bg-elevated)] rounded-lg group">
+                                <button
+                                    onClick={() => handlePlayFile(file)}
+                                    className="w-8 h-8 rounded-full bg-[var(--color-accent-primary)]/20 flex items-center justify-center hover:bg-[var(--color-accent-primary)]/30 transition-colors flex-shrink-0"
+                                >
+                                    {playingId === file.id ? (
+                                        <Pause className="w-4 h-4 text-[var(--color-accent-primary)]" />
+                                    ) : (
+                                        <Play className="w-4 h-4 text-[var(--color-accent-primary)]" />
+                                    )}
+                                </button>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{file.name}</p>
+                                    <p className="text-xs text-[var(--color-text-muted)] truncate">
+                                        {file.voiceName} · {file.encoding} · {googleTtsService.formatFileSize(file.fileSize)}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={() => onShowTextPreview({
+                                            title: file.name,
+                                            text: file.text,
+                                            language: file.languageCode,
+                                            voiceName: file.voiceName,
+                                        })}
+                                        className="p-1.5 hover:bg-[var(--color-bg-surface)] rounded-lg transition-colors"
+                                        title="View text"
+                                    >
+                                        <Eye className="w-4 h-4 text-[var(--color-text-muted)]" />
+                                    </button>
+                                    <a
+                                        href={file.fileUrl}
+                                        download
+                                        className="p-1.5 hover:bg-[var(--color-bg-surface)] rounded-lg transition-colors"
+                                        title="Download"
+                                    >
+                                        <Download className="w-4 h-4 text-[var(--color-text-muted)]" />
+                                    </a>
+                                    <button
+                                        onClick={() => handleDeleteFile(file.id)}
+                                        className="p-1.5 hover:bg-red-500/20 rounded-lg transition-colors"
+                                        title="Delete"
+                                    >
+                                        <Trash2 className="w-4 h-4 text-[var(--color-text-muted)] hover:text-red-400" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

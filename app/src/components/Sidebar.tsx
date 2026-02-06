@@ -32,9 +32,6 @@ const navItems = [
     { to: '/tools', icon: QrCode, label: 'Tools' },
     { to: '/ai-assistance', icon: Sparkles, label: 'AI Assistance' },
     { to: '/concierge', icon: Bot, label: 'AI Concierge' },
-];
-
-const bottomNavItems = [
     { to: '/settings', icon: Settings, label: 'Settings' },
     { to: '/docs', icon: HelpCircle, label: 'Help & Docs' },
 ];
@@ -124,39 +121,6 @@ export function Sidebar({ isCollapsed, onToggle }: SidebarProps) {
                 })}
             </nav>
 
-            {/* Bottom Navigation */}
-            <div className={`py-4 border-t border-[var(--color-border-default)] space-y-1 ${isCollapsed ? 'px-2' : 'px-3'}`}>
-                {bottomNavItems.map((item) => {
-                    const linkContent = (
-                        <NavLink
-                            key={item.to}
-                            to={item.to}
-                            className={({ isActive }) =>
-                                `flex items-center gap-3 py-2.5 rounded-lg transition-all duration-200 ${isCollapsed ? 'px-2.5 justify-center' : 'px-3'
-                                } ${isActive
-                                    ? 'bg-[var(--color-accent-primary)]/15 text-[var(--color-accent-primary)]'
-                                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]'
-                                }`
-                            }
-                        >
-                            <item.icon className="w-5 h-5 flex-shrink-0" />
-                            {!isCollapsed && (
-                                <span className="font-medium whitespace-nowrap overflow-hidden">{item.label}</span>
-                            )}
-                        </NavLink>
-                    );
-
-                    if (isCollapsed) {
-                        return (
-                            <Tooltip key={item.to} content={item.label} side="right">
-                                {linkContent}
-                            </Tooltip>
-                        );
-                    }
-
-                    return <div key={item.to}>{linkContent}</div>;
-                })}
-            </div>
         </aside>
     );
 }

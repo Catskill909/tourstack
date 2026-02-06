@@ -225,7 +225,7 @@ export function CollectionDetail() {
             {isAudioCollection && collection.ttsSettings && (
                 <div className="flex flex-wrap gap-2">
                     <span className="px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm font-medium">
-                        {collection.ttsSettings.provider === 'elevenlabs' ? 'ElevenLabs' : 'Deepgram'}
+                        {collection.ttsSettings.provider === 'elevenlabs' ? 'ElevenLabs' : collection.ttsSettings.provider === 'google_cloud' ? 'Google Cloud' : 'Deepgram'}
                     </span>
                     {collection.ttsSettings.modelName && (
                         <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm">

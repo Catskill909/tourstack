@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: February 2, 2026
-**Session Status**: Phase 26.1 AI Museum Concierge COMPLETE ✅ | Phase 25 Document Collections COMPLETE ✅ | Phase 26.2 Per-Tour Concierge NEXT
+**Last Updated**: February 6, 2026
+**Session Status**: Phase 27 Google Cloud TTS COMPLETE ✅ | Phase 26.1 AI Museum Concierge COMPLETE ✅ | Phase 26.2 Per-Tour Concierge NEXT
 
 ---
 
@@ -123,7 +123,7 @@ npm run start         # ⭐ THE ONLY WAY: Kills zombies + starts BOTH servers
 **Local Testing:** Fully tested ✅ - QR codes auto-generate with unique URLs & short codes!
 - Frontend: http://localhost:5173
 - API Server: http://localhost:3000
-- Database: 12 Deepgram audio files, 18 ElevenLabs audio files loaded
+- Database: 12 Deepgram audio files, 18 ElevenLabs audio files, Google Cloud TTS files loaded
 
 ---
 
@@ -673,6 +673,37 @@ TourStack uses a **modular content block system** where tours and stops are comp
 
 > **Documentation:** See [docs/ai-chatbot-documents-dev.md](docs/ai-chatbot-documents-dev.md)
 
+### Phase 27: Google Cloud TTS Integration ✅ (Feb 6, 2026)
+- [x] **Google Cloud TTS** - Third TTS provider using Google Cloud Text-to-Speech API
+- [x] **REST API Integration** - Uses `texttospeech.googleapis.com/v1` REST endpoints (no SDK needed)
+- [x] **Shared API Key** - Reuses `GOOGLE_VISION_API_KEY` (same key for Vision, Google Translate, and TTS)
+- [x] **Voice Types** - Neural2 + Standard voices filtered from 400+ available
+- [x] **10 Languages** - en, es, fr, de, it, ja, nl, ko, pt, zh with BCP-47 code mapping
+- [x] **Voice Preview** - Listen to any voice before generating
+- [x] **3 Output Formats** - MP3, WAV (LINEAR16), OGG Opus
+- [x] **4 Sample Rates** - 16kHz, 24kHz (default), 44.1kHz, 48kHz
+- [x] **Speaking Rate & Pitch** - Adjustable speaking rate (0.25-4.0) and pitch (-20 to 20)
+- [x] **Voice Caching** - Server-side voice list cache (1 hour) to reduce API calls
+- [x] **Batch Collection Generation** - Multi-language batch generation with auto-translation
+- [x] **Audio Page Tab** - Full Google Cloud tab with voice gallery, format selection, and generation
+- [x] **Collection Integration** - AudioCollectionModal supports `google_cloud` provider
+- [x] **Generated Files Tracking** - Files appear in Generated Files list with metadata
+- [x] **CollectionDetail Display** - Shows "Google Cloud" provider badge for google_cloud collections
+
+> **Key Files:**
+> - `app/server/routes/google-tts.ts` - Backend Express route (~950 lines)
+> - `app/src/services/googleTtsService.ts` - Frontend service layer
+> - `app/src/pages/Audio.tsx` - GoogleCloudTab component
+> - `app/src/components/AudioCollectionModal.tsx` - google_cloud provider support
+> - `app/src/pages/CollectionDetail.tsx` - Google Cloud provider display
+
+> **API Key:** Uses `GOOGLE_VISION_API_KEY` with HTTP Referer restriction. Requires `Referer: http://localhost:3000` header.
+
+> **Bug Fixes Applied:**
+> - Voice wrapper type mismatch: `gglVoices` is `{ voices: Record<...>, language }` wrapper, modal expected flat `Record<...>`. Fixed by passing `gglVoices?.voices ?? null`.
+> - Batch files not appearing: Added `generatedAudioFiles.set()` and `saveMetadata()` calls in batch endpoint.
+> - Collection showing wrong provider: Root cause was the voice wrapper type mismatch causing empty voice IDs.
+
 ### 🎯 Phase 26.2: Per-Tour AI Concierge (NEXT)
 - [ ] Add concierge fields to Tour model (conciergeEnabled, conciergePersona, conciergeWelcome, conciergeCollections)
 - [ ] Create tour concierge settings UI (new tab in Tour Editor)
@@ -790,6 +821,9 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | ElevenLabs API Routes | `app/server/routes/elevenlabs.ts` |
 | ElevenLabs Service | `app/src/services/elevenlabsService.ts` |
 | ElevenLabs Voice Issue | `docs/ELEVENLABS-VOICES-ISSUE.md` |
+| **Google Cloud TTS** | |
+| Google TTS API Routes | `app/server/routes/google-tts.ts` |
+| Google TTS Service | `app/src/services/googleTtsService.ts` |
 | Translation API | `app/server/routes/translate.ts` |
 | Translation Service | `app/src/services/translationService.ts` |
 | **Collections (Audio & Images)** | |

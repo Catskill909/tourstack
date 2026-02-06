@@ -26,13 +26,13 @@
 
 ## ✅ Production Deployment (January 24, 2026)
 
-| Feature | Deepgram | ElevenLabs | Status |
-|---------|----------|------------|--------|
-| Batch TTS Generation | ✅ Working | ✅ Working | DEPLOYED |
-| Auto-Translation | ✅ LibreTranslate | ✅ LibreTranslate | DEPLOYED |
-| Collections Saved to DB | ✅ Working | ✅ Working | DEPLOYED |
-| Collection Detail View | ✅ Playback works | ✅ Playback works | DEPLOYED |
-| Success Modal with Metadata | ✅ Shows all details | ✅ Shows all details | DEPLOYED |
+| Feature | Deepgram | ElevenLabs | Google Cloud | Status |
+|---------|----------|------------|--------------|--------|
+| Batch TTS Generation | ✅ Working | ✅ Working | ✅ Working | DEPLOYED |
+| Auto-Translation | ✅ LibreTranslate | ✅ LibreTranslate | ✅ LibreTranslate | DEPLOYED |
+| Collections Saved to DB | ✅ Working | ✅ Working | ✅ Working | DEPLOYED |
+| Collection Detail View | ✅ Playback works | ✅ Playback works | ✅ Playback works | DEPLOYED |
+| Success Modal with Metadata | ✅ Shows all details | ✅ Shows all details | ✅ Shows all details | DEPLOYED |
 
 **🚀 Successfully deployed to Coolify production!**
 
@@ -200,7 +200,7 @@ export interface AudioCollectionItem {
   url: string;           // Audio file URL
   language: string;      // 'en', 'es', 'fr', etc.
   voice: { id: string; name: string; gender?: string; };
-  provider: 'deepgram' | 'elevenlabs';
+  provider: 'deepgram' | 'elevenlabs' | 'google_cloud';
   format: string;
   fileSize: number;
   text: string;          // The translated text used for TTS
@@ -297,15 +297,15 @@ This document outlines the phased development plan for the **Translate Collectio
 - `app/src/services/elevenlabsService.ts`
 
 **Current Capabilities:**
-| Feature | Deepgram | ElevenLabs |
-|---------|----------|------------|
-| Languages | 7 (en, es, de, fr, nl, it, ja) | 32+ |
-| Voices | 40+ per-language | **21 premade ONLY** ⚠️ |
-| Auto-Translate | ✅ via LibreTranslate | ✅ via LibreTranslate |
-| Voice Preview | ✅ | ✅ |
-| Output Formats | MP3, WAV, OGG, FLAC | MP3, PCM, Opus |
-| Sample Rates | 8-48 kHz | 16-44 kHz |
-| File Storage | `/uploads/audio/generated/` | `/uploads/audio/generated/` |
+| Feature | Deepgram | ElevenLabs | Google Cloud |
+|---------|----------|------------|--------------|
+| Languages | 7 (en, es, de, fr, nl, it, ja) | 32+ | 10 (en, es, fr, de, it, ja, nl, ko, pt, zh) |
+| Voices | 40+ per-language | **21 premade ONLY** ⚠️ | Neural2 + Standard (400+) |
+| Auto-Translate | ✅ via LibreTranslate | ✅ via LibreTranslate | ✅ via LibreTranslate |
+| Voice Preview | ✅ | ✅ | ✅ |
+| Output Formats | MP3, WAV, OGG, FLAC | MP3, PCM, Opus | MP3, WAV, OGG Opus |
+| Sample Rates | 8-48 kHz | 16-44 kHz | 16-48 kHz |
+| File Storage | `/uploads/audio/generated/` | `/uploads/audio/generated/` | `/uploads/audio/generated/` |
 
 > [!CAUTION]
 > **ElevenLabs shows "3,000+ community voices" but using them BREAKS production!**
@@ -496,7 +496,7 @@ export interface AudioCollectionItem extends CollectionItem {
     language: string;           // 'en', 'es', 'fr', etc.
     voice: string;              // Voice ID
     voiceName: string;          // Display name
-    provider: 'deepgram' | 'elevenlabs';
+    provider: 'deepgram' | 'elevenlabs' | 'google_cloud';
     format: string;             // 'mp3', 'wav', etc.
     sampleRate?: number;
     fileSize: number;
@@ -509,7 +509,7 @@ export interface AudioCollection extends Collection {
     type: 'audio_collection';
     sourceText: string;         // Original English text
     ttsSettings: {
-        provider: 'deepgram' | 'elevenlabs';
+        provider: 'deepgram' | 'elevenlabs' | 'google_cloud';
         format: string;
         sampleRate?: number;
         autoTranslate: boolean;
@@ -687,7 +687,7 @@ interface BatchGenerationRequest {
     text: string;
     collectionName: string;
     collectionDescription?: string;
-    provider: 'deepgram' | 'elevenlabs';
+    provider: 'deepgram' | 'elevenlabs' | 'google_cloud';
     format: string;
     sampleRate?: number;
     autoTranslate: boolean;
@@ -1008,7 +1008,7 @@ export interface AudioCollectionItem extends BaseCollectionItem {
         name: string;
         gender?: 'male' | 'female' | 'neutral';
     };
-    provider: 'deepgram' | 'elevenlabs';
+    provider: 'deepgram' | 'elevenlabs' | 'google_cloud';
     format: string;
     sampleRate?: number;
     fileSize: number;
@@ -1030,7 +1030,7 @@ export interface Collection {
     sourceLanguage?: string;     // Primary language (usually 'en')
     texts?: { [lang: string]: string };  // All text versions keyed by language
     ttsSettings?: {
-        provider: 'deepgram' | 'elevenlabs';
+        provider: 'deepgram' | 'elevenlabs' | 'google_cloud';
         format: string;
         sampleRate?: number;
         autoTranslate: boolean;
@@ -1213,7 +1213,7 @@ The `/audio` page provides a unified interface for multiple TTS (Text-to-Speech)
 |----------|------|------------|-------------|
 | Deepgram | Paid Cloud | ✅ Active | ✅ Fully Working |
 | ElevenLabs | Paid Cloud | ✅ Active | ✅ Fully Working |
-| Google Cloud TTS | Paid Cloud | 🔄 Placeholder | 🎯 Phase 5 |
+| Google Cloud TTS | Paid Cloud | ✅ Active | ✅ Fully Working |
 | Amazon Polly | Paid Cloud | 🔄 Placeholder | 🎯 Phase 6 |
 | Microsoft Azure | Paid Cloud | 🔄 Placeholder | 🎯 Phase 7 |
 | IBM Watson | Paid Cloud | 🔄 Placeholder | 🎯 Future |
@@ -1282,18 +1282,18 @@ The `/audio` page provides a unified interface for multiple TTS (Text-to-Speech)
 
 ---
 
-#### 🎯 Google Cloud Text-to-Speech (PLANNED - Phase 5)
+#### ✅ Google Cloud Text-to-Speech (ACTIVE)
 
-**Type:** Paid Cloud API (GCP)  
-**Status:** 🔄 Placeholder Tab
+**Type:** Paid Cloud API (GCP)
+**Status:** ✅ Fully Integrated
 
 | Feature | Details |
 |---------|---------|
-| Languages | 50+ |
-| Voices | 400+ (Standard, WaveNet, Neural2) |
-| Quality | WaveNet & Neural2 are premium quality |
-| Formats | MP3, LINEAR16, OGG_OPUS, MULAW |
-| Sample Rates | 8-48 kHz |
+| Languages | 10 (en, es, fr, de, it, ja, nl, ko, pt, zh) |
+| Voices | Neural2 + Standard (filtered from 400+) |
+| Quality | Neural2 is premium quality |
+| Formats | MP3, LINEAR16, OGG_OPUS |
+| Sample Rates | 16-48 kHz |
 | Pricing | Per character, varies by voice type |
 
 **Documentation:**
@@ -1301,10 +1301,16 @@ The `/audio` page provides a unified interface for multiple TTS (Text-to-Speech)
 - API Reference: https://cloud.google.com/text-to-speech/docs/apis
 - Product: https://cloud.google.com/text-to-speech
 
+**TourStack Files:**
+- Route: `server/routes/google-tts.ts`
+- Service: `src/services/googleTtsService.ts`
+
 **Implementation Notes:**
-- Requires GCP project and service account
-- Environment variable: `GOOGLE_APPLICATION_CREDENTIALS` or `GOOGLE_TTS_API_KEY`
-- WaveNet voices cost ~4x standard but sound much better
+- Uses `GOOGLE_VISION_API_KEY` env var (shared with Vision + Google Translate)
+- REST API with `fetch` (no SDK needed)
+- Voice list cached server-side for 1 hour
+- Base64 audio response decoded server-side
+- 5,000-byte text limit per request
 
 ---
 
@@ -1559,8 +1565,10 @@ docker run -p 5500:5500 synesthesiam/opentts
 | Audio Page | `app/src/pages/Audio.tsx` |
 | Deepgram Routes | `app/server/routes/audio.ts` |
 | ElevenLabs Routes | `app/server/routes/elevenlabs.ts` |
+| Google Cloud TTS Routes | `app/server/routes/google-tts.ts` |
 | Audio Service | `app/src/services/audioService.ts` |
 | ElevenLabs Service | `app/src/services/elevenlabsService.ts` |
+| Google TTS Service | `app/src/services/googleTtsService.ts` |
 | Translation Service | `app/src/services/translationService.ts` |
 | Collections Page | `app/src/pages/Collections.tsx` |
 | Collection Detail | `app/src/pages/CollectionDetail.tsx` |

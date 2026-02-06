@@ -28,7 +28,7 @@ export interface AudioCollectionItem extends BaseCollectionItem {
         name: string;
         gender?: 'male' | 'female' | 'neutral';
     };
-    provider: 'deepgram' | 'elevenlabs';
+    provider: 'deepgram' | 'elevenlabs' | 'google_cloud';
     format: string;
     sampleRate?: number;
     fileSize: number;
@@ -66,7 +66,7 @@ export type CollectionType = 'gallery' | 'dataset' | 'audio_collection' | 'docum
 
 // TTS settings for audio collections
 export interface TTSSettings {
-    provider: 'deepgram' | 'elevenlabs';
+    provider: 'deepgram' | 'elevenlabs' | 'google_cloud';
     format: string;
     sampleRate?: number;
     autoTranslate: boolean;

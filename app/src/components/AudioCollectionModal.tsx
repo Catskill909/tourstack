@@ -17,6 +17,7 @@ import {
 import { collectionService } from '../lib/collectionService';
 import type { Voice } from '../services/audioService';
 import * as elevenlabsService from '../services/elevenlabsService';
+import type { GoogleTtsVoice, GoogleTtsLanguage } from '../services/googleTtsService';
 
 interface LanguageVoices {
     name: string;
@@ -43,12 +44,15 @@ interface AudioCollectionModalProps {
     isOpen: boolean;
     onClose: () => void;
     text: string;
-    provider: 'deepgram' | 'elevenlabs';
+    provider: 'deepgram' | 'elevenlabs' | 'google_cloud';
     voices: Record<string, LanguageVoices> | null;
     formats: { formats: { id: string; name: string }[]; sampleRates: { id: number; name: string }[] } | null;
     defaultFormat: string;
     defaultSampleRate: number;
     onSuccess?: (collectionId: string) => void;
+    // Google Cloud TTS specific
+    googleVoices?: Record<string, GoogleTtsVoice[]> | null;
+    googleLanguages?: GoogleTtsLanguage[] | null;
 }
 
 interface LanguageSelection {
@@ -82,6 +86,20 @@ const ELEVENLABS_LANGUAGES = [
     { code: 'ja', name: 'Japanese' },
     { code: 'ko', name: 'Korean' },
     { code: 'zh', name: 'Chinese' },
+];
+
+// Google Cloud TTS formats
+const GOOGLE_CLOUD_FORMATS = [
+    { id: 'MP3', name: 'MP3' },
+    { id: 'LINEAR16', name: 'WAV (PCM)' },
+    { id: 'OGG_OPUS', name: 'OGG Opus' },
+];
+
+const GOOGLE_CLOUD_SAMPLE_RATES = [
+    { id: 16000, name: '16 kHz (Compact)' },
+    { id: 24000, name: '24 kHz (Standard)' },
+    { id: 44100, name: '44.1 kHz (High Quality)' },
+    { id: 48000, name: '48 kHz (Studio)' },
 ];
 
 // Default ElevenLabs formats (fallback if API fails)
@@ -127,6 +145,8 @@ export function AudioCollectionModal({
     defaultFormat,
     defaultSampleRate,
     onSuccess,
+    googleVoices,
+    googleLanguages,
 }: AudioCollectionModalProps) {
     // Collection metadata
     const [collectionName, setCollectionName] = useState('');
@@ -145,6 +165,10 @@ export function AudioCollectionModal({
     const [elFormats, setElFormats] = useState<{ id: string; name: string }[]>(DEFAULT_ELEVENLABS_FORMATS);
     const [isLoadingVoices, setIsLoadingVoices] = useState(false);
     const [elSelectedFormat, setElSelectedFormat] = useState('mp3_44100_128');
+
+    // Google Cloud TTS state
+    const [gglSelectedFormat, setGglSelectedFormat] = useState('MP3');
+    const [gglSelectedSampleRate, setGglSelectedSampleRate] = useState(24000);
 
     // Generation state
     const [isGenerating, setIsGenerating] = useState(false);
@@ -217,6 +241,23 @@ export function AudioCollectionModal({
                 translationAvailable: TRANSLATION_AVAILABLE.includes(lang.code),
             }));
             setLanguages(langSelections);
+        } else if (provider === 'google_cloud' && googleLanguages && googleVoices) {
+            // Google Cloud: use language list and voice data from parent
+            const langSelections: LanguageSelection[] = googleLanguages
+                .filter(lang => TRANSLATION_AVAILABLE.includes(lang.code))
+                .map((lang) => {
+                    const voicesForLang = googleVoices[lang.code] || [];
+                    const defaultVoice = voicesForLang[0];
+                    return {
+                        code: lang.code,
+                        name: lang.name,
+                        enabled: lang.code === 'en',
+                        voiceId: defaultVoice?.id || '',
+                        voiceName: defaultVoice?.name || '',
+                        translationAvailable: TRANSLATION_AVAILABLE.includes(lang.code),
+                    };
+                });
+            setLanguages(langSelections);
         }
 
         // Reset state
@@ -225,13 +266,15 @@ export function AudioCollectionModal({
         setFormat(defaultFormat);
         setSampleRate(defaultSampleRate);
         setElSelectedFormat('mp3_44100_128');
+        setGglSelectedFormat('MP3');
+        setGglSelectedSampleRate(24000);
         setAutoTranslate(true);
         setIsGenerating(false);
         setGenerationResults([]);
         setError(null);
         setSuccess(false);
         setCreatedCollectionId(null);
-    }, [voices, isOpen, defaultFormat, defaultSampleRate, provider]);
+    }, [voices, isOpen, defaultFormat, defaultSampleRate, provider, googleVoices, googleLanguages]);
 
     const toggleLanguage = (code: string) => {
         setLanguages(prev => prev.map(lang =>
@@ -267,11 +310,14 @@ export function AudioCollectionModal({
             // Call appropriate batch generation endpoint based on provider
             const endpoint = provider === 'elevenlabs'
                 ? '/api/elevenlabs/generate-batch'
-                : '/api/audio/generate-batch';
+                : provider === 'google_cloud'
+                    ? '/api/google-tts/generate-batch'
+                    : '/api/audio/generate-batch';
 
             // Build request body based on provider
-            const requestBody = provider === 'elevenlabs'
-                ? {
+            let requestBody;
+            if (provider === 'elevenlabs') {
+                requestBody = {
                     text,
                     collectionName: collectionName.trim(),
                     collectionDescription: collectionDescription.trim(),
@@ -283,8 +329,24 @@ export function AudioCollectionModal({
                         voiceId: l.voiceId,
                         voiceName: l.voiceName,
                     })),
-                }
-                : {
+                };
+            } else if (provider === 'google_cloud') {
+                requestBody = {
+                    text,
+                    collectionName: collectionName.trim(),
+                    collectionDescription: collectionDescription.trim(),
+                    encoding: gglSelectedFormat,
+                    sampleRate: gglSelectedSampleRate,
+                    autoTranslate,
+                    sourceLanguage: 'en',
+                    languages: enabledLanguages.map(l => ({
+                        code: l.code,
+                        voiceId: l.voiceId,
+                        voiceName: l.voiceName,
+                    })),
+                };
+            } else {
+                requestBody = {
                     text,
                     collectionName: collectionName.trim(),
                     collectionDescription: collectionDescription.trim(),
@@ -299,6 +361,7 @@ export function AudioCollectionModal({
                         voiceName: l.voiceName,
                     })),
                 };
+            }
 
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -413,8 +476,8 @@ export function AudioCollectionModal({
                                 </div>
                                 <div className="p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)] text-center">
                                     <Mic2 className="w-5 h-5 text-purple-500 mx-auto mb-1" />
-                                    <p className="text-lg font-bold text-[var(--color-text-primary)] capitalize">
-                                        {provider}
+                                    <p className="text-lg font-bold text-[var(--color-text-primary)]">
+                                        {provider === 'google_cloud' ? 'Google Cloud' : provider.charAt(0).toUpperCase() + provider.slice(1)}
                                     </p>
                                     <p className="text-xs text-[var(--color-text-muted)]">Provider</p>
                                 </div>
@@ -490,14 +553,14 @@ export function AudioCollectionModal({
                                 </h4>
                                 <div className="flex flex-wrap gap-2">
                                     <span className="px-2 py-1 text-xs bg-[var(--color-bg-surface)] rounded text-[var(--color-text-secondary)]">
-                                        Provider: <span className="font-medium capitalize">{provider}</span>
+                                        Provider: <span className="font-medium">{provider === 'google_cloud' ? 'Google Cloud' : provider.charAt(0).toUpperCase() + provider.slice(1)}</span>
                                     </span>
                                     <span className="px-2 py-1 text-xs bg-[var(--color-bg-surface)] rounded text-[var(--color-text-secondary)]">
-                                        Format: <span className="font-medium uppercase">{format}</span>
+                                        Format: <span className="font-medium uppercase">{provider === 'google_cloud' ? gglSelectedFormat : format}</span>
                                     </span>
-                                    {provider === 'deepgram' && (
+                                    {(provider === 'deepgram' || provider === 'google_cloud') && (
                                         <span className="px-2 py-1 text-xs bg-[var(--color-bg-surface)] rounded text-[var(--color-text-secondary)]">
-                                            Sample Rate: <span className="font-medium">{formatSampleRate(sampleRate)}</span>
+                                            Sample Rate: <span className="font-medium">{formatSampleRate(provider === 'google_cloud' ? gglSelectedSampleRate : sampleRate)}</span>
                                         </span>
                                     )}
                                     <span className="px-2 py-1 text-xs bg-[var(--color-bg-surface)] rounded text-[var(--color-text-secondary)]">
@@ -633,6 +696,48 @@ export function AudioCollectionModal({
                                     </div>
                                 )}
 
+                                {/* Google Cloud: Format and Sample Rate */}
+                                {provider === 'google_cloud' && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm text-[var(--color-text-muted)] mb-1">
+                                                Format
+                                            </label>
+                                            <div className="relative">
+                                                <select
+                                                    value={gglSelectedFormat}
+                                                    onChange={(e) => setGglSelectedFormat(e.target.value)}
+                                                    disabled={isGenerating}
+                                                    className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] appearance-none cursor-pointer focus:border-[var(--color-accent-primary)] focus:outline-none disabled:opacity-50"
+                                                >
+                                                    {GOOGLE_CLOUD_FORMATS.map((fmt) => (
+                                                        <option key={fmt.id} value={fmt.id}>{fmt.name}</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-[var(--color-text-muted)] mb-1">
+                                                Sample Rate
+                                            </label>
+                                            <div className="relative">
+                                                <select
+                                                    value={gglSelectedSampleRate}
+                                                    onChange={(e) => setGglSelectedSampleRate(Number(e.target.value))}
+                                                    disabled={isGenerating}
+                                                    className="w-full px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] appearance-none cursor-pointer focus:border-[var(--color-accent-primary)] focus:outline-none disabled:opacity-50"
+                                                >
+                                                    {GOOGLE_CLOUD_SAMPLE_RATES.map((rate) => (
+                                                        <option key={rate.id} value={rate.id}>{rate.name}</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)] pointer-events-none" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Auto-translate toggle */}
                                 <div className="flex items-center justify-between p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]">
                                     <div className="flex items-center gap-3">
@@ -743,6 +848,33 @@ export function AudioCollectionModal({
                                                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--color-text-muted)] pointer-events-none" />
                                                 </div>
                                             )}
+                                            {/* Show voice dropdown for Google Cloud (language-specific voices) */}
+                                            {provider === 'google_cloud' && googleVoices && googleLanguages && (() => {
+                                                const voicesForLang = googleVoices[lang.code] || [];
+                                                if (voicesForLang.length === 0) return null;
+                                                return (
+                                                    <div className="relative">
+                                                        <select
+                                                            value={lang.voiceId}
+                                                            onChange={(e) => {
+                                                                const voice = voicesForLang.find(v => v.id === e.target.value);
+                                                                if (voice) {
+                                                                    updateVoice(lang.code, voice.id, voice.name);
+                                                                }
+                                                            }}
+                                                            disabled={isGenerating || !lang.enabled}
+                                                            className={`pl-3 pr-8 py-1.5 text-sm bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] appearance-none cursor-pointer focus:border-[var(--color-accent-primary)] focus:outline-none disabled:opacity-50 ${!lang.enabled ? 'opacity-50' : ''}`}
+                                                        >
+                                                            {voicesForLang.map((voice) => (
+                                                                <option key={voice.id} value={voice.id}>
+                                                                    {voice.name} ({voice.ssmlGender?.toLowerCase()})
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--color-text-muted)] pointer-events-none" />
+                                                    </div>
+                                                );
+                                            })()}
                                             {/* Show loading state for ElevenLabs voices */}
                                             {provider === 'elevenlabs' && isLoadingVoices && (
                                                 <span className="text-xs text-[var(--color-text-muted)]">Loading voices...</span>
