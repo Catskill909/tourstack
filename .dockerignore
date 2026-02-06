@@ -1,0 +1,36 @@
+# Secrets - NEVER include in Docker build context
+app/.env
+app/.env.*
+.env
+.env.*
+
+# Git
+.git
+.gitignore
+
+# Development
+app/node_modules
+app/dist
+app/*.local
+app/.vscode
+app/.idea
+
+# Database files (use Docker volumes instead)
+app/data/*.db
+app/data/*.db-journal
+
+# Uploaded files (use Docker volumes instead)
+app/uploads/**
+
+# Documentation (not needed in image)
+docs/
+*.md
+!app/README.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

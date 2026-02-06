@@ -178,6 +178,12 @@ npm run build         # Verify full build works locally
 
 ### Environment Variables
 
+> [!IMPORTANT]
+> **Coolify: Set these as Runtime Environment Variables, NOT Build Arguments.**
+> Secrets are only needed when the container *runs*, not when it *builds*.
+> In Coolify, ensure all API keys are in the **Environment Variables** section (not Build Variables)
+> to avoid `SecretsUsedInArgOrEnv` Docker warnings and prevent secrets from leaking into image layers.
+
 Add these in Coolify's **Environment Variables** section:
 
 | Variable | Required | Description |
@@ -187,9 +193,10 @@ Add these in Coolify's **Environment Variables** section:
 | `SESSION_SECRET` | **Yes** | Random 32+ char string for session encryption |
 | `DEEPGRAM_API_KEY` | Optional | Deepgram Aura-2 TTS (7 languages, 40+ voices) |
 | `ELEVENLABS_API_KEY` | Optional | ElevenLabs premium TTS (32+ languages, 3000+ voices) |
+| `GOOGLE_VISION_API_KEY` | Optional | Google Vision, Google Translate, and Google Cloud TTS |
+| `GEMINI_API_KEY` | Optional | Gemini AI for document analysis and concierge |
 | `GOOGLE_MAPS_API_KEY` | Optional | Google Maps for premium maps |
 | `LT_LOAD_ONLY` | Optional | LibreTranslate languages (default: en,es,fr,de,ja,it,ko,zh,pt) |
-| `GOOGLE_VISION_API_KEY` | Optional | Enable AI features (Image to Text, Smart Cataloging, Captions) |
 
 **To set up Google Maps:**
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
