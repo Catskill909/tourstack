@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, Captions } from 'lucide-react';
 import { ClosedCaptions } from './ClosedCaptions';
 
@@ -25,17 +25,24 @@ interface CustomAudioPlayerProps {
 export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'phone', autoplay = false, className = '', transcriptWords, transcript, showCaptions = false, onCaptionsToggle }: CustomAudioPlayerProps) {
     const isTablet = deviceType === 'tablet';
     const audioRef = useRef<HTMLAudioElement>(null);
+    const rafRef = useRef<number>(0);
+    const isDraggingRef = useRef(false);
+
     const [isPlaying, setIsPlaying] = useState(false);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
+    const [dragTime, setDragTime] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
     const [volume, setVolume] = useState(1);
     const [isMuted, setIsMuted] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1);
-    const [isDragging, setIsDragging] = useState(false);
     const [localShowCaptions, setLocalShowCaptions] = useState(showCaptions);
 
     const hasCaptions = (transcriptWords && transcriptWords.length > 0) || !!transcript;
     const captionsVisible = localShowCaptions && hasCaptions;
+
+    // The value shown on the scrubber: drag position during drag, playback position otherwise
+    const displayTime = isDragging ? dragTime : currentTime;
 
     const toggleCaptions = () => {
         const newValue = !localShowCaptions;
@@ -43,56 +50,109 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
         onCaptionsToggle?.(newValue);
     };
 
+    // rAF loop for smooth progress bar updates (~60fps)
+    const startRAF = useCallback(() => {
+        const animate = () => {
+            const audio = audioRef.current;
+            if (audio && !audio.paused && !isDraggingRef.current) {
+                setCurrentTime(audio.currentTime);
+            }
+            rafRef.current = requestAnimationFrame(animate);
+        };
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(animate);
+    }, []);
+
+    const stopRAF = useCallback(() => {
+        cancelAnimationFrame(rafRef.current);
+    }, []);
+
+    // Audio element event listeners (registered once, stable)
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const onLoadedMetadata = () => setDuration(audio.duration);
+
+        const onPlay = () => {
+            setIsPlaying(true);
+            startRAF();
+        };
+
+        const onPause = () => {
+            // Don't update state if this pause is from the ended event
+            if (!audio.ended) {
+                setIsPlaying(false);
+                stopRAF();
+                setCurrentTime(audio.currentTime);
+            }
+        };
+
+        const onEnded = () => {
+            stopRAF();
+            setIsPlaying(false);
+            setCurrentTime(0);
+            if (audio.readyState >= 1) {
+                audio.currentTime = 0;
+            }
+        };
+
+        audio.addEventListener('loadedmetadata', onLoadedMetadata);
+        audio.addEventListener('play', onPlay);
+        audio.addEventListener('pause', onPause);
+        audio.addEventListener('ended', onEnded);
+
+        // If metadata already loaded (cached audio)
+        if (audio.readyState >= 1 && audio.duration) {
+            setDuration(audio.duration);
+        }
+
+        return () => {
+            stopRAF();
+            audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+            audio.removeEventListener('play', onPlay);
+            audio.removeEventListener('pause', onPause);
+            audio.removeEventListener('ended', onEnded);
+        };
+    }, [src, startRAF, stopRAF]);
+
     useEffect(() => {
         if (autoplay && audioRef.current) {
             audioRef.current.play().catch(() => {
-                // Autoplay was prevented
                 setIsPlaying(false);
             });
         }
     }, [autoplay]);
 
-    useEffect(() => {
-        const audio = audioRef.current;
-        if (!audio) return;
-
-        const updateTime = () => {
-            if (!isDragging) {
-                setCurrentTime(audio.currentTime);
-            }
-        };
-
-        const updateDuration = () => setDuration(audio.duration);
-        const onEnded = () => setIsPlaying(false);
-
-        audio.addEventListener('timeupdate', updateTime);
-        audio.addEventListener('loadedmetadata', updateDuration);
-        audio.addEventListener('ended', onEnded);
-
-        return () => {
-            audio.removeEventListener('timeupdate', updateTime);
-            audio.removeEventListener('loadedmetadata', updateDuration);
-            audio.removeEventListener('ended', onEnded);
-        };
-    }, [isDragging]);
-
     const togglePlay = () => {
-        if (audioRef.current) {
-            if (isPlaying) {
-                audioRef.current.pause();
-            } else {
-                audioRef.current.play();
-            }
-            setIsPlaying(!isPlaying);
+        if (!audioRef.current) return;
+        if (isPlaying) {
+            audioRef.current.pause();
+        } else {
+            audioRef.current.play();
         }
     };
 
-    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Scrubber drag: update visual position only, don't seek audio until release
+    const handleScrubStart = () => {
+        isDraggingRef.current = true;
+        setIsDragging(true);
+        setDragTime(currentTime);
+    };
+
+    const handleScrubChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const time = parseFloat(e.target.value);
-        setCurrentTime(time);
+        setDragTime(time);
+    };
+
+    const handleScrubEnd = () => {
+        // Commit the seek on release
         if (audioRef.current) {
-            audioRef.current.currentTime = time;
+            audioRef.current.currentTime = dragTime;
+            setCurrentTime(dragTime);
         }
+        isDraggingRef.current = false;
+        setIsDragging(false);
     };
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,6 +179,7 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
     };
 
     const formatTime = (time: number) => {
+        if (!isFinite(time) || time < 0) return '0:00';
         const minutes = Math.floor(time / 60);
         const seconds = Math.floor(time % 60);
         return `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -137,13 +198,30 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
     const skipForward = () => {
         if (audioRef.current) {
             audioRef.current.currentTime = Math.min(audioRef.current.currentTime + 10, duration);
+            setCurrentTime(audioRef.current.currentTime);
         }
     };
 
     const skipBack = () => {
         if (audioRef.current) {
             audioRef.current.currentTime = Math.max(audioRef.current.currentTime - 10, 0);
+            setCurrentTime(audioRef.current.currentTime);
         }
+    };
+
+    // Shared scrubber props
+    const scrubberProps = {
+        type: 'range' as const,
+        min: 0,
+        max: duration || 1,
+        value: displayTime,
+        step: 'any' as const,
+        onChange: handleScrubChange,
+        onMouseDown: handleScrubStart,
+        onMouseUp: handleScrubEnd,
+        onTouchStart: handleScrubStart,
+        onTouchEnd: handleScrubEnd,
+        style: { touchAction: 'none' as const },
     };
 
     // Small size: just play/pause button
@@ -189,15 +267,7 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
                     </button>
                     <div className="flex-1 min-w-0">
                         <input
-                            type="range"
-                            min="0"
-                            max={duration || 100}
-                            value={currentTime}
-                            onChange={handleSeek}
-                            onMouseDown={() => setIsDragging(true)}
-                            onMouseUp={() => setIsDragging(false)}
-                            onTouchStart={() => setIsDragging(true)}
-                            onTouchEnd={() => setIsDragging(false)}
+                            {...scrubberProps}
                             className={`w-full bg-[var(--color-bg-active)] rounded-lg appearance-none cursor-pointer accent-[var(--color-accent-primary)] ${
                                 isTablet ? 'h-1.5' : 'h-1'
                             }`}
@@ -206,7 +276,7 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
                     <span className={`text-[var(--color-text-muted)] font-mono flex-shrink-0 text-right ${
                         isTablet ? 'text-sm w-12' : 'text-xs w-10'
                     }`}>
-                        {formatTime(currentTime)}
+                        {formatTime(displayTime)}
                     </span>
                     <button
                         onClick={toggleMute}
@@ -224,6 +294,8 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
     }
 
     // Large size: full player with title, progress, all controls
+    const progressPercent = duration > 0 ? (displayTime / duration) * 100 : 0;
+
     return (
         <div className={`bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl p-4 shadow-sm ${className}`}>
             <audio ref={audioRef} src={src} preload="metadata" />
@@ -240,7 +312,7 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
                     <ClosedCaptions
                         words={transcript ? undefined : transcriptWords}
                         transcript={transcript}
-                        currentTime={currentTime}
+                        currentTime={displayTime}
                         duration={duration}
                         isVisible={true}
                         maxWords={10}
@@ -254,22 +326,15 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
                 {/* Progress Bar */}
                 <div className="w-full group">
                     <input
-                        type="range"
-                        min="0"
-                        max={duration || 100}
-                        value={currentTime}
-                        onChange={handleSeek}
-                        onMouseDown={() => setIsDragging(true)}
-                        onMouseUp={() => setIsDragging(false)}
-                        onTouchStart={() => setIsDragging(true)}
-                        onTouchEnd={() => setIsDragging(false)}
+                        {...scrubberProps}
                         className="w-full h-1 bg-[var(--color-bg-active)] rounded-lg appearance-none cursor-pointer accent-[var(--color-accent-primary)] hover:h-1.5 transition-all"
                         style={{
-                            backgroundSize: `${(currentTime / duration) * 100}% 100%`,
+                            touchAction: 'none',
+                            backgroundSize: `${progressPercent}% 100%`,
                         }}
                     />
                     <div className="flex justify-between mt-1 text-xs text-[var(--color-text-muted)] font-mono">
-                        <span>{formatTime(currentTime)}</span>
+                        <span>{formatTime(displayTime)}</span>
                         <span>{formatTime(duration)}</span>
                     </div>
                 </div>

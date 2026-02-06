@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Images, Loader, Captions } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { TimelineGalleryBlockData, TransitionType } from '../../types';
@@ -22,6 +22,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
     const [showCaptions, setShowCaptions] = useState(data.showCaptions ?? false);
 
     const audioRef = useRef<HTMLAudioElement>(null);
+    const animationFrameRef = useRef<number>(0);
 
     const images = data.images || [];
     const transitionDurationMs = data.crossfadeDuration || 500;
@@ -112,6 +113,62 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
         }
     }, [previousIndex, transitionDuration]);
 
+    // rAF loop for smooth progress bar updates (~60fps)
+    const startRAF = useCallback(() => {
+        const animate = () => {
+            const audio = audioRef.current;
+            if (audio && !audio.paused) {
+                setCurrentTime(audio.currentTime);
+            }
+            animationFrameRef.current = requestAnimationFrame(animate);
+        };
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = requestAnimationFrame(animate);
+    }, []);
+
+    const stopRAF = useCallback(() => {
+        cancelAnimationFrame(animationFrameRef.current);
+    }, []);
+
+    // Audio element event listeners (registered once, stable)
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        const onPlay = () => {
+            setIsPlaying(true);
+            startRAF();
+        };
+
+        const onPause = () => {
+            if (!audio.ended) {
+                setIsPlaying(false);
+                stopRAF();
+                setCurrentTime(audio.currentTime);
+            }
+        };
+
+        const onEnded = () => {
+            stopRAF();
+            setIsPlaying(false);
+            setCurrentTime(0);
+            if (audio.readyState >= 1) {
+                audio.currentTime = 0;
+            }
+        };
+
+        audio.addEventListener('play', onPlay);
+        audio.addEventListener('pause', onPause);
+        audio.addEventListener('ended', onEnded);
+
+        return () => {
+            stopRAF();
+            audio.removeEventListener('play', onPlay);
+            audio.removeEventListener('pause', onPause);
+            audio.removeEventListener('ended', onEnded);
+        };
+    }, [data.audioUrl, startRAF, stopRAF]);
+
     function togglePlayback() {
         if (!audioRef.current) return;
         if (isPlaying) {
@@ -119,29 +176,15 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
         } else {
             audioRef.current.play();
         }
-        setIsPlaying(!isPlaying);
-    }
-
-    function handleTimeUpdate() {
-        if (audioRef.current) {
-            const time = audioRef.current.currentTime;
-            setCurrentTime(time);
-            
-            // Safety check: if we've reached the end, stop playing
-            // (onEnded may not fire in some edge cases)
-            if (data.audioDuration && time >= data.audioDuration - 0.1 && isPlaying) {
-                console.log('[TimelineGalleryPreview] Audio reached end, stopping playback');
-                audioRef.current.pause();
-                setIsPlaying(false);
-            }
-        }
     }
 
     function handleSeek(e: React.MouseEvent<HTMLDivElement>) {
         if (!audioRef.current || !data.audioDuration) return;
         const rect = e.currentTarget.getBoundingClientRect();
-        const position = (e.clientX - rect.left) / rect.width;
-        audioRef.current.currentTime = position * data.audioDuration;
+        const position = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const seekTime = position * data.audioDuration;
+        audioRef.current.currentTime = seekTime;
+        setCurrentTime(seekTime);
     }
 
     function formatTime(seconds: number): string {
@@ -158,8 +201,6 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
             <audio
                 ref={audioRef}
                 src={data.audioUrl}
-                onTimeUpdate={handleTimeUpdate}
-                onEnded={() => setIsPlaying(false)}
                 className="hidden"
                 preload="auto"
             />
@@ -265,7 +306,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
                     onClick={handleSeek}
                 >
                     <div
-                        className="h-full bg-gradient-to-r from-[var(--color-accent-primary)] to-purple-500 rounded-full transition-all"
+                        className="h-full bg-gradient-to-r from-[var(--color-accent-primary)] to-purple-500 rounded-full"
                         style={{ width: `${(currentTime / (data.audioDuration || 1)) * 100}%` }}
                     />
                 </div>

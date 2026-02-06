@@ -720,6 +720,79 @@ app/uploads/audio/
 
 ---
 
+## Audio Player Architecture
+
+### Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| **CustomAudioPlayer** | `src/components/ui/CustomAudioPlayer.tsx` | Main reusable player (small/medium/large sizes) |
+| **TimelineGalleryPreview** | `src/components/blocks/TimelineGalleryPreview.tsx` | Audio player synced with image gallery crossfade |
+| **AudioWaveform** | `src/components/blocks/AudioWaveform.tsx` | WaveSurfer.js waveform editor with draggable markers |
+| **AudioPreview** | `src/media/AudioPreview.tsx` | Quick preview player with waveform visualization |
+
+### Scrubber/Progress Bar Standards
+
+The audio players follow proven patterns based on production audio player best practices (react-h5-audio-player, Howler.js, Plyr, BBC Peaks.js):
+
+#### 1. Smooth Updates via `requestAnimationFrame` (~60fps)
+
+The `timeupdate` event only fires ~4 times/sec (varies by browser: Chrome ~2.5Hz, Firefox ~3.7Hz, Safari ~4Hz), causing visibly choppy scrubber movement. Instead, we use `requestAnimationFrame` for smooth visual updates:
+
+- **Start** the rAF loop on the audio element's `play` event
+- **Stop** the rAF loop on `pause` and `ended` events
+- Use `useCallback` for `startRAF`/`stopRAF` so they're stable refs in `useEffect` dependencies
+
+#### 2. Drag/Scrub Architecture (Two-Value Pattern)
+
+To prevent the scrubber from "fighting" between user drag input and playback updates:
+
+- **Two separate state values**: `currentTime` (playback-driven) and `dragTime` (user-driven)
+- **Display value**: `isDragging ? dragTime : currentTime`
+- **`isDraggingRef`** (a ref, NOT state) — the rAF loop checks this without causing listener re-registration
+- **Seek on release only** (`onMouseUp`/`onTouchEnd`), NOT during `onChange` — prevents seeking to every intermediate position during a drag
+
+#### 3. Event-Driven State
+
+Audio element events (`play`, `pause`, `ended`) drive `isPlaying` state — the toggle function only calls `audio.play()`/`audio.pause()`, never sets state directly. This ensures a single source of truth.
+
+#### 4. Ended Event Handling
+
+Browsers fire `pause` BEFORE `ended`. To prevent the pause handler from overwriting the reset:
+
+```typescript
+const onPause = () => {
+    if (!audio.ended) {  // Guard: skip if this pause is from ended
+        setIsPlaying(false);
+        stopRAF();
+        setCurrentTime(audio.currentTime);
+    }
+};
+
+const onEnded = () => {
+    stopRAF();
+    setIsPlaying(false);
+    setCurrentTime(0);
+    if (audio.readyState >= 1) {
+        audio.currentTime = 0;  // Guard: only reset if audio is ready
+    }
+};
+```
+
+#### 5. Range Input Best Practices
+
+- `step="any"` — sub-second precision, prevents snapping to integer values
+- `touch-action: none` — prevents page scroll while dragging on mobile
+- `appearance: none` + custom thumb/track styling for cross-browser consistency
+- Minimum 44x44px touch targets (Apple HIG guideline)
+
+#### 6. Event Listener Registration
+
+- Register in a single `useEffect` with stable dependencies (`src`/`audioUrl`, `startRAF`, `stopRAF`)
+- Do NOT put `isDragging` in `useEffect` deps — would cause listener teardown/re-registration on every drag start/end
+
+---
+
 ## Next Steps
 
 1. Review this document with stakeholders
@@ -730,5 +803,5 @@ app/uploads/audio/
 ---
 
 *Document created: January 2026*
-*Last updated: January 22, 2026*
+*Last updated: February 6, 2026*
 *Status: Phase 1 Complete ✅*
