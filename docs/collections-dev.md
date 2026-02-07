@@ -44,7 +44,7 @@ Image collections support drag-and-drop upload with AI-powered analysis capabili
 - [ImageCollectionWizard.tsx](../app/src/components/collections/ImageCollectionWizard.tsx) - 4-step creation wizard
 - [CollectionImageCard.tsx](../app/src/components/collections/CollectionImageCard.tsx) - Image display card
 - [CollectionItemAnalysisModal.tsx](../app/src/components/collections/CollectionItemAnalysisModal.tsx) - AI analysis viewer
-- [AddItemWizard.tsx](../app/src/components/collections/AddItemWizard.tsx) - Add items to existing collections
+- [AddItemWizard.tsx](../app/src/components/collections/AddItemWizard.tsx) - Add items to existing collections (adapts UI based on collection type)
 
 #### Workflow
 
@@ -126,28 +126,75 @@ Video collections will support intelligent video management with AI-powered anal
 
 ### Document Collections
 
-**Status:** Placeholder (Coming Soon)
+**Status:** Implemented
 
-Document collections will manage PDFs, research papers, and archival materials.
+Document collections manage text documents, PDFs, and other text-based files with automatic text extraction and AI-powered analysis tools.
 
-#### Planned Features
+#### Features
 
-- [ ] PDF upload and rendering
-- [ ] Multi-page document support
+- **Multi-Format Upload** - Support for TXT, PDF, DOC, DOCX, RTF, ODT, PPTX
+- **Automatic Text Extraction** - Text extracted on upload (browser-side for TXT, server-side for other formats)
+- **AI Document Tools** - Powered by Google Gemini:
+  - **Summarize** - Generate concise document summaries
+  - **Extract Facts** - Pull out key facts and dates
+  - **Generate FAQ** - Create visitor Q&A from document content
+  - **Auto-Tag** - Generate keyword tags for searchability
+- **Batch AI Processing** - Run all AI tools across multiple documents at once
+- **Single & Batch Modes** - Analyze individual documents or process entire collection
+
+#### Component Files
+
+- [DocumentCollectionWizard.tsx](../app/src/components/collections/DocumentCollectionWizard.tsx) - 3-step creation wizard
+- [DocumentAIToolsPanel.tsx](../app/src/components/collections/DocumentAIToolsPanel.tsx) - AI tools interface (Single/Batch modes)
+- [AddItemWizard.tsx](../app/src/components/collections/AddItemWizard.tsx) - Add documents to existing collections (collection-type aware)
+
+#### Workflow
+
+1. User clicks "New Collection" → CollectionTypeModal appears
+2. User selects "Documents" → DocumentCollectionWizard opens
+3. **Step 1: Details** - Enter name and description
+4. **Step 2: Upload** - Drag/drop documents, text auto-extracted
+5. **Step 3: Review** - Preview documents with extraction status, then create
+
+#### Adding Documents to Existing Collections
+
+The AddItemWizard detects the collection type and adapts its UI:
+
+1. Open document collection detail page
+2. Click "Add Documents" button
+3. **Step 1: Upload** - Drag/drop documents (accepts TXT, PDF, DOC, DOCX, RTF, ODT, PPTX), text auto-extracted
+4. **Step 2: Review & Add** - Preview documents with extraction status, confirm
+
+#### Document Collection Item Type
+
+```typescript
+export interface DocumentCollectionItem {
+    type: 'document';
+    id: string;
+    url: string;
+    order: number;
+    metadata: {
+        fileName: string;
+        fileSize: number;
+        extractedText?: string;
+        aiAnalysis?: {
+            summary?: string;
+            facts?: string[];
+            faq?: Array<{ question: string; answer: string }>;
+            tags?: string[];
+        };
+    };
+}
+```
+
+#### Future Enhancements
+
 - [ ] OCR for scanned documents (Tesseract.js / Google Vision)
-- [ ] AI summarization (per page and full document)
-- [ ] Citation extraction and formatting
-- [ ] Full-text search indexing
+- [ ] Full-text search indexing across collections
 - [ ] Annotation and highlighting
 - [ ] Related document suggestions
+- [ ] Citation extraction and formatting
 - [ ] Export to accessible formats
-
-#### Proposed AI Integration
-
-- **pdf.js** - Client-side PDF rendering
-- **Tesseract.js** - Browser-based OCR
-- **Google Document AI** - Advanced document parsing
-- **Claude/GPT** - Summarization, citation generation
 
 ---
 
@@ -293,16 +340,21 @@ src/components/collections/
 ├── index.ts                        # Exports
 ├── CollectionTypeModal.tsx         # Type selection (Images, Audio, Video, Documents)
 ├── ImageCollectionWizard.tsx       # 4-step image collection creator
+├── DocumentCollectionWizard.tsx    # 3-step document collection creator
+├── DocumentAIToolsPanel.tsx        # AI tools for document analysis (Single/Batch)
 ├── CollectionImageCard.tsx         # Image card with AI metadata display
 ├── CollectionItemAnalysisModal.tsx # Full AI analysis viewer
-└── AddItemWizard.tsx               # 3-step wizard for adding to existing collections
+└── AddItemWizard.tsx               # Collection-type-aware wizard (images: 3-step, documents: 2-step)
 
 src/components/ui/
 └── ConfirmationModal.tsx           # Reusable confirmation/alert modal
 
+src/stores/
+└── useUnsavedChangesStore.ts      # Global dirty state for navigation guard
+
 src/pages/
 ├── Collections.tsx                 # Collection list and management
-└── CollectionDetail.tsx            # Collection detail with item management
+└── CollectionDetail.tsx            # Collection detail with item management + unsaved changes guard
 ```
 
 ---
@@ -636,6 +688,51 @@ Language Tab States:
 - [MagicTranslateButton.tsx](../app/src/components/MagicTranslateButton.tsx) - Existing translate button pattern
 - [translationService.ts](../app/src/services/translationService.ts) - Translation API service
 - [LanguageSwitcher.tsx](../app/src/components/LanguageSwitcher.tsx) - Pill-style language tabs
+
+---
+
+## Unsaved Changes Guard
+
+**Status:** Implemented
+
+Prevents accidental data loss when navigating away from a collection with unsaved changes.
+
+### How It Works
+
+1. **Dirty State Tracking** - `CollectionDetail` tracks when items are added, deleted, or translations change
+2. **Global Store** - `useUnsavedChangesStore` (Zustand) shares dirty state with the Sidebar
+3. **Sidebar Intercept** - `NavLink` clicks check the store; if dirty, `e.preventDefault()` blocks navigation and shows a warning modal
+4. **Back Button** - The collection detail back arrow uses `safeNavigate()` with its own local modal
+5. **Browser Guard** - `beforeunload` event handler warns on tab close/refresh
+
+### Visual Indicators
+
+- **Save Button** - Turns amber with pulse animation and "Save Changes *" text when dirty
+- **Warning Modal** - Material Design modal with "Stay on Page" / "Discard Changes" options
+
+### Files
+
+- [useUnsavedChangesStore.ts](../app/src/stores/useUnsavedChangesStore.ts) - Zustand store
+- [Sidebar.tsx](../app/src/components/Sidebar.tsx) - Navigation guard on NavLink clicks
+- [CollectionDetail.tsx](../app/src/pages/CollectionDetail.tsx) - Dirty state management
+
+### Reuse Pattern
+
+Any page can register unsaved changes with the global store:
+
+```typescript
+import { useUnsavedChangesStore } from '../stores/useUnsavedChangesStore';
+
+// In your component:
+const setGlobalDirty = useUnsavedChangesStore((s) => s.setDirty);
+
+// Mark dirty when changes happen
+setGlobalDirty(true);
+
+// Clear on save or unmount
+setGlobalDirty(false);
+useEffect(() => () => setGlobalDirty(false), []);
+```
 
 ---
 

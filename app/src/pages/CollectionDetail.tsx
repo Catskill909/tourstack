@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Download, Globe, Mic2, Eye, Sparkles, Languages, FileText } from 'lucide-react';
 import { collectionService, type CollectionItem, type AudioCollectionItem, type ImageCollectionItem, type DocumentCollectionItem } from '../lib/collectionService';
@@ -8,6 +8,7 @@ import { ConfirmationModal } from '../components/ui/ConfirmationModal';
 import type { AIAnalysisResult, MultilingualAIAnalysis } from '../types/media';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { SUPPORTED_LANGUAGES } from '../services/translationService';
+import { useUnsavedChangesStore } from '../stores/useUnsavedChangesStore';
 
 // Helper to format file size
 function formatFileSize(bytes: number): string {
@@ -66,9 +67,54 @@ export function CollectionDetail() {
     // Document collection state
     const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
 
+    // Unsaved changes tracking (synced with global store for sidebar guard)
+    const [isDirty, setIsDirtyLocal] = useState(false);
+    const setGlobalDirty = useUnsavedChangesStore((s) => s.setDirty);
+    const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+    const pendingNavigationRef = useRef<string | null>(null);
+
+    const setIsDirty = useCallback((dirty: boolean) => {
+        setIsDirtyLocal(dirty);
+        setGlobalDirty(dirty);
+    }, [setGlobalDirty]);
+
+    // Clear global dirty state on unmount
+    useEffect(() => {
+        return () => setGlobalDirty(false);
+    }, [setGlobalDirty]);
+
     useEffect(() => {
         if (id) loadCollection(id);
     }, [id]);
+
+    // Warn on browser navigation (refresh, close tab) when dirty
+    useEffect(() => {
+        if (!isDirty) return;
+        const handler = (e: BeforeUnloadEvent) => {
+            e.preventDefault();
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [isDirty]);
+
+    // Safe navigation that checks for unsaved changes (for back button)
+    const safeNavigate = useCallback((path: string) => {
+        if (isDirty) {
+            pendingNavigationRef.current = path;
+            setShowUnsavedModal(true);
+        } else {
+            navigate(path);
+        }
+    }, [isDirty, navigate]);
+
+    const handleDiscardAndNavigate = useCallback(() => {
+        setShowUnsavedModal(false);
+        setIsDirty(false);
+        if (pendingNavigationRef.current) {
+            navigate(pendingNavigationRef.current);
+            pendingNavigationRef.current = null;
+        }
+    }, [navigate, setIsDirty]);
 
     async function loadCollection(collectionId: string) {
         try {
@@ -91,6 +137,7 @@ export function CollectionDetail() {
             await collectionService.update(collection.id, {
                 items
             });
+            setIsDirty(false);
             setShowSuccessModal(true);
         } catch (error) {
             console.error('Failed to save collection:', error);
@@ -112,18 +159,20 @@ export function CollectionDetail() {
         }
     }
 
-    async function handleAddItems(newItems: Omit<ImageCollectionItem, 'id' | 'order'>[]) {
-        const itemsWithIds: ImageCollectionItem[] = newItems.map((item, index) => ({
+    async function handleAddItems(newItems: any[]) {
+        const itemsWithIds = newItems.map((item: any, index: number) => ({
             ...item,
             id: crypto.randomUUID(),
             order: items.length + index,
         }));
         setItems([...items, ...itemsWithIds]);
+        setIsDirty(true);
         setShowAddItemWizard(false);
     }
 
     function handleDeleteItem(itemId: string) {
         setItems(items.filter(item => item.id !== itemId));
+        setIsDirty(true);
         setShowDeleteModal(null);
     }
 
@@ -166,7 +215,7 @@ export function CollectionDetail() {
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => navigate('/collections')}
+                        onClick={() => safeNavigate('/collections')}
                         className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-secondary)] transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5" />
@@ -195,7 +244,11 @@ export function CollectionDetail() {
                         <button
                             onClick={handleSave}
                             disabled={isSaving}
-                            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 transition-colors disabled:opacity-50"
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all disabled:opacity-50 ${
+                                isDirty
+                                    ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-lg shadow-amber-500/25 animate-pulse'
+                                    : 'bg-[var(--color-accent-primary)] text-white hover:bg-[var(--color-accent-primary)]/90'
+                            }`}
                         >
                             {isSaving ? (
                                 <>
@@ -205,7 +258,7 @@ export function CollectionDetail() {
                             ) : (
                                 <>
                                     <Save className="w-4 h-4" />
-                                    <span>Save Changes</span>
+                                    <span>{isDirty ? 'Save Changes *' : 'Save Changes'}</span>
                                 </>
                             )}
                         </button>
@@ -521,6 +574,7 @@ export function CollectionDetail() {
                 onClose={() => setShowAddItemWizard(false)}
                 onAdd={handleAddItems}
                 collectionName={collection.name}
+                collectionType={collection.type}
             />
 
             {/* Text Preview Modal */}
@@ -570,6 +624,7 @@ export function CollectionDetail() {
                                 ? { ...item, aiTranslations: translations } as CollectionItem
                                 : item
                         ));
+                        setIsDirty(true);
                     }}
                 />
             )}
@@ -595,6 +650,21 @@ export function CollectionDetail() {
                 confirmText="Delete"
                 cancelText="Cancel"
                 variant="danger"
+            />
+
+            {/* Unsaved Changes Modal */}
+            <ConfirmationModal
+                isOpen={showUnsavedModal}
+                onClose={() => {
+                    setShowUnsavedModal(false);
+                    pendingNavigationRef.current = null;
+                }}
+                onConfirm={handleDiscardAndNavigate}
+                title="Unsaved Changes"
+                message="You have unsaved changes that will be lost if you leave this page. Would you like to discard your changes?"
+                confirmText="Discard Changes"
+                cancelText="Stay on Page"
+                variant="warning"
             />
         </div>
     );
