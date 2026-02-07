@@ -176,6 +176,36 @@ async function syncToMediaLibrary(items: unknown[]): Promise<{ synced: number; n
 - Collections without AI analysis continue to work
 - No database migration required (SQLite handles optional fields)
 
+## Document Collection Management
+
+### Inline Text Editing
+
+Document collections support inline editing of extracted text directly in the Collection Detail view. When a document is selected from the grid, a full-width text editor panel appears between the document grid and the AI Tools panel.
+
+**Features:**
+- Plain text editing via auto-resizing `<textarea>` (no rich text/formatting)
+- Live word count and character count in the editor header
+- Monospace font for readability
+- Changes tracked via unsaved changes guard (amber pulsing Save button)
+- Edited text is immediately available to AI tools (summarize, extract facts, FAQ, auto-tag)
+- Paste or type text directly for documents without extracted text
+
+**Data flow:**
+```
+Select document → Edit extractedText → Save button activates (dirty state)
+→ Click Save → Collection updated via PUT /api/collections/:id → Persisted
+```
+
+### Delete Documents
+
+Documents can be deleted from collections via hover-reveal delete buttons on each document card. Deletion triggers a confirmation modal before removing the item from the collection.
+
+### File Locations
+- Collection Detail View: `/app/src/pages/CollectionDetail.tsx`
+- AI Tools Panel: `/app/src/components/collections/DocumentAIToolsPanel.tsx`
+- Text Preview Modal: `/app/src/components/TextPreviewModal.tsx`
+- Document Collection Wizard: `/app/src/components/collections/DocumentCollectionWizard.tsx`
+
 ## Future Enhancements (Phase 23b/c)
 
 - Add language switcher to Media Library UI

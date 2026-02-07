@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Download, Globe, Mic2, Eye, Sparkles, Languages, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash2, Play, Pause, Download, Globe, Mic2, Eye, Sparkles, Languages, FileText, Type } from 'lucide-react';
 import { collectionService, type CollectionItem, type AudioCollectionItem, type ImageCollectionItem, type DocumentCollectionItem } from '../lib/collectionService';
 import { TextPreviewModal } from '../components/TextPreviewModal';
 import { CollectionItemAnalysisModal, AddItemWizard, DocumentAIToolsPanel } from '../components/collections';
@@ -389,7 +389,7 @@ export function CollectionDetail() {
                                 key={item.id}
                                 onClick={() => setSelectedDocId(item.id)}
                                 className={`
-                                    flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
+                                    group flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
                                     ${selectedDocId === item.id
                                         ? 'bg-amber-500/10 border-amber-500 ring-1 ring-amber-500/30'
                                         : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:border-amber-500/50'
@@ -439,6 +439,52 @@ export function CollectionDetail() {
                             <span className="text-sm font-medium">Add Documents</span>
                         </button>
                     </div>
+
+                    {/* Document Text Editor */}
+                    {selectedDocId && (() => {
+                        const selectedDoc = (items as DocumentCollectionItem[]).find(d => d.id === selectedDocId);
+                        if (!selectedDoc) return null;
+                        const text = selectedDoc.metadata.extractedText || '';
+                        const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+                        return (
+                            <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] overflow-hidden">
+                                <div className="p-4 border-b border-[var(--color-border-default)] flex items-center gap-3">
+                                    <div className="p-2 bg-amber-500/10 rounded-lg">
+                                        <Type className="w-5 h-5 text-amber-500" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-[var(--color-text-primary)] truncate">
+                                            {selectedDoc.metadata.fileName}
+                                        </h3>
+                                        <p className="text-xs text-[var(--color-text-muted)]">
+                                            {wordCount.toLocaleString()} words &middot; {text.length.toLocaleString()} characters
+                                        </p>
+                                    </div>
+                                </div>
+                                <textarea
+                                    value={text}
+                                    onChange={(e) => {
+                                        const newText = e.target.value;
+                                        setItems(prev => prev.map(item =>
+                                            item.id === selectedDocId
+                                                ? {
+                                                    ...item,
+                                                    metadata: {
+                                                        ...(item as DocumentCollectionItem).metadata,
+                                                        extractedText: newText,
+                                                    },
+                                                } as CollectionItem
+                                                : item
+                                        ));
+                                        setIsDirty(true);
+                                    }}
+                                    className="w-full min-h-[300px] max-h-[600px] p-4 bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] text-sm leading-relaxed resize-y border-none outline-none focus:ring-0 font-mono"
+                                    placeholder="No extracted text available. You can paste or type text here."
+                                    spellCheck={false}
+                                />
+                            </div>
+                        );
+                    })()}
 
                     {/* AI Tools Panel - Full Width */}
                     <DocumentAIToolsPanel
