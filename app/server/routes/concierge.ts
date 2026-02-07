@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '../db.js';
+import { translateText } from '../services/translation.js';
 
 const router = Router();
 
@@ -474,19 +475,12 @@ Answer the visitor's question based ONLY on the knowledge base above. If you can
 // TRANSLATE ALL QUICK ACTIONS
 // =============================================================================
 
-const TRANSLATE_API_URL = 'https://translation.googleapis.com/language/translate/v2';
-
 router.post('/quick-actions/translate-all', async (req: Request, res: Response) => {
     try {
         const { configId } = req.body;
 
         if (!configId) {
             return res.status(400).json({ error: 'Config ID required' });
-        }
-
-        const API_KEY = process.env.GOOGLE_VISION_API_KEY;
-        if (!API_KEY) {
-            return res.status(500).json({ error: 'Translation API key not configured' });
         }
 
         // Get config with enabled languages
@@ -514,7 +508,7 @@ router.post('/quick-actions/translate-all', async (req: Request, res: Response) 
             return res.status(400).json({ error: 'No quick actions to translate' });
         }
 
-        // Translate each action
+        // Translate each action using the shared translation service
         let translatedCount = 0;
         for (const action of actions) {
             const question = JSON.parse(action.question || '{}') as Record<string, string>;
@@ -522,34 +516,19 @@ router.post('/quick-actions/translate-all', async (req: Request, res: Response) 
 
             if (!englishText) continue;
 
-            // Translate to each target language
             for (const targetLang of targetLanguages) {
-                if (question[targetLang]) continue; // Skip if already translated
+                if (question[targetLang]) continue;
 
                 try {
-                    const response = await fetch(`${TRANSLATE_API_URL}?key=${API_KEY}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            q: englishText,
-                            source: 'en',
-                            target: targetLang,
-                            format: 'text'
-                        })
-                    });
-
-                    const data = await response.json() as { data?: { translations: Array<{ translatedText: string }> } };
-                    const translatedText = data.data?.translations?.[0]?.translatedText;
-
-                    if (translatedText) {
-                        question[targetLang] = translatedText;
+                    const translatedResult = await translateText(englishText, 'en', targetLang);
+                    if (translatedResult) {
+                        question[targetLang] = translatedResult;
                     }
                 } catch (err) {
                     console.error(`Failed to translate to ${targetLang}:`, err);
                 }
             }
 
-            // Update the action with translations
             await prisma.conciergeQuickAction.update({
                 where: { id: action.id },
                 data: { question: JSON.stringify(question) }

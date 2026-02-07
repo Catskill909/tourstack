@@ -71,22 +71,13 @@ interface GenerationResult {
     error?: string;
 }
 
-// Languages supported by our self-hosted LibreTranslate server (translate.supersoul.top)
-// Must match LT_LOAD_ONLY env var: en,es,fr,de,ja,it,ko,zh,pt
-const TRANSLATION_AVAILABLE = ['en', 'es', 'fr', 'de', 'it', 'ja', 'ko', 'pt', 'zh'];
+import { LIBRE_TRANSLATE_LANGUAGES } from '../constants/languages';
 
-// ElevenLabs supported languages - limited to what LibreTranslate can handle
-const ELEVENLABS_LANGUAGES = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'fr', name: 'French' },
-    { code: 'de', name: 'German' },
-    { code: 'it', name: 'Italian' },
-    { code: 'pt', name: 'Portuguese' },
-    { code: 'ja', name: 'Japanese' },
-    { code: 'ko', name: 'Korean' },
-    { code: 'zh', name: 'Chinese' },
-];
+// Translation is available for all languages via the configured provider (Google Cloud or LibreTranslate)
+const isTranslationAvailable = (_code: string): boolean => true;
+
+// ElevenLabs supported languages
+const ELEVENLABS_LANGUAGES = LIBRE_TRANSLATE_LANGUAGES;
 
 // Google Cloud TTS formats
 const GOOGLE_CLOUD_FORMATS = [
@@ -191,7 +182,7 @@ export function AudioCollectionModal({
                     enabled: code === 'en', // Default only English enabled
                     voiceId: defaultVoice?.id || '',
                     voiceName: defaultVoice?.name || '',
-                    translationAvailable: TRANSLATION_AVAILABLE.includes(code),
+                    translationAvailable: isTranslationAvailable(code),
                 };
             });
             setLanguages(langSelections);
@@ -238,13 +229,13 @@ export function AudioCollectionModal({
                 enabled: lang.code === 'en',
                 voiceId: '', // Will be set when voices load
                 voiceName: '',
-                translationAvailable: TRANSLATION_AVAILABLE.includes(lang.code),
+                translationAvailable: isTranslationAvailable(lang.code),
             }));
             setLanguages(langSelections);
         } else if (provider === 'google_cloud' && googleLanguages && googleVoices) {
             // Google Cloud: use language list and voice data from parent
             const langSelections: LanguageSelection[] = googleLanguages
-                .filter(lang => TRANSLATION_AVAILABLE.includes(lang.code))
+                .filter(lang => isTranslationAvailable(lang.code))
                 .map((lang) => {
                     const voicesForLang = googleVoices[lang.code] || [];
                     const defaultVoice = voicesForLang[0];
@@ -254,7 +245,7 @@ export function AudioCollectionModal({
                         enabled: lang.code === 'en',
                         voiceId: defaultVoice?.id || '',
                         voiceName: defaultVoice?.name || '',
-                        translationAvailable: TRANSLATION_AVAILABLE.includes(lang.code),
+                        translationAvailable: isTranslationAvailable(lang.code),
                     };
                 });
             setLanguages(langSelections);

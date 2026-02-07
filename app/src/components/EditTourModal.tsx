@@ -11,19 +11,8 @@ interface EditTourModalProps {
     onSave: (id: string, data: Partial<Tour>) => Promise<void>;
 }
 
-// Languages supported by our self-hosted LibreTranslate server (translate.supersoul.top)
-// Must match LT_LOAD_ONLY env var: en,es,fr,de,ja,it,ko,zh,pt
-const languages = [
-    { code: 'en', name: 'English', hint: 'EN' },
-    { code: 'es', name: 'Español', hint: 'ES' },
-    { code: 'fr', name: 'Français', hint: 'FR' },
-    { code: 'de', name: 'Deutsch', hint: 'DE' },
-    { code: 'it', name: 'Italiano', hint: 'IT' },
-    { code: 'pt', name: 'Português', hint: 'PT' },
-    { code: 'zh', name: '中文', hint: 'ZH - Chinese' },
-    { code: 'ja', name: '日本語', hint: 'JA - Japanese' },
-    { code: 'ko', name: '한국어', hint: 'KO - Korean' },
-];
+import { getNativeLanguageName } from '../constants/languages';
+import { useTranslationLanguages } from '../hooks/useTranslationLanguages';
 
 const durations = [
     { value: 15, label: '15 min' },
@@ -37,6 +26,14 @@ const durations = [
 export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditTourModalProps) {
     const [isSaving, setIsSaving] = useState(false);
 
+    // Dynamic language list from active translation provider
+    const { languages: providerLanguages } = useTranslationLanguages();
+    const languages = providerLanguages.map(l => ({
+        code: l.code,
+        name: getNativeLanguageName(l.code, l.name),
+        hint: l.code.toUpperCase() + (l.name !== getNativeLanguageName(l.code, l.name) ? ` - ${l.name}` : ''),
+    }));
+
     // Form state
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -45,7 +42,7 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
     const [duration, setDuration] = useState(30);
     const [heroImage, setHeroImage] = useState<string>('');
     const [_imageFile, setImageFile] = useState<File | null>(null);
-    const [defaultTranslationProvider, setDefaultTranslationProvider] = useState<'libretranslate' | 'deepgram'>('libretranslate');
+    const [defaultTranslationProvider, setDefaultTranslationProvider] = useState<'google_cloud' | 'libretranslate'>('google_cloud');
 
     // Populate form when tour changes
     useEffect(() => {
@@ -298,6 +295,19 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                         <div className="flex gap-3">
                             <button
                                 type="button"
+                                onClick={() => setDefaultTranslationProvider('google_cloud')}
+                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${defaultTranslationProvider === 'google_cloud'
+                                        ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
+                                        : 'border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'
+                                    }`}
+                            >
+                                <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                                    G
+                                </div>
+                                <span>Google Cloud</span>
+                            </button>
+                            <button
+                                type="button"
                                 onClick={() => setDefaultTranslationProvider('libretranslate')}
                                 className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${defaultTranslationProvider === 'libretranslate'
                                         ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
@@ -308,19 +318,6 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                                     LT
                                 </div>
                                 <span>LibreTranslate</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setDefaultTranslationProvider('deepgram')}
-                                className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${defaultTranslationProvider === 'deepgram'
-                                        ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
-                                        : 'border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'
-                                    }`}
-                            >
-                                <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded flex items-center justify-center text-white text-xs font-bold">
-                                    DG
-                                </div>
-                                <span>Deepgram</span>
                             </button>
                         </div>
                         <p className="mt-2 text-xs text-[var(--color-text-muted)]">

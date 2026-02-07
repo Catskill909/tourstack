@@ -597,7 +597,7 @@ export interface Tour {
   difficulty: Difficulty;
 
   // Translation settings
-  defaultTranslationProvider?: 'libretranslate' | 'deepgram';
+  defaultTranslationProvider?: 'google_cloud' | 'libretranslate';
 
   // Display settings for visitor/preview views
   displaySettings?: {

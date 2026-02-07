@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, Pencil, Settings, Check, X, Languages, Loader2, Play, Eye, ExternalLink, Monitor, MapPin, Bot } from 'lucide-react';
-import { translateWithLibre } from '../services/translationService';
+import { translateText } from '../services/translationService';
 import { useToursStore } from '../stores/useToursStore';
 import { StopEditor } from '../components/StopEditor';
 import { PositioningEditorModal } from '../components/PositioningEditorModal';
@@ -354,7 +354,7 @@ export function TourDetail() {
         for (const lang of (tour.languages || ['en'])) {
             if (lang === primaryLang) continue;
             try {
-                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                const translated = await translateText(sourceText, primaryLang, lang);
                 newTitleObj[lang] = translated;
             } catch (error) {
                 console.error(`Failed to translate title to ${lang}:`, error);

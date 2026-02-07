@@ -265,47 +265,51 @@ lsof -i :3000 -i :5173 | grep LISTEN
 
 ---
 
-## � LibreTranslate Server Configuration
+## Translation Architecture (Unified Provider System)
 
 > [!IMPORTANT]
-> We run a **self-hosted LibreTranslate server** at `translate.supersoul.top` with limited languages to reduce memory usage.
+> TourStack supports **two translation providers**: Google Cloud Translation (195+ languages, fast cloud API) and LibreTranslate (9 languages, self-hosted). Users choose their preferred provider in **Settings > Translation**.
 
-### Supported Languages (LT_LOAD_ONLY)
+### Provider Configuration
+
+| Provider | Languages | Config |
+|----------|-----------|--------|
+| **Google Cloud Translation** (default) | 195+ | `GOOGLE_VISION_API_KEY` env var or Settings UI |
+| **LibreTranslate** (fallback) | 9 | `LIBRE_TRANSLATE_URL` env var or Settings UI |
+
+### Architecture
+
+All translation flows through a single shared backend service:
 
 ```
-en,es,fr,de,ja,it,ko,zh,pt
+Frontend (translateText/translateBatch/magicTranslate)
+  → POST /api/translate (provider-aware route)
+    → app/server/services/translation.ts (shared service)
+      → Google Cloud Translation API v2 OR LibreTranslate
 ```
 
-| Code | Language | Status |
-|------|----------|--------|
-| en | English | ✅ Primary |
-| es | Spanish | ✅ |
-| fr | French | ✅ |
-| de | German | ✅ |
-| it | Italian | ✅ |
-| pt | Portuguese | ✅ |
-| ja | Japanese | ✅ |
-| ko | Korean | ✅ |
-| zh | Chinese (zh-Hans) | ✅ |
+### Key Files
 
-### Where Languages Are Defined
+| File | Purpose |
+|------|---------|
+| `app/server/services/translation.ts` | Shared backend translation service (all routes import from here) |
+| `app/server/routes/translate.ts` | Provider-aware translation API route |
+| `app/src/services/translationService.ts` | Frontend translation service |
+| `app/src/constants/languages.ts` | Centralized language constants + native names |
+| `app/src/hooks/useTranslationLanguages.ts` | React hook for dynamic language list from active provider |
 
-All language lists must stay in sync with `LT_LOAD_ONLY`:
+### How Provider Selection Works
 
-| File | Constant |
-|------|----------|
-| `Audio.tsx` | `TRANSLATION_LANGUAGE_MAP` |
-| `CreateTourModal.tsx` | `languages` |
-| `EditTourModal.tsx` | `languages` |
-| `translationService.ts` | `SUPPORTED_LANGUAGES` |
-| `AudioCollectionModal.tsx` | `TRANSLATION_AVAILABLE`, `ELEVENLABS_LANGUAGES` |
-| `CollectionPickerModal.tsx` | `LANGUAGE_NAMES` |
+1. User sets default provider in **Settings > Translation > Default Translation Provider**
+2. Backend reads `settings.json` + env var overrides via `getTranslationConfig()`
+3. Frontend sends translation requests without specifying provider (backend uses Settings default)
+4. Frontend can override provider per-request if needed (e.g., force `google_cloud`)
 
-### Adding a New Language
+### Language Lists
 
-1. Update `LT_LOAD_ONLY` env var on LibreTranslate server
-2. Update ALL files listed above
-3. Test translation end-to-end
+- **Dynamic**: `useTranslationLanguages()` hook fetches `/api/translate/languages` from the active provider
+- **Static fallback**: `LIBRE_TRANSLATE_LANGUAGES` in `constants/languages.ts` (9 languages, used when API unavailable)
+- Tour modals (Create/Edit Tour) use the dynamic hook to show all available languages
 
 ---
 
@@ -704,6 +708,25 @@ TourStack uses a **modular content block system** where tours and stops are comp
 > - Batch files not appearing: Added `generatedAudioFiles.set()` and `saveMetadata()` calls in batch endpoint.
 > - Collection showing wrong provider: Root cause was the voice wrapper type mismatch causing empty voice IDs.
 
+### Phase 27: Unified Translation Provider System (Feb 7, 2026)
+- [x] **Shared Backend Service** - `app/server/services/translation.ts` centralizes all translation logic
+- [x] **Google Cloud Translation** - 195+ languages via Cloud Translation API v2
+- [x] **Provider Selection** - Users choose Google Cloud or LibreTranslate in Settings
+- [x] **Settings UI** - Google Cloud API key field, enable/disable toggle, provider selector
+- [x] **Eliminated Duplication** - Removed ~200 lines of duplicate `translateText()` from 5 backend route files
+- [x] **Dynamic Language Lists** - `useTranslationLanguages()` hook fetches languages from active provider
+- [x] **Frontend Provider Routing** - All translation calls respect Settings default (no hardcoded provider override)
+- [x] **Tour Language Selection** - Create/Edit Tour modals show all languages from active provider
+- [x] **Updated Consumers** - 15+ files updated to use shared service and dynamic language lists
+
+> **Files Created:**
+> - `app/server/services/translation.ts` - Shared backend translation service
+> - `app/src/constants/languages.ts` - Centralized language constants
+> - `app/src/hooks/useTranslationLanguages.ts` - React hook for dynamic language list
+>
+> **Files Modified (backend):** settings.ts, translate.ts, google-translate.ts, audio.ts, elevenlabs.ts, google-tts.ts, concierge.ts, chat.ts
+> **Files Modified (frontend):** translationService.ts, Settings.tsx, Audio.tsx, AudioCollectionModal.tsx, EditTourModal.tsx, CreateTourModal.tsx, Languages.tsx, StopEditor.tsx, TourDetail.tsx, BlockMetadataEditor.tsx, ImageBlockEditor.tsx, GalleryBlockEditor.tsx, TimelineGalleryBlockEditor.tsx, MagicTranslateButton.tsx, types/index.ts
+
 ### 🎯 Phase 26.2: Per-Tour AI Concierge (NEXT)
 - [ ] Add concierge fields to Tour model (conciergeEnabled, conciergePersona, conciergeWelcome, conciergeCollections)
 - [ ] Create tour concierge settings UI (new tab in Tour Editor)
@@ -824,8 +847,13 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | **Google Cloud TTS** | |
 | Google TTS API Routes | `app/server/routes/google-tts.ts` |
 | Google TTS Service | `app/src/services/googleTtsService.ts` |
-| Translation API | `app/server/routes/translate.ts` |
-| Translation Service | `app/src/services/translationService.ts` |
+| **Translation** | |
+| Translation Shared Service | `app/server/services/translation.ts` |
+| Translation API Route | `app/server/routes/translate.ts` |
+| Google Translate Route | `app/server/routes/google-translate.ts` |
+| Frontend Translation Service | `app/src/services/translationService.ts` |
+| Language Constants | `app/src/constants/languages.ts` |
+| Translation Languages Hook | `app/src/hooks/useTranslationLanguages.ts` |
 | **Collections (Audio & Images)** | |
 | Collections API | `app/server/routes/collections.ts` |
 | Collection Service | `app/src/lib/collectionService.ts` |

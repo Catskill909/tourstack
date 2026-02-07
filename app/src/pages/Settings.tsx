@@ -106,13 +106,15 @@ export function Settings() {
     const [showElevenLabsKey, setShowElevenLabsKey] = useState(false);
     const [defaultTranscriptionProvider, setDefaultTranscriptionProvider] = useState<'deepgram' | 'whisper' | 'none'>('none');
 
-    // Translation Settings (LibreTranslate + Deepgram)
+    // Translation Settings (Google Cloud + LibreTranslate)
     const [libreTranslateUrl, setLibreTranslateUrl] = useState('https://translate.supersoul.top/translate');
     const [libreTranslateApiKey, setLibreTranslateApiKey] = useState('');
     const [showLibreTranslateKey, setShowLibreTranslateKey] = useState(false);
     const [libreTranslateEnabled, setLibreTranslateEnabled] = useState(true);
-    const [deepgramTranslationEnabled, setDeepgramTranslationEnabled] = useState(false);
-    const [defaultTranslationProvider, setDefaultTranslationProvider] = useState<'libretranslate' | 'deepgram'>('libretranslate');
+    const [googleCloudApiKey, setGoogleCloudApiKey] = useState('');
+    const [showGoogleCloudKey, setShowGoogleCloudKey] = useState(false);
+    const [googleCloudEnabled, setGoogleCloudEnabled] = useState(false);
+    const [defaultTranslationProvider, setDefaultTranslationProvider] = useState<'google_cloud' | 'libretranslate'>('google_cloud');
 
     // General Settings
     const [defaultLanguage, setDefaultLanguage] = useState('en');
@@ -145,8 +147,9 @@ export function Settings() {
                     setLibreTranslateUrl(settings.translation.libreTranslateUrl || '');
                     setLibreTranslateApiKey(settings.translation.libreTranslateApiKey || '');
                     setLibreTranslateEnabled(settings.translation.libreTranslateEnabled ?? true);
-                    setDeepgramTranslationEnabled(settings.translation.deepgramEnabled ?? false);
-                    setDefaultTranslationProvider(settings.translation.defaultProvider || 'libretranslate');
+                    setGoogleCloudApiKey(settings.translation.googleCloudApiKey || '');
+                    setGoogleCloudEnabled(settings.translation.googleCloudEnabled ?? false);
+                    setDefaultTranslationProvider(settings.translation.defaultProvider || 'google_cloud');
                 }
                 if (settings.general) {
                     setDefaultLanguage(settings.general.defaultLanguage || 'en');
@@ -174,7 +177,8 @@ export function Settings() {
                 libreTranslateUrl,
                 libreTranslateApiKey,
                 libreTranslateEnabled,
-                deepgramEnabled: deepgramTranslationEnabled,
+                googleCloudApiKey,
+                googleCloudEnabled,
                 defaultProvider: defaultTranslationProvider,
             },
             general: {
@@ -805,47 +809,91 @@ export function Settings() {
                             </div>
                         </div>
 
-                        {/* Deepgram Translation */}
+                        {/* Google Cloud Translation */}
                         <div className="bg-[var(--color-bg-elevated)] rounded-xl p-5">
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                                        DG
+                                    <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                                        G
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-[var(--color-text-primary)]">Deepgram</h3>
-                                        <p className="text-sm text-[var(--color-text-muted)]">Enterprise ASR • Audio translation to English</p>
+                                        <h3 className="font-semibold text-[var(--color-text-primary)]">Google Cloud Translation</h3>
+                                        <p className="text-sm text-[var(--color-text-muted)]">195+ languages • Fast cloud API</p>
                                     </div>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
                                         type="checkbox"
-                                        checked={deepgramTranslationEnabled}
-                                        onChange={(e) => setDeepgramTranslationEnabled(e.target.checked)}
+                                        checked={googleCloudEnabled}
+                                        onChange={(e) => setGoogleCloudEnabled(e.target.checked)}
                                         className="sr-only peer"
                                     />
                                     <div className="w-11 h-6 bg-[var(--color-bg-hover)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--color-accent-primary)]/50 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--color-accent-secondary)]"></div>
                                 </label>
                             </div>
-                            {deepgramTranslationEnabled && (
+                            {googleCloudEnabled && googleCloudApiKey && (
                                 <div className="mt-4 p-3 bg-[var(--color-success)]/10 rounded-lg border border-[var(--color-success)]/20">
                                     <p className="text-sm text-[var(--color-success)] flex items-center gap-2">
                                         <CheckIcon />
-                                        Deepgram translation enabled (uses Transcription API key)
+                                        Google Cloud Translation is configured and ready
                                     </p>
                                 </div>
                             )}
-                            <div className="mt-4 p-3 bg-[var(--color-warning)]/10 rounded-lg border border-[var(--color-warning)]/20">
-                                <p className="text-sm text-[var(--color-warning)]">
-                                    ⚠️ <strong>Note:</strong> Deepgram translates audio to English during transcription. For text-to-text translation, LibreTranslate is used as fallback.
-                                </p>
-                            </div>
+                            {googleCloudEnabled && !googleCloudApiKey && (
+                                <div className="mt-4 p-3 bg-[var(--color-warning)]/10 rounded-lg border border-[var(--color-warning)]/20">
+                                    <p className="text-sm text-[var(--color-warning)]">
+                                        API key required to enable Google Cloud Translation
+                                    </p>
+                                </div>
+                            )}
+                            {googleCloudEnabled && (
+                                <div className="mt-4 space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
+                                            Google Cloud API Key
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type={showGoogleCloudKey ? 'text' : 'password'}
+                                                value={googleCloudApiKey}
+                                                onChange={(e) => setGoogleCloudApiKey(e.target.value)}
+                                                placeholder="Enter your Google Cloud API key..."
+                                                className="w-full px-4 py-3 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent-primary)] focus:ring-1 focus:ring-[var(--color-accent-primary)] transition-all pr-12"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowGoogleCloudKey(!showGoogleCloudKey)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                                            >
+                                                {showGoogleCloudKey ? <EyeOffIcon /> : <EyeIcon />}
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                                            Uses the same API key as Google Vision (GOOGLE_VISION_API_KEY). Enable the Cloud Translation API in your Google Cloud console.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Default Translation Provider */}
                         <div className="bg-[var(--color-bg-elevated)] rounded-xl p-5">
                             <h3 className="font-semibold text-[var(--color-text-primary)] mb-3">Default Translation Provider</h3>
                             <div className="flex gap-2">
+                                <button
+                                    onClick={() => setDefaultTranslationProvider('google_cloud')}
+                                    disabled={!googleCloudEnabled}
+                                    className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
+                                        defaultTranslationProvider === 'google_cloud'
+                                            ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
+                                            : 'border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:border-[var(--color-border-hover)]'
+                                    } ${!googleCloudEnabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                >
+                                    <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                                        G
+                                    </div>
+                                    <span>Google Cloud</span>
+                                </button>
                                 <button
                                     onClick={() => setDefaultTranslationProvider('libretranslate')}
                                     disabled={!libreTranslateEnabled}
@@ -860,29 +908,15 @@ export function Settings() {
                                     </div>
                                     <span>LibreTranslate</span>
                                 </button>
-                                <button
-                                    onClick={() => setDefaultTranslationProvider('deepgram')}
-                                    disabled={!deepgramTranslationEnabled}
-                                    className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${
-                                        defaultTranslationProvider === 'deepgram'
-                                            ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
-                                            : 'border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:border-[var(--color-border-hover)]'
-                                    } ${!deepgramTranslationEnabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                >
-                                    <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-600 rounded flex items-center justify-center text-white text-xs font-bold">
-                                        DG
-                                    </div>
-                                    <span>Deepgram</span>
-                                </button>
                             </div>
                             <p className="text-xs text-[var(--color-text-muted)] mt-3">
-                                Default provider for Magic Translate. Can be overridden per tour.
+                                Default provider for Magic Translate and all text translation.
                             </p>
                         </div>
 
                         <div className="p-4 bg-[var(--color-info)]/10 rounded-lg border border-[var(--color-info)]/20">
                             <p className="text-sm text-[var(--color-info)]">
-                                💡 <strong>Tip:</strong> LibreTranslate powers text-to-text translation for Magic Translate. Deepgram excels at audio transcription with built-in translation to English.
+                                Google Cloud Translation supports 195+ languages with fast cloud API. LibreTranslate is open-source and self-hostable with 9 languages. Both can be used for Magic Translate, batch TTS translation, and file translation.
                             </p>
                         </div>
                     </div>

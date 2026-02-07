@@ -63,18 +63,10 @@ interface TranslationHistoryItem {
 // CONSTANTS
 // ============================================================================
 
-// Supported languages on our LibreTranslate server (LT_LOAD_ONLY env var)
-const SUPPORTED_LANGUAGES: Language[] = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'fr', name: 'French' },
-    { code: 'de', name: 'German' },
-    { code: 'it', name: 'Italian' },
-    { code: 'pt', name: 'Portuguese' },
-    { code: 'ja', name: 'Japanese' },
-    { code: 'ko', name: 'Korean' },
-    { code: 'zh', name: 'Chinese' },
-];
+import { LIBRE_TRANSLATE_LANGUAGES } from '../constants/languages';
+
+// Supported languages - uses the shared constant
+const SUPPORTED_LANGUAGES: Language[] = LIBRE_TRANSLATE_LANGUAGES;
 
 // Quick phrases for museum staff
 const QUICK_PHRASES = [

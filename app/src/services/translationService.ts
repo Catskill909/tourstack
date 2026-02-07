@@ -1,11 +1,11 @@
 /**
  * Translation Service for TourStack
- * 
- * Provides AI-powered translation using LibreTranslate or Deepgram.
- * Architecture supports multiple providers with fallback.
+ *
+ * Provides translation using Google Cloud Translation or LibreTranslate.
+ * Users choose their preferred provider in Settings.
  */
 
-export type TranslationProvider = 'libretranslate' | 'deepgram';
+export type TranslationProvider = 'google_cloud' | 'libretranslate';
 
 export interface TranslationRequest {
     text: string;
@@ -30,21 +30,15 @@ const TRANSLATE_API = '/api/translate';
 const TRANSLATE_BATCH_API = '/api/translate/batch';
 
 /**
- * Translate text using our server-side translation proxy
- * Supports LibreTranslate (default) and Deepgram providers
- * 
- * @param text - Text to translate
- * @param sourceLang - Source language code (e.g., 'en')
- * @param targetLang - Target language code (e.g., 'es')
- * @param apiKey - Optional API key for rate limit bypass
- * @param provider - Translation provider ('libretranslate' | 'deepgram')
+ * Translate text using our server-side translation proxy.
+ * Routes to the provider configured in Settings (Google Cloud or LibreTranslate).
  */
 export async function translateText(
     text: string,
     sourceLang: string,
     targetLang: string,
     apiKey?: string,
-    provider: TranslationProvider = 'libretranslate'
+    provider?: TranslationProvider
 ): Promise<string> {
     // Skip if same language or empty text
     if (sourceLang === targetLang || !text.trim()) {
@@ -52,18 +46,23 @@ export async function translateText(
     }
 
     try {
+        const body: Record<string, string | undefined> = {
+            text,
+            sourceLang,
+            targetLang,
+            apiKey,
+        };
+        // Only send provider if explicitly specified; otherwise backend uses Settings default
+        if (provider) {
+            body.provider = provider;
+        }
+
         const response = await fetch(TRANSLATE_API, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                text,
-                sourceLang,
-                targetLang,
-                apiKey,
-                provider,
-            }),
+            body: JSON.stringify(body),
         });
 
         if (!response.ok) {
@@ -93,15 +92,7 @@ export async function translateWithLibre(
 
 /**
  * Batch translate multiple texts to a single target language in one API call.
- * This is significantly faster than individual translateText calls (10-15x improvement).
- *
- * Uses LibreTranslate's array support: q: ["text1", "text2"] → translatedText: ["trans1", "trans2"]
- *
- * @param texts - Array of texts to translate
- * @param sourceLang - Source language code
- * @param targetLang - Target language code
- * @param apiKey - Optional API key
- * @returns Array of translated texts (same order as input)
+ * Both Google Cloud and LibreTranslate support array input for batch translation.
  */
 export async function translateBatch(
     texts: string[],
@@ -143,16 +134,11 @@ export async function translateBatch(
 
 /**
  * Batch translate text to multiple target languages
- * 
- * @param request - Batch translation request
- * @param apiKey - Optional API key
- * @param provider - Translation provider
- * @returns Object with translations keyed by language code
  */
 export async function batchTranslate(
     request: BatchTranslationRequest,
     apiKey?: string,
-    provider: TranslationProvider = 'libretranslate'
+    provider?: TranslationProvider
 ): Promise<TranslationResult> {
     const { text, sourceLang, targetLangs } = request;
     const result: TranslationResult = {};
@@ -178,40 +164,51 @@ export async function batchTranslate(
 }
 
 /**
- * Magic Translate - One-click translation to all tour languages
- * 
- * This is the main entry point for the "✨ Translate" button.
- * 
- * @param text - Text to translate
- * @param sourceLang - Source language code
- * @param targetLangs - Array of target language codes
- * @param apiKey - Optional API key
- * @param provider - Translation provider ('libretranslate' | 'deepgram')
+ * Magic Translate - One-click translation to all tour languages.
+ * Main entry point for the "Translate" button.
  */
 export async function magicTranslate(
     text: string,
     sourceLang: string,
     targetLangs: string[],
     apiKey?: string,
-    provider: TranslationProvider = 'libretranslate'
+    provider?: TranslationProvider
 ): Promise<TranslationResult> {
     return batchTranslate({ text, sourceLang, targetLangs }, apiKey, provider);
 }
 
-// Languages supported by our self-hosted LibreTranslate server (translate.supersoul.top)
-// Must match LT_LOAD_ONLY env var: en,es,fr,de,ja,it,ko,zh,pt
-// Note: Server uses 'zh-Hans' for Chinese, mapped automatically
-export const SUPPORTED_LANGUAGES = [
-    'en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'ko', 'zh',
-];
-
-// Note: Language code mapping (zh -> zh-Hans) is done on the server side in translate.ts
+// Static list of LibreTranslate languages (fallback when provider hasn't loaded yet)
+// For dynamic language lists, use the useTranslationLanguages() hook instead.
+import { LIBRE_TRANSLATE_LANGUAGE_CODES } from '../constants/languages';
+export const SUPPORTED_LANGUAGES = LIBRE_TRANSLATE_LANGUAGE_CODES;
 
 /**
- * Check if a language is supported
+ * Check if a language is in the static LibreTranslate list.
+ * For dynamic checking against the active provider, use isLanguageAvailable() from useTranslationLanguages.
  */
 export function isLanguageSupported(lang: string): boolean {
     return SUPPORTED_LANGUAGES.includes(lang.toLowerCase());
+}
+
+/**
+ * Fetch the translation service status from the backend.
+ */
+export async function getTranslationStatus(): Promise<{
+    provider: TranslationProvider;
+    available: boolean;
+    reason?: string;
+}> {
+    const res = await fetch('/api/translate/status');
+    return res.json();
+}
+
+/**
+ * Fetch supported languages from the active translation provider.
+ */
+export async function fetchSupportedLanguages(): Promise<Array<{ code: string; name: string }>> {
+    const res = await fetch('/api/translate/languages');
+    const data = await res.json();
+    return data.languages || data || [];
 }
 
 /**
@@ -303,7 +300,6 @@ import type { AIAnalysisResult, MultilingualAIAnalysis } from '../types/media';
  * @param sourceLang - Source language code (usually 'en')
  * @param targetLangs - Array of target language codes
  * @param apiKey - Optional API key
- * @param _provider - Translation provider (unused, kept for API compatibility)
  * @returns MultilingualAIAnalysis with all translations
  */
 export async function translateAnalysis(
@@ -311,7 +307,7 @@ export async function translateAnalysis(
     sourceLang: string,
     targetLangs: string[],
     apiKey?: string,
-    _provider: TranslationProvider = 'libretranslate'
+    _provider?: TranslationProvider
 ): Promise<MultilingualAIAnalysis> {
     // Initialize with source language content
     const result: MultilingualAIAnalysis = {

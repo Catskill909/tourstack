@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Upload, X, Languages, Loader2 } from 'lucide-react';
-import { translateWithLibre, type TranslationProvider } from '../../services/translationService';
+import { translateText, type TranslationProvider } from '../../services/translationService';
 import type { ImageBlockData } from '../../types';
 import { BlockMetadataEditor } from './BlockMetadataEditor';
 
@@ -56,7 +56,7 @@ export function ImageBlockEditor({ data, language, availableLanguages = ['en'], 
         for (const lang of availableLanguages) {
             if (lang === primaryLang) continue;
             try {
-                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                const translated = await translateText(sourceText, primaryLang, lang);
                 newCaption[lang] = translated;
             } catch (error) {
                 console.error(`Failed to translate caption to ${lang}:`, error);

@@ -25,24 +25,10 @@ import { AudioCollectionModal } from '../components/AudioCollectionModal';
 import { TextPreviewModal } from '../components/TextPreviewModal';
 import { translateText } from '../services/translationService';
 
-// Languages supported by our self-hosted LibreTranslate server (translate.supersoul.top)
-// Must match LT_LOAD_ONLY env var: en,es,fr,de,ja,it,ko,zh,pt
-// Maps TTS language codes to LibreTranslate codes
-const TRANSLATION_LANGUAGE_MAP: Record<string, string> = {
-    'en': 'en',
-    'es': 'es',
-    'fr': 'fr',
-    'de': 'de',
-    'it': 'it',
-    'ja': 'ja',
-    'ko': 'ko',
-    'pt': 'pt',
-    'zh': 'zh-Hans', // LibreTranslate uses zh-Hans for Chinese
-};
-
-// Helper to check if a language has translation available
-const isTranslationAvailable = (langCode: string): boolean => {
-    return langCode in TRANSLATION_LANGUAGE_MAP;
+// Translation is available for all languages via the active provider (Google Cloud or LibreTranslate).
+// The backend handles language code mapping and provider routing automatically.
+const isTranslationAvailable = (_langCode: string): boolean => {
+    return true; // All languages supported via configured provider
 };
 
 // Get display name with availability indicator
@@ -456,7 +442,7 @@ export function Audio() {
             let textToSpeak = text.trim();
 
             // Auto-translate if enabled, not English, and language is supported
-            if (autoTranslate && selectedLanguage !== 'en' && selectedLanguage in TRANSLATION_LANGUAGE_MAP) {
+            if (autoTranslate && selectedLanguage !== 'en' && isTranslationAvailable(selectedLanguage)) {
                 setIsTranslating(true);
                 try {
                     const response = await fetch('/api/translate', {
@@ -624,18 +610,11 @@ export function Audio() {
 
                         <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4 mb-4">
                             <p className="text-sm text-[var(--color-text-secondary)] mb-3">
-                                Auto-translation to <strong>{unavailableLangModal.name}</strong> is not configured on this server.
+                                Auto-translation to <strong>{unavailableLangModal.name}</strong> may not be available with the current translation provider.
                             </p>
                             <p className="text-sm text-[var(--color-text-muted)] mb-3">
-                                Available languages with auto-translation:
+                                Check your translation provider settings for supported languages.
                             </p>
-                            <div className="flex flex-wrap gap-2">
-                                {Object.keys(TRANSLATION_LANGUAGE_MAP).filter(l => l !== 'en').map(code => (
-                                    <span key={code} className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-medium">
-                                        {code.toUpperCase()}
-                                    </span>
-                                ))}
-                            </div>
                         </div>
 
                         <p className="text-xs text-[var(--color-text-muted)] mb-4">
@@ -1072,7 +1051,7 @@ function DeepgramTab({
 
                 {/* Auto-Translate Toggle */}
                 {selectedLanguage !== 'en' && (
-                    (selectedLanguage in TRANSLATION_LANGUAGE_MAP) ? (
+                    (isTranslationAvailable(selectedLanguage)) ? (
                         <div className="flex items-center justify-between p-3 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
@@ -1577,9 +1556,9 @@ function ElevenLabsTab({
 
             // Auto-translate if target language is different from English
             // and the language is supported by LibreTranslate
-            if (selectedLanguage !== 'en' && selectedLanguage in TRANSLATION_LANGUAGE_MAP) {
+            if (selectedLanguage !== 'en' && isTranslationAvailable(selectedLanguage)) {
                 try {
-                    const targetLang = TRANSLATION_LANGUAGE_MAP[selectedLanguage];
+                    const targetLang = selectedLanguage;
                     console.log(`Translating text from English to ${targetLang}...`);
                     textToSpeak = await translateText(text.trim(), 'en', targetLang);
                     console.log('Translated text:', textToSpeak);
@@ -2265,9 +2244,9 @@ function GoogleCloudTab({
             let textToSpeak = text.trim();
 
             // Auto-translate if target language is different from English
-            if (selectedLanguage !== 'en' && selectedLanguage in TRANSLATION_LANGUAGE_MAP) {
+            if (selectedLanguage !== 'en' && isTranslationAvailable(selectedLanguage)) {
                 try {
-                    const targetLang = TRANSLATION_LANGUAGE_MAP[selectedLanguage];
+                    const targetLang = selectedLanguage;
                     textToSpeak = await translateText(text.trim(), 'en', targetLang);
                 } catch (translateErr) {
                     console.warn('Translation failed, using original text:', translateErr);
@@ -2429,7 +2408,7 @@ function GoogleCloudTab({
                     />
                     <div className="flex justify-between mt-1">
                         <span className="text-xs text-[var(--color-text-muted)]">
-                            {selectedLanguage !== 'en' && selectedLanguage in TRANSLATION_LANGUAGE_MAP ? 'Auto-translates from English' : ''}
+                            {selectedLanguage !== 'en' && isTranslationAvailable(selectedLanguage) ? 'Auto-translates from English' : ''}
                         </span>
                         <span className="text-xs text-[var(--color-text-muted)]">{text.length} characters</span>
                     </div>

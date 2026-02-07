@@ -36,7 +36,7 @@ export function MagicTranslateButton({
     targetLangs,
     onTranslate,
     apiKey,
-    provider = 'libretranslate',
+    provider,
     size = 'md',
     disabled = false,
 }: MagicTranslateButtonProps) {

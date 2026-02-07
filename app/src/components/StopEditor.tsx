@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle, Maximize2, Music, Languages, Loader2, Image as ImageIcon } from 'lucide-react';
 import { BLOCK_ICONS, BLOCK_LABELS } from './blocks/StopContentBlock';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { translateWithLibre, type TranslationProvider } from '../services/translationService';
+import { translateText, type TranslationProvider } from '../services/translationService';
 import { TextBlockEditor } from './blocks/TextBlockEditor';
 import { ImageBlockEditor } from './blocks/ImageBlockEditor';
 import { AudioBlockEditor } from './blocks/AudioBlockEditor';
@@ -115,7 +115,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
         for (const lang of availableLanguages) {
             if (lang === primaryLang) continue;
             try {
-                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                const translated = await translateText(sourceText, primaryLang, lang);
                 newTitleObj[lang] = translated;
             } catch (error) {
                 console.error(`Failed to translate title to ${lang}:`, error);
@@ -151,7 +151,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
         for (const lang of availableLanguages) {
             if (lang === primaryLang) continue;
             try {
-                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                const translated = await translateText(sourceText, primaryLang, lang);
                 newDescObj[lang] = translated;
             } catch (error) {
                 console.error(`Failed to translate description to ${lang}:`, error);
@@ -256,7 +256,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
         for (const lang of availableLanguages) {
             if (lang === primaryLang) continue;
             try {
-                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                const translated = await translateText(sourceText, primaryLang, lang);
                 newCaption[lang] = translated;
             } catch (error) {
                 console.error(`Failed to translate caption to ${lang}:`, error);

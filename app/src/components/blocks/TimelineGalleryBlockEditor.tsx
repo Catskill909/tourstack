@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import {
     Upload, X, GripVertical, Pencil, Music, Clock, FolderOpen, Languages, Loader2
 } from 'lucide-react';
-import { translateWithLibre, type TranslationProvider } from '../../services/translationService';
+import { translateText, type TranslationProvider } from '../../services/translationService';
 import { AudioWaveform } from './AudioWaveform';
 import type { TimelineGalleryBlockData } from '../../types';
 import { CollectionPickerModal, type ImportedAudioData } from '../CollectionPickerModal';
@@ -219,7 +219,7 @@ export function TimelineGalleryBlockEditor({ data, language, availableLanguages 
         for (const lang of availableLanguages) {
             if (lang === primaryLang) continue;
             try {
-                const translated = await translateWithLibre(sourceText, primaryLang, lang);
+                const translated = await translateText(sourceText, primaryLang, lang);
                 newCaption[lang] = translated;
             } catch (error) {
                 console.error(`Failed to translate caption to ${lang}:`, error);

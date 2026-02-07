@@ -193,10 +193,11 @@ Add these in Coolify's **Environment Variables** section:
 | `SESSION_SECRET` | **Yes** | Random 32+ char string for session encryption |
 | `DEEPGRAM_API_KEY` | Optional | Deepgram Aura-2 TTS (7 languages, 40+ voices) |
 | `ELEVENLABS_API_KEY` | Optional | ElevenLabs premium TTS (32+ languages, 3000+ voices) |
-| `GOOGLE_VISION_API_KEY` | Optional | Google Vision, Google Translate, and Google Cloud TTS |
+| `GOOGLE_VISION_API_KEY` | Optional | Google Vision, Google Cloud Translation (195+ languages), and Google Cloud TTS |
 | `GEMINI_API_KEY` | Optional | Gemini AI for document analysis and concierge |
 | `GOOGLE_MAPS_API_KEY` | Optional | Google Maps for premium maps |
-| `LT_LOAD_ONLY` | Optional | LibreTranslate languages (default: en,es,fr,de,ja,it,ko,zh,pt) |
+| `LIBRE_TRANSLATE_URL` | Optional | LibreTranslate server URL (default: https://translate.supersoul.top/translate) |
+| `LIBRE_TRANSLATE_API_KEY` | Optional | LibreTranslate API key (if required by instance) |
 
 **To set up Google Maps:**
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)

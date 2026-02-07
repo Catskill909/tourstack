@@ -42,8 +42,9 @@ const DEFAULT_SETTINGS = {
         libreTranslateUrl: 'https://translate.supersoul.top/translate',
         libreTranslateApiKey: '',
         libreTranslateEnabled: true,
-        deepgramEnabled: false,
-        defaultProvider: 'libretranslate', // 'libretranslate' | 'deepgram'
+        googleCloudApiKey: process.env.GOOGLE_VISION_API_KEY || '',
+        googleCloudEnabled: !!process.env.GOOGLE_VISION_API_KEY,
+        defaultProvider: 'google_cloud', // 'google_cloud' | 'libretranslate'
     },
     general: {
         defaultLanguage: 'en',
@@ -80,7 +81,12 @@ function loadSettings() {
         settings.transcription.elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
         settings.transcription.elevenLabsEnabled = true;
     }
-    
+
+    if (process.env.GOOGLE_VISION_API_KEY) {
+        settings.translation.googleCloudApiKey = process.env.GOOGLE_VISION_API_KEY;
+        settings.translation.googleCloudEnabled = true;
+    }
+
     return settings;
 }
 

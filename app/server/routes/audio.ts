@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
+import { translateText as sharedTranslateText } from '../services/translation.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -526,49 +527,8 @@ router.post('/preview', async (req: Request, res: Response) => {
 // BATCH GENERATION FOR AUDIO COLLECTIONS
 // =============================================================================
 
-// LibreTranslate API for batch translation
-const LIBRE_TRANSLATE_API = process.env.LIBRE_TRANSLATE_URL || 'https://translate.supersoul.top/translate';
-const LIBRE_TRANSLATE_API_KEY = process.env.LIBRE_TRANSLATE_API_KEY || 'TranslateThisForMe26';
-
-// Language code mapping for LibreTranslate
-const LANGUAGE_CODE_MAP: Record<string, string> = {
-    'zh': 'zh-Hans',
-};
-
-// Translate text using LibreTranslate
-async function translateText(
-    text: string,
-    sourceLang: string,
-    targetLang: string
-): Promise<string> {
-    const mappedSource = LANGUAGE_CODE_MAP[sourceLang] || sourceLang;
-    const mappedTarget = LANGUAGE_CODE_MAP[targetLang] || targetLang;
-    
-    const body: Record<string, string> = {
-        q: text,
-        source: mappedSource,
-        target: mappedTarget,
-        format: 'text',
-    };
-
-    if (LIBRE_TRANSLATE_API_KEY) {
-        body.api_key = LIBRE_TRANSLATE_API_KEY;
-    }
-
-    const response = await fetch(LIBRE_TRANSLATE_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Translation failed: ${errorText}`);
-    }
-
-    const data = await response.json() as { translatedText: string };
-    return data.translatedText;
-}
+// Translation is handled by the shared translation service (supports Google Cloud + LibreTranslate)
+const translateText = sharedTranslateText;
 
 // Generate single audio file (internal helper)
 async function generateSingleAudio(

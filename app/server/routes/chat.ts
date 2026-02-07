@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { prisma } from '../db.js';
+import { translateText } from '../services/translation.js';
 
 const router = express.Router();
 
@@ -233,21 +234,9 @@ ${context || 'No knowledge base documents have been uploaded yet. Please ask a m
         // Translate response if language is not English
         if (language !== 'en' && response) {
             try {
-                const translateRes = await fetch(`http://localhost:${process.env.PORT || 3000}/api/google-translate`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text: response,
-                        sourceLang: 'en',
-                        targetLang: language
-                    })
-                });
-
-                if (translateRes.ok) {
-                    const translated = await translateRes.json() as { translatedText?: string };
-                    if (translated.translatedText) {
-                        response = translated.translatedText;
-                    }
+                const translated = await translateText(response, 'en', language);
+                if (translated) {
+                    response = translated;
                 }
             } catch (translateError) {
                 console.warn('Translation failed, returning English response:', translateError);

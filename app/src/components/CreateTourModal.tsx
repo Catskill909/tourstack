@@ -12,19 +12,8 @@ interface CreateTourModalProps {
 
 type Step = 'template' | 'info' | 'review';
 
-// Languages supported by our self-hosted LibreTranslate server (translate.supersoul.top)
-// Must match LT_LOAD_ONLY env var: en,es,fr,de,ja,it,ko,zh,pt
-const languages = [
-    { code: 'en', name: 'English', hint: 'EN' },
-    { code: 'es', name: 'Español', hint: 'ES' },
-    { code: 'fr', name: 'Français', hint: 'FR' },
-    { code: 'de', name: 'Deutsch', hint: 'DE' },
-    { code: 'it', name: 'Italiano', hint: 'IT' },
-    { code: 'pt', name: 'Português', hint: 'PT' },
-    { code: 'zh', name: '中文', hint: 'ZH - Chinese' },
-    { code: 'ja', name: '日本語', hint: 'JA - Japanese' },
-    { code: 'ko', name: '한국어', hint: 'KO - Korean' },
-];
+import { getNativeLanguageName } from '../constants/languages';
+import { useTranslationLanguages } from '../hooks/useTranslationLanguages';
 
 const durations = [
     { value: 15, label: '15 min' },
@@ -38,6 +27,14 @@ const durations = [
 export function CreateTourModal({ isOpen, onClose, onCreate, templates }: CreateTourModalProps) {
     const [step, setStep] = useState<Step>('template');
     const [isCreating, setIsCreating] = useState(false);
+
+    // Dynamic language list from active translation provider
+    const { languages: providerLanguages } = useTranslationLanguages();
+    const languages = providerLanguages.map(l => ({
+        code: l.code,
+        name: getNativeLanguageName(l.code, l.name),
+        hint: l.code.toUpperCase() + (l.name !== getNativeLanguageName(l.code, l.name) ? ` - ${l.name}` : ''),
+    }));
 
     // Form state
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
