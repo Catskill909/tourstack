@@ -1,6 +1,6 @@
 # Stop List Block — Implementation Plan
 
-> **Status:** Planning
+> **Status:** Complete (all phases implemented)
 > **Block Type:** `stopList`
 > **Purpose:** Display a curated list of stops from the current tour, styled as visual cards. Clicking a stop in visitor/kiosk mode navigates to that stop.
 
@@ -341,28 +341,70 @@ interface StopListBlockPreviewProps {
 - Phone: 1 column, Tablet: 2 columns
 - `aspect-[3/4]` image ratio for cinematic feel
 
-### 7.6 Navigation Behavior
+### 7.6 Navigation Behavior & Mode Guardrails
 
-In **visitor/kiosk mode**, clicking a stop card navigates to that stop:
-- Uses the same URL pattern as existing navigation: `/visitor/tour/${tour.slug}/stop/${stop.slug}`
-- The `onNavigateToStop` callback is provided by the parent component
-- In **editor preview mode**, clicks are disabled (view-only)
+The Stop List Block behaves differently across three rendering contexts. **This is critical to understand for future development.**
+
+#### Three Rendering Modes
+
+| Mode | Where | Click Behavior | Grid Logic | deviceType |
+|------|-------|---------------|------------|------------|
+| **Admin Preview** | `StopPreviewModal` | Navigates within simulator (loads clicked stop in-frame, with back button) | `isTablet` prop | Explicit: `'phone'` or `'tablet'` |
+| **Visitor Page** | `VisitorStop.tsx` | Navigates inline to stop | `isTablet` prop (hardcoded `'phone'`) | Always `'phone'` |
+| **Kiosk Mode** | `VisitorStop.tsx` with `?kiosk=true` | Navigates inline to stop | `isTablet` prop (hardcoded `'phone'`) | Always `'phone'` |
+
+#### How Each Mode Works
+
+**1. Admin Preview (`StopPreviewModal`)**
+- Rendered inside a scaled device frame (`transform: scale()`) at exact device pixels (375x812 iPhone, 820x1180 iPad)
+- `deviceType` is explicitly set by the device selector (phone/tablet toggle)
+- `onNavigateToStop` IS passed — clicking a stop card **loads that stop inside the simulator frame**
+- `StopPreviewModal` manages a `currentStop` state + `stopHistory` stack for back navigation
+- A "Back" bar appears at the top of the simulator when viewing a navigated stop
+- This mirrors real device behavior so the admin sees exactly what visitors see
+
+**2. Visitor Page (`VisitorStop.tsx`)**
+- Rendered at `/visitor/tour/:slug/stop/:slug`
+- `deviceType` is hardcoded to `'phone'` (does not detect actual device)
+- `onNavigateToStop` IS passed — clicking a stop card navigates via `react-router`
+- Navigation preserves URL search params (language, kiosk flags, etc.)
+- URL pattern: `/visitor/tour/${tour.slug}/stop/${target.slug}?${searchParams}`
+
+**3. Kiosk Mode (Visitor + URL params)**
+- Same component as visitor, with URL params: `?kiosk=true&hideNav=true&autoRestart=true&fullscreen=true`
+- `kiosk=true` — shows fullscreen toggle button
+- `hideNav=true` — hides prev/next navigation buttons
+- `autoRestart=true` — loops back to first stop after last
+- `fullscreen=true` — auto-requests fullscreen on load
+- Stop list click behavior is identical to visitor mode
+
+#### Guardrails for Future Development
+
+1. **NEVER use `window.open()` for navigation in preview mode** — Use `navigateToStop()` to load stops inside the simulator frame. The preview manages its own stop state and history stack.
+2. **NEVER use CSS media query breakpoints (`md:`, `lg:`) for grid layout** — The preview uses `transform: scale()` inside a desktop viewport, so CSS breakpoints always fire as if on desktop. Use the `isTablet` prop instead.
+3. **Always check `onNavigateToStop` before making cards clickable** — If `onNavigateToStop` is undefined, cards render as non-interactive `<div>` elements. If defined, they render as `<button>` elements with click handlers.
+4. **Visitor page hardcodes `deviceType="phone"`** — Multi-column grids on real tablets require a future enhancement (CSS container queries or actual device detection).
+5. **Preserve URL params on navigation** — When navigating between stops, always forward `searchParams` to maintain kiosk settings, language choice, etc.
+
+#### Preview In-Frame Navigation (Implemented)
+Clicking a stop in admin preview loads that stop inside the simulator frame:
+- `StopPreviewModal` manages `currentStop` state (initialized from `stop` prop) and a `stopHistory` stack
+- `navigateToStop(stopId)` pushes current stop to history and loads the target
+- `navigateBack()` pops from history stack
+- A back navigation bar appears inside the simulator when history is non-empty
 
 ### 7.7 Responsive Grid Logic
 
 ```typescript
-function getGridCols(layout: StopListLayout, deviceType: 'phone' | 'tablet'): number {
-  if (layout === 'compact-list') return 1; // Always single column
-  if (deviceType === 'tablet') return 2;
-  return 1; // Phone default
-}
+// Uses isTablet prop only — CSS breakpoints don't work in scaled preview frames
+const getGridClass = () => {
+  if (data.layout === 'compact-list') return 'grid grid-cols-1 gap-0';
+  if (isTablet) return 'grid grid-cols-2 gap-3';
+  return 'grid grid-cols-1 gap-3';
+};
 ```
 
-For visitor pages (non-preview), use CSS breakpoints:
-```
-grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4
-```
-(compact-list always uses `grid-cols-1`)
+**Why no CSS breakpoints?** The admin preview renders inside a `transform: scale()` container. The browser viewport is always desktop-sized, so `md:` and `lg:` breakpoints always trigger — even when previewing a 375px phone frame. The `isTablet` prop is the only reliable way to switch between 1-column and 2-column layouts.
 
 ---
 
@@ -625,20 +667,22 @@ In `VisitorStop.tsx`, the stop list block needs to trigger navigation:
 
 ## 15. Testing Checklist
 
-- [ ] Block appears in "Add Block" modal with correct icon
-- [ ] Editor loads with empty state, shows all tour stops for selection
-- [ ] Selecting stops populates the selected list
-- [ ] Drag-to-reorder works in the selected stops list
-- [ ] All 4 layout templates render correctly
-- [ ] Phone preview shows 1-column layout
-- [ ] Tablet preview shows 2-column grid (except compact-list)
-- [ ] Stop images render (handles both object and string formats)
-- [ ] Localized titles and descriptions display correctly
-- [ ] Dark mode styling matches existing blocks
-- [ ] Stop number badges show correct sequential numbers
-- [ ] Duration displays when audio blocks exist
-- [ ] CTA button renders with correct text
-- [ ] Clicking stop card in visitor mode navigates to stop
-- [ ] Block saves and loads correctly (JSON round-trip)
-- [ ] TypeScript compiles without errors (`npm run typecheck`)
-- [ ] Block renders in StopPreviewModal (both phone and tablet frames)
+- [x] Block appears in "Add Block" modal with correct icon
+- [x] Editor loads with empty state, shows all tour stops for selection
+- [x] Selecting stops populates the selected list
+- [x] Drag-to-reorder works in the selected stops list
+- [x] All 4 layout templates render correctly
+- [x] Phone preview shows 1-column layout
+- [x] Tablet preview shows 2-column grid (except compact-list)
+- [x] Stop images render (handles both object and string formats)
+- [x] Localized titles and descriptions display correctly
+- [x] Dark mode styling matches existing blocks
+- [x] Stop number badges show correct sequential numbers
+- [x] Duration displays when audio blocks exist
+- [x] CTA button renders with correct text
+- [x] Clicking stop card in visitor mode navigates to stop
+- [x] Clicking stop card in admin preview navigates within simulator frame
+- [x] Back navigation bar sticky below status bar in simulator
+- [x] Block saves and loads correctly (JSON round-trip)
+- [x] TypeScript compiles without errors (`npm run typecheck`)
+- [x] Block renders in StopPreviewModal (both phone and tablet frames)

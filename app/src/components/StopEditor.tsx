@@ -12,8 +12,9 @@ import { MapEditorModal } from './blocks/MapEditorModal';
 import { MapBlockEditor } from './blocks/MapBlockEditor';
 import { PositioningBlockEditor } from './blocks/PositioningBlockEditor';
 import { TourBlockEditor } from './blocks/TourBlockEditor';
+import { StopListBlockEditor } from './blocks/StopListBlockEditor';
 import { StopPreviewModal } from './StopPreviewModal';
-import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, TourBlockData, StopImageData } from '../types';
+import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, TourBlockData, StopListBlockData, StopImageData } from '../types';
 
 interface StopEditorProps {
     stop: Stop;
@@ -51,6 +52,8 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
             return { latitude: 0, longitude: 0, zoom: 15, provider: 'openstreetmap', style: 'standard', showMarker: true } as MapBlockData;
         case 'tour':
             return { layout: 'hero-bottom', imagePosition: 'center', imageFit: 'cover', overlayOpacity: 70, showBadge: true, badge: { en: 'FEATURED EXHIBIT' }, ctaText: { en: 'Begin Guided Tour' }, ctaStyle: 'primary', ctaAction: 'next-stop' } as TourBlockData;
+        case 'stopList':
+            return { stopIds: [], layout: 'card', heading: { en: 'Tour Stops' }, showHeading: true, subheading: { en: '' }, showSubheading: true, showStopNumbers: true, showDuration: true, showDescription: true, showCta: true, ctaText: { en: 'Start Tour' } } as StopListBlockData;
         default:
             return { content: { en: '' }, style: 'normal' } as TextBlockData;
     }
@@ -833,6 +836,17 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                                         onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
                                     />
                                 )}
+                                {editingBlock.type === 'stopList' && (
+                                    <StopListBlockEditor
+                                        data={editingBlock.data as StopListBlockData}
+                                        language={language}
+                                        availableLanguages={availableLanguages}
+                                        translationProvider={translationProvider}
+                                        tourData={tourData}
+                                        allStops={allStops}
+                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
+                                    />
+                                )}
                             </div>
                         ) : (
                             <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
@@ -849,7 +863,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                     <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6 w-full max-w-md shadow-xl">
                         <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">Add Content Block</h3>
                         <div className="grid grid-cols-3 gap-3">
-                            {(['tour', 'text', 'image', 'gallery', 'timelineGallery', 'audio', 'map'] as ContentBlockType[]).map((type) => {
+                            {(['tour', 'text', 'image', 'gallery', 'timelineGallery', 'audio', 'map', 'stopList'] as ContentBlockType[]).map((type) => {
                                 const Icon = BLOCK_ICONS[type];
                                 return (
                                     <button
@@ -878,6 +892,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                 <StopPreviewModal
                     stop={editedStop}
                     tourData={tourData}
+                    allStops={allStops}
                     availableLanguages={availableLanguages}
                     onClose={() => setShowPreview(false)}
                 />

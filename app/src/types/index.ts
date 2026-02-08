@@ -227,7 +227,8 @@ export type ContentBlockType =
   | 'comparison'
   | 'positioning'
   | 'map'
-  | 'tour';
+  | 'tour'
+  | 'stopList';
 
 // Block data interfaces
 export interface TextBlockData {
@@ -472,6 +473,28 @@ export interface TourBlockData {
   ctaExternalUrl?: string;  // If action is 'external-url'
 }
 
+// Stop List Block - curated list of stops displayed as visual cards
+export type StopListLayout = 'card' | 'large-card' | 'compact-list' | 'full-bleed';
+
+export interface StopListBlockData {
+  stopIds: string[];
+  layout: StopListLayout;
+  heading?: { [lang: string]: string };
+  showHeading?: boolean;
+  subheading?: { [lang: string]: string };
+  showSubheading?: boolean;
+  showStopNumbers?: boolean;
+  showDuration?: boolean;
+  showDescription?: boolean;
+  showCta?: boolean;
+  ctaText?: { [lang: string]: string };
+  // Block metadata
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
+}
+
 // Discriminated union for type safety
 export type ContentBlockData =
   | TextBlockData
@@ -485,7 +508,8 @@ export type ContentBlockData =
   | ComparisonBlockData
   | PositioningBlockData
   | MapBlockData
-  | TourBlockData;
+  | TourBlockData
+  | StopListBlockData;
 
 // Base content block interface
 export interface ContentBlock {

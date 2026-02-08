@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Smartphone, Tablet, RotateCcw, ZoomIn, ZoomOut, Monitor, MonitorOff } from 'lucide-react';
+import { X, Smartphone, Tablet, RotateCcw, ZoomIn, ZoomOut, Monitor, MonitorOff, ChevronLeft } from 'lucide-react';
 import { StopContentBlock } from './blocks/StopContentBlock';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { DisplaySettingsPanel, type DisplaySettings } from './DisplaySettingsPanel';
@@ -9,6 +9,8 @@ interface StopPreviewModalProps {
     stop: Stop;
     /** Tour data for tour blocks */
     tourData?: Tour;
+    /** All stops for stop list blocks */
+    allStops?: Stop[];
     /** Available languages from tour */
     availableLanguages?: string[];
     onClose: () => void;
@@ -45,7 +47,7 @@ const DEVICE_CONFIGS = {
     },
 };
 
-export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], onClose }: StopPreviewModalProps) {
+export function StopPreviewModal({ stop, tourData, allStops, availableLanguages = ['en'], onClose }: StopPreviewModalProps) {
     const [deviceType, setDeviceType] = useState<DeviceType>('phone');
     const [previewLanguage, setPreviewLanguage] = useState(availableLanguages[0] || 'en');
     const [scale, setScale] = useState(0.85);
@@ -54,6 +56,26 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
         showTitles: tourData?.displaySettings?.showTitles ?? true,
         showDescriptions: tourData?.displaySettings?.showDescriptions ?? true,
     });
+
+    // Navigation within the simulator — clicking a stop list item loads that stop
+    const [currentStop, setCurrentStop] = useState<Stop>(stop);
+    const [stopHistory, setStopHistory] = useState<Stop[]>([]);
+
+    const navigateToStop = (stopId: string) => {
+        const target = allStops?.find(s => s.id === stopId);
+        if (target) {
+            setStopHistory(prev => [...prev, currentStop]);
+            setCurrentStop(target);
+        }
+    };
+
+    const navigateBack = () => {
+        if (stopHistory.length > 0) {
+            const prev = stopHistory[stopHistory.length - 1];
+            setStopHistory(h => h.slice(0, -1));
+            setCurrentStop(prev);
+        }
+    };
 
     // Calculate appropriate scale when device changes
     const getDefaultScale = (type: DeviceType) => {
@@ -66,21 +88,21 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
     };
 
     const device = DEVICE_CONFIGS[deviceType];
-    const blocks = stop.contentBlocks || [];
+    const blocks = currentStop.contentBlocks || [];
 
     function getStopTitle(): string {
-        if (typeof stop.title === 'object') {
-            return stop.title[previewLanguage] || stop.title.en || Object.values(stop.title)[0] || 'Untitled';
+        if (typeof currentStop.title === 'object') {
+            return currentStop.title[previewLanguage] || currentStop.title.en || Object.values(currentStop.title)[0] || 'Untitled';
         }
-        return String(stop.title);
+        return String(currentStop.title);
     }
 
     function getStopDescription(): string | undefined {
-        if (!stop.description) return undefined;
-        if (typeof stop.description === 'object') {
-            return stop.description[previewLanguage] || stop.description.en || undefined;
+        if (!currentStop.description) return undefined;
+        if (typeof currentStop.description === 'object') {
+            return currentStop.description[previewLanguage] || currentStop.description.en || undefined;
         }
-        return String(stop.description);
+        return String(currentStop.description);
     }
 
     const adjustScale = (delta: number) => {
@@ -286,36 +308,57 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                                 className="h-full overflow-y-auto"
                                 style={{ scrollbarWidth: 'none', height: device.height }}
                             >
-                                {/* Status Bar - hide for Tour Intro first to allow true full-bleed */}
-                                {showStatusBar && !(blocks.length > 0 && blocks[0].type === 'tour') && (
-                                    <div
-                                        className="sticky top-0 z-10 flex items-center justify-between px-6 bg-[var(--color-bg-surface)]/95 backdrop-blur-md"
-                                        style={{
-                                            paddingTop: deviceType === 'phone' ? 48 : 12,
-                                            paddingBottom: 8,
-                                        }}
-                                    >
-                                        <span className="text-xs font-semibold text-[var(--color-text-primary)]">9:41</span>
-                                        <div className="flex items-center gap-1.5">
-                                            {/* Signal bars */}
-                                            <div className="flex items-end gap-[2px]">
-                                                <div className="w-[3px] h-[4px] rounded-sm bg-[var(--color-text-primary)]" />
-                                                <div className="w-[3px] h-[6px] rounded-sm bg-[var(--color-text-primary)]" />
-                                                <div className="w-[3px] h-[8px] rounded-sm bg-[var(--color-text-primary)]" />
-                                                <div className="w-[3px] h-[10px] rounded-sm bg-[var(--color-text-primary)]" />
-                                            </div>
-                                            {/* WiFi */}
-                                            <svg className="w-4 h-4 text-[var(--color-text-primary)]" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-4.9-2.3l1.4 1.4C9.4 16.4 10.6 16 12 16s2.6.4 3.5 1.1l1.4-1.4C15.6 14.6 13.9 14 12 14s-3.6.6-4.9 1.7zm-2.8-2.8l1.4 1.4C7.3 13 9.5 12 12 12s4.7 1 6.3 2.3l1.4-1.4C17.7 11.1 15 10 12 10s-5.7 1.1-7.7 2.9zM1.5 10l1.4 1.4C5.1 9.2 8.4 8 12 8s6.9 1.2 9.1 3.4L22.5 10C19.8 7.3 16.1 6 12 6s-7.8 1.3-10.5 4z" />
-                                            </svg>
-                                            {/* Battery */}
-                                            <div className="flex items-center gap-1">
-                                                <div className="relative w-6 h-3 rounded-[3px] border border-[var(--color-text-primary)] p-[2px]">
-                                                    <div className="h-full w-full rounded-[1px] bg-green-500" />
+                                {/* Sticky header: status bar + back navigation */}
+                                {(showStatusBar || stopHistory.length > 0) && !(blocks.length > 0 && blocks[0].type === 'tour') && (
+                                    <div className="sticky top-0 z-10 bg-[var(--color-bg-surface)]/95 backdrop-blur-md">
+                                        {/* Status Bar */}
+                                        {showStatusBar && (
+                                            <div
+                                                className="flex items-center justify-between px-6"
+                                                style={{
+                                                    paddingTop: deviceType === 'phone' ? 48 : 12,
+                                                    paddingBottom: 8,
+                                                }}
+                                            >
+                                                <span className="text-xs font-semibold text-[var(--color-text-primary)]">9:41</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    {/* Signal bars */}
+                                                    <div className="flex items-end gap-[2px]">
+                                                        <div className="w-[3px] h-[4px] rounded-sm bg-[var(--color-text-primary)]" />
+                                                        <div className="w-[3px] h-[6px] rounded-sm bg-[var(--color-text-primary)]" />
+                                                        <div className="w-[3px] h-[8px] rounded-sm bg-[var(--color-text-primary)]" />
+                                                        <div className="w-[3px] h-[10px] rounded-sm bg-[var(--color-text-primary)]" />
+                                                    </div>
+                                                    {/* WiFi */}
+                                                    <svg className="w-4 h-4 text-[var(--color-text-primary)]" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-4.9-2.3l1.4 1.4C9.4 16.4 10.6 16 12 16s2.6.4 3.5 1.1l1.4-1.4C15.6 14.6 13.9 14 12 14s-3.6.6-4.9 1.7zm-2.8-2.8l1.4 1.4C7.3 13 9.5 12 12 12s4.7 1 6.3 2.3l1.4-1.4C17.7 11.1 15 10 12 10s-5.7 1.1-7.7 2.9zM1.5 10l1.4 1.4C5.1 9.2 8.4 8 12 8s6.9 1.2 9.1 3.4L22.5 10C19.8 7.3 16.1 6 12 6s-7.8 1.3-10.5 4z" />
+                                                    </svg>
+                                                    {/* Battery */}
+                                                    <div className="flex items-center gap-1">
+                                                        <div className="relative w-6 h-3 rounded-[3px] border border-[var(--color-text-primary)] p-[2px]">
+                                                            <div className="h-full w-full rounded-[1px] bg-green-500" />
+                                                        </div>
+                                                        <div className="w-[2px] h-[4px] rounded-r-sm bg-[var(--color-text-primary)]" />
+                                                    </div>
                                                 </div>
-                                                <div className="w-[2px] h-[4px] rounded-r-sm bg-[var(--color-text-primary)]" />
                                             </div>
-                                        </div>
+                                        )}
+
+                                        {/* Back navigation bar when viewing a different stop */}
+                                        {stopHistory.length > 0 && (
+                                            <div className={`flex items-center gap-2 py-2 border-b border-[var(--color-border-default)] ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`}>
+                                                <button
+                                                    onClick={navigateBack}
+                                                    className="flex items-center gap-1 text-[var(--color-accent-primary)] text-sm hover:underline"
+                                                >
+                                                    <ChevronLeft className="w-4 h-4" />
+                                                    Back
+                                                </button>
+                                                <span className="text-xs text-[var(--color-text-muted)] truncate flex-1 text-right">
+                                                    {getStopTitle()}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
 
@@ -334,7 +377,7 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                                             {/* Stop Header - MOVED TO TOP - hide when Tour Intro block is first (it has its own title/desc) */}
                                             {!hasTourIntroFirst && (displaySettings.showTitles || displaySettings.showDescriptions) && (
                                                 <div className="space-y-3 mb-4">
-                                                    {displaySettings.showTitles && (stop.showTitle ?? true) && (
+                                                    {displaySettings.showTitles && (currentStop.showTitle ?? true) && (
                                                         <h1
                                                             className="font-bold text-[var(--color-text-primary)] leading-tight"
                                                             style={{ fontSize: deviceType === 'tablet' ? '2.5rem' : '1.5rem' }}
@@ -342,7 +385,7 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                                                             {getStopTitle()}
                                                         </h1>
                                                     )}
-                                                    {displaySettings.showDescriptions && (stop.showDescription ?? true) && getStopDescription() && (
+                                                    {displaySettings.showDescriptions && (currentStop.showDescription ?? true) && getStopDescription() && (
                                                         <p
                                                             className="text-[var(--color-text-secondary)] leading-relaxed"
                                                             style={{ fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem' }}
@@ -354,8 +397,8 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                                             )}
 
                                             {/* Hero Image - NOW SECOND - hide when Tour Intro block is first */}
-                                            {!hasTourIntroFirst && (stop.showImage ?? true) && (() => {
-                                                const heroImage = stop.image;
+                                            {!hasTourIntroFirst && (currentStop.showImage ?? true) && (() => {
+                                                const heroImage = currentStop.image;
                                                 if (!heroImage) return null;
 
                                                 // Handle both new object format and legacy string format
@@ -420,7 +463,9 @@ export function StopPreviewModal({ stop, tourData, availableLanguages = ['en'], 
                                                                 language={previewLanguage}
                                                                 deviceType={deviceType}
                                                                 tourData={tourData}
+                                                                allStops={allStops}
                                                                 displaySettings={displaySettings}
+                                                                onNavigateToStop={navigateToStop}
                                                             />
                                                         </div>
                                                     ))}

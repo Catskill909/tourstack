@@ -1,9 +1,10 @@
-import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight } from 'lucide-react';
+import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight, List } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, TourBlockData, Tour } from '../../types';
+import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, TourBlockData, StopListBlockData, Tour, Stop } from '../../types';
 import { GalleryPreview } from './GalleryPreview';
 import { TimelineGalleryPreview } from './TimelineGalleryPreview';
 import { MapPreview } from './MapPreview';
+import { StopListBlockPreview } from './StopListBlockPreview';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
 import fallbackImage from '../../assets/fallback.jpg';
 
@@ -18,7 +19,9 @@ interface StopContentBlockProps {
     language: string;
     deviceType?: 'phone' | 'tablet';
     tourData?: Tour; // For tour blocks that need parent tour info
+    allStops?: Stop[]; // For stop list blocks
     displaySettings?: DisplaySettings; // Control title/description visibility
+    onNavigateToStop?: (stopId: string) => void; // For stop list navigation
     onEdit?: (block: ContentBlock) => void;
     onDelete?: (blockId: string) => void;
 }
@@ -37,6 +40,7 @@ const BLOCK_ICONS: Record<ContentBlockType, LucideIcon> = {
     positioning: QrCode,
     map: MapIcon,
     tour: Play,
+    stopList: List,
 };
 
 const BLOCK_LABELS: Record<ContentBlockType, string> = {
@@ -52,9 +56,10 @@ const BLOCK_LABELS: Record<ContentBlockType, string> = {
     positioning: 'Positioning',
     map: 'Map',
     tour: 'Tour Intro',
+    stopList: 'Stop List',
 };
 
-export function StopContentBlock({ block, mode, language, deviceType = 'phone', tourData, displaySettings, onEdit, onDelete }: StopContentBlockProps) {
+export function StopContentBlock({ block, mode, language, deviceType = 'phone', tourData, allStops, displaySettings, onNavigateToStop, onEdit, onDelete }: StopContentBlockProps) {
     const Icon = BLOCK_ICONS[block.type];
     const label = BLOCK_LABELS[block.type];
 
@@ -437,6 +442,17 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                 return renderMapBlock(block.data as MapBlockData);
             case 'tour':
                 return renderTourBlock(block.data as TourBlockData);
+            case 'stopList':
+                return (
+                    <StopListBlockPreview
+                        data={block.data as StopListBlockData}
+                        language={language}
+                        deviceType={deviceType}
+                        allStops={allStops}
+                        tourData={tourData}
+                        onNavigateToStop={mode === 'view' ? onNavigateToStop : undefined}
+                    />
+                );
             default:
                 return (
                     <div className="text-[var(--color-text-muted)] text-sm">

@@ -350,7 +350,12 @@ export function VisitorStop() {
                                             language={language}
                                             deviceType="phone"
                                             tourData={tour as any}
+                                            allStops={allStops}
                                             displaySettings={displaySettings}
+                                            onNavigateToStop={(stopId) => {
+                                                const target = allStops.find(s => s.id === stopId);
+                                                if (target && tour) navigate(`/visitor/tour/${tour.slug || tour.id}/stop/${target.slug || target.id}?${searchParams.toString()}`);
+                                            }}
                                         />
                                     </div>
                                 ))}
@@ -423,7 +428,12 @@ export function VisitorStop() {
                                         language={language}
                                         deviceType="phone"
                                         tourData={tour as any}
+                                        allStops={allStops}
                                         displaySettings={displaySettings}
+                                        onNavigateToStop={(stopId) => {
+                                            const target = allStops.find(s => s.id === stopId);
+                                            if (target && tour) navigate(`/visitor/tour/${tour.slug || tour.id}/stop/${target.slug || target.id}?${searchParams.toString()}`);
+                                        }}
                                     />
                                 ))}
                             </div>
