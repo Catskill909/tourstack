@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { GripVertical, X, Check, LayoutGrid, LayoutList, Rows3, Maximize2, Clock } from 'lucide-react';
+import { GripVertical, X, Check, LayoutGrid, LayoutList, Rows3, Maximize2 } from 'lucide-react';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { MagicTranslateButton } from '../MagicTranslateButton';
 import { BlockMetadataEditor } from './BlockMetadataEditor';
@@ -44,7 +44,6 @@ export function StopListBlockEditor({
     language,
     availableLanguages = ['en'],
     translationProvider = 'libretranslate',
-    tourData,
     allStops = [],
     onChange,
 }: StopListBlockEditorProps) {

@@ -49,7 +49,6 @@ export function StopListBlockPreview({
     language,
     deviceType = 'phone',
     allStops = [],
-    tourData,
     onNavigateToStop,
 }: StopListBlockPreviewProps) {
     const isTablet = deviceType === 'tablet';
