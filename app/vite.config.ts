@@ -8,6 +8,19 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-framer': ['framer-motion'],
+          'vendor-wavesurfer': ['wavesurfer.js'],
+          'vendor-leaflet': ['leaflet'],
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       '/api': {
