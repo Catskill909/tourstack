@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Music, Images, Clock, Sliders, Trash2, Mic, Loader2, Captions, Languages, FolderOpen, Upload } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AudioWaveform, type AudioWaveformHandle } from './AudioWaveform';
-import type { TimelineGalleryBlockData, TransitionType } from '../../types';
+import type { TimelineGalleryBlockData, TransitionType, Stop, Tour } from '../../types';
 import { transcribeAudio } from '../../services/transcriptionService';
 import { magicTranslate } from '../../services/translationService';
 import { ClosedCaptions } from '../ui/ClosedCaptions';
 import { CollectionPickerModal, type ImportedAudioData } from '../CollectionPickerModal';
+import { StopPreviewModal } from '../StopPreviewModal';
+import { Eye } from 'lucide-react';
 
 interface TimelineGalleryImage {
     id: string;
@@ -20,6 +22,10 @@ interface TimelineGalleryEditorModalProps {
     data: TimelineGalleryBlockData;
     language: string;
     availableLanguages?: string[];
+    /** Current stop for preview (with latest block data) */
+    stop?: Stop;
+    tourData?: Tour;
+    allStops?: Stop[];
     onChange: (data: TimelineGalleryBlockData) => void;
     onClose: () => void;
 }
@@ -34,12 +40,13 @@ function formatTime(seconds: number): string {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export function TimelineGalleryEditorModal({ data, language, availableLanguages = ['en'], onChange, onClose }: TimelineGalleryEditorModalProps) {
+export function TimelineGalleryEditorModal({ data, language, availableLanguages = ['en'], stop, tourData, allStops, onChange, onClose }: TimelineGalleryEditorModalProps) {
     const [currentTime, setCurrentTime] = useState(0);
     const [previewIndex, setPreviewIndex] = useState(0);
     const [previousIndex, setPreviousIndex] = useState<number | null>(null); // For true crossfade
     const [editingImage, setEditingImage] = useState<TimelineGalleryImage | null>(null);
     const [isTranscribing, setIsTranscribing] = useState(false);
+    const [showStopPreview, setShowStopPreview] = useState(false);
     const [transcribeError, setTranscribeError] = useState<string | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
     const [showTranslationSuccess, setShowTranslationSuccess] = useState(false);
@@ -445,6 +452,18 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                         </button>
                     )}
 
+                    {stop && (
+                        <button
+                            onClick={() => {
+                                audioWaveformRef.current?.pause();
+                                setShowStopPreview(true);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-white/10 text-gray-300 hover:bg-white/20 rounded-lg transition-all"
+                        >
+                            <Eye className="w-4 h-4" />
+                            Preview
+                        </button>
+                    )}
                     <button
                         onClick={handleClose}
                         className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors"
@@ -712,6 +731,17 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                 onImport={handleImportFromCollection}
                 mode="single"
             />
+
+            {/* Stop Preview Modal */}
+            {showStopPreview && stop && (
+                <StopPreviewModal
+                    stop={stop}
+                    tourData={tourData}
+                    allStops={allStops}
+                    availableLanguages={availableLanguages}
+                    onClose={() => setShowStopPreview(false)}
+                />
+            )}
         </div>
     );
 }

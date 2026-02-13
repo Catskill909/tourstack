@@ -12,7 +12,7 @@ import { MapEditorModal } from './blocks/MapEditorModal';
 import { MapBlockEditor } from './blocks/MapBlockEditor';
 import { PositioningBlockEditor } from './blocks/PositioningBlockEditor';
 import { TourBlockEditor } from './blocks/TourBlockEditor';
-import { StopListBlockEditor } from './blocks/StopListBlockEditor';
+import { StopListEditorModal } from './blocks/StopListEditorModal';
 import { StopPreviewModal } from './StopPreviewModal';
 import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, TourBlockData, StopListBlockData, StopImageData } from '../types';
 
@@ -73,6 +73,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
     const [deleteBlockId, setDeleteBlockId] = useState<string | null>(null);
     const [showTimelineEditorId, setShowTimelineEditorId] = useState<string | null>(null);
     const [showMapEditorId, setShowMapEditorId] = useState<string | null>(null);
+    const [showStopListEditorId, setShowStopListEditorId] = useState<string | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
     const [showSaveModal, setShowSaveModal] = useState(false);
@@ -837,15 +838,33 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                                     />
                                 )}
                                 {editingBlock.type === 'stopList' && (
-                                    <StopListBlockEditor
-                                        data={editingBlock.data as StopListBlockData}
-                                        language={language}
-                                        availableLanguages={availableLanguages}
-                                        translationProvider={translationProvider}
-                                        tourData={tourData}
-                                        allStops={allStops}
-                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
-                                    />
+                                    <div className="space-y-4">
+                                        <div className="bg-gradient-to-br from-[var(--color-bg-elevated)] to-[var(--color-bg-surface)] rounded-xl p-6 border border-[var(--color-border-default)]">
+                                            <div className="flex items-center gap-4 mb-4">
+                                                <div className="p-3 rounded-xl bg-gradient-to-br from-[var(--color-accent-primary)] to-blue-500">
+                                                    <Languages className="w-6 h-6 text-white" />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-medium text-[var(--color-text-primary)]">
+                                                        Stop List
+                                                    </h4>
+                                                    <p className="text-sm text-[var(--color-text-muted)]">
+                                                        {(editingBlock.data as StopListBlockData).stopIds?.length || 0} stops selected • {(editingBlock.data as StopListBlockData).layout || 'card'} layout
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => setShowStopListEditorId(editingBlock.id)}
+                                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-[var(--color-accent-primary)] to-blue-500 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-[1.02] transition-all"
+                                            >
+                                                <Maximize2 className="w-5 h-5" />
+                                                Open Full Editor
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-[var(--color-text-muted)] text-center">
+                                            The Stop List editor opens in a full-screen view for configuring stop selection and layout
+                                        </p>
+                                    </div>
                                 )}
                             </div>
                         ) : (
@@ -950,6 +969,9 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                         data={timelineBlock.data as TimelineGalleryBlockData}
                         language={language}
                         availableLanguages={availableLanguages}
+                        stop={editedStop}
+                        tourData={tourData}
+                        allStops={allStops}
                         onChange={(data) => handleUpdateBlock(showTimelineEditorId, data)}
                         onClose={() => setShowTimelineEditorId(null)}
                     />
@@ -967,6 +989,25 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                         availableLanguages={availableLanguages}
                         onChange={(data) => handleUpdateBlock(showMapEditorId, data)}
                         onClose={() => setShowMapEditorId(null)}
+                    />
+                );
+            })()}
+
+            {/* Stop List Editor Modal */}
+            {showStopListEditorId && (() => {
+                const stopListBlock = blocks.find(b => b.id === showStopListEditorId);
+                if (!stopListBlock || stopListBlock.type !== 'stopList') return null;
+                return (
+                    <StopListEditorModal
+                        data={stopListBlock.data as StopListBlockData}
+                        language={language}
+                        availableLanguages={availableLanguages}
+                        translationProvider={translationProvider}
+                        stop={editedStop}
+                        tourData={tourData}
+                        allStops={allStops}
+                        onChange={(data) => handleUpdateBlock(showStopListEditorId, data)}
+                        onClose={() => setShowStopListEditorId(null)}
                     />
                 );
             })()}
