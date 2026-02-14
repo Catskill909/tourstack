@@ -17,7 +17,7 @@ interface StopContentBlockProps {
     block: ContentBlock;
     mode: 'view' | 'edit';
     language: string;
-    deviceType?: 'phone' | 'tablet';
+    deviceType?: 'phone' | 'tablet' | 'kiosk';
     tourData?: Tour; // For tour blocks that need parent tour info
     allStops?: Stop[]; // For stop list blocks
     displaySettings?: DisplaySettings; // Control title/description visibility
@@ -68,7 +68,7 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
     const showDescriptions = displaySettings?.showDescriptions ?? true;
 
     // Font size scaling for tablets
-    const isTablet = deviceType === 'tablet';
+    const isTablet = deviceType === 'tablet' || deviceType === 'kiosk';
     const proseSize = isTablet ? 'prose-lg' : 'prose-base';
 
     // Render block header (title + image) if visible

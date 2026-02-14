@@ -7,7 +7,7 @@ import { ClosedCaptions } from '../ui/ClosedCaptions';
 interface TimelineGalleryPreviewProps {
     data: TimelineGalleryBlockData;
     language: string;
-    deviceType?: 'phone' | 'tablet';
+    deviceType?: 'phone' | 'tablet' | 'kiosk';
 }
 
 export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }: TimelineGalleryPreviewProps) {

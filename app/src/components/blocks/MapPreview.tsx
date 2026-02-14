@@ -5,7 +5,7 @@ import type { MapBlockData } from '../../types';
 interface MapPreviewProps {
   data: MapBlockData;
   language: string;
-  deviceType?: 'phone' | 'tablet';
+  deviceType?: 'phone' | 'tablet' | 'kiosk';
   interactive?: boolean;
   className?: string;
 }

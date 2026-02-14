@@ -6,7 +6,7 @@ import fallbackImage from '../../assets/fallback.jpg';
 interface StopListBlockPreviewProps {
     data: StopListBlockData;
     language: string;
-    deviceType?: 'phone' | 'tablet';
+    deviceType?: 'phone' | 'tablet' | 'kiosk';
     allStops?: Stop[];
     tourData?: Tour;
     onNavigateToStop?: (stopId: string) => void;
@@ -51,7 +51,7 @@ export function StopListBlockPreview({
     allStops = [],
     onNavigateToStop,
 }: StopListBlockPreviewProps) {
-    const isTablet = deviceType === 'tablet';
+    const isTablet = deviceType === 'tablet' || deviceType === 'kiosk';
 
     const resolvedStops = useMemo(() => {
         if (!data.stopIds?.length) return [];

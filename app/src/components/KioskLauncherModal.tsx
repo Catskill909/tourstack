@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Monitor, Play, Globe, MapPin, Maximize, Navigation, RotateCcw, Lock } from 'lucide-react';
+import { X, Monitor, Play, Globe, MapPin, Maximize, Navigation, RotateCcw, Lock, MessageCircle } from 'lucide-react';
 import type { Tour, Stop, KioskSettings } from '../types';
 
 interface KioskLauncherModalProps {
@@ -28,6 +28,7 @@ const DEFAULT_KIOSK_SETTINGS: KioskSettings = {
     hideNav: false,
     autoRestart: true,
     lockToTour: false,
+    showChatbot: true,
     idleTimeoutMinutes: 5,
     staffPinEnabled: false,
 };
@@ -76,6 +77,7 @@ export function KioskLauncherModal({ isOpen, tour, stops, onClose }: KioskLaunch
         if (settings.hideNav) params.set('hideNav', 'true');
         if (settings.autoRestart) params.set('autoRestart', 'true');
         if (settings.lockToTour) params.set('kiosk', 'true');
+        if (settings.showChatbot) params.set('showChat', 'true');
 
         const visitorUrl = `/visitor/tour/${tour.id}/stop/${startStopId}?${params.toString()}`;
 
@@ -246,6 +248,21 @@ export function KioskLauncherModal({ isOpen, tour, stops, onClose }: KioskLaunch
                                     <p className="text-xs text-[var(--color-text-muted)]">Kiosk mode - prevent browsing other content</p>
                                 </div>
                             </label>
+
+                            {/* Show Chatbot */}
+                            <label className="flex items-center gap-3 p-3 rounded-lg bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] cursor-pointer hover:border-[var(--color-border-hover)] transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={settings.showChatbot}
+                                    onChange={(e) => updateSetting('showChatbot', e.target.checked)}
+                                    className="w-4 h-4 rounded border-[var(--color-border-default)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+                                />
+                                <MessageCircle className="w-4 h-4 text-[var(--color-text-muted)]" />
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-[var(--color-text-primary)]">Show AI Concierge</p>
+                                    <p className="text-xs text-[var(--color-text-muted)]">Display chat assistant for visitor questions</p>
+                                </div>
+                            </label>
                         </div>
                     </div>
 
@@ -259,6 +276,7 @@ export function KioskLauncherModal({ isOpen, tour, stops, onClose }: KioskLaunch
                             {settings.hideNav && '&hideNav=true'}
                             {settings.autoRestart && '&autoRestart=true'}
                             {settings.lockToTour && '&kiosk=true'}
+                            {settings.showChatbot && '&showChat=true'}
                         </code>
                     </div>
                 </div>

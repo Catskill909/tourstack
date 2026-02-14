@@ -307,3 +307,20 @@ export function ChatFloatingButton({ onClick }: { onClick: () => void }) {
         </motion.button>
     );
 }
+
+/**
+ * Kiosk-style floating chat button — black circle with white border and white icon
+ */
+export function KioskChatButton({ onClick }: { onClick: () => void }) {
+    return (
+        <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            onClick={onClick}
+            className="fixed bottom-6 right-6 w-14 h-14 bg-black/80 backdrop-blur-sm border-2 border-white/80 hover:bg-black hover:border-white rounded-full shadow-lg flex items-center justify-center z-30 transition-all hover:scale-105"
+        >
+            <MessageCircle className="w-6 h-6 text-white" />
+        </motion.button>
+    );
+}

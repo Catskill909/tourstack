@@ -3,7 +3,7 @@ import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Globe, AlertCircle, Loader2, ChevronLeft, ChevronRight, Settings, Maximize, RotateCcw } from 'lucide-react';
 import { StopContentBlock } from '../components/blocks/StopContentBlock';
 import { DisplaySettingsPanel, type DisplaySettings } from '../components/DisplaySettingsPanel';
-import { ChatDrawer, ChatFloatingButton } from '../components/chat/ChatDrawer';
+import { ChatDrawer, ChatFloatingButton, KioskChatButton } from '../components/chat/ChatDrawer';
 import type { Stop, ContentBlock } from '../types';
 
 // API returns tour with full stop objects (not just IDs)
@@ -46,6 +46,7 @@ export function VisitorStop() {
     const hideNav = searchParams.get('hideNav') === 'true';
     const autoRestart = searchParams.get('autoRestart') === 'true';
     const requestFullscreen = searchParams.get('fullscreen') === 'true';
+    const showChat = searchParams.get('showChat') === 'true';
 
     const [tour, setTour] = useState<TourWithStops | null>(null);
     const [allStops, setAllStops] = useState<Stop[]>([]);
@@ -60,6 +61,12 @@ export function VisitorStop() {
     });
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
+
+    // Determine device type for content rendering
+    // Kiosk mode gets kiosk sizing, otherwise detect from screen width
+    const deviceType = isKioskMode ? 'kiosk' as const
+        : window.innerWidth >= 820 ? 'tablet' as const
+        : 'phone' as const;
 
     // Check if user is staff (simplified - could use auth system later)
     const isStaff = localStorage.getItem('tourstack_staff') === 'true';
@@ -222,12 +229,13 @@ export function VisitorStop() {
 
     const blocks = stop.contentBlocks || [];
     const availableLanguages = tour.languages || ['en'];
+    const hasTourIntroFirst = blocks.length > 0 && blocks[0].type === 'tour';
 
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)]">
-            {/* Header */}
-            <header className="sticky top-0 z-50 bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-b border-[var(--color-border-default)]">
-                <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="relative min-h-screen bg-[var(--color-bg-primary)]">
+            {/* Header — transparent overlay when Tour Intro is first block so it doesn't push content down */}
+            <header className={`${hasTourIntroFirst ? 'absolute inset-x-0 top-0' : 'sticky top-0'} z-50 ${hasTourIntroFirst ? 'bg-transparent' : 'bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-b border-[var(--color-border-default)]'}`}>
+                <div className={`${deviceType === 'kiosk' ? 'max-w-7xl px-10' : 'max-w-4xl px-4'} mx-auto py-3 flex items-center justify-between`}>
                     {/* Back / Tour Title */}
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                         {!hideNav && prevStop ? (
@@ -304,10 +312,10 @@ export function VisitorStop() {
                 </div>
             </header>
 
-            {/* Staff Banner */}
+            {/* Staff Banner — absolute when Tour Intro is first so it doesn't push content down */}
             {isStaff && (
-                <div className="bg-amber-500/20 border-b border-amber-500/30">
-                    <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
+                <div className={`${hasTourIntroFirst ? 'absolute inset-x-0 z-40' : ''} bg-amber-500/20 border-b border-amber-500/30`} style={hasTourIntroFirst ? { top: '3.5rem' } : {}}>
+                    <div className={`${deviceType === 'kiosk' ? 'max-w-7xl px-10' : 'max-w-4xl px-4'} mx-auto py-2 flex items-center justify-between`}>
                         <div className="flex items-center gap-2 text-amber-300 text-sm">
                             <Settings className="w-4 h-4" />
                             <span>Staff Preview Mode</span>
@@ -330,9 +338,20 @@ export function VisitorStop() {
 
             {/* Main Content */}
             {(() => {
-                const hasTourIntroFirst = blocks.length > 0 && blocks[0].type === 'tour';
+                const isKiosk = deviceType === 'kiosk';
+                const contentMaxWidth = isKiosk ? 'max-w-7xl' : 'max-w-4xl';
+                const contentPadding = isKiosk ? 'px-10' : 'px-4';
+
+                const handleNavigateToStop = (stopId: string) => {
+                    const target = allStops.find(s => s.id === stopId);
+                    if (target && tour) navigate(`/visitor/tour/${tour.slug || tour.id}/stop/${target.slug || target.id}?${searchParams.toString()}`);
+                };
 
                 // Tour Intro block - full viewport, no padding
+                // IMPORTANT: The first block wrapper needs explicit `height` (not just `minHeight`)
+                // because CSS percentage heights (h-full / height:100%) only resolve against
+                // a parent's `height` — `min-height` does NOT count for percentage resolution.
+                // Without this, the Tour Intro block collapses and the card is pushed off-screen.
                 if (hasTourIntroFirst) {
                     return (
                         <>
@@ -341,21 +360,18 @@ export function VisitorStop() {
                                 {blocks.map((block: ContentBlock, index: number) => (
                                     <div
                                         key={block.id}
-                                        className={index === 0 ? '' : 'max-w-4xl mx-auto px-4 py-6'}
-                                        style={index === 0 ? { minHeight: '100dvh' } : {}}
+                                        className={index === 0 ? '' : `${contentMaxWidth} mx-auto ${contentPadding} py-6`}
+                                        style={index === 0 ? { height: '100dvh', minHeight: '100dvh' } : {}}
                                     >
                                         <StopContentBlock
                                             block={block}
                                             mode="view"
                                             language={language}
-                                            deviceType="phone"
+                                            deviceType={deviceType}
                                             tourData={tour as any}
                                             allStops={allStops}
                                             displaySettings={displaySettings}
-                                            onNavigateToStop={(stopId) => {
-                                                const target = allStops.find(s => s.id === stopId);
-                                                if (target && tour) navigate(`/visitor/tour/${tour.slug || tour.id}/stop/${target.slug || target.id}?${searchParams.toString()}`);
-                                            }}
+                                            onNavigateToStop={handleNavigateToStop}
                                         />
                                     </div>
                                 ))}
@@ -366,17 +382,23 @@ export function VisitorStop() {
 
                 // Normal content - standard layout
                 return (
-                    <main className="max-w-4xl mx-auto px-4 py-6">
+                    <main className={`${contentMaxWidth} mx-auto ${contentPadding} py-6`}>
                         {/* Stop Title & Description - MOVED TO TOP */}
                         {(displaySettings.showTitles || displaySettings.showDescriptions) && (
                             <div className="mb-6">
                                 {displaySettings.showTitles && (stop.showTitle ?? true) && (
-                                    <h1 className="text-2xl md:text-3xl font-bold text-[var(--color-text-primary)] leading-tight">
+                                    <h1
+                                        className={`font-bold text-[var(--color-text-primary)] leading-tight ${isKiosk ? '' : 'text-2xl md:text-3xl'}`}
+                                        style={{ fontSize: isKiosk ? '2.5rem' : undefined }}
+                                    >
                                         {getLocalizedText(stop.title)}
                                     </h1>
                                 )}
                                 {displaySettings.showDescriptions && (stop.showDescription ?? true) && stop.description && getLocalizedText(stop.description) && (
-                                    <p className={`${displaySettings.showTitles ? 'mt-2' : ''} text-[var(--color-text-secondary)] leading-relaxed`}>
+                                    <p
+                                        className={`${displaySettings.showTitles ? 'mt-2' : ''} text-[var(--color-text-secondary)] leading-relaxed`}
+                                        style={{ fontSize: isKiosk ? '1.25rem' : undefined }}
+                                    >
                                         {getLocalizedText(stop.description)}
                                     </p>
                                 )}
@@ -398,11 +420,12 @@ export function VisitorStop() {
                             const caption = getLocalizedText(imageData.caption || {});
 
                             return (
-                                <figure className="mb-6 -mx-4 md:mx-0 md:rounded-xl overflow-hidden">
+                                <figure className={`mb-6 ${isKiosk ? '-mx-10' : '-mx-4 md:mx-0'} md:rounded-xl overflow-hidden`}>
                                     <img
                                         src={imageData.url}
                                         alt=""
-                                        className="w-full h-auto max-h-96 object-cover"
+                                        className="w-full h-auto object-cover"
+                                        style={{ maxHeight: isKiosk ? '50vh' : '24rem' }}
                                     />
                                     {caption && (
                                         <figcaption className="px-4 py-2 text-sm text-[var(--color-text-muted)] bg-[var(--color-bg-elevated)]/50">
@@ -426,14 +449,11 @@ export function VisitorStop() {
                                         block={block}
                                         mode="view"
                                         language={language}
-                                        deviceType="phone"
+                                        deviceType={deviceType}
                                         tourData={tour as any}
                                         allStops={allStops}
                                         displaySettings={displaySettings}
-                                        onNavigateToStop={(stopId) => {
-                                            const target = allStops.find(s => s.id === stopId);
-                                            if (target && tour) navigate(`/visitor/tour/${tour.slug || tour.id}/stop/${target.slug || target.id}?${searchParams.toString()}`);
-                                        }}
+                                        onNavigateToStop={handleNavigateToStop}
                                     />
                                 ))}
                             </div>
@@ -455,7 +475,7 @@ export function VisitorStop() {
             {/* Bottom Navigation - hidden in hideNav kiosk mode */}
             {!hideNav && (
                 <nav className="sticky bottom-0 bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-t border-[var(--color-border-default)]">
-                    <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+                    <div className={`${deviceType === 'kiosk' ? 'max-w-7xl px-10' : 'max-w-4xl px-4'} mx-auto py-3 flex items-center justify-between`}>
                         {prevStop ? (
                             <Link
                                 to={`/visitor/tour/${tour.slug}/stop/${prevStop.slug}${token ? `?t=${token}` : ''}`}
@@ -510,11 +530,11 @@ export function VisitorStop() {
                 </nav>
             )}
 
-            {/* Fullscreen toggle button (kiosk mode) */}
+            {/* Fullscreen toggle button (kiosk mode) — shift up when chat button is also showing */}
             {isKioskMode && (
                 <button
                     onClick={toggleFullscreen}
-                    className="fixed bottom-4 right-4 p-3 bg-[var(--color-bg-surface)]/90 backdrop-blur-md rounded-full shadow-lg border border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors z-40"
+                    className={`fixed ${showChat ? 'bottom-[5.5rem]' : 'bottom-4'} right-4 p-3 bg-[var(--color-bg-surface)]/90 backdrop-blur-md rounded-full shadow-lg border border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors z-40`}
                     title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                 >
                     <Maximize className="w-5 h-5" />
@@ -524,6 +544,9 @@ export function VisitorStop() {
             {/* Museum Concierge Chat */}
             {!isKioskMode && (
                 <ChatFloatingButton onClick={() => setIsChatOpen(true)} />
+            )}
+            {isKioskMode && showChat && (
+                <KioskChatButton onClick={() => setIsChatOpen(true)} />
             )}
             <ChatDrawer
                 isOpen={isChatOpen}

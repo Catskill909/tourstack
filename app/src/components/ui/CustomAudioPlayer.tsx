@@ -13,7 +13,7 @@ interface CustomAudioPlayerProps {
     src: string;
     title?: string;
     size?: 'large' | 'medium' | 'small';
-    deviceType?: 'phone' | 'tablet';
+    deviceType?: 'phone' | 'tablet' | 'kiosk';
     autoplay?: boolean;
     className?: string;
     transcriptWords?: TranscriptWord[];
@@ -23,7 +23,7 @@ interface CustomAudioPlayerProps {
 }
 
 export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'phone', autoplay = false, className = '', transcriptWords, transcript, showCaptions = false, onCaptionsToggle }: CustomAudioPlayerProps) {
-    const isTablet = deviceType === 'tablet';
+    const isTablet = deviceType === 'tablet' || deviceType === 'kiosk';
     const audioRef = useRef<HTMLAudioElement>(null);
     const rafRef = useRef<number>(0);
     const isDraggingRef = useRef(false);

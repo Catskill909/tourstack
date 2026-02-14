@@ -733,6 +733,7 @@ export interface KioskSettings {
   hideNav: boolean;           // Hide prev/next navigation buttons
   autoRestart: boolean;       // Loop back to first stop on completion
   lockToTour: boolean;        // Prevent browsing to other tours
+  showChatbot: boolean;       // Show AI concierge chat button
 
   // Idle timeout
   idleTimeoutMinutes?: number; // Return to start after inactivity (0 = disabled)
