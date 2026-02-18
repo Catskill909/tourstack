@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: February 6, 2026
-**Session Status**: Phase 27 Google Cloud TTS COMPLETE ✅ | Phase 26.1 AI Museum Concierge COMPLETE ✅ | Phase 26.2 Per-Tour Concierge NEXT
+**Last Updated**: February 18, 2026
+**Session Status**: Kiosk Preview Phase 3 COMPLETE ✅ | Database Safety COMPLETE ✅ | Phase 26.2 Per-Tour Concierge NEXT
 
 ---
 
@@ -82,6 +82,14 @@
 - **Auto-restart**: "Start Over" button at tour completion
 - **Hide Navigation**: Conditionally hide prev/next for linear tours
 - **Kiosk Button**: Monitor icon button on TourCard and TourDetail
+
+**Phase 3 (Complete - Feb 18, 2026):**
+- **Kiosk Preview Device**: Third device type in StopPreviewModal (frameless, fills available space)
+- **Kiosk Chatbot**: Black circle chat button with white border in kiosk mode
+- **showChatbot Toggle**: New option in KioskLauncherModal with `showChat` URL param
+- **Dynamic Device Type**: VisitorStop detects `kiosk` param and adjusts width/layout
+- **Tour Intro Height Fix**: Explicit height (not min-height) for CSS percentage chain resolution
+- **Staff Banner Fix**: Absolute positioning when first block is Tour Intro
 
 ### Key Architecture Concept
 
@@ -726,6 +734,36 @@ TourStack uses a **modular content block system** where tours and stops are comp
 >
 > **Files Modified (backend):** settings.ts, translate.ts, google-translate.ts, audio.ts, elevenlabs.ts, google-tts.ts, concierge.ts, chat.ts
 > **Files Modified (frontend):** translationService.ts, Settings.tsx, Audio.tsx, AudioCollectionModal.tsx, EditTourModal.tsx, CreateTourModal.tsx, Languages.tsx, StopEditor.tsx, TourDetail.tsx, BlockMetadataEditor.tsx, ImageBlockEditor.tsx, GalleryBlockEditor.tsx, TimelineGalleryBlockEditor.tsx, MagicTranslateButton.tsx, types/index.ts
+
+### Phase 16.5.3: Kiosk Preview Mode ✅ (Feb 18, 2026)
+- [x] **Kiosk Device Type** - Third device option in StopPreviewModal (phone/tablet/kiosk)
+- [x] **Frameless Preview** - Kiosk fills available space without device frame borders
+- [x] **Kiosk Chatbot Button** - Black circle with white border, positioned bottom-right
+- [x] **showChatbot Toggle** - New option in KioskLauncherModal with `showChat` URL parameter
+- [x] **Dynamic Device Detection** - VisitorStop reads `kiosk` URL param and adjusts layout
+- [x] **Tour Intro Height Fix** - Replaced min-height with explicit height for CSS percentage chain
+- [x] **Staff Banner Fix** - Absolute positioning when first block is Tour Intro (prevents push-down)
+- [x] **Block Component Propagation** - `deviceType` prop added to 6 block components
+
+> **Key Files Modified:**
+> - `app/src/components/StopPreviewModal.tsx` - Added kiosk device type with frameless rendering
+> - `app/src/components/KioskLauncherModal.tsx` - Added showChatbot toggle
+> - `app/src/components/chat/ChatDrawer.tsx` - KioskChatButton component
+> - `app/src/pages/VisitorStop.tsx` - Dynamic device type, kiosk widths, chat support
+> - `app/src/components/blocks/StopContentBlock.tsx` - deviceType prop propagation
+> - `app/src/types/index.ts` - Added `showChat` to KioskSettings
+
+### Database Safety Infrastructure ✅ (Feb 18, 2026)
+- [x] **Backup Script** - `app/scripts/backup-db.sh` creates timestamped backups before schema changes
+- [x] **CLAUDE.md** - Project-level database safety rules (never use `prisma db push`)
+- [x] **Dual Database Sync** - Backup script syncs `app/data/dev.db` and `app/prisma/data/dev.db`
+- [x] **Auto-Cleanup** - Retains only last 10 backups in `app/prisma/data/backups/`
+- [x] **Schema Cleanup** - Prisma schema reformatted for consistency (no structural changes)
+
+> **Key Files:**
+> - `CLAUDE.md` - Database safety rules for AI assistants
+> - `app/scripts/backup-db.sh` - Database backup + sync script
+> - `app/prisma/schema.prisma` - Cleaned up formatting
 
 ### 🎯 Phase 26.2: Per-Tour AI Concierge (NEXT)
 - [ ] Add concierge fields to Tour model (conciergeEnabled, conciergePersona, conciergeWelcome, conciergeCollections)

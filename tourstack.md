@@ -59,7 +59,7 @@ When museum staff access visitor pages, they see:
 | Phase 14: Audio UX Improvements | ✅ Complete |
 | Phase 15: Positioning Editor & QR Generator | ✅ Complete |
 | Phase 16: Tour Block + Visitor System | ✅ Complete |
-| Phase 16.5: Kiosk Launch System | ✅ Complete |
+| Phase 16.5: Kiosk Launch System (Phase 1-3) | ✅ Complete |
 | Phase 17: Stop Navigation & Links | 🎯 Planned |
 | Phase 18: GPS Positioning Tab | 🎯 Planned |
 | Phase 19: AI Object Analysis (Full) | ✅ Complete |
@@ -71,6 +71,7 @@ When museum staff access visitor pages, they see:
 | Phase 25: Document Collections | ✅ Complete |
 | Phase 26.1: AI Museum Concierge | ✅ Complete |
 | Phase 27: Google Cloud TTS Integration | ✅ Complete |
+| Database Safety Infrastructure | ✅ Complete |
 | Phase 26.2: Per-Tour AI Concierge | 🎯 NEXT |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
@@ -116,7 +117,7 @@ When museum staff access visitor pages, they see:
 - Media: Server uploads (`/app/uploads`, 100MB limit)
 - See `docs/COOLIFY-DEPLOYMENT.md` for configuration
 
-### Kiosk Launch System (Phase 16.5) - COMPLETE ✅
+### Kiosk Launch System (Phase 16.5) - COMPLETE ✅ (Phase 3: Feb 18, 2026)
 
 **Museum Kiosk Deployment:** Launch and configure visitor tours from admin interface.
 
@@ -124,17 +125,23 @@ When museum staff access visitor pages, they see:
 |---------|-------------|
 | **Run/Preview Buttons** | Green "Run" for published, "Preview" for draft tours |
 | **Kiosk Launcher Modal** | Configure language, start stop, and display options |
-| **URL Parameters** | `lang`, `fullscreen`, `hideNav`, `autoRestart`, `kiosk` |
+| **URL Parameters** | `lang`, `fullscreen`, `hideNav`, `autoRestart`, `kiosk`, `showChat` |
 | **Fullscreen API** | Browser fullscreen with toggle button in kiosk mode |
 | **Auto-restart** | "Start Over" button returns to first stop on completion |
 | **Hide Navigation** | Remove prev/next buttons for linear kiosk tours |
+| **Kiosk Preview Device** | Third device type in StopPreviewModal (frameless, fills space) |
+| **Kiosk Chatbot** | Black circle chat button with white border for kiosk mode |
+| **Tour Intro Height Fix** | Explicit height for CSS percentage chain resolution |
 
 **Files:**
-- `KioskLauncherModal.tsx` - Modal for kiosk configuration
+- `KioskLauncherModal.tsx` - Modal for kiosk configuration (showChatbot toggle)
+- `StopPreviewModal.tsx` - Kiosk as third device type (phone/tablet/kiosk)
+- `ChatDrawer.tsx` - KioskChatButton component
 - `TourCard.tsx` - Run/Preview/Kiosk buttons on tour cards
 - `TourDetail.tsx` - Run Tour and Kiosk buttons in header
-- `VisitorStop.tsx` - URL parameter handling for kiosk mode
-- `types/index.ts` - `KioskSettings` and `KioskPreset` interfaces
+- `VisitorStop.tsx` - Dynamic device type, kiosk widths, chat support
+- `StopContentBlock.tsx` - deviceType prop propagation to all blocks
+- `types/index.ts` - `KioskSettings`, `KioskPreset`, `showChat` field
 
 **Documentation:** See [docs/kiosk-dev.md](docs/kiosk-dev.md) for full planning and future phases.
 
