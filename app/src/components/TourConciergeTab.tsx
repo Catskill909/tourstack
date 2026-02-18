@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
     Bot,
     Clock,
@@ -18,10 +19,55 @@ import {
     Info,
     Languages,
     Import,
+    ExternalLink,
+    Palette,
+    Headphones,
+    Sparkles,
+    Heart,
+    Star,
+    Smile,
+    Coffee,
+    Compass,
+    Globe,
+    Mic,
+    Phone,
+    Shield,
+    Zap,
+    Lightbulb,
+    BookOpen,
+    Users,
+    Gift,
+    Bell,
+    type LucideIcon,
 } from 'lucide-react';
+import { HexColorPicker } from 'react-colorful';
 import type { Tour, TourQuickAction } from '../types';
 import { collectionService } from '../lib/collectionService';
 import * as conciergeService from '../lib/conciergeService';
+
+// Curated icons for chat button picker
+const CHAT_ICON_OPTIONS: { name: string; icon: LucideIcon }[] = [
+    { name: 'MessageCircle', icon: MessageCircle },
+    { name: 'Bot', icon: Bot },
+    { name: 'Headphones', icon: Headphones },
+    { name: 'HelpCircle', icon: HelpCircle },
+    { name: 'Sparkles', icon: Sparkles },
+    { name: 'Heart', icon: Heart },
+    { name: 'Star', icon: Star },
+    { name: 'Smile', icon: Smile },
+    { name: 'Coffee', icon: Coffee },
+    { name: 'Compass', icon: Compass },
+    { name: 'Globe', icon: Globe },
+    { name: 'Mic', icon: Mic },
+    { name: 'Phone', icon: Phone },
+    { name: 'Shield', icon: Shield },
+    { name: 'Zap', icon: Zap },
+    { name: 'Lightbulb', icon: Lightbulb },
+    { name: 'BookOpen', icon: BookOpen },
+    { name: 'Users', icon: Users },
+    { name: 'Gift', icon: Gift },
+    { name: 'Bell', icon: Bell },
+];
 
 interface TourConciergeTabProps {
     tour: Tour;
@@ -85,6 +131,9 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
     const [quickActions, setQuickActions] = useState<TourQuickAction[]>(
         tour.conciergeQuickActions || []
     );
+    const [chatIcon, setChatIcon] = useState(tour.conciergeChatIcon || 'MessageCircle');
+    const [chatIconColor, setChatIconColor] = useState(tour.conciergeChatIconColor || '#ffffff');
+    const [chatIconBgColor, setChatIconBgColor] = useState(tour.conciergeChatIconBgColor || '#d97706');
 
     // Load document collections
     useEffect(() => {
@@ -115,6 +164,9 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
                 conciergeWelcome: welcomeMessage ? { [tour.primaryLanguage]: welcomeMessage } : undefined,
                 conciergeCollections: linkedCollections,
                 conciergeQuickActions: quickActions,
+                conciergeChatIcon: chatIcon,
+                conciergeChatIconColor: chatIconColor,
+                conciergeChatIconBgColor: chatIconBgColor,
             });
         } catch (error) {
             console.error('Failed to save concierge settings:', error);
@@ -275,7 +327,10 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
         (persona === 'inherit' ? null : persona) !== tour.conciergePersona ||
         welcomeMessage !== (tour.conciergeWelcome?.[tour.primaryLanguage] || tour.conciergeWelcome?.en || '') ||
         JSON.stringify(linkedCollections) !== JSON.stringify(tour.conciergeCollections || []) ||
-        JSON.stringify(quickActions) !== JSON.stringify(tour.conciergeQuickActions || []);
+        JSON.stringify(quickActions) !== JSON.stringify(tour.conciergeQuickActions || []) ||
+        chatIcon !== (tour.conciergeChatIcon || 'MessageCircle') ||
+        chatIconColor !== (tour.conciergeChatIconColor || '#ffffff') ||
+        chatIconBgColor !== (tour.conciergeChatIconBgColor || '#d97706');
 
     return (
         <div className="space-y-6">
@@ -408,13 +463,17 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
                                             key={collId}
                                             className="flex items-center justify-between p-2 bg-[var(--color-bg-surface)] rounded-lg"
                                         >
-                                            <div className="flex items-center gap-2">
-                                                <FileText className="w-4 h-4 text-purple-400" />
-                                                <span className="text-sm text-[var(--color-text-primary)]">{coll.name}</span>
-                                            </div>
+                                            <Link
+                                                to={`/collections/${collId}`}
+                                                className="flex items-center gap-2 group min-w-0 flex-1"
+                                            >
+                                                <FileText className="w-4 h-4 text-purple-400 shrink-0" />
+                                                <span className="text-sm text-[var(--color-text-primary)] group-hover:text-purple-400 transition-colors truncate">{coll.name}</span>
+                                                <ExternalLink className="w-3 h-3 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                            </Link>
                                             <button
                                                 onClick={() => handleToggleCollection(collId)}
-                                                className="p-1 text-red-400 hover:bg-red-500/20 rounded"
+                                                className="p-1 text-red-400 hover:bg-red-500/20 rounded shrink-0 ml-2"
                                             >
                                                 <Trash2 className="w-3 h-3" />
                                             </button>
@@ -427,6 +486,7 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
                             The AI automatically knows about this tour's stops and content.
                         </p>
                     </div>
+
                 </div>
 
                 {/* Main Content - Quick Actions & Test */}
@@ -552,6 +612,91 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
                                 </p>
                             </div>
                         )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Chat Button Customizer — Full Width Horizontal Layout */}
+            <div className="bg-[var(--color-bg-elevated)] rounded-xl p-5 border border-[var(--color-border-default)]">
+                <div className="flex items-center gap-2 mb-5">
+                    <Palette className="w-4 h-4 text-[var(--color-text-muted)]" />
+                    <h3 className="font-medium text-[var(--color-text-primary)]">Chat Button</h3>
+                </div>
+
+                <div className="flex flex-col lg:flex-row gap-6">
+                    {/* Live Preview */}
+                    <div className="flex flex-col items-center justify-center gap-3 lg:w-32 shrink-0">
+                        <div
+                            className="w-16 h-16 rounded-full flex items-center justify-center shadow-xl transition-all"
+                            style={{ backgroundColor: chatIconBgColor }}
+                        >
+                            {(() => {
+                                const IconComponent = CHAT_ICON_OPTIONS.find(o => o.name === chatIcon)?.icon || MessageCircle;
+                                return <IconComponent className="w-7 h-7" style={{ color: chatIconColor }} />;
+                            })()}
+                        </div>
+                        <span className="text-xs text-[var(--color-text-muted)]">Preview</span>
+                    </div>
+
+                    {/* Icon Grid */}
+                    <div className="flex-1">
+                        <p className="text-xs text-[var(--color-text-muted)] mb-2">Icon</p>
+                        <div className="grid grid-cols-5 gap-2">
+                            {CHAT_ICON_OPTIONS.map(({ name, icon: Icon }) => (
+                                <button
+                                    key={name}
+                                    onClick={() => setChatIcon(name)}
+                                    className={`p-2 rounded-lg flex items-center justify-center transition-all ${
+                                        chatIcon === name
+                                            ? 'bg-[var(--color-accent-primary)]/20 ring-2 ring-[var(--color-accent-primary)] text-[var(--color-accent-primary)]'
+                                            : 'bg-[var(--color-bg-surface)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]'
+                                    }`}
+                                    title={name}
+                                >
+                                    <Icon className="w-4 h-4" />
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Background Color */}
+                    <div className="lg:w-52 shrink-0">
+                        <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-3">Background</p>
+                        <div className="[&_.react-colorful]:w-full [&_.react-colorful]:h-36 [&_.react-colorful]:rounded-xl">
+                            <HexColorPicker color={chatIconBgColor} onChange={setChatIconBgColor} />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <div className="w-7 h-7 rounded-lg border border-[var(--color-border-default)] flex-shrink-0" style={{ backgroundColor: chatIconBgColor }} />
+                            <input
+                                type="text"
+                                value={chatIconBgColor}
+                                onChange={(e) => {
+                                    const v = e.target.value;
+                                    if (/^#[0-9a-fA-F]{0,6}$/.test(v)) setChatIconBgColor(v);
+                                }}
+                                className="flex-1 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg px-2 py-1.5 text-sm text-[var(--color-text-primary)] font-mono"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Icon Color */}
+                    <div className="lg:w-52 shrink-0">
+                        <p className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-3">Icon Color</p>
+                        <div className="[&_.react-colorful]:w-full [&_.react-colorful]:h-36 [&_.react-colorful]:rounded-xl">
+                            <HexColorPicker color={chatIconColor} onChange={setChatIconColor} />
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                            <div className="w-7 h-7 rounded-lg border border-[var(--color-border-default)] flex-shrink-0" style={{ backgroundColor: chatIconColor }} />
+                            <input
+                                type="text"
+                                value={chatIconColor}
+                                onChange={(e) => {
+                                    const v = e.target.value;
+                                    if (/^#[0-9a-fA-F]{0,6}$/.test(v)) setChatIconColor(v);
+                                }}
+                                className="flex-1 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg px-2 py-1.5 text-sm text-[var(--color-text-primary)] font-mono"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

@@ -199,6 +199,11 @@ router.put('/:id', async (req: Request<IdParams>, res: Response) => {
         if (data.conciergeCollections !== undefined) updateData.conciergeCollections = JSON.stringify(data.conciergeCollections);
         if (data.conciergeQuickActions !== undefined) updateData.conciergeQuickActions = JSON.stringify(data.conciergeQuickActions);
 
+        // Chat button customization
+        if (data.conciergeChatIcon !== undefined) updateData.conciergeChatIcon = data.conciergeChatIcon;
+        if (data.conciergeChatIconColor !== undefined) updateData.conciergeChatIconColor = data.conciergeChatIconColor;
+        if (data.conciergeChatIconBgColor !== undefined) updateData.conciergeChatIconBgColor = data.conciergeChatIconBgColor;
+
         // Update stops separately if provided
         if (data.stops !== undefined) {
             for (const stop of data.stops) {

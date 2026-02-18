@@ -37,6 +37,8 @@ function parseTour(tour: TourWithStops) {
         description: JSON.parse(tour.description),
         languages: JSON.parse(tour.languages),
         accessibility: JSON.parse(tour.accessibility),
+        conciergeWelcome: tour.conciergeWelcome ? JSON.parse(tour.conciergeWelcome) : null,
+        conciergeQuickActions: tour.conciergeQuickActions ? JSON.parse(tour.conciergeQuickActions) : [],
         stops: tour.stops.map(parseStop),
     };
 }

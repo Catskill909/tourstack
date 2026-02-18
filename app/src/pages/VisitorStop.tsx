@@ -4,7 +4,7 @@ import { ArrowLeft, Globe, AlertCircle, Loader2, ChevronLeft, ChevronRight, Sett
 import { StopContentBlock } from '../components/blocks/StopContentBlock';
 import { DisplaySettingsPanel, type DisplaySettings } from '../components/DisplaySettingsPanel';
 import { ChatDrawer, ChatFloatingButton, KioskChatButton } from '../components/chat/ChatDrawer';
-import type { Stop, ContentBlock } from '../types';
+import type { Stop, ContentBlock, TourQuickAction } from '../types';
 
 // API returns tour with full stop objects (not just IDs)
 interface TourWithStops {
@@ -19,6 +19,12 @@ interface TourWithStops {
         showTitles: boolean;
         showDescriptions: boolean;
     };
+    conciergeEnabled?: boolean;
+    conciergeQuickActions?: TourQuickAction[];
+    conciergeWelcome?: Record<string, string>;
+    conciergeChatIcon?: string;
+    conciergeChatIconColor?: string;
+    conciergeChatIconBgColor?: string;
 }
 
 // Language display names
@@ -542,16 +548,42 @@ export function VisitorStop() {
             )}
 
             {/* Museum Concierge Chat */}
-            {!isKioskMode && (
-                <ChatFloatingButton onClick={() => setIsChatOpen(true)} />
+            {!isKioskMode && tour?.conciergeEnabled !== false && (
+                <ChatFloatingButton
+                    onClick={() => setIsChatOpen(true)}
+                    iconName={tour?.conciergeChatIcon}
+                    iconColor={tour?.conciergeChatIconColor}
+                    iconBgColor={tour?.conciergeChatIconBgColor}
+                />
             )}
-            {isKioskMode && showChat && (
-                <KioskChatButton onClick={() => setIsChatOpen(true)} />
+            {isKioskMode && showChat && tour?.conciergeEnabled !== false && (
+                <KioskChatButton
+                    onClick={() => setIsChatOpen(true)}
+                    iconName={tour?.conciergeChatIcon}
+                    iconColor={tour?.conciergeChatIconColor}
+                    iconBgColor={tour?.conciergeChatIconBgColor}
+                />
             )}
             <ChatDrawer
                 isOpen={isChatOpen}
                 onClose={() => setIsChatOpen(false)}
                 language={language}
+                tourId={tour?.id}
+                tourQuickActions={(() => {
+                    const raw = tour?.conciergeQuickActions;
+                    if (!raw) return undefined;
+                    if (Array.isArray(raw)) return raw;
+                    try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
+                })()}
+                tourWelcomeMessage={(() => {
+                    const raw = tour?.conciergeWelcome;
+                    if (!raw) return undefined;
+                    if (typeof raw === 'object') return raw;
+                    try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
+                })()}
+                iconName={tour?.conciergeChatIcon}
+                iconColor={tour?.conciergeChatIconColor}
+                iconBgColor={tour?.conciergeChatIconBgColor}
             />
         </div>
     );

@@ -656,6 +656,9 @@ export interface Tour {
   conciergeWelcome?: { [lang: string]: string }; // Multilingual welcome message
   conciergeCollections?: string[];               // Linked document collection IDs
   conciergeQuickActions?: TourQuickAction[];     // Tour-specific quick actions
+  conciergeChatIcon?: string;                    // Lucide icon name for chat button
+  conciergeChatIconColor?: string;               // Icon color hex
+  conciergeChatIconBgColor?: string;             // Background color hex
 
   // Analytics
   analytics?: {

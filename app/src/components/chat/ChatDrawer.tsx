@@ -1,8 +1,25 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Loader2, Sparkles, Clock, Accessibility, HelpCircle, Image as ImageIcon } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Sparkles, Clock, Accessibility, HelpCircle, Image as ImageIcon, Bot, Headphones, Heart, Star, Smile, Coffee, Compass, Globe, Mic, Phone, Shield, Zap, Lightbulb, BookOpen, Users, Gift, Bell, type LucideIcon } from 'lucide-react';
 import * as conciergeService from '../../lib/conciergeService';
 import type { ParsedConciergeConfig, ParsedQuickAction } from '../../lib/conciergeService';
+import type { TourQuickAction } from '../../types';
+
+// Icon lookup for dynamic rendering from string name
+const ICON_MAP: Record<string, LucideIcon> = {
+    MessageCircle, Bot, Headphones, HelpCircle, Sparkles, Heart, Star, Smile,
+    Coffee, Compass, Globe, Mic, Phone, Shield, Zap, Lightbulb, BookOpen, Users, Gift, Bell,
+};
+
+function getIconByName(name?: string): LucideIcon {
+    return (name && ICON_MAP[name]) || MessageCircle;
+}
+
+interface ChatButtonIconProps {
+    iconName?: string;
+    iconColor?: string;
+    iconBgColor?: string;
+}
 
 interface Message {
     id: string;
@@ -16,6 +33,11 @@ interface ChatDrawerProps {
     onClose: () => void;
     language?: string;
     tourId?: string;  // Optional: pass to get tour-specific AI responses
+    tourQuickActions?: TourQuickAction[];  // Tour-specific quick actions (from AI Chatbot tab)
+    tourWelcomeMessage?: Record<string, string>;  // Tour-specific welcome message
+    iconName?: string;      // Custom Lucide icon name
+    iconColor?: string;     // Custom icon color hex
+    iconBgColor?: string;   // Custom background color hex
 }
 
 // Category icons mapping
@@ -37,7 +59,7 @@ const DEFAULT_QUICK_ACTIONS = [
     { icon: '🅿️', label: 'Parking', question: 'Where can I park?' },
 ];
 
-export function ChatDrawer({ isOpen, onClose, language = 'en', tourId }: ChatDrawerProps) {
+export function ChatDrawer({ isOpen, onClose, language = 'en', tourId, tourQuickActions, tourWelcomeMessage, iconName, iconColor, iconBgColor }: ChatDrawerProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
@@ -73,15 +95,24 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId }: ChatDra
         }
     }, [isOpen]);
 
-    // Get welcome message for current language
-    const welcomeMessage = config?.welcomeMessage?.[language] || config?.welcomeMessage?.en || "Hi! I'm your museum concierge.";
+    // Get welcome message - prefer tour-specific, fall back to museum-wide
+    const welcomeMessage = tourWelcomeMessage?.[language] || tourWelcomeMessage?.en
+        || config?.welcomeMessage?.[language] || config?.welcomeMessage?.en
+        || "Hi! I'm your museum concierge.";
 
-    // Get quick actions for current language
-    const quickActions = config?.quickActions?.filter((a: ParsedQuickAction) => a.enabled !== false).map((action: ParsedQuickAction) => ({
-        id: action.id,
-        category: action.category,
-        question: action.question[language] || action.question.en || '',
-    })) || [];
+    // Get quick actions - prefer tour-specific, fall back to museum-wide
+    const activeTourQuickActions = tourQuickActions?.filter(a => a.enabled !== false) || [];
+    const quickActions = activeTourQuickActions.length > 0
+        ? activeTourQuickActions.map(action => ({
+            id: action.id,
+            category: action.category,
+            question: action.question[language] || action.question.en || '',
+        }))
+        : config?.quickActions?.filter((a: ParsedQuickAction) => a.enabled !== false).map((action: ParsedQuickAction) => ({
+            id: action.id,
+            category: action.category,
+            question: action.question[language] || action.question.en || '',
+        })) || [];
 
     const sendMessage = async (text: string) => {
         if (!text.trim() || loading) return;
@@ -162,7 +193,10 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId }: ChatDra
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-zinc-700 bg-zinc-800/50">
                             <div className="flex items-center gap-2">
-                                <Sparkles className="w-5 h-5 text-amber-400" />
+                                {(() => {
+                                    const HeaderIcon = getIconByName(iconName);
+                                    return <HeaderIcon className="w-5 h-5" style={{ color: iconBgColor || '#fbbf24' }} />;
+                                })()}
                                 <h2 className="text-lg font-medium text-white">Museum Concierge</h2>
                             </div>
                             <div className="flex items-center gap-1">
@@ -189,8 +223,14 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId }: ChatDra
                             {messages.length === 0 ? (
                                 <>
                                     <div className="text-center py-4">
-                                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
-                                            <MessageCircle className="w-8 h-8 text-amber-400" />
+                                        <div
+                                            className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${iconBgColor ? '' : 'bg-gradient-to-br from-amber-500/20 to-orange-500/20'}`}
+                                            style={iconBgColor ? { backgroundColor: iconBgColor } : undefined}
+                                        >
+                                            {(() => {
+                                                const WelcomeIcon = getIconByName(iconName);
+                                                return <WelcomeIcon className="w-8 h-8" style={{ color: iconColor || '#fbbf24' }} />;
+                                            })()}
                                         </div>
                                         <p className="text-zinc-300 mb-1">{welcomeMessage}</p>
                                         <p className="text-zinc-500 text-sm">How can I help you today?</p>
@@ -212,7 +252,7 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId }: ChatDra
                                                             onClick={() => handleQuickAction(action.question)}
                                                             className="flex items-center gap-3 px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-left text-sm transition-colors"
                                                         >
-                                                            <CategoryIcon className="w-4 h-4 text-amber-400" />
+                                                            <CategoryIcon className="w-4 h-4" style={{ color: iconBgColor || '#fbbf24' }} />
                                                             <span className="text-zinc-300">{action.question}</span>
                                                         </button>
                                                     );
@@ -294,16 +334,19 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId }: ChatDra
 /**
  * Floating chat button for visitor pages
  */
-export function ChatFloatingButton({ onClick }: { onClick: () => void }) {
+export function ChatFloatingButton({ onClick, iconName, iconColor, iconBgColor }: { onClick: () => void } & ChatButtonIconProps) {
+    const Icon = getIconByName(iconName);
+    const hasCustomBg = !!iconBgColor;
     return (
         <motion.button
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.5 }}
             onClick={onClick}
-            className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 rounded-full shadow-lg shadow-amber-900/30 flex items-center justify-center z-30 transition-all hover:scale-105"
+            className={`fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center z-30 transition-all hover:scale-105 ${hasCustomBg ? '' : 'bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 shadow-amber-900/30'}`}
+            style={hasCustomBg ? { backgroundColor: iconBgColor } : undefined}
         >
-            <MessageCircle className="w-6 h-6 text-white" />
+            <Icon className="w-6 h-6" style={{ color: iconColor || '#ffffff' }} />
         </motion.button>
     );
 }
@@ -311,16 +354,19 @@ export function ChatFloatingButton({ onClick }: { onClick: () => void }) {
 /**
  * Kiosk-style floating chat button — black circle with white border and white icon
  */
-export function KioskChatButton({ onClick }: { onClick: () => void }) {
+export function KioskChatButton({ onClick, iconName, iconColor, iconBgColor }: { onClick: () => void } & ChatButtonIconProps) {
+    const Icon = getIconByName(iconName);
+    const hasCustomBg = !!iconBgColor;
     return (
         <motion.button
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.5 }}
             onClick={onClick}
-            className="fixed bottom-6 right-6 w-14 h-14 bg-black/80 backdrop-blur-sm border-2 border-white/80 hover:bg-black hover:border-white rounded-full shadow-lg flex items-center justify-center z-30 transition-all hover:scale-105"
+            className={`fixed bottom-6 right-6 w-14 h-14 backdrop-blur-sm border-2 rounded-full shadow-lg flex items-center justify-center z-30 transition-all hover:scale-105 ${hasCustomBg ? 'border-white/30 hover:border-white/50' : 'bg-black/80 border-white/80 hover:bg-black hover:border-white'}`}
+            style={hasCustomBg ? { backgroundColor: iconBgColor } : undefined}
         >
-            <MessageCircle className="w-6 h-6 text-white" />
+            <Icon className="w-6 h-6" style={{ color: iconColor || '#ffffff' }} />
         </motion.button>
     );
 }
