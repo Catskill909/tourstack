@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ScanLine, Camera, CameraOff, Keyboard, X, CheckCircle2, XCircle, ArrowRight, Info, RotateCcw, ChevronRight } from 'lucide-react';
+import { ScanLine, Camera, CameraOff, Keyboard, X, CheckCircle2, XCircle, ArrowRight, RotateCcw, ChevronRight } from 'lucide-react';
 import type { QRScannerBlockData, Stop } from '../../types';
 import {
     parseTourStackUrl,
