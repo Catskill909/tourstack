@@ -3,6 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Install openssl so Prisma can detect the correct engine
+RUN apk add --no-cache openssl
+
 # Copy package files from app directory
 COPY app/package*.json ./
 
