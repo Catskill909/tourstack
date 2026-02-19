@@ -304,6 +304,7 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                         tourId={tourData?.id}
                         tourSlug={tourData?.slug}
                         allStops={allStops}
+                        deviceType={deviceType}
                         onNavigateToStop={onNavigateToStop}
                     />
                 </>

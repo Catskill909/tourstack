@@ -18,6 +18,7 @@ interface QRScannerBlockPreviewProps {
     tourId?: string;
     tourSlug?: string;
     allStops?: Stop[];
+    deviceType?: 'phone' | 'tablet' | 'kiosk';
     onNavigateToStop?: (stopSlug: string) => void;
 }
 
@@ -36,6 +37,7 @@ export function QRScannerBlockPreview({
     tourId,
     tourSlug,
     allStops = [],
+    deviceType = 'phone',
     onNavigateToStop,
 }: QRScannerBlockPreviewProps) {
     const [scanStatus, setScanStatus] = useState<ScanStatus>({ type: 'idle' });
@@ -142,6 +144,27 @@ export function QRScannerBlockPreview({
             setScanStatus({ type: 'idle' });
         }
     }, [data.cameraFacing]);
+
+    // Auto-start camera in kiosk mode if permission is already granted.
+    // This avoids museum visitors needing to tap + grant permission every time.
+    // Uses Permissions API to check without prompting.
+    const autoStartAttempted = useRef(false);
+    useEffect(() => {
+        if (autoStartAttempted.current) return;
+        if (deviceType !== 'kiosk') return;
+        autoStartAttempted.current = true;
+
+        (async () => {
+            try {
+                const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
+                if (result.state === 'granted') {
+                    startScanner();
+                }
+            } catch {
+                // Permissions API not supported — don't auto-start
+            }
+        })();
+    }, [deviceType, startScanner]);
 
     async function handleScanResult(scannedText: string) {
         if (isTourStackUrl(scannedText)) {
