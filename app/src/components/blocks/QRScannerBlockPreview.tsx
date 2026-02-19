@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import QrScanner from 'qr-scanner';
 import { ScanLine, Camera, CameraOff, Keyboard, X, CheckCircle2, XCircle, ArrowRight, RotateCcw, ChevronRight, Loader2 } from 'lucide-react';
 import type { QRScannerBlockData, Stop } from '../../types';
 import {
@@ -23,18 +24,11 @@ interface QRScannerBlockPreviewProps {
 type ScanStatus =
     | { type: 'idle' }
     | { type: 'scanning' }
-    | { type: 'requesting' } // Camera permission being requested
+    | { type: 'requesting' }
     | { type: 'success'; message: string; stopTitle?: string; stopSlug?: string }
     | { type: 'wrong'; message: string }
     | { type: 'error'; message: string }
     | { type: 'info'; title: string; description: string; image?: string; stopSlug?: string };
-
-// Pre-load html5-qrcode module at module level so it's ready when user taps
-let Html5QrcodeModule: typeof import('html5-qrcode') | null = null;
-const modulePromise = import('html5-qrcode').then(mod => {
-    Html5QrcodeModule = mod;
-    return mod;
-}).catch(() => null);
 
 export function QRScannerBlockPreview({
     data,
@@ -51,9 +45,8 @@ export function QRScannerBlockPreview({
     const [cameraActive, setCameraActive] = useState(false);
     const [cameraError, setCameraError] = useState<string | null>(null);
     const [scanCount, setScanCount] = useState(0);
-    const scannerRef = useRef<HTMLDivElement>(null);
-    const html5QrCodeRef = useRef<unknown>(null);
-    const streamRef = useRef<MediaStream | null>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const qrScannerRef = useRef<QrScanner | null>(null);
     const processingRef = useRef(false);
 
     const scannerSize = data.scannerSize || 'medium';
@@ -63,12 +56,6 @@ export function QRScannerBlockPreview({
         small: 'w-48 h-48',
         medium: 'w-64 h-64',
         large: 'w-80 h-80',
-    };
-
-    const sizePx = {
-        small: 192,
-        medium: 256,
-        large: 320,
     };
 
     const roundingClasses = {
@@ -93,24 +80,10 @@ export function QRScannerBlockPreview({
     }, []);
 
     function cleanupScanner() {
-        if (html5QrCodeRef.current) {
-            try {
-                const scanner = html5QrCodeRef.current as { stop: () => Promise<void>; clear: () => void; isScanning?: boolean; getState?: () => number };
-                // Html5Qrcode state: NOT_STARTED=1, SCANNING=2, PAUSED=3
-                const state = scanner.getState?.() ?? 0;
-                if (state === 2) { // SCANNING
-                    scanner.stop().then(() => scanner.clear()).catch(() => {});
-                } else {
-                    scanner.clear();
-                }
-            } catch {
-                // Ignore cleanup errors
-            }
-            html5QrCodeRef.current = null;
-        }
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach(t => t.stop());
-            streamRef.current = null;
+        if (qrScannerRef.current) {
+            qrScannerRef.current.stop();
+            qrScannerRef.current.destroy();
+            qrScannerRef.current = null;
         }
         setCameraActive(false);
     }
@@ -119,98 +92,37 @@ export function QRScannerBlockPreview({
         cleanupScanner();
     }, []);
 
-    // Step 1: On user tap, IMMEDIATELY request camera (preserves Safari gesture chain)
-    // Step 2: Then initialize html5-qrcode with the stream
     const startScanner = useCallback(async () => {
-        if (!scannerRef.current) return;
+        if (!videoRef.current) return;
 
         setCameraError(null);
         setScanStatus({ type: 'requesting' });
 
         try {
-            // CRITICAL for Safari: getUserMedia MUST be called synchronously from user gesture.
-            // Do NOT await anything before this call.
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: data.cameraFacing || 'environment' },
-            });
-            streamRef.current = stream;
-
-            setScanStatus({ type: 'scanning' });
-
-            // Now we can safely await the module (camera permission already granted)
-            if (!Html5QrcodeModule) {
-                await modulePromise;
-            }
-            if (!Html5QrcodeModule) {
-                throw new Error('Failed to load QR scanner library');
-            }
-
-            // Stop any existing scanner
-            if (html5QrCodeRef.current) {
-                cleanupScanner();
-                // Re-store the stream since cleanup released it — but we still have it
-                streamRef.current = stream;
-            }
-
-            const container = scannerRef.current;
-            if (!container) {
-                stream.getTracks().forEach(t => t.stop());
-                return;
-            }
-
-            const scannerId = `qr-scanner-${Date.now()}`;
-            container.innerHTML = '';
-            const scannerDiv = document.createElement('div');
-            scannerDiv.id = scannerId;
-            container.appendChild(scannerDiv);
-
-            const html5QrCode = new Html5QrcodeModule.Html5Qrcode(scannerId);
-            html5QrCodeRef.current = html5QrCode;
-
-            // Get camera device ID from the stream we already have
-            const track = stream.getVideoTracks()[0];
-            const settings = track.getSettings();
-            const deviceId = settings.deviceId;
-
-            // Stop the preview stream — html5-qrcode will open its own
-            stream.getTracks().forEach(t => t.stop());
-            streamRef.current = null;
-
-            const qrboxSize = Math.min(
-                scannerSize === 'small' ? 160 : scannerSize === 'large' ? 260 : 210,
-                sizePx[scannerSize] - 32
+            // nimiq/qr-scanner handles getUserMedia internally and correctly on iOS Safari.
+            // It sets playsinline, autoplay, and muted on the video element.
+            const qrScanner = new QrScanner(
+                videoRef.current,
+                (result) => {
+                    if (!processingRef.current) {
+                        processingRef.current = true;
+                        handleScanResult(result.data);
+                        setTimeout(() => { processingRef.current = false; }, 2000);
+                    }
+                },
+                {
+                    preferredCamera: data.cameraFacing === 'user' ? 'user' : 'environment',
+                    highlightScanRegion: false,
+                    highlightCodeOutline: false,
+                    returnDetailedScanResult: true,
+                }
             );
+            qrScannerRef.current = qrScanner;
 
-            const config = {
-                fps: 10,
-                qrbox: qrboxSize,
-                aspectRatio: 1,
-            };
-
-            if (deviceId) {
-                await html5QrCode.start(
-                    { deviceId: { exact: deviceId } },
-                    config,
-                    onScanSuccess,
-                    () => {},
-                );
-            } else {
-                await html5QrCode.start(
-                    { facingMode: data.cameraFacing || 'environment' },
-                    config,
-                    onScanSuccess,
-                    () => {},
-                );
-            }
-
+            await qrScanner.start();
             setCameraActive(true);
+            setScanStatus({ type: 'scanning' });
         } catch (err) {
-            // Clean up stream if we got one
-            if (streamRef.current) {
-                streamRef.current.getTracks().forEach(t => t.stop());
-                streamRef.current = null;
-            }
-
             const message = err instanceof Error ? err.message : String(err);
             if (message.includes('NotAllowed') || message.includes('Permission') || message.includes('denied')) {
                 setCameraError('Camera permission denied. Please allow camera access in your browser settings, then tap again.');
@@ -224,15 +136,7 @@ export function QRScannerBlockPreview({
             setCameraActive(false);
             setScanStatus({ type: 'idle' });
         }
-    }, [data.cameraFacing, scannerSize]);
-
-    function onScanSuccess(decodedText: string) {
-        if (!processingRef.current) {
-            processingRef.current = true;
-            handleScanResult(decodedText);
-            setTimeout(() => { processingRef.current = false; }, 2000);
-        }
-    }
+    }, [data.cameraFacing]);
 
     async function handleScanResult(scannedText: string) {
         if (isTourStackUrl(scannedText)) {
@@ -463,10 +367,11 @@ export function QRScannerBlockPreview({
                     <>
                         {cameraActive ? (
                             <div className={`relative overflow-hidden ${sizeClasses[scannerSize]} ${roundingClasses[viewfinderStyle]}`}>
-                                <div
-                                    ref={scannerRef}
-                                    className="w-full h-full [&_video]:object-cover [&_video]:w-full [&_video]:h-full [&>div]:!border-none [&_img]:hidden"
-                                    style={{ minHeight: sizePx[scannerSize] }}
+                                <video
+                                    ref={videoRef}
+                                    className="w-full h-full object-cover"
+                                    playsInline
+                                    muted
                                 />
                                 {/* Viewfinder overlay corners */}
                                 {viewfinderStyle !== 'minimal' && (
@@ -486,29 +391,38 @@ export function QRScannerBlockPreview({
                                 </button>
                             </div>
                         ) : (
-                            <button
-                                onClick={startScanner}
-                                disabled={scanStatus.type === 'requesting'}
-                                className={`${sizeClasses[scannerSize]} ${roundingClasses[viewfinderStyle]} bg-gray-900 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-gray-800 transition-colors border-2 border-dashed border-gray-700 disabled:opacity-70`}
-                            >
-                                {scanStatus.type === 'requesting' ? (
-                                    <>
-                                        <Loader2 className="w-10 h-10 text-[var(--color-accent-primary)] animate-spin" />
-                                        <span className="text-sm text-gray-400">Requesting camera...</span>
-                                    </>
-                                ) : cameraError ? (
-                                    <>
-                                        <CameraOff className="w-10 h-10 text-red-400" />
-                                        <span className="text-xs text-red-400 text-center px-4">{cameraError}</span>
-                                        <span className="text-xs text-gray-500 mt-1">Tap to try again</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Camera className="w-10 h-10 text-[var(--color-accent-primary)]" />
-                                        <span className="text-sm text-gray-400">Tap to scan QR code</span>
-                                    </>
-                                )}
-                            </button>
+                            <>
+                                {/* Hidden video element — nimiq/qr-scanner needs it in the DOM before start() */}
+                                <video
+                                    ref={videoRef}
+                                    className="hidden"
+                                    playsInline
+                                    muted
+                                />
+                                <button
+                                    onClick={startScanner}
+                                    disabled={scanStatus.type === 'requesting'}
+                                    className={`${sizeClasses[scannerSize]} ${roundingClasses[viewfinderStyle]} bg-gray-900 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-gray-800 transition-colors border-2 border-dashed border-gray-700 disabled:opacity-70`}
+                                >
+                                    {scanStatus.type === 'requesting' ? (
+                                        <>
+                                            <Loader2 className="w-10 h-10 text-[var(--color-accent-primary)] animate-spin" />
+                                            <span className="text-sm text-gray-400">Requesting camera...</span>
+                                        </>
+                                    ) : cameraError ? (
+                                        <>
+                                            <CameraOff className="w-10 h-10 text-red-400" />
+                                            <span className="text-xs text-red-400 text-center px-4">{cameraError}</span>
+                                            <span className="text-xs text-gray-500 mt-1">Tap to try again</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Camera className="w-10 h-10 text-[var(--color-accent-primary)]" />
+                                            <span className="text-sm text-gray-400">Tap to scan QR code</span>
+                                        </>
+                                    )}
+                                </button>
+                            </>
                         )}
                     </>
                 )}
