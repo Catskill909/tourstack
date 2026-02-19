@@ -1,10 +1,11 @@
-import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight, List } from 'lucide-react';
+import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight, List, ScanLine } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, TourBlockData, StopListBlockData, Tour, Stop } from '../../types';
+import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, Tour, Stop } from '../../types';
 import { GalleryPreview } from './GalleryPreview';
 import { TimelineGalleryPreview } from './TimelineGalleryPreview';
 import { MapPreview } from './MapPreview';
 import { StopListBlockPreview } from './StopListBlockPreview';
+import { QRScannerBlockPreview } from './QRScannerBlockPreview';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
 import fallbackImage from '../../assets/fallback.jpg';
 
@@ -41,6 +42,7 @@ const BLOCK_ICONS: Record<ContentBlockType, LucideIcon> = {
     map: MapIcon,
     tour: Play,
     stopList: List,
+    qrScanner: ScanLine,
 };
 
 const BLOCK_LABELS: Record<ContentBlockType, string> = {
@@ -57,6 +59,7 @@ const BLOCK_LABELS: Record<ContentBlockType, string> = {
     map: 'Map',
     tour: 'Tour Intro',
     stopList: 'Stop List',
+    qrScanner: 'QR Scanner',
 };
 
 export function StopContentBlock({ block, mode, language, deviceType = 'phone', tourData, allStops, displaySettings, onNavigateToStop, onEdit, onDelete }: StopContentBlockProps) {
@@ -290,6 +293,48 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
         );
     }
 
+    function renderQRScannerBlock(data: QRScannerBlockData) {
+        if (mode === 'view') {
+            return (
+                <>
+                    {renderBlockHeader(data)}
+                    <QRScannerBlockPreview
+                        data={data}
+                        language={language}
+                        tourId={tourData?.id}
+                        tourSlug={tourData?.slug}
+                        allStops={allStops}
+                        onNavigateToStop={onNavigateToStop}
+                    />
+                </>
+            );
+        }
+        // Admin preview — show static placeholder
+        return (
+            <>
+                {renderBlockHeader(data)}
+                <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4 flex items-center gap-4">
+                    <div className="bg-gray-900 p-4 rounded-xl flex items-center justify-center w-20 h-20">
+                        <ScanLine className="w-8 h-8 text-[var(--color-accent-primary)]" />
+                    </div>
+                    <div>
+                        <h4 className="font-medium text-[var(--color-text-primary)]">
+                            QR Scanner — {data.mode === 'navigate' ? 'Navigate' : data.mode === 'checkin' ? 'Check-in' : data.mode === 'scavenger' ? 'Scavenger Hunt' : 'Info Popup'}
+                        </h4>
+                        {data.promptText && (
+                            <p className="text-sm text-[var(--color-text-muted)] mt-1">
+                                {data.promptText[language] || data.promptText.en}
+                            </p>
+                        )}
+                        <p className="text-xs text-[var(--color-text-muted)] mt-1 italic">
+                            Camera scanner active in visitor view
+                        </p>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
     function renderMapBlock(data: MapBlockData) {
         // Size options: small=150px, medium=250px, large=fills available (calc)
         const sizeStyles: Record<string, { height: string; minHeight: string }> = {
@@ -453,6 +498,8 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                         onNavigateToStop={mode === 'view' ? onNavigateToStop : undefined}
                     />
                 );
+            case 'qrScanner':
+                return renderQRScannerBlock(block.data as QRScannerBlockData);
             default:
                 return (
                     <div className="text-[var(--color-text-muted)] text-sm">

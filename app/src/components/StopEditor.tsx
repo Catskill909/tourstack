@@ -11,10 +11,11 @@ import { TimelineGalleryEditorModal } from './blocks/TimelineGalleryEditorModal'
 import { MapEditorModal } from './blocks/MapEditorModal';
 import { MapBlockEditor } from './blocks/MapBlockEditor';
 import { PositioningBlockEditor } from './blocks/PositioningBlockEditor';
+import { QRScannerBlockEditor } from './blocks/QRScannerBlockEditor';
 import { TourBlockEditor } from './blocks/TourBlockEditor';
 import { StopListEditorModal } from './blocks/StopListEditorModal';
 import { StopPreviewModal } from './StopPreviewModal';
-import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, TourBlockData, StopListBlockData, StopImageData } from '../types';
+import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, StopImageData } from '../types';
 
 interface StopEditorProps {
     stop: Stop;
@@ -54,6 +55,8 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
             return { layout: 'hero-bottom', imagePosition: 'center', imageFit: 'cover', overlayOpacity: 70, showBadge: true, badge: { en: 'FEATURED EXHIBIT' }, ctaText: { en: 'Begin Guided Tour' }, ctaStyle: 'primary', ctaAction: 'next-stop' } as TourBlockData;
         case 'stopList':
             return { stopIds: [], layout: 'card', heading: { en: 'Tour Stops' }, showHeading: true, subheading: { en: '' }, showSubheading: true, showStopNumbers: true, showDuration: true, showDescription: true, showCta: true, ctaText: { en: 'Start Tour' } } as StopListBlockData;
+        case 'qrScanner':
+            return { mode: 'navigate', restrictToTour: true, showConfirmation: true, showShortCodeEntry: true, showScanHistory: false, cameraFacing: 'environment', scannerSize: 'medium', viewfinderStyle: 'rounded', promptText: { en: 'Scan the QR code at the next exhibit' } } as QRScannerBlockData;
         default:
             return { content: { en: '' }, style: 'normal' } as TextBlockData;
     }
@@ -866,6 +869,16 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                                         </p>
                                     </div>
                                 )}
+                                {editingBlock.type === 'qrScanner' && (
+                                    <QRScannerBlockEditor
+                                        data={editingBlock.data as QRScannerBlockData}
+                                        language={language}
+                                        availableLanguages={availableLanguages}
+                                        translationProvider={translationProvider}
+                                        allStops={allStops}
+                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
+                                    />
+                                )}
                             </div>
                         ) : (
                             <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
@@ -882,7 +895,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                     <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6 w-full max-w-md shadow-xl">
                         <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">Add Content Block</h3>
                         <div className="grid grid-cols-3 gap-3">
-                            {(['tour', 'text', 'image', 'gallery', 'timelineGallery', 'audio', 'map', 'stopList'] as ContentBlockType[]).map((type) => {
+                            {(['tour', 'text', 'image', 'gallery', 'timelineGallery', 'audio', 'map', 'stopList', 'qrScanner'] as ContentBlockType[]).map((type) => {
                                 const Icon = BLOCK_ICONS[type];
                                 return (
                                     <button

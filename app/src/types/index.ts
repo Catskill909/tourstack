@@ -228,7 +228,8 @@ export type ContentBlockType =
   | 'positioning'
   | 'map'
   | 'tour'
-  | 'stopList';
+  | 'stopList'
+  | 'qrScanner';
 
 // Block data interfaces
 export interface TextBlockData {
@@ -495,6 +496,41 @@ export interface StopListBlockData {
   showBlockImage?: boolean;
 }
 
+// QR Scanner Block - camera-based QR code scanner for visitor interaction
+export type QRScannerMode = 'navigate' | 'checkin' | 'scavenger' | 'info';
+export type QRScannerSize = 'small' | 'medium' | 'large';
+export type QRViewfinderStyle = 'rounded' | 'square' | 'minimal';
+
+export interface QRScannerBlockData {
+  // Scanner behavior
+  mode: QRScannerMode;
+
+  // Navigate mode
+  restrictToTour?: boolean;        // Only allow scanning stops from this tour
+  showConfirmation?: boolean;      // Show dialog before navigating
+
+  // Scavenger hunt mode
+  expectedStopId?: string;         // The stop the visitor should scan
+  successMessage?: { [lang: string]: string };
+  wrongCodeMessage?: { [lang: string]: string };
+
+  // Common settings
+  promptText?: { [lang: string]: string };  // "Scan the QR code at..."
+  showShortCodeEntry?: boolean;    // Show manual entry fallback
+  showScanHistory?: boolean;       // Show visited stops list
+  cameraFacing?: 'environment' | 'user';  // Rear vs front camera
+
+  // Styling
+  scannerSize?: QRScannerSize;
+  viewfinderStyle?: QRViewfinderStyle;
+
+  // Block metadata (standard)
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
+}
+
 // Discriminated union for type safety
 export type ContentBlockData =
   | TextBlockData
@@ -509,7 +545,8 @@ export type ContentBlockData =
   | PositioningBlockData
   | MapBlockData
   | TourBlockData
-  | StopListBlockData;
+  | StopListBlockData
+  | QRScannerBlockData;
 
 // Base content block interface
 export interface ContentBlock {

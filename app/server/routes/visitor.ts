@@ -121,6 +121,49 @@ router.get('/tour/:tourSlugOrId/stop/:stopSlugOrId', async (req: Request, res: R
     }
 });
 
+// GET /api/visitor/tour/:tourSlugOrId/stop/:stopSlugOrId/info - Lightweight stop info (for QR scanner info popup)
+router.get('/tour/:tourSlugOrId/stop/:stopSlugOrId/info', async (req: Request, res: Response) => {
+    try {
+        const tourSlugOrId = req.params.tourSlugOrId as string;
+        const stopSlugOrId = req.params.stopSlugOrId as string;
+
+        let tour = await prisma.tour.findFirst({
+            where: { slug: tourSlugOrId },
+            include: { stops: { orderBy: { order: 'asc' } } },
+        });
+        if (!tour) {
+            tour = await prisma.tour.findUnique({
+                where: { id: tourSlugOrId },
+                include: { stops: { orderBy: { order: 'asc' } } },
+            });
+        }
+        if (!tour) {
+            res.status(404).json({ error: 'Tour not found' });
+            return;
+        }
+
+        let stop = tour.stops.find(s => s.slug === stopSlugOrId);
+        if (!stop) {
+            stop = tour.stops.find(s => s.id === stopSlugOrId);
+        }
+        if (!stop) {
+            res.status(404).json({ error: 'Stop not found' });
+            return;
+        }
+
+        res.json({
+            id: stop.id,
+            title: JSON.parse(stop.title),
+            description: JSON.parse(stop.description),
+            image: stop.image,
+            order: stop.order,
+        });
+    } catch (error) {
+        console.error('Error fetching stop info:', error);
+        res.status(500).json({ error: 'Failed to fetch stop info' });
+    }
+});
+
 // GET /api/visitor/s/:shortCode - Redirect by short code
 router.get('/s/:shortCode', async (req: Request, res: Response) => {
     try {
