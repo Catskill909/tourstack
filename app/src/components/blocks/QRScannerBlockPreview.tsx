@@ -362,69 +362,65 @@ export function QRScannerBlockPreview({
                     </div>
                 )}
 
-                {/* Camera viewfinder */}
+                {/* Camera viewfinder — single persistent video element to avoid React unmount issues */}
                 {(scanStatus.type === 'idle' || scanStatus.type === 'scanning' || scanStatus.type === 'requesting') && (
-                    <>
-                        {cameraActive ? (
-                            <div className={`relative overflow-hidden ${sizeClasses[scannerSize]} ${roundingClasses[viewfinderStyle]}`}>
-                                <video
-                                    ref={videoRef}
-                                    className="w-full h-full object-cover"
-                                    playsInline
-                                    muted
-                                />
-                                {/* Viewfinder overlay corners */}
-                                {viewfinderStyle !== 'minimal' && (
-                                    <div className="absolute inset-0 pointer-events-none">
-                                        <div className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-[var(--color-accent-primary)]" />
-                                        <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-[var(--color-accent-primary)]" />
-                                        <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-[var(--color-accent-primary)]" />
-                                        <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-[var(--color-accent-primary)]" />
-                                    </div>
+                    <div className={`relative overflow-hidden ${sizeClasses[scannerSize]} ${roundingClasses[viewfinderStyle]}`}>
+                        {/* Video element is always in the DOM so QrScanner's reference stays valid */}
+                        <video
+                            ref={videoRef}
+                            className={`w-full h-full object-cover ${cameraActive ? 'block' : 'hidden'}`}
+                            playsInline
+                            muted
+                            autoPlay
+                        />
+
+                        {/* Tap-to-scan overlay (shown when camera is not active) */}
+                        {!cameraActive && (
+                            <button
+                                onClick={startScanner}
+                                disabled={scanStatus.type === 'requesting'}
+                                className={`absolute inset-0 ${sizeClasses[scannerSize]} bg-gray-900 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-gray-800 transition-colors border-2 border-dashed border-gray-700 disabled:opacity-70 ${roundingClasses[viewfinderStyle]}`}
+                            >
+                                {scanStatus.type === 'requesting' ? (
+                                    <>
+                                        <Loader2 className="w-10 h-10 text-[var(--color-accent-primary)] animate-spin" />
+                                        <span className="text-sm text-gray-400">Requesting camera...</span>
+                                    </>
+                                ) : cameraError ? (
+                                    <>
+                                        <CameraOff className="w-10 h-10 text-red-400" />
+                                        <span className="text-xs text-red-400 text-center px-4">{cameraError}</span>
+                                        <span className="text-xs text-gray-500 mt-1">Tap to try again</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Camera className="w-10 h-10 text-[var(--color-accent-primary)]" />
+                                        <span className="text-sm text-gray-400">Tap to scan QR code</span>
+                                    </>
                                 )}
-                                {/* Stop button */}
-                                <button
-                                    onClick={stopScanner}
-                                    className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full hover:bg-black/80 transition-colors z-10"
-                                >
-                                    <X className="w-4 h-4 text-white" />
-                                </button>
-                            </div>
-                        ) : (
-                            <>
-                                {/* Hidden video element — nimiq/qr-scanner needs it in the DOM before start() */}
-                                <video
-                                    ref={videoRef}
-                                    className="hidden"
-                                    playsInline
-                                    muted
-                                />
-                                <button
-                                    onClick={startScanner}
-                                    disabled={scanStatus.type === 'requesting'}
-                                    className={`${sizeClasses[scannerSize]} ${roundingClasses[viewfinderStyle]} bg-gray-900 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-gray-800 transition-colors border-2 border-dashed border-gray-700 disabled:opacity-70`}
-                                >
-                                    {scanStatus.type === 'requesting' ? (
-                                        <>
-                                            <Loader2 className="w-10 h-10 text-[var(--color-accent-primary)] animate-spin" />
-                                            <span className="text-sm text-gray-400">Requesting camera...</span>
-                                        </>
-                                    ) : cameraError ? (
-                                        <>
-                                            <CameraOff className="w-10 h-10 text-red-400" />
-                                            <span className="text-xs text-red-400 text-center px-4">{cameraError}</span>
-                                            <span className="text-xs text-gray-500 mt-1">Tap to try again</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Camera className="w-10 h-10 text-[var(--color-accent-primary)]" />
-                                            <span className="text-sm text-gray-400">Tap to scan QR code</span>
-                                        </>
-                                    )}
-                                </button>
-                            </>
+                            </button>
                         )}
-                    </>
+
+                        {/* Viewfinder overlay corners (shown when camera is active) */}
+                        {cameraActive && viewfinderStyle !== 'minimal' && (
+                            <div className="absolute inset-0 pointer-events-none">
+                                <div className="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-[var(--color-accent-primary)]" />
+                                <div className="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-[var(--color-accent-primary)]" />
+                                <div className="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-[var(--color-accent-primary)]" />
+                                <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-[var(--color-accent-primary)]" />
+                            </div>
+                        )}
+
+                        {/* Stop button (shown when camera is active) */}
+                        {cameraActive && (
+                            <button
+                                onClick={stopScanner}
+                                className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full hover:bg-black/80 transition-colors z-10"
+                            >
+                                <X className="w-4 h-4 text-white" />
+                            </button>
+                        )}
+                    </div>
                 )}
             </div>
 
