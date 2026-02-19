@@ -119,9 +119,14 @@ export function QRScannerBlockPreview({
             );
             qrScannerRef.current = qrScanner;
 
-            await qrScanner.start();
+            // Remove the overlay and mark scanning BEFORE start().
+            // The video is never display:none so qr-scanner can always access it.
             setCameraActive(true);
             setScanStatus({ type: 'scanning' });
+
+            // Wait for React to paint (remove overlay) before starting scanner
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            await qrScanner.start();
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
             if (message.includes('NotAllowed') || message.includes('Permission') || message.includes('denied')) {
@@ -365,10 +370,13 @@ export function QRScannerBlockPreview({
                 {/* Camera viewfinder — single persistent video element to avoid React unmount issues */}
                 {(scanStatus.type === 'idle' || scanStatus.type === 'scanning' || scanStatus.type === 'requesting') && (
                     <div className={`relative overflow-hidden ${sizeClasses[scannerSize]} ${roundingClasses[viewfinderStyle]}`}>
-                        {/* Video element is always in the DOM so QrScanner's reference stays valid */}
+                        {/* Video element — NEVER use display:none (hidden class) as qr-scanner
+                            fights React for control and Safari stops playback on hidden videos.
+                            The overlay button covers it when camera is inactive. */}
                         <video
                             ref={videoRef}
-                            className={`w-full h-full object-cover ${cameraActive ? 'block' : 'hidden'}`}
+                            className="w-full h-full object-cover"
+                            style={{ background: '#000' }}
                             playsInline
                             muted
                             autoPlay
