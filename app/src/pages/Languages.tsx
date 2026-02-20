@@ -193,7 +193,7 @@ const tabs: Tab[] = [
 // ============================================================================
 
 export function Languages() {
-    const [activeTab, setActiveTab] = useState<TabId>('libretranslate');
+    const [activeTab, setActiveTab] = useState<TabId>('google');
     const [error, setError] = useState<string | null>(null);
 
     // Translation state
@@ -383,7 +383,7 @@ function ProviderSelector({ tabs, activeTab, onSelectTab }: ProviderSelectorProp
             {/* Provider Selection Button */}
             <button
                 onClick={() => setIsOpen(true)}
-                className="flex items-center gap-3 px-4 py-2 bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border-default)] rounded-xl transition-all group"
+                className="flex items-center gap-3 px-4 py-2.5 bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] border border-[var(--color-border-default)] rounded-xl transition-all group"
             >
                 {activeProvider && (
                     <>
@@ -409,7 +409,10 @@ function ProviderSelector({ tabs, activeTab, onSelectTab }: ProviderSelectorProp
                                 {typeLabels[activeProvider.type]}
                             </span>
                         </div>
-                        <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)] transition-colors ml-2" />
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-600/80 to-purple-600/80 border border-violet-400/30 group-hover:from-violet-500 group-hover:to-purple-500 transition-all ml-2 shadow-sm shadow-violet-500/20">
+                            <span className="text-xs font-semibold text-white">Browse All Services</span>
+                            <ChevronDown className="w-4 h-4 text-white/80 group-hover:text-white transition-colors" />
+                        </div>
                     </>
                 )}
             </button>

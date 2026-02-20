@@ -85,6 +85,16 @@ interface Tab {
 const tabs: Tab[] = [
     // === ACTIVE PROVIDERS ===
     {
+        id: 'google',
+        name: 'Google Cloud',
+        icon: Volume2,
+        status: 'active',
+        description: 'Google Cloud Text-to-Speech - Neural2 & Standard voices, 50+ languages',
+        type: 'paid',
+        docUrl: 'https://cloud.google.com/text-to-speech/docs',
+        features: ['50+ Languages', 'Neural2 Voices', 'Standard Voices', 'MP3/WAV/OGG'],
+    },
+    {
         id: 'deepgram',
         name: 'Deepgram',
         icon: AudioWaveform,
@@ -103,17 +113,6 @@ const tabs: Tab[] = [
         type: 'paid',
         docUrl: 'https://elevenlabs.io/docs/api-reference/introduction',
         features: ['32+ Languages', '21 Premade Voices', 'Multilingual v2', 'MP3/PCM/Opus'],
-    },
-    // === PAID CLOUD PROVIDERS (COMING SOON) ===
-    {
-        id: 'google',
-        name: 'Google Cloud',
-        icon: Volume2,
-        status: 'active',
-        description: 'Google Cloud Text-to-Speech - Neural2 & Standard voices, 50+ languages',
-        type: 'paid',
-        docUrl: 'https://cloud.google.com/text-to-speech/docs',
-        features: ['50+ Languages', 'Neural2 Voices', 'Standard Voices', 'MP3/WAV/OGG'],
     },
     {
         id: 'polly',
@@ -210,7 +209,7 @@ const tabs: Tab[] = [
 ];
 
 export function Audio() {
-    const [activeTab, setActiveTab] = useState<TabId>('deepgram');
+    const [activeTab, setActiveTab] = useState<TabId>('google');
     const [status, setStatus] = useState<AudioServiceStatus | null>(null);
     const [voices, setVoices] = useState<VoicesResponse | null>(null);
     const [formats, setFormats] = useState<FormatsResponse | null>(null);
@@ -2751,9 +2750,9 @@ function ProviderSelector({ tabs, activeTab, onSelectTab }: ProviderSelectorProp
                                     {typeLabels[activeProvider.type]}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] group-hover:bg-[var(--color-bg-subtle)] transition-all ml-auto">
-                                <span className="text-xs font-medium text-[var(--color-text-secondary)]">More</span>
-                                <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)] transition-colors" />
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-violet-600/80 to-purple-600/80 border border-violet-400/30 group-hover:from-violet-500 group-hover:to-purple-500 transition-all ml-auto shadow-sm shadow-violet-500/20">
+                                <span className="text-xs font-semibold text-white">Browse All Services</span>
+                                <ChevronDown className="w-4 h-4 text-white/80 group-hover:text-white transition-colors" />
                             </div>
                         </>
                     )}

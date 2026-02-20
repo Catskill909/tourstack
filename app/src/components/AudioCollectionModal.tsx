@@ -402,7 +402,7 @@ export function AudioCollectionModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+            <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] w-full max-w-5xl h-[95vh] overflow-hidden shadow-2xl flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-[var(--color-border-default)]">
                     <div className="flex items-center gap-3">
@@ -428,10 +428,10 @@ export function AudioCollectionModal({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-hidden p-6 min-h-0">
                     {success ? (
                         // Success state with detailed metadata
-                        <div className="space-y-6">
+                        <div className="space-y-6 overflow-y-auto max-h-full">
                             {/* Success Header */}
                             <div className="text-center">
                                 <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">
@@ -579,7 +579,9 @@ export function AudioCollectionModal({
                             </div>
                         </div>
                     ) : (
-                        <>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full overflow-hidden min-h-0">
+                            {/* Left Column: Collection Details + Generation Settings */}
+                            <div className="space-y-6 overflow-y-auto pr-1">
                             {/* Collection Details */}
                             <div className="space-y-4">
                                 <h3 className="text-sm font-medium text-[var(--color-text-secondary)] flex items-center gap-2">
@@ -758,13 +760,52 @@ export function AudioCollectionModal({
                                 </div>
                             </div>
 
-                            {/* Language Selection */}
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-medium text-[var(--color-text-secondary)] flex items-center gap-2">
+                            {/* Generation Progress */}
+                            {isGenerating && (
+                                <div className="space-y-3 p-4 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]">
+                                    <div className="flex items-center gap-2">
+                                        <Loader2 className="w-4 h-4 animate-spin text-[var(--color-accent-primary)]" />
+                                        <span className="text-sm text-[var(--color-text-primary)]">
+                                            Generating audio files...
+                                        </span>
+                                    </div>
+                                    {generationResults.length > 0 && (
+                                        <div className="space-y-1">
+                                            {generationResults.map((result) => (
+                                                <div key={result.language} className="flex items-center gap-2 text-sm">
+                                                    {result.success ? (
+                                                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                                    ) : (
+                                                        <AlertCircle className="w-4 h-4 text-red-500" />
+                                                    )}
+                                                    <span className={result.success ? 'text-green-500' : 'text-red-500'}>
+                                                        {languages.find(l => l.code === result.language)?.name || result.language}
+                                                        {!result.success && result.error && `: ${result.error}`}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Error */}
+                            {error && (
+                                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2 text-red-500">
+                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                    <p className="text-sm">{error}</p>
+                                </div>
+                            )}
+                            </div>
+
+                            {/* Right Column: Language Selection */}
+                            <div className="flex flex-col overflow-hidden min-h-0">
+                            <div className="space-y-4 flex flex-col overflow-hidden h-full min-h-0">
+                                <h3 className="text-sm font-medium text-[var(--color-text-secondary)] flex items-center gap-2 flex-shrink-0">
                                     <Languages className="w-4 h-4" />
                                     Languages to Generate ({enabledLanguages.length} selected)
                                 </h3>
-                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                <div className="space-y-2 overflow-y-auto flex-1 min-h-0 pr-1 overscroll-contain">
                                     {languages.map((lang) => (
                                         <div
                                             key={lang.code}
@@ -874,44 +915,8 @@ export function AudioCollectionModal({
                                     ))}
                                 </div>
                             </div>
-
-                            {/* Generation Progress */}
-                            {isGenerating && (
-                                <div className="space-y-3 p-4 bg-[var(--color-bg-elevated)] rounded-lg border border-[var(--color-border-default)]">
-                                    <div className="flex items-center gap-2">
-                                        <Loader2 className="w-4 h-4 animate-spin text-[var(--color-accent-primary)]" />
-                                        <span className="text-sm text-[var(--color-text-primary)]">
-                                            Generating audio files...
-                                        </span>
-                                    </div>
-                                    {generationResults.length > 0 && (
-                                        <div className="space-y-1">
-                                            {generationResults.map((result) => (
-                                                <div key={result.language} className="flex items-center gap-2 text-sm">
-                                                    {result.success ? (
-                                                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                                    ) : (
-                                                        <AlertCircle className="w-4 h-4 text-red-500" />
-                                                    )}
-                                                    <span className={result.success ? 'text-green-500' : 'text-red-500'}>
-                                                        {languages.find(l => l.code === result.language)?.name || result.language}
-                                                        {!result.success && result.error && `: ${result.error}`}
-                                                    </span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Error */}
-                            {error && (
-                                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2 text-red-500">
-                                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                    <p className="text-sm">{error}</p>
-                                </div>
-                            )}
-                        </>
+                            </div>
+                        </div>
                     )}
                 </div>
 
