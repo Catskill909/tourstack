@@ -27,7 +27,21 @@ import {
     MousePointerClick,
     PlusCircle,
     Pencil,
-    Eye
+    Eye,
+    Monitor,
+    Send,
+    FolderOpen,
+    Upload,
+    Bot,
+    Camera,
+    MessageCircle,
+    MapPin,
+    Video,
+    Quote,
+    Clock,
+    ArrowLeftRight,
+    Radio,
+    Settings
 } from 'lucide-react';
 
 // Types
@@ -65,7 +79,18 @@ const docsStructure: DocSection[] = [
             { slug: 'adding-text', title: 'Adding Text Content', description: 'Write compelling descriptions', icon: Pencil },
             { slug: 'images-galleries', title: 'Images & Galleries', description: 'Visual storytelling', icon: Image },
             { slug: 'audio-narration', title: 'Audio Narration', description: 'Voice guides for visitors', icon: Volume2 },
+            { slug: 'timeline-gallery', title: 'Timeline Gallery', description: 'Audio-synced slideshows', icon: Play },
+            { slug: 'maps-location', title: 'Maps & Location', description: 'Interactive maps with markers', icon: MapPin },
             { slug: 'content-blocks', title: 'All Content Blocks', description: 'Complete block reference', icon: Layers },
+        ]
+    },
+    {
+        title: 'Collections & Media',
+        icon: FolderOpen,
+        description: 'Organize and manage your assets',
+        items: [
+            { slug: 'media-library', title: 'Media Library', description: 'Upload and organize files', icon: Upload },
+            { slug: 'collections', title: 'Collections', description: 'Image, audio & document groups', icon: FolderOpen },
         ]
     },
     {
@@ -75,7 +100,17 @@ const docsStructure: DocSection[] = [
         items: [
             { slug: 'qr-codes', title: 'QR Codes', description: 'Print and display codes', icon: QrCode },
             { slug: 'visitor-view', title: 'The Visitor View', description: 'What visitors see', icon: Eye },
-            { slug: 'multilingual', title: 'Multiple Languages', description: 'Reach all visitors', icon: Languages },
+            { slug: 'kiosk-mode', title: 'Kiosk Mode', description: 'Museum kiosk deployments', icon: Monitor },
+            { slug: 'publishing', title: 'Publishing Your Tour', description: 'Draft to published workflow', icon: Send },
+        ]
+    },
+    {
+        title: 'Languages & Translation',
+        icon: Languages,
+        description: 'Reach visitors in any language',
+        items: [
+            { slug: 'multilingual', title: 'Multiple Languages', description: 'Reach all visitors', icon: Globe },
+            { slug: 'magic-translate', title: 'Magic Translate', description: 'One-click AI translation', icon: Sparkles },
         ]
     },
     {
@@ -83,8 +118,9 @@ const docsStructure: DocSection[] = [
         icon: Sparkles,
         description: 'Smart tools that save you time',
         items: [
-            { slug: 'magic-translate', title: 'Magic Translate', description: 'One-click translation', icon: Globe },
-            { slug: 'ai-audio', title: 'AI Audio Generation', description: 'Text-to-speech voices', icon: Mic },
+            { slug: 'ai-audio', title: 'AI Audio Generation', description: 'Text-to-speech with 3 providers', icon: Mic },
+            { slug: 'ai-image-analysis', title: 'AI Image Analysis', description: 'Smart tags and object detection', icon: Camera },
+            { slug: 'ai-concierge', title: 'AI Concierge', description: 'Visitor chatbot assistant', icon: Bot },
         ]
     },
 ];
@@ -235,32 +271,32 @@ const WelcomePage = () => (
         <header>
             <h1 className="text-3xl font-bold text-white mb-4">Welcome to TourStack</h1>
             <p className="text-xl text-neutral-400">
-                The complete platform for creating and managing museum audio tours.
+                The complete platform for creating and managing museum tours with AI-powered tools.
             </p>
         </header>
 
         <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
             <h2 className="text-xl font-semibold text-white mb-4">What is TourStack?</h2>
             <p className="text-neutral-300 mb-4">
-                TourStack is an all-in-one tool that lets museum staff create self-guided tours
-                for visitors. Instead of expensive audio guide equipment, visitors simply scan
-                a QR code with their phone to access tour content.
+                TourStack is an all-in-one platform for museum staff to create self-guided tours.
+                Visitors scan a QR code with their phone to access rich multimedia content -
+                no app download required. It works in any mobile browser.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                 <div className="p-4 bg-white/5 rounded-xl">
                     <Users className="w-6 h-6 text-white mb-2" />
                     <h3 className="font-medium text-white mb-1">For Staff</h3>
-                    <p className="text-sm text-neutral-400">Create and manage all tour content from one dashboard</p>
+                    <p className="text-sm text-neutral-400">Create and manage tours, collections, and media from one dashboard</p>
                 </div>
                 <div className="p-4 bg-white/5 rounded-xl">
                     <Smartphone className="w-6 h-6 text-white mb-2" />
                     <h3 className="font-medium text-white mb-1">For Visitors</h3>
-                    <p className="text-sm text-neutral-400">Scan a QR code to get the tour on their phone</p>
+                    <p className="text-sm text-neutral-400">Scan a QR code to access the tour on any phone or tablet</p>
                 </div>
                 <div className="p-4 bg-white/5 rounded-xl">
                     <Globe className="w-6 h-6 text-white mb-2" />
-                    <h3 className="font-medium text-white mb-1">Any Language</h3>
-                    <p className="text-sm text-neutral-400">Automatic translation to reach all visitors</p>
+                    <h3 className="font-medium text-white mb-1">195+ Languages</h3>
+                    <p className="text-sm text-neutral-400">AI translation with Google Cloud or LibreTranslate</p>
                 </div>
             </div>
         </div>
@@ -287,8 +323,8 @@ const WelcomePage = () => (
                     <div>
                         <h3 className="font-medium text-white mb-1">Stops</h3>
                         <p className="text-neutral-400 text-sm">
-                            Each stop represents a location in your museum - an artwork, exhibit, or point of interest.
-                            Stops contain the actual content visitors see: text, images, and audio.
+                            Each stop represents a location - an artwork, exhibit, or point of interest.
+                            Stops contain content blocks: text, images, audio, video, maps, and more.
                         </p>
                     </div>
                 </div>
@@ -299,10 +335,58 @@ const WelcomePage = () => (
                     <div>
                         <h3 className="font-medium text-white mb-1">Content Blocks</h3>
                         <p className="text-neutral-400 text-sm">
-                            Stops are built from blocks - reusable pieces of content you can add in any order.
-                            Add a text block, then an image, then audio. Drag to reorder. Simple as that.
+                            Stops are built from 12 block types - text, images, galleries, audio, video,
+                            timeline galleries, maps, quotes, and more. Drag to reorder. Mix and match freely.
                         </p>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Platform Capabilities</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Mic className="w-4 h-4 text-white" />
+                        <h3 className="font-medium text-white text-sm">AI Audio (3 Providers)</h3>
+                    </div>
+                    <p className="text-xs text-neutral-400">Generate narration with Deepgram, ElevenLabs, or Google Cloud TTS in 32+ languages</p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                        <FolderOpen className="w-4 h-4 text-white" />
+                        <h3 className="font-medium text-white text-sm">Collections</h3>
+                    </div>
+                    <p className="text-xs text-neutral-400">Organize images, audio, and documents into collections with AI analysis</p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Upload className="w-4 h-4 text-white" />
+                        <h3 className="font-medium text-white text-sm">Media Library</h3>
+                    </div>
+                    <p className="text-xs text-neutral-400">Central hub for all uploaded files with search, tags, and AI analysis</p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Monitor className="w-4 h-4 text-white" />
+                        <h3 className="font-medium text-white text-sm">Kiosk Mode</h3>
+                    </div>
+                    <p className="text-xs text-neutral-400">Deploy tours on museum kiosks with fullscreen, auto-restart, and chatbot</p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Camera className="w-4 h-4 text-white" />
+                        <h3 className="font-medium text-white text-sm">AI Image Analysis</h3>
+                    </div>
+                    <p className="text-xs text-neutral-400">Object detection, OCR, color palettes, and smart tagging via Google Vision</p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Bot className="w-4 h-4 text-white" />
+                        <h3 className="font-medium text-white text-sm">AI Concierge</h3>
+                    </div>
+                    <p className="text-xs text-neutral-400">Visitor chatbot powered by Gemini AI with custom knowledge sources</p>
                 </div>
             </div>
         </div>
@@ -631,47 +715,64 @@ const VisitorViewPage = () => (
         <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
             <h2 className="text-xl font-semibold text-white mb-4">Clean Mobile Experience</h2>
             <p className="text-neutral-300 mb-4">
-                The visitor view is designed for phones. It's clean, fast, and focused on the content.
+                The visitor view is designed for phones and tablets. It's clean, fast, and focused on content.
                 No app download required - it works in any mobile browser.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
                     <h3 className="font-medium text-white mb-2">What Visitors See</h3>
                     <ul className="space-y-2 text-sm text-neutral-400">
-                        <li>✓ Stop title and description</li>
-                        <li>✓ Images and galleries</li>
+                        <li>✓ Stop title and all content blocks</li>
+                        <li>✓ Images, galleries, and video</li>
                         <li>✓ Audio player with controls</li>
-                        <li>✓ Navigation to next/previous stops</li>
-                        <li>✓ Language switcher (if enabled)</li>
+                        <li>✓ Previous / Next stop navigation</li>
+                        <li>✓ Progress dots showing position in tour</li>
+                        <li>✓ Language switcher dropdown</li>
                     </ul>
                 </div>
                 <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
                     <h3 className="font-medium text-white mb-2">What's Hidden</h3>
                     <ul className="space-y-2 text-sm text-neutral-400">
-                        <li>✗ Admin controls</li>
-                        <li>✗ Edit buttons</li>
-                        <li>✗ Draft content</li>
-                        <li>✗ Analytics dashboard</li>
-                        <li>✗ Settings menus</li>
+                        <li>✗ Admin controls and edit buttons</li>
+                        <li>✗ Draft / unpublished content</li>
+                        <li>✗ Settings and configuration</li>
+                        <li>✗ Analytics and media library</li>
                     </ul>
                 </div>
             </div>
         </div>
 
         <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Preview Before Publishing</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">Device Preview</h2>
             <p className="text-neutral-300 mb-4">
-                Always preview your content before making it public. The preview shows exactly what visitors will see.
+                Preview your content at real device resolutions before publishing. The admin preview
+                renders at actual device pixels - what you see IS what visitors see.
             </p>
-            <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
-                <div className="flex items-center gap-3">
-                    <Eye className="w-5 h-5 text-white" />
-                    <div>
-                        <h3 className="font-medium text-white">Click "Preview" in the Stop Editor</h3>
-                        <p className="text-sm text-neutral-400">Opens a device-sized preview showing the mobile experience</p>
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl text-center">
+                    <Smartphone className="w-6 h-6 text-white mx-auto mb-2" />
+                    <h3 className="font-medium text-white text-sm">Phone</h3>
+                    <p className="text-xs text-neutral-500">375 x 812px (iPhone)</p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl text-center">
+                    <Layers className="w-6 h-6 text-white mx-auto mb-2" />
+                    <h3 className="font-medium text-white text-sm">Tablet</h3>
+                    <p className="text-xs text-neutral-500">820 x 1180px (iPad)</p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl text-center">
+                    <Monitor className="w-6 h-6 text-white mx-auto mb-2" />
+                    <h3 className="font-medium text-white text-sm">Kiosk</h3>
+                    <p className="text-xs text-neutral-500">Frameless, fills available space</p>
                 </div>
             </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Staff Preview Mode</h2>
+            <p className="text-neutral-300 mb-4">
+                When logged-in staff access visitor pages, they see a <strong className="text-white">"Back to Admin"</strong> banner
+                at the top. Staff can also preview draft (unpublished) tours that visitors cannot see.
+            </p>
         </div>
     </div>
 );
@@ -691,16 +792,31 @@ const MagicTranslatePage = () => (
                 <h2 className="text-xl font-semibold text-white">One-Click Translation</h2>
             </div>
             <p className="text-neutral-300 mb-4">
-                Magic Translate uses AI to translate all your stop content - text, titles, and descriptions -
-                into any language you need. No manual translation required.
+                Magic Translate uses AI to translate all your stop content - text, titles, descriptions,
+                and captions - into any language. The sparkle button appears throughout the editor
+                wherever translatable content exists.
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {['Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Japanese', 'Chinese', 'Korean'].map(lang => (
-                    <div key={lang} className="p-3 bg-black/50 border border-white/10 rounded-lg text-center">
-                        <span className="text-sm text-neutral-300">{lang}</span>
-                    </div>
-                ))}
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Translation Providers</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <Globe className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-semibold text-white mb-1">Google Cloud Translation</h3>
+                    <p className="text-sm text-neutral-400 mb-2">195+ languages, fast cloud API. Recommended for most museums.</p>
+                    <p className="text-xs text-neutral-500">Requires GOOGLE_VISION_API_KEY (shared with Vision & TTS)</p>
+                </div>
+                <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <Languages className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-semibold text-white mb-1">LibreTranslate</h3>
+                    <p className="text-sm text-neutral-400 mb-2">9 languages, self-hosted option. Free and open-source.</p>
+                    <p className="text-xs text-neutral-500">Languages: EN, ES, FR, DE, IT, PT, JA, KO, ZH</p>
+                </div>
             </div>
+            <p className="text-sm text-neutral-400 mt-3">
+                Choose your default provider in <strong className="text-white">Settings &gt; Translation</strong>.
+            </p>
         </div>
 
         <div>
@@ -719,8 +835,8 @@ const MagicTranslatePage = () => (
                     <div className="flex items-start gap-3">
                         <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold">2</div>
                         <div>
-                            <h3 className="font-medium text-white mb-1">Look for the Magic Translate Button</h3>
-                            <p className="text-sm text-neutral-400">It's marked with a sparkle icon ✨ in the toolbar</p>
+                            <h3 className="font-medium text-white mb-1">Click the Magic Translate Button</h3>
+                            <p className="text-sm text-neutral-400">Look for the sparkle icon next to any text field or in the toolbar</p>
                         </div>
                     </div>
                 </div>
@@ -729,7 +845,7 @@ const MagicTranslatePage = () => (
                         <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold">3</div>
                         <div>
                             <h3 className="font-medium text-white mb-1">Select Target Language</h3>
-                            <p className="text-sm text-neutral-400">Choose the language you want to translate to</p>
+                            <p className="text-sm text-neutral-400">Choose from all languages available from your active translation provider</p>
                         </div>
                     </div>
                 </div>
@@ -738,7 +854,7 @@ const MagicTranslatePage = () => (
                         <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold">4</div>
                         <div>
                             <h3 className="font-medium text-white mb-1">Review & Save</h3>
-                            <p className="text-sm text-neutral-400">Check the translation and make any needed edits</p>
+                            <p className="text-sm text-neutral-400">Switch to the translated language to review, edit if needed, then save</p>
                         </div>
                     </div>
                 </div>
@@ -752,9 +868,10 @@ const MagicTranslatePage = () => (
             <div>
                 <h3 className="font-semibold text-white mb-1">Translation Tips</h3>
                 <ul className="text-neutral-400 text-sm space-y-1">
-                    <li>• Write clear, simple text in your primary language for best results</li>
+                    <li>• Write clear, simple text in your primary language for best AI results</li>
                     <li>• Have a native speaker review translations for cultural accuracy</li>
                     <li>• Art-specific terminology may need manual adjustment</li>
+                    <li>• Translation also works in collection AI analysis and concierge setup</li>
                 </ul>
             </div>
         </div>
@@ -766,60 +883,96 @@ const AIAudioPage = () => (
         <header>
             <h1 className="text-3xl font-bold text-white mb-4">AI Audio Generation</h1>
             <p className="text-xl text-neutral-400">
-                Convert your text content into professional narration automatically.
+                Convert text into professional narration with three TTS providers.
             </p>
         </header>
 
         <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
-            <h2 className="text-xl font-semibold text-white mb-4">Two Audio Services</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h2 className="text-xl font-semibold text-white mb-4">Three Audio Providers</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-5 bg-black/50 border border-white/10 rounded-xl">
                     <Mic className="w-6 h-6 text-white mb-3" />
                     <h3 className="font-semibold text-white mb-2">Deepgram</h3>
-                    <p className="text-sm text-neutral-400 mb-3">Fast, cost-effective text-to-speech with natural voices.</p>
+                    <p className="text-sm text-neutral-400 mb-3">Fast, cost-effective TTS with natural voices.</p>
                     <ul className="text-xs text-neutral-500 space-y-1">
                         <li>• 7 languages</li>
                         <li>• 40+ voice options</li>
-                        <li>• Quick generation</li>
+                        <li>• MP3, WAV, OGG, FLAC output</li>
+                        <li>• Multiple sample rates</li>
                     </ul>
                 </div>
                 <div className="p-5 bg-black/50 border border-white/10 rounded-xl">
                     <Volume2 className="w-6 h-6 text-white mb-3" />
                     <h3 className="font-semibold text-white mb-2">ElevenLabs</h3>
-                    <p className="text-sm text-neutral-400 mb-3">Premium quality with the most realistic voices available.</p>
+                    <p className="text-sm text-neutral-400 mb-3">Premium quality, most realistic voices available.</p>
                     <ul className="text-xs text-neutral-500 space-y-1">
                         <li>• 32+ languages</li>
-                        <li>• Ultra-realistic voices</li>
-                        <li>• Emotion control</li>
+                        <li>• 21 premade voices</li>
+                        <li>• Stability & similarity controls</li>
+                        <li>• Multilingual v2 model</li>
+                    </ul>
+                </div>
+                <div className="p-5 bg-black/50 border border-white/10 rounded-xl">
+                    <Globe className="w-6 h-6 text-white mb-3" />
+                    <h3 className="font-semibold text-white mb-2">Google Cloud TTS</h3>
+                    <p className="text-sm text-neutral-400 mb-3">Neural voices with fine-grained controls.</p>
+                    <ul className="text-xs text-neutral-500 space-y-1">
+                        <li>• 10 languages</li>
+                        <li>• Neural2 + Standard voices</li>
+                        <li>• Speaking rate & pitch control</li>
+                        <li>• MP3, WAV, OGG Opus output</li>
                     </ul>
                 </div>
             </div>
         </div>
 
         <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Generating Audio</h2>
-            <p className="text-neutral-300 mb-4">
-                From any text block, you can generate audio narration with a single click.
-            </p>
+            <h2 className="text-xl font-semibold text-white mb-4">How to Generate Audio</h2>
             <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
                 <ol className="space-y-3 text-sm">
                     <li className="flex items-start gap-3">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">1</span>
-                        <span className="text-neutral-300">Open a stop and locate a text block</span>
+                        <span className="text-neutral-300">Go to the <strong className="text-white">Audio</strong> page from the main navigation</span>
                     </li>
                     <li className="flex items-start gap-3">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">2</span>
-                        <span className="text-neutral-300">Click the audio generation button (speaker icon)</span>
+                        <span className="text-neutral-300">Choose a provider tab (Deepgram, ElevenLabs, or Google Cloud)</span>
                     </li>
                     <li className="flex items-start gap-3">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">3</span>
-                        <span className="text-neutral-300">Choose your voice and language</span>
+                        <span className="text-neutral-300">Enter your text, select a language, and pick a voice</span>
                     </li>
                     <li className="flex items-start gap-3">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">4</span>
-                        <span className="text-neutral-300">Preview the audio, then save when satisfied</span>
+                        <span className="text-neutral-300">Preview voices before generating, then click Generate</span>
                     </li>
                 </ol>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Batch Audio Collections</h2>
+            <p className="text-neutral-300 mb-4">
+                Need the same text narrated in multiple languages? Create an <strong className="text-white">Audio Collection</strong> to
+                generate all languages at once. TourStack auto-translates your text and generates audio for each language in a single batch.
+            </p>
+            <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                <p className="text-sm text-neutral-400">
+                    Audio collections can be imported directly into Audio Blocks and Timeline Gallery blocks in your stops.
+                </p>
+            </div>
+        </div>
+
+        <div className="flex items-start gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div>
+                <h3 className="font-semibold text-white mb-1">API Keys Required</h3>
+                <p className="text-neutral-400 text-sm">
+                    Each provider needs its own API key configured in <strong className="text-white">Settings</strong>.
+                    Deepgram and ElevenLabs use dedicated keys. Google Cloud TTS shares the same key as Google Vision and Google Translate.
+                </p>
             </div>
         </div>
     </div>
@@ -1025,19 +1178,24 @@ const ContentBlocksPage = () => (
         <header>
             <h1 className="text-3xl font-bold text-white mb-4">All Content Blocks</h1>
             <p className="text-xl text-neutral-400">
-                Complete reference for every block type available in TourStack.
+                Complete reference for every block type available in TourStack. Mix and match to create rich stop experiences.
             </p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
-                { icon: Pencil, name: 'Text', desc: 'Rich formatted text with headers, lists, and links' },
-                { icon: Image, name: 'Image', desc: 'Single image with caption' },
-                { icon: Layers, name: 'Gallery', desc: 'Swipeable image carousel' },
-                { icon: Volume2, name: 'Audio', desc: 'Audio player with controls' },
-                { icon: Play, name: 'Timeline Gallery', desc: 'Audio-synced image slideshow' },
-                { icon: MapIcon, name: 'Map', desc: 'Interactive map with markers' },
-                { icon: FileText, name: 'Tour Block', desc: 'Full-screen tour introduction' },
+                { icon: Pencil, name: 'Text', desc: 'Rich formatted text with multilingual support' },
+                { icon: Image, name: 'Image', desc: 'Single image with caption and alt text' },
+                { icon: Layers, name: 'Gallery', desc: 'Carousel, grid, or masonry image layouts' },
+                { icon: Play, name: 'Timeline Gallery', desc: 'Audio-synced slideshow with waveform editor' },
+                { icon: Volume2, name: 'Audio', desc: 'Audio player in 3 sizes with multi-language support' },
+                { icon: Video, name: 'Video', desc: 'YouTube, Vimeo embeds or direct video upload' },
+                { icon: Quote, name: 'Quote', desc: 'Styled quotation with attribution' },
+                { icon: Clock, name: 'Timeline', desc: 'Chronological events with dates and descriptions' },
+                { icon: ArrowLeftRight, name: 'Comparison', desc: 'Side-by-side before/after image comparison' },
+                { icon: Radio, name: 'Positioning', desc: 'QR code, GPS, BLE beacon, NFC configuration' },
+                { icon: MapPin, name: 'Map', desc: 'Interactive OpenStreetMap or Google Maps with markers' },
+                { icon: FileText, name: 'Tour Intro', desc: 'Full-screen hero with image, title, and CTA button' },
             ].map(block => (
                 <div key={block.name} className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
                     <div className="flex items-center gap-3">
@@ -1052,6 +1210,19 @@ const ContentBlocksPage = () => (
                 </div>
             ))}
         </div>
+
+        <div className="flex items-start gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div>
+                <h3 className="font-semibold text-white mb-1">Adding Blocks</h3>
+                <p className="text-neutral-400 text-sm">
+                    Open any stop, click <strong className="text-white">"Add Block"</strong>, and choose a block type.
+                    Blocks can be reordered by dragging, and each block supports multilingual content via the language switcher.
+                </p>
+            </div>
+        </div>
     </div>
 );
 
@@ -1060,22 +1231,36 @@ const MultilingualPage = () => (
         <header>
             <h1 className="text-3xl font-bold text-white mb-4">Multiple Languages</h1>
             <p className="text-xl text-neutral-400">
-                Make your tours accessible to international visitors.
+                Make your tours accessible to international visitors in 195+ languages.
             </p>
         </header>
 
         <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
-            <h2 className="text-xl font-semibold text-white mb-4">Language Support</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">How It Works</h2>
             <p className="text-neutral-300 mb-4">
-                TourStack supports multiple languages for every piece of content. Visitors can switch
-                languages on their phone, and all content updates instantly.
+                Every text field in TourStack stores content per-language. When you create a tour,
+                you choose which languages to support. Visitors see a language dropdown and all content
+                switches instantly - text, audio, and captions.
             </p>
-            <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
-                <h3 className="font-medium text-white mb-2">How Visitors Switch Languages</h3>
-                <p className="text-sm text-neutral-400">
-                    A language switcher appears in the visitor view. When they tap it, all text, audio,
-                    and other content switches to their selected language.
-                </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">What Switches</h3>
+                    <ul className="space-y-1 text-sm text-neutral-400">
+                        <li>✓ All text blocks and titles</li>
+                        <li>✓ Audio narration (if multi-language audio exists)</li>
+                        <li>✓ Image captions and alt text</li>
+                        <li>✓ Tour intro text and CTA buttons</li>
+                        <li>✓ Transcripts</li>
+                    </ul>
+                </div>
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Translation Providers</h3>
+                    <ul className="space-y-1 text-sm text-neutral-400">
+                        <li><span className="text-white">Google Cloud:</span> 195+ languages</li>
+                        <li><span className="text-white">LibreTranslate:</span> 9 languages (free)</li>
+                        <li className="text-xs text-neutral-500 pt-1">Set your provider in Settings &gt; Translation</li>
+                    </ul>
+                </div>
             </div>
         </div>
 
@@ -1086,8 +1271,8 @@ const MultilingualPage = () => (
                     <div className="flex items-start gap-3">
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold shrink-0">1</span>
                         <div>
-                            <h3 className="font-medium text-white mb-1">Create Content in Primary Language</h3>
-                            <p className="text-sm text-neutral-400">Write all your text in your museum's main language first</p>
+                            <h3 className="font-medium text-white mb-1">Choose Languages When Creating a Tour</h3>
+                            <p className="text-sm text-neutral-400">Select supported languages in the Create Tour wizard. You can add more later via Edit Tour.</p>
                         </div>
                     </div>
                 </li>
@@ -1095,8 +1280,8 @@ const MultilingualPage = () => (
                     <div className="flex items-start gap-3">
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold shrink-0">2</span>
                         <div>
-                            <h3 className="font-medium text-white mb-1">Add Additional Languages</h3>
-                            <p className="text-sm text-neutral-400">Go to Settings → Languages to enable more languages</p>
+                            <h3 className="font-medium text-white mb-1">Write Content in Your Primary Language</h3>
+                            <p className="text-sm text-neutral-400">Create all text in your museum's main language first</p>
                         </div>
                     </div>
                 </li>
@@ -1104,12 +1289,625 @@ const MultilingualPage = () => (
                     <div className="flex items-start gap-3">
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold shrink-0">3</span>
                         <div>
-                            <h3 className="font-medium text-white mb-1">Translate Content</h3>
-                            <p className="text-sm text-neutral-400">Use Magic Translate or add translations manually</p>
+                            <h3 className="font-medium text-white mb-1">Use Magic Translate</h3>
+                            <p className="text-sm text-neutral-400">Click the sparkle button to AI-translate content to other languages. Review and edit as needed.</p>
+                        </div>
+                    </div>
+                </li>
+                <li className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold shrink-0">4</span>
+                        <div>
+                            <h3 className="font-medium text-white mb-1">Generate Multi-Language Audio</h3>
+                            <p className="text-sm text-neutral-400">Use Audio Collections to batch-generate narration in all tour languages at once</p>
                         </div>
                     </div>
                 </li>
             </ol>
+        </div>
+    </div>
+);
+
+const TimelineGalleryPage = () => (
+    <div className="space-y-8">
+        <header>
+            <h1 className="text-3xl font-bold text-white mb-4">Timeline Gallery</h1>
+            <p className="text-xl text-neutral-400">
+                Create audio-synced image slideshows with waveform editing.
+            </p>
+        </header>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">What is a Timeline Gallery?</h2>
+            <p className="text-neutral-300 mb-4">
+                A Timeline Gallery synchronizes images with an audio track. As the audio plays, images
+                transition automatically at timestamps you set. Perfect for narrated walkthroughs,
+                artwork detail exploration, or historical photo sequences.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Volume2 className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-medium text-white text-sm">Audio Waveform</h3>
+                    <p className="text-xs text-neutral-400">Visual waveform with playback controls</p>
+                </div>
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Image className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-medium text-white text-sm">Thumbnail Markers</h3>
+                    <p className="text-xs text-neutral-400">64px thumbnails placed on the waveform timeline</p>
+                </div>
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Play className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-medium text-white text-sm">Smooth Transitions</h3>
+                    <p className="text-xs text-neutral-400">Crossfade transitions with adjustable duration</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Creating a Timeline Gallery</h2>
+            <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                <ol className="space-y-3 text-sm">
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">1</span>
+                        <span className="text-neutral-300">Add a <strong className="text-white">Timeline Gallery</strong> block to your stop</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">2</span>
+                        <span className="text-neutral-300">Upload an audio file (or import from an audio collection)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">3</span>
+                        <span className="text-neutral-300">Upload images and drag their thumbnails to positions on the waveform</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">4</span>
+                        <span className="text-neutral-300">Click thumbnails to edit captions, alt text, and credits</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">5</span>
+                        <span className="text-neutral-300">Set transition duration (0.1s - 1.5s) and preview the result</span>
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <div className="flex items-start gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div>
+                <h3 className="font-semibold text-white mb-1">Tips</h3>
+                <ul className="text-neutral-400 text-sm space-y-1">
+                    <li>• Use 4-8 images per audio track for best pacing</li>
+                    <li>• Drag thumbnail markers on the waveform to adjust timing</li>
+                    <li>• The editor auto-saves, but look for the unsaved changes warning before closing</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+);
+
+const MapsLocationPage = () => (
+    <div className="space-y-8">
+        <header>
+            <h1 className="text-3xl font-bold text-white mb-4">Maps & Location</h1>
+            <p className="text-xl text-neutral-400">
+                Add interactive maps with markers, styles, and geofencing.
+            </p>
+        </header>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">Map Providers</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-5 bg-black/50 border border-white/10 rounded-xl">
+                    <MapPin className="w-6 h-6 text-white mb-3" />
+                    <h3 className="font-semibold text-white mb-2">OpenStreetMap</h3>
+                    <p className="text-sm text-neutral-400 mb-2">Free, no API key required. Great for getting started.</p>
+                    <p className="text-xs text-neutral-500">Powered by Leaflet.js</p>
+                </div>
+                <div className="p-5 bg-black/50 border border-white/10 rounded-xl">
+                    <MapIcon className="w-6 h-6 text-white mb-3" />
+                    <h3 className="font-semibold text-white mb-2">Google Maps</h3>
+                    <p className="text-sm text-neutral-400 mb-2">Premium maps with satellite, terrain, and hybrid views.</p>
+                    <p className="text-xs text-neutral-500">Requires GOOGLE_MAPS_API_KEY in Settings</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Map Block Features</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Marker Placement</h3>
+                    <p className="text-sm text-neutral-400">Click the map to place markers, or use address search and "Get Current Location"</p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Map Styles</h3>
+                    <p className="text-sm text-neutral-400">Standard, Satellite, Terrain, and Hybrid views</p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Size Options</h3>
+                    <p className="text-sm text-neutral-400">Small (150px), Medium (250px), or Large (full height)</p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Trigger Zones</h3>
+                    <p className="text-sm text-neutral-400">Configurable radius for geofencing around locations</p>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+const MediaLibraryPage = () => (
+    <div className="space-y-8">
+        <header>
+            <h1 className="text-3xl font-bold text-white mb-4">Media Library</h1>
+            <p className="text-xl text-neutral-400">
+                Central hub for all your uploaded images, audio, video, and documents.
+            </p>
+        </header>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">Overview</h2>
+            <p className="text-neutral-300 mb-4">
+                The Media Library collects all files uploaded across your tours and stops.
+                Search, filter, tag, and organize your assets. See where each file is used across your tours.
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="p-3 bg-black/50 border border-white/10 rounded-lg text-center">
+                    <Image className="w-5 h-5 text-white mx-auto mb-1" />
+                    <span className="text-xs text-neutral-400">Images</span>
+                </div>
+                <div className="p-3 bg-black/50 border border-white/10 rounded-lg text-center">
+                    <Volume2 className="w-5 h-5 text-white mx-auto mb-1" />
+                    <span className="text-xs text-neutral-400">Audio</span>
+                </div>
+                <div className="p-3 bg-black/50 border border-white/10 rounded-lg text-center">
+                    <Video className="w-5 h-5 text-white mx-auto mb-1" />
+                    <span className="text-xs text-neutral-400">Video</span>
+                </div>
+                <div className="p-3 bg-black/50 border border-white/10 rounded-lg text-center">
+                    <FileText className="w-5 h-5 text-white mx-auto mb-1" />
+                    <span className="text-xs text-neutral-400">Documents</span>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Features</h2>
+            <div className="space-y-3">
+                {[
+                    { title: 'Smart Search', desc: 'Filter by filename, alt text, caption, or tags' },
+                    { title: 'Type Filtering', desc: 'Tabs for All, Images, Audio, Video, Documents' },
+                    { title: 'Sort Options', desc: 'By date, name, or size (ascending or descending)' },
+                    { title: 'Bulk Operations', desc: 'Multi-select files for bulk delete or bulk tagging' },
+                    { title: 'Where Used', desc: 'See which tours and stops use each media file' },
+                    { title: 'AI Analysis', desc: 'Run Gemini AI analysis on images to generate descriptions and tags' },
+                    { title: 'Metadata Editing', desc: 'Update alt text, caption, and tags for any file' },
+                ].map(f => (
+                    <div key={f.title} className="flex items-start gap-3 p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                        <CheckCircle2 className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                        <div>
+                            <span className="text-white text-sm font-medium">{f.title}</span>
+                            <span className="text-neutral-400 text-sm"> - {f.desc}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        <div className="flex items-start gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div>
+                <h3 className="font-semibold text-white mb-1">Sync Feature</h3>
+                <p className="text-neutral-400 text-sm">
+                    Click <strong className="text-white">"Sync"</strong> to scan your uploads folder and populate the Media Library
+                    with any files that were uploaded before the library existed.
+                </p>
+            </div>
+        </div>
+    </div>
+);
+
+const CollectionsPage = () => (
+    <div className="space-y-8">
+        <header>
+            <h1 className="text-3xl font-bold text-white mb-4">Collections</h1>
+            <p className="text-xl text-neutral-400">
+                Group images, audio, and documents into organized collections with AI analysis.
+            </p>
+        </header>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">Three Collection Types</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-5 bg-black/50 border border-white/10 rounded-xl">
+                    <Image className="w-6 h-6 text-white mb-3" />
+                    <h3 className="font-semibold text-white mb-2">Image Collections</h3>
+                    <p className="text-sm text-neutral-400 mb-2">Upload images, run AI analysis, translate descriptions.</p>
+                    <p className="text-xs text-neutral-500">4-step wizard: Details, Upload, AI Analysis, Review</p>
+                </div>
+                <div className="p-5 bg-black/50 border border-white/10 rounded-xl">
+                    <Volume2 className="w-6 h-6 text-white mb-3" />
+                    <h3 className="font-semibold text-white mb-2">Audio Collections</h3>
+                    <p className="text-sm text-neutral-400 mb-2">Batch-generate TTS narration in multiple languages.</p>
+                    <p className="text-xs text-neutral-500">Uses Deepgram, ElevenLabs, or Google Cloud TTS</p>
+                </div>
+                <div className="p-5 bg-black/50 border border-white/10 rounded-xl">
+                    <FileText className="w-6 h-6 text-white mb-3" />
+                    <h3 className="font-semibold text-white mb-2">Document Collections</h3>
+                    <p className="text-sm text-neutral-400 mb-2">Upload PDFs, DOCX, and more. Extract text for AI tools.</p>
+                    <p className="text-xs text-neutral-500">AI: Summarize, Extract Facts, Generate FAQ, Auto-Tag</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Image Collection Workflow</h2>
+            <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                <ol className="space-y-3 text-sm">
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">1</span>
+                        <span className="text-neutral-300">Click <strong className="text-white">"New Collection"</strong> and choose Images</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">2</span>
+                        <span className="text-neutral-300">Drag and drop your images (multi-upload supported)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">3</span>
+                        <span className="text-neutral-300">Click <strong className="text-white">"Analyze All"</strong> to run Gemini AI on every image</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">4</span>
+                        <span className="text-neutral-300">Optionally translate AI descriptions to other languages</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">5</span>
+                        <span className="text-neutral-300">Save - AI metadata automatically syncs to the Media Library</span>
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Audio Collection Workflow</h2>
+            <p className="text-neutral-300 mb-4">
+                Audio collections let you generate the same narration text in multiple languages at once.
+                Enter your text, select languages, pick a voice, and TourStack auto-translates and generates all audio files.
+            </p>
+            <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                <p className="text-sm text-neutral-400">
+                    Audio collections can be <strong className="text-white">imported into Audio Blocks</strong> in your stops.
+                    When a visitor switches language, both the audio and transcript switch automatically.
+                </p>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Document Collection AI Tools</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {['Summarize', 'Extract Facts', 'Generate FAQ', 'Auto-Tag'].map(tool => (
+                    <div key={tool} className="p-3 bg-white/[0.02] border border-white/10 rounded-lg text-center">
+                        <Sparkles className="w-4 h-4 text-white mx-auto mb-1" />
+                        <span className="text-sm text-neutral-300">{tool}</span>
+                    </div>
+                ))}
+            </div>
+            <p className="text-sm text-neutral-400 mt-3">
+                Supported formats: PDF, DOCX, DOC, RTF, ODT, PPTX, TXT
+            </p>
+        </div>
+    </div>
+);
+
+const KioskModePage = () => (
+    <div className="space-y-8">
+        <header>
+            <h1 className="text-3xl font-bold text-white mb-4">Kiosk Mode</h1>
+            <p className="text-xl text-neutral-400">
+                Deploy tours on museum kiosks with fullscreen display and auto-restart.
+            </p>
+        </header>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">What is Kiosk Mode?</h2>
+            <p className="text-neutral-300 mb-4">
+                Kiosk mode lets you run a tour on a dedicated museum screen or tablet. The tour runs
+                in fullscreen, navigation can be hidden, and it auto-restarts when visitors finish.
+                Perfect for lobby displays, exhibit stations, or interactive kiosks.
+            </p>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Launching a Kiosk</h2>
+            <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                <ol className="space-y-3 text-sm">
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">1</span>
+                        <span className="text-neutral-300">Find your tour on the Tours page and click the <strong className="text-white">monitor icon</strong> (kiosk button)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">2</span>
+                        <span className="text-neutral-300">Configure options in the Kiosk Launcher modal</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">3</span>
+                        <span className="text-neutral-300">Click <strong className="text-white">"Launch Kiosk"</strong> to open in a new tab</span>
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Kiosk Options</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                    { title: 'Language', desc: 'Pre-select the language for the kiosk display' },
+                    { title: 'Fullscreen', desc: 'Launch in browser fullscreen mode' },
+                    { title: 'Hide Navigation', desc: 'Remove prev/next buttons for linear tours' },
+                    { title: 'Auto-Restart', desc: '"Start Over" button appears at tour end' },
+                    { title: 'Start Stop', desc: 'Choose which stop to begin on' },
+                    { title: 'Show Chatbot', desc: 'Enable the AI concierge chat button' },
+                ].map(opt => (
+                    <div key={opt.title} className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                        <h3 className="font-medium text-white text-sm mb-1">{opt.title}</h3>
+                        <p className="text-xs text-neutral-400">{opt.desc}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Kiosk Preview</h2>
+            <p className="text-neutral-300">
+                You can also preview how content looks in kiosk mode from the Stop Editor.
+                Click <strong className="text-white">"Preview"</strong> and switch to the kiosk device type (third option)
+                to see a frameless, full-width preview.
+            </p>
+        </div>
+    </div>
+);
+
+const PublishingPage = () => (
+    <div className="space-y-8">
+        <header>
+            <h1 className="text-3xl font-bold text-white mb-4">Publishing Your Tour</h1>
+            <p className="text-xl text-neutral-400">
+                Understand the draft-to-published workflow and how to make tours live.
+            </p>
+        </header>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">Draft vs Published</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-5 bg-black/50 border border-white/10 rounded-xl">
+                    <Pencil className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-semibold text-white mb-2">Draft</h3>
+                    <ul className="text-sm text-neutral-400 space-y-1">
+                        <li>• Only visible to logged-in staff</li>
+                        <li>• Can be freely edited</li>
+                        <li>• Visitors cannot see this tour</li>
+                        <li>• Shows "Preview" button on tour card</li>
+                    </ul>
+                </div>
+                <div className="p-5 bg-black/50 border border-white/10 rounded-xl">
+                    <Send className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-semibold text-white mb-2">Published</h3>
+                    <ul className="text-sm text-neutral-400 space-y-1">
+                        <li>• Visible to everyone (visitors)</li>
+                        <li>• QR codes work for public access</li>
+                        <li>• Can still be edited</li>
+                        <li>• Shows green "Run Tour" button</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">How to Publish</h2>
+            <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                <ol className="space-y-3 text-sm">
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">1</span>
+                        <span className="text-neutral-300">Open the tour detail page</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">2</span>
+                        <span className="text-neutral-300">Click <strong className="text-white">"Edit Tour"</strong> to open the tour settings</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">3</span>
+                        <span className="text-neutral-300">Change the status from <strong className="text-white">Draft</strong> to <strong className="text-white">Published</strong></span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">4</span>
+                        <span className="text-neutral-300">Save - the tour is now live and QR codes will work for visitors</span>
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Running a Tour</h2>
+            <p className="text-neutral-300 mb-4">
+                Once published, a green <strong className="text-white">"Run Tour"</strong> button appears on the tour card.
+                Clicking it opens the visitor view starting at the first stop. This is how you can
+                quickly test or demonstrate the tour to stakeholders.
+            </p>
+        </div>
+
+        <div className="flex items-start gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div>
+                <h3 className="font-semibold text-white mb-1">Before Publishing</h3>
+                <ul className="text-neutral-400 text-sm space-y-1">
+                    <li>• Preview all stops on phone and tablet device sizes</li>
+                    <li>• Test QR codes by scanning them with your phone</li>
+                    <li>• Check translations are complete for all languages</li>
+                    <li>• Verify audio playback works for each language</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+);
+
+const AIImageAnalysisPage = () => (
+    <div className="space-y-8">
+        <header>
+            <h1 className="text-3xl font-bold text-white mb-4">AI Image Analysis</h1>
+            <p className="text-xl text-neutral-400">
+                Use Google Vision and Gemini AI to analyze images, detect objects, and generate smart tags.
+            </p>
+        </header>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">Analysis Capabilities</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                    { icon: Eye, title: 'Visual DNA', desc: 'Deep analysis of mood, lighting, style, and artistic context' },
+                    { icon: Camera, title: 'Object Detection', desc: 'Identifies specific objects and artifacts within images' },
+                    { icon: Layers, title: 'Dominant Colors', desc: 'Full color palette extraction with HEX codes and names' },
+                    { icon: FileText, title: 'OCR Text', desc: 'High-precision text recognition from labels and plaques' },
+                    { icon: Globe, title: 'Web Detection', desc: '"Best Guess" identification of famous artworks and landmarks' },
+                    { icon: Sparkles, title: 'Smart Tags', desc: 'AI-generated tags you can add, remove, or edit' },
+                ].map(cap => (
+                    <div key={cap.title} className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                        <cap.icon className="w-5 h-5 text-white mb-2" />
+                        <h3 className="font-medium text-white text-sm mb-1">{cap.title}</h3>
+                        <p className="text-xs text-neutral-400">{cap.desc}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Where to Use AI Analysis</h2>
+            <div className="space-y-3">
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white text-sm mb-1">AI Assistance Page</h3>
+                    <p className="text-xs text-neutral-400">Upload any image for standalone analysis from the AI Assistance dashboard</p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white text-sm mb-1">Media Library</h3>
+                    <p className="text-xs text-neutral-400">Open any image's detail modal and click "Analyze" to generate descriptions and tags</p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white text-sm mb-1">Image Collections</h3>
+                    <p className="text-xs text-neutral-400">Batch analyze all images in a collection with "Analyze All" and translate results</p>
+                </div>
+            </div>
+        </div>
+
+        <div className="flex items-start gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                <Settings className="w-5 h-5 text-white" />
+            </div>
+            <div>
+                <h3 className="font-semibold text-white mb-1">API Keys Required</h3>
+                <p className="text-neutral-400 text-sm">
+                    Image analysis requires <strong className="text-white">GOOGLE_VISION_API_KEY</strong> for Vision features
+                    and <strong className="text-white">GEMINI_API_KEY</strong> for Visual DNA and advanced analysis.
+                    Configure these in Settings or as environment variables.
+                </p>
+            </div>
+        </div>
+    </div>
+);
+
+const AIConciergePage = () => (
+    <div className="space-y-8">
+        <header>
+            <h1 className="text-3xl font-bold text-white mb-4">AI Concierge</h1>
+            <p className="text-xl text-neutral-400">
+                Set up an AI-powered chatbot that answers visitor questions about your museum.
+            </p>
+        </header>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">What is the AI Concierge?</h2>
+            <p className="text-neutral-300 mb-4">
+                The AI Concierge is a chatbot that visitors can interact with during their tour.
+                It's powered by Google Gemini AI and can answer questions based on knowledge sources
+                you configure - like museum documents, exhibit information, and visitor FAQs.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Bot className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-medium text-white text-sm">For Visitors</h3>
+                    <p className="text-xs text-neutral-400">Chat button appears in kiosk mode. Visitors ask questions and get instant answers.</p>
+                </div>
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Settings className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-medium text-white text-sm">For Staff</h3>
+                    <p className="text-xs text-neutral-400">Configure persona, knowledge sources, welcome messages, and quick actions.</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Setting Up the Concierge</h2>
+            <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                <ol className="space-y-3 text-sm">
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">1</span>
+                        <span className="text-neutral-300">Go to the <strong className="text-white">Concierge</strong> page from the main navigation</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">2</span>
+                        <span className="text-neutral-300">Choose a persona (Friendly, Professional, Fun, Scholarly, or Custom)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">3</span>
+                        <span className="text-neutral-300">Set a welcome message (multilingual) and enable languages</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">4</span>
+                        <span className="text-neutral-300">Import knowledge sources from your document collections</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">5</span>
+                        <span className="text-neutral-300">Add quick action buttons (common visitor questions)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">6</span>
+                        <span className="text-neutral-300">Use <strong className="text-white">"Test Concierge"</strong> to preview chat responses</span>
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Quick Actions</h2>
+            <p className="text-neutral-300 mb-3">
+                Quick actions are pre-defined buttons that appear in the chat. Visitors tap them instead
+                of typing. Great for common questions like "Where are the restrooms?" or "What are today's hours?"
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+                {['Museum Hours', 'Restroom Location', 'Gift Shop Info', 'Accessibility Help'].map(action => (
+                    <div key={action} className="p-3 bg-white/[0.02] border border-white/10 rounded-lg text-center">
+                        <MessageCircle className="w-4 h-4 text-white mx-auto mb-1" />
+                        <span className="text-xs text-neutral-300">{action}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        <div className="flex items-start gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div>
+                <h3 className="font-semibold text-white mb-1">Enabling in Kiosk Mode</h3>
+                <p className="text-neutral-400 text-sm">
+                    To show the chatbot on kiosks, enable <strong className="text-white">"Show Chatbot"</strong> in the
+                    Kiosk Launcher modal. A chat button will appear in the bottom-right corner of the kiosk display.
+                </p>
+            </div>
         </div>
     </div>
 );
@@ -1119,15 +1917,23 @@ const pageComponents: Record<string, React.ComponentType> = {
     'welcome': WelcomePage,
     'your-first-tour': FirstTourPage,
     'understanding-stops': UnderstandingStopsPage,
-    'qr-codes': QRCodesPage,
-    'visitor-view': VisitorViewPage,
-    'magic-translate': MagicTranslatePage,
-    'ai-audio': AIAudioPage,
     'adding-text': AddingTextPage,
     'images-galleries': ImagesGalleriesPage,
     'audio-narration': AudioNarrationPage,
+    'timeline-gallery': TimelineGalleryPage,
+    'maps-location': MapsLocationPage,
     'content-blocks': ContentBlocksPage,
+    'media-library': MediaLibraryPage,
+    'collections': CollectionsPage,
+    'qr-codes': QRCodesPage,
+    'visitor-view': VisitorViewPage,
+    'kiosk-mode': KioskModePage,
+    'publishing': PublishingPage,
     'multilingual': MultilingualPage,
+    'magic-translate': MagicTranslatePage,
+    'ai-audio': AIAudioPage,
+    'ai-image-analysis': AIImageAnalysisPage,
+    'ai-concierge': AIConciergePage,
 };
 
 // Main Docs Component
