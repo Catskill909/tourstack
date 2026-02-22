@@ -8,6 +8,107 @@ Beyond visitor-facing features, TourStack should offer a **full beacon managemen
 
 ---
 
+## What Beacon Tech Works With Our Setup — Plain English
+
+TourStack is a **cloud-served web app**. Visitors open a URL in their phone's browser, go fullscreen, and experience the tour. There is no native app install. Here's exactly what that means for beacons:
+
+### What the browser CAN do (no app install)
+
+**Nothing useful for beacon scanning.** Here's why:
+
+- **Safari on iPhone/iPad**: Zero BLE support. Apple explicitly rejected Web Bluetooth. Since every iOS browser (Chrome, Firefox, Edge on iPhone) is secretly Safari underneath, **no browser on any iPhone can scan for beacons. Period.**
+- **Chrome on Android**: Has experimental Web Bluetooth, but beacon *scanning* (passively listening for nearby beacons) requires a flag that users would need to manually enable. And even then, it cannot detect iBeacon format (Apple blocks the manufacturer data). It can detect Eddystone beacons only. **Not viable for visitors.**
+- **Firefox, Safari desktop, etc.**: No Web Bluetooth at all.
+
+**Bottom line: A visitor loading TourStack in a mobile browser cannot detect beacons. On any platform.**
+
+### What the browser CAN do with beacons (admin side)
+
+- **Chrome on desktop/laptop**: Can connect to a beacon via Web Bluetooth GATT and **program it** (write UUID, Major, Minor, TX Power). This requires the admin to click a button and select the beacon from a picker. This works today and is useful for our admin panel to configure beacons without a vendor app.
+
+### So how do we get beacon proximity to work?
+
+**Three real options:**
+
+#### Option 1: Capacitor Wrapper (Recommended)
+Wrap our existing React web app in a Capacitor shell. This produces a real iOS/Android app that visitors install from the App Store / Play Store. Inside, it's still our web app — same code, same UI — but now it has access to native BLE APIs.
+
+- Visitor installs "TourStack" app (or venue-branded app)
+- Full iBeacon scanning on iOS and Android
+- Background beacon detection (iOS wakes the app when entering a beacon region)
+- Our entire React codebase stays the same
+- **This is the industry-standard approach for museum tour apps with beacons**
+
+#### Option 2: Beacon-Triggered QR (No App, Works Today)
+Instead of the phone detecting the beacon, flip it around:
+
+- Place a **kiosk/Raspberry Pi** at each stop that scans for beacons
+- OR: Use **Eddystone-URL beacons** that broadcast a URL — some Android phones show a notification with the URL (limited reach, Google deprecated Nearby Notifications in 2018, but the tech still works for apps listening)
+- OR: Pair beacons with **NFC tags** — visitor taps phone on the tag, opens the tour stop URL. NFC works in the browser on both iOS (Safari 14.5+) and Android. No app needed.
+- OR: Just use **QR codes** (which we already built and works perfectly in the browser)
+
+#### Option 3: TourStack API + Third-Party Native Apps
+Our API (`/api/visitor/tour/:id/beacons`, `/api/beacon-events`, etc.) can serve beacon maps and receive proximity events from **any native app** that integrates with us. A museum could:
+
+- Build a simple branded native app (or use an off-the-shelf beacon app)
+- That app handles BLE scanning natively
+- It calls our API to fetch tour content and report proximity events
+- TourStack remains the content brain; the native app is just the BLE ears
+
+### The Reality Matrix
+
+| Scenario | Beacon Scanning | How | App Install? |
+|----------|----------------|-----|-------------|
+| **Visitor in mobile browser (iPhone)** | **NO** | N/A | No |
+| **Visitor in mobile browser (Android Chrome)** | **Barely** — Eddystone only, needs flag | Web Bluetooth | No |
+| **Visitor with Capacitor app (iPhone)** | **YES** — full iBeacon | CoreLocation | Yes (App Store) |
+| **Visitor with Capacitor app (Android)** | **YES** — all formats | Android Beacon Library | Yes (Play Store) |
+| **Visitor taps NFC tag** | **YES** — opens URL | Browser handles NFC | No |
+| **Visitor scans QR code** | **YES** — opens URL | Camera app / our scanner | No |
+| **Admin programming beacons (Chrome desktop)** | **YES** — GATT connect | Web Bluetooth | No |
+| **Kiosk with Pi/ESP32 scanning** | **YES** — server-side | node-beacon-scanner | No (server) |
+
+### What We Should Build (Phased)
+
+**Phase 1 — Works in browser today, zero changes:**
+- QR codes at each stop (already done!)
+- NFC tags at each stop (Safari 14.5+ and Android handle NFC → URL natively)
+- Admin beacon programming via Chrome Web Bluetooth
+
+**Phase 2 — Beacon-aware without app install:**
+- Kiosk/gateway devices (Pi, ESP32) that detect visitor phones and serve personalized content
+- Eddystone-URL beacons that broadcast stop URLs (limited but zero-friction)
+- Our API serves beacon data to any third-party app
+
+**Phase 3 — Full beacon experience (requires app install):**
+- Capacitor wrapper around our React app → publish to App Store / Play Store
+- Full iBeacon scanning, background monitoring, proximity triggers
+- Same codebase, same cloud backend, just native BLE bridge added
+
+### The Key Insight
+
+**Beacons are an enhancement layer, not a replacement.** Our architecture should be:
+
+```
+                    ┌─────────────────────────┐
+                    │   TourStack Cloud API    │
+                    │  (tours, stops, content) │
+                    └────────┬────────────────┘
+                             │
+              ┌──────────────┼──────────────────┐
+              │              │                   │
+     ┌────────▼───────┐ ┌───▼──────────┐ ┌─────▼────────┐
+     │  Web Browser   │ │ Capacitor App│ │ 3rd Party App│
+     │  (QR + NFC)    │ │ (QR+NFC+BLE) │ │  (BLE via API)│
+     │  No install    │ │ App install  │ │  App install  │
+     │  Works today   │ │ Full beacons │ │  Full beacons │
+     └────────────────┘ └──────────────┘ └──────────────┘
+```
+
+Every visitor gets the tour via QR/NFC in the browser. Visitors who install the app *also* get proximity beacons, background triggers, and richer analytics. Nobody is left out.
+
+---
+
 ## Current State
 
 ### What We Have
