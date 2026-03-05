@@ -2191,6 +2191,11 @@ export function Docs() {
     // Get the component for current page
     const PageComponent = pageComponents[currentSlug];
 
+    // Scroll to top when page changes
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [currentSlug]);
+
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
