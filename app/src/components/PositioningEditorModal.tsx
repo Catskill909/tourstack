@@ -791,8 +791,10 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                     </div>
                 </div>
 
-                {/* Tab Content */}
-                {renderTabContent()}
+                {/* Tab Content - scrollable */}
+                <div className="max-h-[60vh] overflow-y-auto">
+                    {renderTabContent()}
+                </div>
 
                 {/* Footer */}
                 <div className="flex items-center justify-between px-6 py-4 border-t border-[var(--color-border-default)] bg-[var(--color-bg-base)]">
