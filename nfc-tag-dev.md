@@ -770,4 +770,381 @@ GET    /api/analytics/nfc-health/:tourId    # Tag health report
 ---
 
 *Created: 2026-02-22*
-*Status: Brainstorm / Pre-development*
+*Updated: 2026-03-05*
+*Status: **Phase 1 COMPLETE** — Ready for Physical Tag Testing*
+
+---
+
+## ✅ PHASE 1 COMPLETE (March 5, 2026)
+
+### What's Now Implemented
+
+| Component | Status | Location | Notes |
+|-----------|--------|----------|-------|
+| **NFCConfig Type** | ✅ Defined | `app/src/types/index.ts:100-104` | Basic: `tagId`, `tagType` (NTAG213/215/216/MIFARE) |
+| **PositioningMethod** | ✅ Includes 'nfc' | `app/src/types/index.ts:63-74` | Part of union type with qr_code, gps, ble_beacon, etc. |
+| **NFC Tab in Modal** | ✅ **IMPLEMENTED** | `app/src/components/PositioningEditorModal.tsx` | **First tab**, full pairing UI |
+| **NFC URL Generator** | ✅ **IMPLEMENTED** | `PositioningEditorModal.tsx` | Auto-generates canonical visitor URL with `?src=nfc` |
+| **Copy NFC URL Button** | ✅ **IMPLEMENTED** | `PositioningEditorModal.tsx` | One-click copy for NFC Tools app |
+| **Web NFC Write Button** | ✅ **IMPLEMENTED** | `PositioningEditorModal.tsx` | Chrome Android only — direct tag writing |
+| **NFC Help Modal** | ✅ **IMPLEMENTED** | `PositioningEditorModal.tsx` | Step-by-step pairing guide |
+| **Visitor Routes** | ✅ Ready | `app/server/routes/visitor.ts` | Same URLs work for NFC — no server changes needed |
+| **Short Code Lookup** | ✅ Ready | `app/server/routes/visitor.ts:167-193` | `/api/visitor/s/:shortCode` — works for NFC fallback |
+
+### Phase 1 Features
+
+1. **NFC Tab is First Tab** — Moved to position 1 in Positioning Editor Modal
+2. **Canonical URL Generation** — Uses `{origin}/visitor/tour/{slug}/stop/{slug}?src=nfc`
+3. **Copy URL Button** — For programming with NFC Tools app (iOS/Android)
+4. **Web NFC Write** — Direct tag writing on Chrome Android
+5. **Help Modal** — "How to Pair" button with step-by-step instructions
+6. **Test Button** — Opens visitor URL in new tab to verify
+
+### What's Remaining (Phase 2)
+
+| Component | Priority | Effort | Description |
+|-----------|----------|--------|-------------|
+| **Tag Verification Scanner** | 🟡 Medium | Medium | Scan tag to verify URL matches |
+| **Tag Status Tracking** | 🟢 Low | Medium | Unassigned/Programmed/Verified states |
+| **Bulk Export CSV** | 🟢 Low | Low | Export all stop URLs for desktop programming |
+| **Analytics `src` Param** | 🟢 Low | Low | Track NFC vs QR scans in visitor routes |
+| **Combined NFC+QR Signage** | 🟢 Low | Medium | Print labels with both triggers |
+
+### Key Insight: Zero Server Changes Needed
+
+The existing visitor routes handle NFC identically to QR:
+```
+QR Code URL:  /visitor/tour/{slug}/stop/{slug}?t={token}
+NFC Tag URL:  /visitor/tour/{slug}/stop/{slug}?t={token}&src=nfc
+              ↑ Same route, same content, just different source tracking
+```
+
+---
+
+## 🛠️ NFC DEVELOPMENT TOOLS — Build Checklist
+
+### Tool 1: NFC URL Generator (In Admin)
+
+**Purpose:** Generate the URL to program onto NFC tags
+
+**Implementation:**
+```typescript
+// In PositioningEditorModal.tsx, NFC tab section
+const nfcUrl = `${baseUrl}/visitor/tour/${tourSlug}/stop/${stopSlug}?t=${token}&src=nfc`;
+```
+
+**UI Elements:**
+- [ ] Auto-generated NFC URL (read-only display)
+- [ ] "Copy URL" button (for NFC Tools app)
+- [ ] "Test URL" button (opens in new tab)
+- [ ] Short code display (same as QR, shared fallback)
+
+### Tool 2: Web NFC Tag Writer (Chrome Android Admin)
+
+**Purpose:** Write URLs directly to NFC tags from admin panel
+
+**Implementation:**
+```typescript
+async function writeNfcTag(url: string): Promise<{ success: boolean; tagUid?: string }> {
+  if (!('NDEFReader' in window)) {
+    throw new Error('Web NFC not supported. Use Chrome on Android.');
+  }
+  
+  const ndef = new NDEFReader();
+  await ndef.write({
+    records: [{ recordType: 'url', data: url }]
+  });
+  
+  // Read back to get UID
+  const reader = new NDEFReader();
+  return new Promise((resolve) => {
+    reader.scan();
+    reader.onreading = (event) => {
+      resolve({ success: true, tagUid: event.serialNumber });
+    };
+  });
+}
+```
+
+**UI Elements:**
+- [ ] "Write to Tag" button (disabled on non-Chrome/non-Android)
+- [ ] Status indicator (Ready / Writing / Success / Error)
+- [ ] Tag UID display after successful write
+- [ ] Browser compatibility warning
+
+### Tool 3: Tag Verification Scanner
+
+**Purpose:** Verify a programmed tag contains the correct URL
+
+**Implementation:**
+```typescript
+async function verifyNfcTag(expectedUrl: string): Promise<{ match: boolean; actualUrl: string }> {
+  const ndef = new NDEFReader();
+  await ndef.scan();
+  
+  return new Promise((resolve) => {
+    ndef.onreading = (event) => {
+      const record = event.message.records[0];
+      const decoder = new TextDecoder();
+      const actualUrl = decoder.decode(record.data);
+      resolve({ match: actualUrl === expectedUrl, actualUrl });
+    };
+  });
+}
+```
+
+**UI Elements:**
+- [ ] "Verify Tag" button
+- [ ] Match/mismatch indicator (green check / red X)
+- [ ] Last verified timestamp
+- [ ] "Re-program" quick action if mismatch
+
+### Tool 4: Bulk URL Export
+
+**Purpose:** Export all stop URLs for desktop programming with ACR122U
+
+**Implementation:**
+```typescript
+// New API endpoint: GET /api/nfc/export/:tourId
+// Returns CSV:
+// stop_title,stop_slug,nfc_url,short_code,tag_type
+// "The Starry Night","starry-night","https://...?src=nfc","U3XMBW","NTAG213"
+```
+
+**UI Elements:**
+- [ ] "Export NFC Data" button on Tour detail page
+- [ ] CSV download with all stops
+- [ ] Option to include/exclude unpublished stops
+
+### Tool 5: NFC + QR Combined Signage Generator
+
+**Purpose:** Generate print-ready labels with both QR and NFC instructions
+
+**Implementation:** Extend existing QR download to include NFC tap icon
+
+**Template Layout:**
+```
+┌─────────────────────────────────┐
+│  [Exhibit Title]                │
+│                                 │
+│  ┌─────────┐   📱 Tap or Scan  │
+│  │ QR CODE │   for audio guide │
+│  └─────────┘                   │
+│                                 │
+│  [NFC ◎]     Code: U3XMBW      │
+└─────────────────────────────────┘
+```
+
+**UI Elements:**
+- [ ] Template style selector (minimal/standard/accessible)
+- [ ] Include NFC icon checkbox
+- [ ] Export as PDF/SVG/PNG
+- [ ] Batch export for all stops
+
+---
+
+## 🧪 IMMEDIATE TESTING WORKFLOW (Your NFC Cards)
+
+### Step 1: Manual Programming (No Code Changes Needed)
+
+You can test NFC functionality TODAY with zero code changes:
+
+1. **Get a stop URL from TourStack:**
+   - Open any stop in admin
+   - Click "Positioning Settings" (QR icon)
+   - Copy the URL from the QR tab (e.g., `https://tourstack.supersoul.top/visitor/tour/oslo/stop/munch?t=abc123`)
+
+2. **Add NFC source parameter:**
+   ```
+   https://tourstack.supersoul.top/visitor/tour/oslo/stop/munch?t=abc123&src=nfc
+   ```
+
+3. **Program the tag using NFC Tools app:**
+   - Download "NFC Tools" (Android) or "NFC Tools" (iOS)
+   - Tap "Write" → "Add a record" → "URL/URI"
+   - Paste the URL with `&src=nfc`
+   - Tap "Write" and hold tag to phone
+
+4. **Test the tag:**
+   - iPhone XS+: Hold near tag → tap notification banner → Safari opens
+   - Android: Hold near tag → browser opens directly
+
+### Step 2: Verify Tag Contents
+
+Use NFC Tools app "Read" function to verify:
+- Record type: URL
+- Content: Your TourStack URL
+- Tag type: Should show NTAG213/215/216
+
+### Step 3: Test Multiple Devices
+
+| Device | Expected Behavior |
+|--------|-------------------|
+| iPhone XS+ (iOS 14+) | Notification banner → tap → Safari |
+| iPhone 7/8/X | Needs NFC-reading app open |
+| Android with NFC | Direct browser open |
+| Android without NFC | Fall back to QR code |
+
+### Step 4: Document Results
+
+Note for each test:
+- Device model and OS version
+- Time from tap to content display
+- Any issues (notification not appearing, wrong URL, etc.)
+
+---
+
+## 🎯 RECOMMENDED NEXT STEPS
+
+### Phase A: Quick Wins (1-2 hours)
+
+1. **Add `&src=nfc` tracking to visitor routes**
+   - Parse `src` query param in `visitor.ts`
+   - Log to console or analytics table
+   - Allows distinguishing NFC vs QR scans
+
+2. **Add "Copy NFC URL" button to QR tab**
+   - Same URL as QR, just appends `&src=nfc`
+   - Users can program tags immediately
+
+### Phase B: NFC Tab Implementation (4-6 hours)
+
+1. **Replace NFC tab placeholder with real UI:**
+   - NFC URL display (auto-generated)
+   - Copy URL button
+   - Tag type selector (NTAG213/215/216)
+   - Tag UID field (manual entry)
+   - Tag status indicator
+
+2. **Save NFC config to `primaryPositioning` or `backupPositioning`**
+
+### Phase C: Web NFC Integration (4-6 hours)
+
+1. **Add Web NFC write capability (Chrome Android only)**
+2. **Add tag verification scanner**
+3. **Show browser compatibility warnings**
+
+### Phase D: Fleet Management (8-12 hours)
+
+1. **NFC tag registry (database table or JSON field)**
+2. **Bulk URL export (CSV)**
+3. **Tag health monitoring (cross-reference with analytics)**
+
+---
+
+## 📦 HARDWARE FOR TESTING
+
+### Minimum Test Kit (~$50)
+
+| Item | Qty | Price | Source |
+|------|-----|-------|--------|
+| NTAG213 stickers (25mm round) | 10 | ~$8 | Amazon "NTAG213 NFC stickers" |
+| NTAG213 anti-metal stickers | 5 | ~$6 | Amazon "anti-metal NFC" |
+| ACR122U USB NFC Reader/Writer | 1 | ~$35 | Amazon (get genuine ACS brand) |
+
+### Recommended Test Kit (~$80)
+
+| Item | Qty | Price | Notes |
+|------|-----|-------|-------|
+| NTAG213 stickers | 20 | ~$10 | Standard deployment |
+| NTAG215 stickers | 10 | ~$8 | Longer URLs if needed |
+| Anti-metal stickers | 10 | ~$10 | For metal surfaces |
+| ACR122U reader | 1 | ~$35 | Desktop programming |
+| PVC cards (credit-card size) | 5 | ~$8 | Visitor passes |
+| Clear stickers | 5 | ~$5 | Overlay on existing signage |
+
+### Suppliers
+
+- **Quick test batches:** Amazon (TimesKey, THONSEN brands)
+- **Bulk orders:** GoToTags, Seritag, NFC Direct
+- **ACR122U:** Get genuine ACS brand, avoid cheap clones
+
+---
+
+## 🔧 DEVELOPMENT ENVIRONMENT NOTES
+
+### Web NFC API Availability
+
+```typescript
+// Check for Web NFC support
+const hasWebNfc = 'NDEFReader' in window;
+
+// Only available on:
+// - Chrome 89+ on Android
+// - Chrome on ChromeOS
+// - NOT available on iOS Safari, Firefox, or desktop Chrome
+```
+
+### TypeScript Types for Web NFC
+
+```typescript
+// Add to types/index.ts or a new types/webnfc.d.ts
+interface NDEFReader {
+  scan(): Promise<void>;
+  write(message: NDEFMessageInit): Promise<void>;
+  onreading: ((event: NDEFReadingEvent) => void) | null;
+  onreadingerror: ((event: Event) => void) | null;
+}
+
+interface NDEFReadingEvent extends Event {
+  serialNumber: string;
+  message: NDEFMessage;
+}
+
+interface NDEFMessage {
+  records: NDEFRecord[];
+}
+
+interface NDEFRecord {
+  recordType: string;
+  data: ArrayBuffer;
+}
+
+interface NDEFMessageInit {
+  records: NDEFRecordInit[];
+}
+
+interface NDEFRecordInit {
+  recordType: 'url' | 'text' | 'mime' | 'unknown';
+  data: string | ArrayBuffer;
+}
+
+declare global {
+  interface Window {
+    NDEFReader?: new () => NDEFReader;
+  }
+}
+```
+
+---
+
+## 💡 CREATIVE IDEAS FOR TESTING
+
+### 1. "Tap to Collect" Prototype
+- Program 5 tags with different stop URLs
+- Place around your workspace
+- Test the "digital passport" concept by tapping each
+- Verify scan history in localStorage
+
+### 2. Language Variant Test
+- Program same stop with different `&lang=` params:
+  - `...?t=abc&src=nfc&lang=en`
+  - `...?t=abc&src=nfc&lang=es`
+  - `...?t=abc&src=nfc&lang=fr`
+- Test if TourStack respects the language parameter
+
+### 3. Anti-Metal Surface Test
+- Program regular sticker and anti-metal sticker
+- Test on: glass, wood, plastic, metal frame, metal case
+- Document which surfaces work/fail
+
+### 4. Range Test
+- Measure actual read distance with different phones
+- iPhone typically: 1-2cm
+- Android varies: 1-4cm depending on device
+
+### 5. Durability Test
+- Apply sticker to surface
+- Test after 1 day, 1 week
+- Test with cleaning (wipe with cloth)
+- Test with partial obstruction

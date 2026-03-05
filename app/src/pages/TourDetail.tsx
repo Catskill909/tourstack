@@ -682,6 +682,7 @@ export function TourDetail() {
                 <PositioningEditorModal
                     stop={stops.find(s => s.id === showQRModal)!}
                     tourId={tour.id}
+                    tourSlug={tour.slug}
                     onSave={handleSaveQRSettings}
                     onClose={() => setShowQRModal(null)}
                 />

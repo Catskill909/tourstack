@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: February 18, 2026
-**Session Status**: Kiosk Preview Phase 3 COMPLETE ✅ | Database Safety COMPLETE ✅ | Phase 26.2 Per-Tour Concierge NEXT
+**Last Updated**: March 5, 2026
+**Session Status**: NFC Tag Pairing Phase 1 COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅
 
 ---
 
@@ -174,7 +174,7 @@ TourStack uses session-based authentication to protect the admin panel.
 
 ### How It Works
 - **New stops automatically get** a unique QR code URL and 6-char short code
-- URL format: `/visitor/tour/{tourId}/stop/{stopId}?t={token}`
+- URL format: `/visitor/tour/{tourSlug}/stop/{stopSlug}?t={token}`
 - Short code: 6 uppercase chars (e.g., `MX4VPR`) - avoids confusing 0/O, 1/I
 - **Regenerate button** creates completely new token + short code
 - **PNG Download** exports 500px print-ready QR image
@@ -184,7 +184,7 @@ The `primaryPositioning` field in each stop stores:
 ```json
 {
   "method": "qr_code",
-  "url": "http://localhost:3000/visitor/tour/.../stop/...?t=abc123",
+  "url": "https://tourstack.app/visitor/tour/.../stop/...?t=abc123",
   "shortCode": "MX4VPR"
 }
 ```
@@ -204,6 +204,58 @@ The `/api/feeds/tours/:id` endpoint includes `primary_positioning` for each stop
   }]
 }
 ```
+
+---
+
+## 📱 NFC TAG PAIRING (Phase 1 Complete - March 5, 2026)
+
+### Overview
+NFC tags allow visitors to tap their phone on a sticker/card to open tour content. The NFC tab in the Positioning Editor provides tools to pair NFC tags with tour stops.
+
+### How It Works
+- **NFC URL format:** `/visitor/tour/{tourSlug}/stop/{stopSlug}?src=nfc`
+- **Same visitor routes as QR** — no server changes needed
+- **`src=nfc` parameter** — tracks NFC vs QR scans for analytics
+
+### NFC Tab Features (Positioning Editor Modal)
+| Feature | Description |
+|---------|-------------|
+| **First Tab Position** | NFC is now the first tab in the modal |
+| **Auto-generated URL** | Canonical visitor URL with `?src=nfc` |
+| **Copy URL Button** | One-click copy for NFC Tools app |
+| **Web NFC Write** | Direct tag writing (Chrome Android only) |
+| **Help Modal** | Step-by-step pairing instructions |
+| **Test Button** | Opens visitor URL to verify |
+
+### Programming NFC Tags
+
+**Method 1: Web NFC (Chrome Android)**
+1. Open TourStack admin in Chrome on Android
+2. Go to stop → Positioning Settings → NFC tab
+3. Click "Write to NFC Tag"
+4. Hold NFC card/sticker to back of phone
+5. Wait for success confirmation
+
+**Method 2: NFC Tools App (Any Phone)**
+1. Download "NFC Tools" app (free, iOS/Android)
+2. In TourStack, click "Copy URL"
+3. In NFC Tools: Write → Add record → URL/URI
+4. Paste URL and tap Write
+5. Hold NFC tag to phone
+
+### Testing NFC Tags
+| Device | Behavior |
+|--------|----------|
+| iPhone XS+ | Tap tag → notification banner → tap to open Safari |
+| Android | Tap tag → browser opens directly |
+| iPhone 7/8/X | Requires NFC reader app to be open first |
+
+### Key Files
+- `app/src/components/PositioningEditorModal.tsx` — NFC tab UI and Web NFC write
+- `app/server/routes/visitor.ts` — Visitor routes (same for NFC and QR)
+
+### Documentation
+See [nfc-tag-dev.md](nfc-tag-dev.md) for full NFC development roadmap and Phase 2 plans.
 
 ---
 

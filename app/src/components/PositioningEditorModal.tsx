@@ -2,13 +2,15 @@ import { useState, useRef, useCallback } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import {
     X, QrCode, RefreshCw, Copy, Check, ExternalLink, Download,
-    MapPin, Radio, Smartphone, Scan, Wifi, Target, Clock
+    MapPin, Radio, Smartphone, Scan, Wifi, Target, Clock, HelpCircle,
+    Nfc, CheckCircle2, AlertCircle, Loader2
 } from 'lucide-react';
 import type { Stop, PositioningConfig, QRCodeConfig, PositioningMethod } from '../types';
 
 interface PositioningEditorModalProps {
     stop: Stop;
     tourId: string;
+    tourSlug?: string;  // URL-friendly tour identifier
     onSave: (stop: Stop) => void;
     onClose: () => void;
 }
@@ -24,6 +26,14 @@ interface TabConfig {
 }
 
 const TABS: TabConfig[] = [
+    {
+        id: 'nfc',
+        label: 'NFC',
+        icon: Smartphone,
+        implemented: true,
+        description: 'Tap-to-trigger with near-field communication',
+        useCases: ['Artifact labels', "Kids' zones", 'Accessibility stations']
+    },
     {
         id: 'qr_code',
         label: 'QR Code',
@@ -47,14 +57,6 @@ const TABS: TabConfig[] = [
         implemented: false,
         description: 'Indoor positioning with Bluetooth beacons',
         useCases: ['Indoor navigation', 'Auto-triggering', 'High accuracy']
-    },
-    {
-        id: 'nfc',
-        label: 'NFC',
-        icon: Smartphone,
-        implemented: false,
-        description: 'Tap-to-trigger with near-field communication',
-        useCases: ['Artifact labels', "Kids' zones", 'Accessibility stations']
     },
     {
         id: 'rfid',
@@ -92,8 +94,9 @@ function generateToken(): string {
     return Math.random().toString(36).substring(2, 10);
 }
 
-export function PositioningEditorModal({ stop, tourId, onSave, onClose }: PositioningEditorModalProps) {
-    const [activeTab, setActiveTab] = useState<PositioningMethod>('qr_code');
+
+export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose }: PositioningEditorModalProps) {
+    const [activeTab, setActiveTab] = useState<PositioningMethod>('nfc');
     const [copied, setCopied] = useState(false);
     const [isRegenerating, setIsRegenerating] = useState(false);
     const qrRef = useRef<HTMLDivElement>(null);
@@ -108,14 +111,68 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
     // Default URL - includes a unique token so each QR code is different
     const defaultBaseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://tourstack.app';
 
-    // Extract existing token from saved URL or generate new one
+    // Use slugs for cleaner URLs, fall back to IDs
+    const tourIdentifier = tourSlug || tourId;
+    const stopIdentifier = stop.slug || stop.id;
+    
+    // Canonical visitor URL for this stop - this is what NFC tags should point to
+    const visitorUrl = `${defaultBaseUrl}/visitor/tour/${tourIdentifier}/stop/${stopIdentifier}`;
+    
+    // NFC URL is just the visitor URL (optionally with source tracking)
+    const nfcUrl = `${visitorUrl}?src=nfc`;
+    
+    // Extract existing token from saved URL or generate new one (for QR tracking)
     const getInitialUrl = () => {
         if (qrConfig.url) return qrConfig.url;
-        return `${defaultBaseUrl}/visitor/tour/${tourId}/stop/${stop.id}?t=${generateToken()}`;
+        return `${visitorUrl}?t=${generateToken()}`;
     };
 
     const [targetUrl, setTargetUrl] = useState(getInitialUrl);
     const [shortCode, setShortCode] = useState(qrConfig.shortCode || generateShortCode());
+    
+    // NFC-specific state
+    const [nfcCopied, setNfcCopied] = useState(false);
+    const [showNfcHelp, setShowNfcHelp] = useState(false);
+    const [nfcWriteStatus, setNfcWriteStatus] = useState<'idle' | 'waiting' | 'writing' | 'success' | 'error'>('idle');
+    const [nfcWriteError, setNfcWriteError] = useState<string | null>(null);
+    
+    // Check if Web NFC is available (Chrome Android only)
+    const hasWebNfc = typeof window !== 'undefined' && 'NDEFReader' in window;
+    
+    function handleCopyNfcUrl() {
+        navigator.clipboard.writeText(nfcUrl);
+        setNfcCopied(true);
+        setTimeout(() => setNfcCopied(false), 2000);
+    }
+    
+    // Web NFC Write function
+    async function handleWriteNfcTag() {
+        if (!hasWebNfc) {
+            setNfcWriteError('Web NFC not supported. Use Chrome on Android, or copy the URL and use NFC Tools app.');
+            return;
+        }
+        
+        setNfcWriteStatus('waiting');
+        setNfcWriteError(null);
+        
+        try {
+            // @ts-ignore - NDEFReader is not in TypeScript types yet
+            const ndef = new window.NDEFReader();
+            
+            setNfcWriteStatus('writing');
+            
+            await ndef.write({
+                records: [{ recordType: 'url', data: nfcUrl }]
+            });
+            
+            
+            setNfcWriteStatus('success');
+            setTimeout(() => setNfcWriteStatus('idle'), 3000);
+        } catch (error: any) {
+            setNfcWriteStatus('error');
+            setNfcWriteError(error.message || 'Failed to write to NFC tag');
+        }
+    }
 
     // Regenerate creates a COMPLETELY NEW QR code with new token + short code
     const handleRegenerate = useCallback(() => {
@@ -127,12 +184,12 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
 
         // Generate new URL with fresh token - THIS changes the QR code!
         const newToken = generateToken();
-        const newUrl = `${defaultBaseUrl}/visitor/tour/${tourId}/stop/${stop.id}?t=${newToken}`;
+        const newUrl = `${defaultBaseUrl}/visitor/tour/${tourIdentifier}/stop/${stopIdentifier}?t=${newToken}`;
         setTargetUrl(newUrl);
 
         // Visual feedback
         setTimeout(() => setIsRegenerating(false), 500);
-    }, [defaultBaseUrl, tourId, stop.id]);
+    }, [defaultBaseUrl, tourIdentifier, stopIdentifier]);
 
     function getStopTitle(): string {
         return typeof stop.title === 'object'
@@ -218,6 +275,226 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
         const tab = TABS.find(t => t.id === activeTab);
 
         if (!tab) return null;
+
+        // NFC tab - fully implemented
+        if (activeTab === 'nfc') {
+            return (
+                <div className="p-6">
+                    {/* NFC Help Modal */}
+                    {showNfcHelp && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                            <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] w-full max-w-lg shadow-2xl">
+                                <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border-default)]">
+                                    <h3 className="text-lg font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                                        <Nfc className="w-5 h-5 text-[var(--color-accent-primary)]" />
+                                        NFC Pairing Guide
+                                    </h3>
+                                    <button onClick={() => setShowNfcHelp(false)} className="p-1 hover:bg-[var(--color-bg-hover)] rounded">
+                                        <X className="w-5 h-5 text-[var(--color-text-muted)]" />
+                                    </button>
+                                </div>
+                                <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+                                    {/* Method 1: Web NFC */}
+                                    <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4">
+                                        <h4 className="text-sm font-semibold text-green-400 mb-2 flex items-center gap-2">
+                                            <span className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center text-xs">1</span>
+                                            Direct Write (Chrome Android)
+                                        </h4>
+                                        <p className="text-xs text-[var(--color-text-muted)] mb-2">
+                                            If you're using <strong>Chrome on an Android phone</strong>, you can write directly to NFC tags from this page:
+                                        </p>
+                                        <ol className="text-xs text-[var(--color-text-muted)] space-y-1 ml-4">
+                                            <li>1. Click the <strong>"Write to NFC Tag"</strong> button</li>
+                                            <li>2. Hold your NFC tag to the back of your phone</li>
+                                            <li>3. Wait for the success confirmation</li>
+                                        </ol>
+                                        <p className="text-xs text-amber-400 mt-2">
+                                            ⚠️ Only works on Chrome for Android. Not supported on iPhone, desktop, or other browsers.
+                                        </p>
+                                    </div>
+                                    
+                                    {/* Method 2: NFC Tools App */}
+                                    <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-4">
+                                        <h4 className="text-sm font-semibold text-blue-400 mb-2 flex items-center gap-2">
+                                            <span className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-xs">2</span>
+                                            NFC Tools App (Any Phone)
+                                        </h4>
+                                        <p className="text-xs text-[var(--color-text-muted)] mb-2">
+                                            Works on <strong>iPhone and Android</strong>:
+                                        </p>
+                                        <ol className="text-xs text-[var(--color-text-muted)] space-y-1 ml-4">
+                                            <li>1. Download <strong>NFC Tools</strong> (free on App Store / Play Store)</li>
+                                            <li>2. Click <strong>"Copy URL"</strong> in TourStack</li>
+                                            <li>3. In NFC Tools: <strong>Write → Add a record → URL/URI</strong></li>
+                                            <li>4. Paste the URL and tap <strong>Write</strong></li>
+                                            <li>5. Hold your NFC tag to your phone</li>
+                                        </ol>
+                                    </div>
+                                    
+                                    {/* Testing */}
+                                    <div className="bg-[var(--color-accent-primary)]/5 border border-[var(--color-accent-primary)]/20 rounded-lg p-4">
+                                        <h4 className="text-sm font-semibold text-[var(--color-accent-primary)] mb-2">🧪 Testing Your Tag</h4>
+                                        <ul className="text-xs text-[var(--color-text-muted)] space-y-1">
+                                            <li><strong>iPhone XS+:</strong> Tap tag → notification banner → tap to open</li>
+                                            <li><strong>Android:</strong> Tap tag → browser opens automatically</li>
+                                            <li><strong>iPhone 7/8/X:</strong> Open NFC reader app first, then tap</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    {/* Tag Types */}
+                                    <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4">
+                                        <h4 className="text-sm font-semibold text-[var(--color-text-primary)] mb-2">📋 Tag Types</h4>
+                                        <ul className="text-xs text-[var(--color-text-muted)] space-y-1">
+                                            <li><strong>NTAG213:</strong> Most common, 144 bytes (~132 char URLs)</li>
+                                            <li><strong>NTAG215:</strong> Larger, 504 bytes (~480 char URLs)</li>
+                                            <li><strong>NTAG216:</strong> Largest, 888 bytes (vCards, complex data)</li>
+                                        </ul>
+                                        <p className="text-xs text-[var(--color-text-muted)] mt-2">
+                                            TourStack URLs are short — NTAG213 works perfectly.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="px-5 py-4 border-t border-[var(--color-border-default)] flex justify-end">
+                                    <button
+                                        onClick={() => setShowNfcHelp(false)}
+                                        className="px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90"
+                                    >
+                                        Got it
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    
+                    <div className="space-y-5">
+                        {/* Header with Help Button */}
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">Pair NFC Tag to This Stop</h3>
+                                <p className="text-xs text-[var(--color-text-muted)]">Write the tour stop URL to your NFC card or sticker</p>
+                            </div>
+                            <button
+                                onClick={() => setShowNfcHelp(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)]"
+                            >
+                                <HelpCircle className="w-3.5 h-3.5" />
+                                How to Pair
+                            </button>
+                        </div>
+                        
+                        {/* Primary Action: Write to Tag (if Web NFC available) or Copy URL */}
+                        <div className="bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl p-5">
+                            {hasWebNfc ? (
+                                // Web NFC Available - Show Write Button
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                                            <Nfc className="w-6 h-6 text-green-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Direct NFC Write</h4>
+                                            <p className="text-xs text-[var(--color-text-muted)]">Write URL directly to your NFC tag</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <button
+                                        onClick={handleWriteNfcTag}
+                                        disabled={nfcWriteStatus === 'waiting' || nfcWriteStatus === 'writing'}
+                                        className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+                                            nfcWriteStatus === 'success' 
+                                                ? 'bg-green-500 text-white' 
+                                                : nfcWriteStatus === 'error'
+                                                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                                : 'bg-[var(--color-accent-primary)] text-white hover:bg-[var(--color-accent-primary)]/90'
+                                        } disabled:opacity-50`}
+                                    >
+                                        {nfcWriteStatus === 'idle' && (
+                                            <><Nfc className="w-5 h-5" /> Write to NFC Tag</>
+                                        )}
+                                        {nfcWriteStatus === 'waiting' && (
+                                            <><Loader2 className="w-5 h-5 animate-spin" /> Hold tag to phone...</>
+                                        )}
+                                        {nfcWriteStatus === 'writing' && (
+                                            <><Loader2 className="w-5 h-5 animate-spin" /> Writing...</>
+                                        )}
+                                        {nfcWriteStatus === 'success' && (
+                                            <><CheckCircle2 className="w-5 h-5" /> Tag Written Successfully!</>
+                                        )}
+                                        {nfcWriteStatus === 'error' && (
+                                            <><AlertCircle className="w-5 h-5" /> Write Failed</>
+                                        )}
+                                    </button>
+                                    
+                                    {nfcWriteError && (
+                                        <p className="text-xs text-red-400 text-center">{nfcWriteError}</p>
+                                    )}
+                                    
+                                </div>
+                            ) : (
+                                // No Web NFC - Show Copy URL workflow
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                                            <Copy className="w-6 h-6 text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Copy URL to Program Tag</h4>
+                                            <p className="text-xs text-[var(--color-text-muted)]">Use NFC Tools app to write this URL</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-[var(--color-bg-base)] rounded-lg p-3 font-mono text-xs text-[var(--color-text-secondary)] break-all">
+                                        {nfcUrl}
+                                    </div>
+                                    
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={handleCopyNfcUrl}
+                                            className="flex-1 py-2.5 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 flex items-center justify-center gap-2 font-medium"
+                                        >
+                                            {nfcCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                            {nfcCopied ? 'Copied!' : 'Copy URL'}
+                                        </button>
+                                        <a
+                                            href={nfcUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-4 py-2.5 bg-[var(--color-bg-base)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-hover)] flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
+                                        >
+                                            <ExternalLink className="w-4 h-4" />
+                                            Test
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Secondary: Alternative method */}
+                        {hasWebNfc && (
+                            <div className="flex items-center gap-3 p-3 bg-[var(--color-bg-base)] rounded-lg">
+                                <span className="text-xs text-[var(--color-text-muted)]">Or copy URL for NFC Tools app:</span>
+                                <button
+                                    onClick={handleCopyNfcUrl}
+                                    className="px-3 py-1.5 text-xs bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded hover:bg-[var(--color-bg-hover)] flex items-center gap-1.5"
+                                >
+                                    {nfcCopied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                                    {nfcCopied ? 'Copied' : 'Copy URL'}
+                                </button>
+                            </div>
+                        )}
+                        
+                        
+                        {/* Quick tip */}
+                        <div className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+                            <span className="text-amber-400 text-sm">💡</span>
+                            <p className="text-xs text-[var(--color-text-muted)]">
+                                <strong className="text-amber-400">Tip:</strong> After programming, test by tapping the tag with your phone. The tour stop should open automatically.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
 
         // QR Code tab - fully implemented
         if (activeTab === 'qr_code') {
@@ -376,14 +653,6 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                         </p>
                     </div>
                 )}
-                {activeTab === 'nfc' && (
-                    <div className="mt-6 p-4 bg-green-500/5 border border-green-500/20 rounded-lg max-w-sm">
-                        <p className="text-xs text-green-400 text-center">
-                            📱 NFC tags require physical tap (0-4cm range).
-                            Great for artifact labels and interactive exhibits.
-                        </p>
-                    </div>
-                )}
                 {activeTab === 'rfid' && (
                     <div className="mt-6 p-4 bg-orange-500/5 border border-orange-500/20 rounded-lg max-w-sm">
                         <p className="text-xs text-orange-400 text-center">
@@ -478,6 +747,16 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                             <Download className="w-4 h-4" />
                             Download QR
                         </button>
+                    ) : activeTab === 'nfc' ? (
+                        <a
+                            href="https://apps.apple.com/app/nfc-tools/id1252962749"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-lg hover:bg-[var(--color-bg-hover)]"
+                        >
+                            <ExternalLink className="w-4 h-4" />
+                            Get NFC Tools App
+                        </a>
                     ) : (
                         <div /> // Empty div to maintain flex spacing
                     )}
@@ -490,7 +769,7 @@ export function PositioningEditorModal({ stop, tourId, onSave, onClose }: Positi
                         </button>
                         <button
                             onClick={handleSave}
-                            disabled={activeTab !== 'qr_code'}
+                            disabled={activeTab !== 'qr_code' && activeTab !== 'nfc'}
                             className="px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Save Changes

@@ -78,7 +78,8 @@ npm run start
 > **Preview = Real Device:** The admin device preview renders at actual device pixels (375×812 iPhone, 820×1180 iPad). What you see IS what visitors see. The same React components power both admin preview and live visitor pages.
 
 - **7 Positioning Technologies**: QR Code, GPS, BLE Beacon, NFC, RFID, WiFi, UWB
-- **Positioning Editor**: Tabbed modal with QR generator, placeholder tabs for all technologies
+- **Positioning Editor**: Tabbed modal with NFC pairing, QR generator, and placeholder tabs for other technologies
+- **NFC Tag Pairing**: Copy URL for NFC Tools app, Web NFC direct write (Chrome Android), help modal
 - **Native QR Generator**: `qrcode.react` with regeneration, unique tokens, PNG download
 - **Tour Block**: Full-screen hero intro with architectural design system aesthetic
 - **12 Content Blocks**: Text, Image, Gallery, Timeline Gallery, Audio, Video, Quote, Timeline, Comparison, Positioning, Map, Tour
