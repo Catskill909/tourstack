@@ -384,106 +384,108 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                             </button>
                         </div>
                         
-                        {/* Primary Action: Write to Tag (if Web NFC available) or Copy URL */}
-                        <div className="bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl p-5">
-                            {hasWebNfc ? (
-                                // Web NFC Available - Show Write Button
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                                            <Nfc className="w-6 h-6 text-green-400" />
-                                        </div>
-                                        <div>
+                        {/* Method 1: Direct NFC Write (always shown, grayed out if unavailable) */}
+                        <div className={`bg-[var(--color-bg-elevated)] border rounded-xl p-5 ${hasWebNfc ? 'border-green-500/30' : 'border-[var(--color-border-default)] opacity-60'}`}>
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${hasWebNfc ? 'bg-green-500/10' : 'bg-[var(--color-bg-base)]'}`}>
+                                        <Nfc className={`w-6 h-6 ${hasWebNfc ? 'text-green-400' : 'text-[var(--color-text-muted)]'}`} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
                                             <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Direct NFC Write</h4>
-                                            <p className="text-xs text-[var(--color-text-muted)]">Write URL directly to your NFC tag</p>
+                                            {hasWebNfc ? (
+                                                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-green-500/20 text-green-400 rounded">Available</span>
+                                            ) : (
+                                                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-amber-500/20 text-amber-400 rounded">Chrome Android Only</span>
+                                            )}
                                         </div>
+                                        <p className="text-xs text-[var(--color-text-muted)]">
+                                            {hasWebNfc ? 'Write URL directly to your NFC tag' : 'Open this page in Chrome on Android to enable'}
+                                        </p>
                                     </div>
-                                    
-                                    <button
-                                        onClick={handleWriteNfcTag}
-                                        disabled={nfcWriteStatus === 'waiting' || nfcWriteStatus === 'writing'}
-                                        className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
-                                            nfcWriteStatus === 'success' 
-                                                ? 'bg-green-500 text-white' 
-                                                : nfcWriteStatus === 'error'
-                                                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                                                : 'bg-[var(--color-accent-primary)] text-white hover:bg-[var(--color-accent-primary)]/90'
-                                        } disabled:opacity-50`}
-                                    >
-                                        {nfcWriteStatus === 'idle' && (
-                                            <><Nfc className="w-5 h-5" /> Write to NFC Tag</>
-                                        )}
-                                        {nfcWriteStatus === 'waiting' && (
-                                            <><Loader2 className="w-5 h-5 animate-spin" /> Hold tag to phone...</>
-                                        )}
-                                        {nfcWriteStatus === 'writing' && (
-                                            <><Loader2 className="w-5 h-5 animate-spin" /> Writing...</>
-                                        )}
-                                        {nfcWriteStatus === 'success' && (
-                                            <><CheckCircle2 className="w-5 h-5" /> Tag Written Successfully!</>
-                                        )}
-                                        {nfcWriteStatus === 'error' && (
-                                            <><AlertCircle className="w-5 h-5" /> Write Failed</>
-                                        )}
-                                    </button>
-                                    
-                                    {nfcWriteError && (
-                                        <p className="text-xs text-red-400 text-center">{nfcWriteError}</p>
+                                </div>
+                                
+                                <button
+                                    onClick={handleWriteNfcTag}
+                                    disabled={!hasWebNfc || nfcWriteStatus === 'waiting' || nfcWriteStatus === 'writing'}
+                                    className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
+                                        !hasWebNfc
+                                            ? 'bg-[var(--color-bg-base)] text-[var(--color-text-muted)] border border-[var(--color-border-default)] cursor-not-allowed'
+                                            : nfcWriteStatus === 'success' 
+                                            ? 'bg-green-500 text-white' 
+                                            : nfcWriteStatus === 'error'
+                                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                            : 'bg-[var(--color-accent-primary)] text-white hover:bg-[var(--color-accent-primary)]/90'
+                                    } disabled:opacity-50`}
+                                >
+                                    {!hasWebNfc ? (
+                                        <><Nfc className="w-5 h-5" /> Write to NFC Tag</>
+                                    ) : nfcWriteStatus === 'idle' ? (
+                                        <><Nfc className="w-5 h-5" /> Write to NFC Tag</>
+                                    ) : nfcWriteStatus === 'waiting' ? (
+                                        <><Loader2 className="w-5 h-5 animate-spin" /> Hold tag to phone...</>
+                                    ) : nfcWriteStatus === 'writing' ? (
+                                        <><Loader2 className="w-5 h-5 animate-spin" /> Writing...</>
+                                    ) : nfcWriteStatus === 'success' ? (
+                                        <><CheckCircle2 className="w-5 h-5" /> Tag Written Successfully!</>
+                                    ) : (
+                                        <><AlertCircle className="w-5 h-5" /> Write Failed</>
                                     )}
-                                    
-                                </div>
-                            ) : (
-                                // No Web NFC - Show Copy URL workflow
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
-                                            <Copy className="w-6 h-6 text-blue-400" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Copy URL to Program Tag</h4>
-                                            <p className="text-xs text-[var(--color-text-muted)]">Use NFC Tools app to write this URL</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="bg-[var(--color-bg-base)] rounded-lg p-3 font-mono text-xs text-[var(--color-text-secondary)] break-all">
-                                        {nfcUrl}
-                                    </div>
-                                    
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={handleCopyNfcUrl}
-                                            className="flex-1 py-2.5 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 flex items-center justify-center gap-2 font-medium"
-                                        >
-                                            {nfcCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                            {nfcCopied ? 'Copied!' : 'Copy URL'}
-                                        </button>
-                                        <a
-                                            href={nfcUrl}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="px-4 py-2.5 bg-[var(--color-bg-base)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-hover)] flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
-                                        >
-                                            <ExternalLink className="w-4 h-4" />
-                                            Test
-                                        </a>
-                                    </div>
-                                </div>
-                            )}
+                                </button>
+                                
+                                {nfcWriteError && (
+                                    <p className="text-xs text-red-400 text-center">{nfcWriteError}</p>
+                                )}
+                                
+                                {!hasWebNfc && (
+                                    <p className="text-xs text-[var(--color-text-muted)] text-center">
+                                        Web NFC requires <strong>Chrome on Android</strong>. Not available on iPhone, desktop, or other browsers.
+                                    </p>
+                                )}
+                            </div>
                         </div>
                         
-                        {/* Secondary: Alternative method */}
-                        {hasWebNfc && (
-                            <div className="flex items-center gap-3 p-3 bg-[var(--color-bg-base)] rounded-lg">
-                                <span className="text-xs text-[var(--color-text-muted)]">Or copy URL for NFC Tools app:</span>
-                                <button
-                                    onClick={handleCopyNfcUrl}
-                                    className="px-3 py-1.5 text-xs bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded hover:bg-[var(--color-bg-hover)] flex items-center gap-1.5"
-                                >
-                                    {nfcCopied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                                    {nfcCopied ? 'Copied' : 'Copy URL'}
-                                </button>
+                        {/* Method 2: Copy URL (always available) */}
+                        <div className="bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl p-5">
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                                        <Copy className="w-6 h-6 text-blue-400" />
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">Copy URL for NFC Tools App</h4>
+                                            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-blue-500/20 text-blue-400 rounded">Any Phone</span>
+                                        </div>
+                                        <p className="text-xs text-[var(--color-text-muted)]">Works on iPhone and Android with free NFC Tools app</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-[var(--color-bg-base)] rounded-lg p-3 font-mono text-xs text-[var(--color-text-secondary)] break-all">
+                                    {nfcUrl}
+                                </div>
+                                
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={handleCopyNfcUrl}
+                                        className="flex-1 py-2.5 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 flex items-center justify-center gap-2 font-medium"
+                                    >
+                                        {nfcCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                        {nfcCopied ? 'Copied!' : 'Copy URL'}
+                                    </button>
+                                    <a
+                                        href={nfcUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-2.5 bg-[var(--color-bg-base)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-hover)] flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"
+                                    >
+                                        <ExternalLink className="w-4 h-4" />
+                                        Test
+                                    </a>
+                                </div>
                             </div>
-                        )}
+                        </div>
                         
                         
                         {/* Tag Info (collapsible details) */}
