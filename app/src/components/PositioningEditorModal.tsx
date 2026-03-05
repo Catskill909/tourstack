@@ -132,6 +132,8 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
     
     // NFC-specific state
     const [nfcCopied, setNfcCopied] = useState(false);
+    const [nfcTagType, setNfcTagType] = useState<'NTAG213' | 'NTAG215' | 'NTAG216'>('NTAG213');
+    const [nfcTagId, setNfcTagId] = useState('');
     const [showNfcHelp, setShowNfcHelp] = useState(false);
     const [nfcWriteStatus, setNfcWriteStatus] = useState<'idle' | 'waiting' | 'writing' | 'success' | 'error'>('idle');
     const [nfcWriteError, setNfcWriteError] = useState<string | null>(null);
@@ -483,6 +485,59 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                             </div>
                         )}
                         
+                        
+                        {/* Tag Info (collapsible details) */}
+                        <details className="group">
+                            <summary className="flex items-center gap-2 cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
+                                <span className="text-xs">▶</span>
+                                <span className="group-open:hidden">Show tag details</span>
+                                <span className="hidden group-open:inline">Hide tag details</span>
+                            </summary>
+                            <div className="mt-3 space-y-3 pl-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">Tag Type</label>
+                                        <select
+                                            value={nfcTagType}
+                                            onChange={(e) => setNfcTagType(e.target.value as 'NTAG213' | 'NTAG215' | 'NTAG216')}
+                                            className="w-full px-2 py-1.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)] text-xs"
+                                        >
+                                            <option value="NTAG213">NTAG213</option>
+                                            <option value="NTAG215">NTAG215</option>
+                                            <option value="NTAG216">NTAG216</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">Tag ID (optional)</label>
+                                        <input
+                                            type="text"
+                                            value={nfcTagId}
+                                            onChange={(e) => setNfcTagId(e.target.value.toUpperCase())}
+                                            placeholder="Auto-filled on write"
+                                            className="w-full px-2 py-1.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)] text-xs font-mono"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-[var(--color-text-muted)] mb-1">Short Code (fallback)</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={shortCode}
+                                            onChange={(e) => setShortCode(e.target.value.toUpperCase())}
+                                            className="w-24 px-2 py-1.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded text-[var(--color-text-primary)] text-xs font-mono uppercase"
+                                            maxLength={8}
+                                        />
+                                        <button
+                                            onClick={handleGenerateNewShortCode}
+                                            className="px-2 py-1.5 text-xs bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded hover:bg-[var(--color-bg-hover)]"
+                                        >
+                                            New
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
                         
                         {/* Quick tip */}
                         <div className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
