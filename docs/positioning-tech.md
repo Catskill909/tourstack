@@ -1,7 +1,8 @@
 # Positioning Technology Editor - Development Plan
 
 **Created:** January 24, 2026  
-**Status:** ✅ Phase 1 Complete (Tabbed UI)  
+**Updated:** March 5, 2026  
+**Status:** ✅ Phase 1 Complete (Tabbed UI) | ✅ NFC Tab Complete  
 **Component:** `PositioningEditorModal.tsx`
 
 ---
@@ -88,16 +89,29 @@ The Stop Positioning Editor is a tabbed modal that allows curators to configure 
 
 ---
 
-### Tab 4: NFC 🔜 PLACEHOLDER
-**Icon:** `Smartphone`  
+### Tab 4: NFC ✅ COMPLETE (March 5, 2026)
+**Icon:** `Nfc`  
 **Use Case:** Tap-to-trigger interaction (0-4cm range)
 
 | Field | Type | Description |
 |-------|------|-------------|
-| Tag ID | text (auto-gen) | Unique NFC tag identifier |
-| Tag Type | select | NTAG213, NTAG215, NTAG216, MIFARE |
-| Payload URL | text | URL written to NFC tag |
-| Generate New ID | button | Generate unique tag ID |
+| NFC URL | text (auto-gen) | Canonical visitor URL with `?src=nfc` |
+| Copy URL | button | Copy URL for NFC Tools app |
+| Write to Tag | button | Direct write (Chrome Android only) |
+| Tag Type | select | NTAG213, NTAG215, NTAG216 |
+| Tag ID | text | Optional manual entry |
+| Short Code | text | Fallback code (shared with QR) |
+| Test | button | Opens visitor URL in new tab |
+| Help Modal | button | Step-by-step pairing instructions |
+
+**Features Implemented:**
+- ✅ NFC tab is **first tab** in Positioning Editor
+- ✅ Auto-generated canonical URL with `?src=nfc` tracking
+- ✅ Copy URL button for NFC Tools app (works on any phone)
+- ✅ Web NFC direct write (Chrome Android only, grayed out elsewhere)
+- ✅ "How to Pair" help modal with step-by-step instructions
+- ✅ Test button to verify URL works
+- ✅ Tag details section (collapsible)
 
 **Best For:**
 - Artifact labels (small, discreet)
@@ -106,10 +120,9 @@ The Stop Positioning Editor is a tabbed modal that allows curators to configure 
 - Accessibility stations
 
 **Tag Recommendations:**
-- NTAG213: 144 bytes, ideal for short URLs
-- NTAG215: 504 bytes, medium content
-- NTAG216: 888 bytes, extended content
-- MIFARE: Legacy systems, higher security
+- NTAG213: 144 bytes, ideal for TourStack URLs (recommended)
+- NTAG215: 504 bytes, longer URLs if needed
+- NTAG216: 888 bytes, complex data, vCards
 
 ---
 
@@ -184,22 +197,31 @@ The Stop Positioning Editor is a tabbed modal that allows curators to configure 
 3. ~~Keep QR Code tab fully functional~~ ✅
 4. ~~Add placeholder tabs for other technologies~~ ✅
 
-### Phase 2: GPS Tab (uses existing Map Block code) 🔜 NEXT
+### Phase 2: NFC Tab ✅ COMPLETE (Mar 5, 2026)
+1. ~~Move NFC to first tab position~~ ✅
+2. ~~Auto-generate canonical visitor URL with `?src=nfc`~~ ✅
+3. ~~Copy URL button for NFC Tools app~~ ✅
+4. ~~Web NFC direct write (Chrome Android)~~ ✅
+5. ~~Help modal with pairing instructions~~ ✅
+6. ~~Test button to verify URL~~ ✅
+7. ~~Tag details section (type, ID, short code)~~ ✅
+
+### Phase 3: GPS Tab 🔜 NEXT
 - Reuse Leaflet/Google Maps from MapBlockEditor
 - Add geofence radius visualization
 - "Get Current Location" button
 
-### Phase 3: BLE Beacon Tab
+### Phase 4: BLE Beacon Tab
 - UUID/Major/Minor input fields
 - Beacon scanning integration (future mobile app)
 - Signal strength simulator
 
-### Phase 4: NFC/RFID Tabs
+### Phase 5: RFID Tab
 - Tag ID generators
 - Type selectors
 - Programming instructions
 
-### Phase 5: WiFi/UWB Tabs
+### Phase 6: WiFi/UWB Tabs
 - Advanced configuration
 - Multi-point setup
 - Professional installation guides

@@ -99,6 +99,7 @@ const docsStructure: DocSection[] = [
         description: 'How visitors interact with your tours',
         items: [
             { slug: 'qr-codes', title: 'QR Codes', description: 'Print and display codes', icon: QrCode },
+            { slug: 'nfc-tags', title: 'NFC Tags', description: 'Tap-to-open with NFC cards', icon: Radio },
             { slug: 'visitor-view', title: 'The Visitor View', description: 'What visitors see', icon: Eye },
             { slug: 'kiosk-mode', title: 'Kiosk Mode', description: 'Museum kiosk deployments', icon: Monitor },
             { slug: 'publishing', title: 'Publishing Your Tour', description: 'Draft to published workflow', icon: Send },
@@ -654,7 +655,7 @@ const QRCodesPage = () => (
         </div>
 
         <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Downloading QR Codes</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">Accessing QR Codes</h2>
             <div className="space-y-4">
                 <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
                     <div className="flex items-start gap-3">
@@ -669,8 +670,8 @@ const QRCodesPage = () => (
                     <div className="flex items-start gap-3">
                         <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold">2</div>
                         <div>
-                            <h3 className="font-medium text-white mb-1">Go to Positioning Tab</h3>
-                            <p className="text-sm text-neutral-400">Click the "Positioning" tab at the top of the stop editor</p>
+                            <h3 className="font-medium text-white mb-1">Click Positioning Settings</h3>
+                            <p className="text-sm text-neutral-400">Click the QR code icon button on the stop card, or use the Positioning Settings button</p>
                         </div>
                     </div>
                 </div>
@@ -678,10 +679,49 @@ const QRCodesPage = () => (
                     <div className="flex items-start gap-3">
                         <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold">3</div>
                         <div>
+                            <h3 className="font-medium text-white mb-1">Go to QR Code Tab</h3>
+                            <p className="text-sm text-neutral-400">Select the "QR Code" tab in the Positioning Settings modal</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold">4</div>
+                        <div>
                             <h3 className="font-medium text-white mb-1">Download PNG</h3>
                             <p className="text-sm text-neutral-400">Click "Download QR Code" to get a print-ready 500×500px PNG file</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">QR Code Features</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Unique URLs</h3>
+                    <p className="text-sm text-neutral-400">
+                        Each stop gets a unique URL with a tracking token. This allows you to track which QR codes are being scanned.
+                    </p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Short Codes</h3>
+                    <p className="text-sm text-neutral-400">
+                        Every QR code includes a 6-character short code (e.g., "ABC123") that visitors can type manually if scanning fails.
+                    </p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Regenerate</h3>
+                    <p className="text-sm text-neutral-400">
+                        Click "Regenerate" to create a completely new QR code with a fresh URL and short code. Useful if a code is compromised.
+                    </p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Test Button</h3>
+                    <p className="text-sm text-neutral-400">
+                        Click "Test" to open the visitor URL in a new tab and verify the QR code works correctly before printing.
+                    </p>
                 </div>
             </div>
         </div>
@@ -696,8 +736,202 @@ const QRCodesPage = () => (
                     <li>• Print at least 2 inches (5cm) square for reliable scanning</li>
                     <li>• Use matte finish to reduce glare from gallery lighting</li>
                     <li>• Test the QR code after printing to ensure it works</li>
-                    <li>• Include the stop number below the QR code for reference</li>
+                    <li>• Include the short code below the QR code as a backup</li>
+                    <li>• Place at eye level, 3-4 feet from the exhibit</li>
                 </ul>
+            </div>
+        </div>
+
+        <div className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-2xl">
+            <h3 className="font-semibold text-blue-400 mb-2">💡 Also Consider: NFC Tags</h3>
+            <p className="text-neutral-300 text-sm mb-3">
+                For a more seamless experience, you can also use NFC tags alongside QR codes. Visitors simply tap their phone
+                on the tag — no camera needed. NFC tags are small, discreet, and feel magical to use.
+            </p>
+            <a href="/docs/nfc-tags" className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300">
+                Learn about NFC Tags <ArrowRight className="w-4 h-4" />
+            </a>
+        </div>
+    </div>
+);
+
+const NFCTagsPage = () => (
+    <div className="space-y-8">
+        <header>
+            <h1 className="text-3xl font-bold text-white mb-4">NFC Tags</h1>
+            <p className="text-xl text-neutral-400">
+                Let visitors tap their phone on an NFC sticker or card to instantly open tour content.
+            </p>
+        </header>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">What is NFC?</h2>
+            <p className="text-neutral-300 mb-4">
+                NFC (Near Field Communication) allows phones to read data from small tags when held close (within 1-4cm).
+                Unlike QR codes which require pointing a camera, NFC is a simple tap gesture that feels magical to visitors.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="p-4 bg-white/5 rounded-xl text-center">
+                    <div className="text-2xl mb-2">📱</div>
+                    <h3 className="font-medium text-white text-sm">Tap to Open</h3>
+                    <p className="text-xs text-neutral-400">No camera needed</p>
+                </div>
+                <div className="p-4 bg-white/5 rounded-xl text-center">
+                    <div className="text-2xl mb-2">⚡</div>
+                    <h3 className="font-medium text-white text-sm">Instant</h3>
+                    <p className="text-xs text-neutral-400">Opens in under 1 second</p>
+                </div>
+                <div className="p-4 bg-white/5 rounded-xl text-center">
+                    <div className="text-2xl mb-2">🎯</div>
+                    <h3 className="font-medium text-white text-sm">Discreet</h3>
+                    <p className="text-xs text-neutral-400">Small stickers or cards</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Programming NFC Tags</h2>
+            <p className="text-neutral-300 mb-4">
+                TourStack provides two methods to program NFC tags with your tour stop URLs:
+            </p>
+            
+            <div className="space-y-4">
+                <div className="p-5 bg-green-500/5 border border-green-500/20 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20 text-green-400 text-sm font-bold">1</div>
+                        <div>
+                            <h3 className="font-medium text-green-400 mb-1">Direct Write (Chrome Android)</h3>
+                            <p className="text-sm text-neutral-400 mb-2">
+                                If you're using Chrome on an Android phone, you can write directly to NFC tags from TourStack:
+                            </p>
+                            <ol className="text-sm text-neutral-400 space-y-1 ml-4">
+                                <li>1. Open the stop → Positioning Settings → NFC tab</li>
+                                <li>2. Click <strong className="text-white">"Write to NFC Tag"</strong></li>
+                                <li>3. Hold your NFC tag to the back of your phone</li>
+                                <li>4. Wait for the success confirmation</li>
+                            </ol>
+                            <p className="text-xs text-amber-400 mt-3">
+                                ⚠️ Only works on Chrome for Android. Not available on iPhone, desktop, or other browsers.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-5 bg-blue-500/5 border border-blue-500/20 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 text-sm font-bold">2</div>
+                        <div>
+                            <h3 className="font-medium text-blue-400 mb-1">NFC Tools App (Any Phone)</h3>
+                            <p className="text-sm text-neutral-400 mb-2">
+                                Works on both iPhone and Android using the free NFC Tools app:
+                            </p>
+                            <ol className="text-sm text-neutral-400 space-y-1 ml-4">
+                                <li>1. Download <strong className="text-white">NFC Tools</strong> (free on App Store / Play Store)</li>
+                                <li>2. In TourStack, go to NFC tab and click <strong className="text-white">"Copy URL"</strong></li>
+                                <li>3. In NFC Tools: <strong className="text-white">Write → Add a record → URL/URI</strong></li>
+                                <li>4. Paste the URL and tap <strong className="text-white">Write</strong></li>
+                                <li>5. Hold your NFC tag to your phone</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Testing NFC Tags</h2>
+            <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                <p className="text-neutral-300 mb-4">
+                    After programming, test your tag by tapping it with a phone:
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                        <h3 className="font-medium text-white mb-2">iPhone (XS and newer)</h3>
+                        <ul className="space-y-1 text-sm text-neutral-400">
+                            <li>• Tap tag near top of phone</li>
+                            <li>• Notification banner appears</li>
+                            <li>• Tap banner to open Safari</li>
+                        </ul>
+                    </div>
+                    <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                        <h3 className="font-medium text-white mb-2">Android</h3>
+                        <ul className="space-y-1 text-sm text-neutral-400">
+                            <li>• Tap tag on back of phone</li>
+                            <li>• Browser opens automatically</li>
+                            <li>• No extra steps needed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Recommended NFC Tags</h2>
+            <div className="space-y-3">
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="font-medium text-white">NTAG213</h3>
+                            <p className="text-sm text-neutral-400">144 bytes — Best for TourStack URLs</p>
+                        </div>
+                        <span className="px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded">Recommended</span>
+                    </div>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="font-medium text-white">NTAG215</h3>
+                            <p className="text-sm text-neutral-400">504 bytes — Longer URLs if needed</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="font-medium text-white">NTAG216</h3>
+                            <p className="text-sm text-neutral-400">888 bytes — Complex data, vCards</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div className="flex items-start gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div>
+                <h3 className="font-semibold text-white mb-1">Placement Tips</h3>
+                <ul className="text-neutral-400 text-sm space-y-1">
+                    <li>• Place tags at waist-to-chest height for easy tapping</li>
+                    <li>• Use anti-metal tags if mounting on metal surfaces</li>
+                    <li>• Add a small "Tap here" icon or text near the tag</li>
+                    <li>• Test each tag after installation</li>
+                    <li>• Consider pairing with QR code for maximum compatibility</li>
+                </ul>
+            </div>
+        </div>
+
+        <div className="p-6 bg-amber-500/5 border border-amber-500/20 rounded-2xl">
+            <h3 className="font-semibold text-amber-400 mb-2">Device Compatibility</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <h4 className="font-medium text-white mb-2">✅ Works Great</h4>
+                    <ul className="text-neutral-400 space-y-1">
+                        <li>• iPhone XS, XR, 11, 12, 13, 14, 15+</li>
+                        <li>• Most Android phones (2015+)</li>
+                        <li>• Samsung Galaxy S/Note series</li>
+                        <li>• Google Pixel phones</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 className="font-medium text-white mb-2">⚠️ Limited Support</h4>
+                    <ul className="text-neutral-400 space-y-1">
+                        <li>• iPhone 7, 8, X — need NFC reader app open</li>
+                        <li>• iPhone 6 and older — no NFC</li>
+                        <li>• Budget Android phones — check specs</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -708,7 +942,7 @@ const VisitorViewPage = () => (
         <header>
             <h1 className="text-3xl font-bold text-white mb-4">The Visitor View</h1>
             <p className="text-xl text-neutral-400">
-                What visitors see when they scan a QR code and access your tour.
+                What visitors see when they scan a QR code or tap an NFC tag to access your tour.
             </p>
         </header>
 
@@ -1926,6 +2160,7 @@ const pageComponents: Record<string, React.ComponentType> = {
     'media-library': MediaLibraryPage,
     'collections': CollectionsPage,
     'qr-codes': QRCodesPage,
+    'nfc-tags': NFCTagsPage,
     'visitor-view': VisitorViewPage,
     'kiosk-mode': KioskModePage,
     'publishing': PublishingPage,
