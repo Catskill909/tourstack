@@ -4,6 +4,7 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import type { Tour, Stop } from '../../src/generated/prisma/index.js';
 import { prisma } from '../db.js';
+import crypto from 'crypto';
 
 const router = Router();
 
@@ -109,6 +110,23 @@ router.get('/tour/:tourSlugOrId/stop/:stopSlugOrId', async (req: Request, res: R
             return;
         }
 
+        // Log visit analytics (non-blocking)
+        const trackingToken = req.query.t as string | undefined;
+        const source = req.query.src as string | undefined;
+        if (trackingToken || source) {
+            prisma.visitLog.create({
+                data: {
+                    id: crypto.randomUUID(),
+                    stopId: stop.id,
+                    tourId: tour.id,
+                    token: trackingToken || null,
+                    source: source || null,
+                    timestamp: new Date(),
+                    userAgent: req.headers['user-agent'] || null,
+                },
+            }).catch(() => { }); // Don't fail the request on analytics error
+        }
+
         // Return both tour info and stop data
         res.json({
             tour: parseTour({ ...tour, stops: [] }),
@@ -164,28 +182,71 @@ router.get('/tour/:tourSlugOrId/stop/:stopSlugOrId/info', async (req: Request, r
     }
 });
 
-// GET /api/visitor/s/:shortCode - Redirect by short code
+// GET /api/visitor/tour/:tourSlugOrId/gps-stops - Lightweight GPS geofence targets
+router.get('/tour/:tourSlugOrId/gps-stops', async (req: Request, res: Response) => {
+    try {
+        const tourSlugOrId = req.params.tourSlugOrId as string;
+
+        let tour = await prisma.tour.findFirst({
+            where: { slug: tourSlugOrId },
+            include: { stops: { orderBy: { order: 'asc' } } },
+        });
+        if (!tour) {
+            tour = await prisma.tour.findUnique({
+                where: { id: tourSlugOrId },
+                include: { stops: { orderBy: { order: 'asc' } } },
+            });
+        }
+        if (!tour) {
+            res.status(404).json({ error: 'Tour not found' });
+            return;
+        }
+
+        // Filter to stops with GPS primary positioning and return lightweight data
+        const gpsStops = tour.stops
+            .map((stop) => {
+                try {
+                    const primaryPositioning = JSON.parse(stop.primaryPositioning);
+                    if (primaryPositioning?.method === 'gps') {
+                        return {
+                            id: stop.id,
+                            slug: stop.slug,
+                            title: JSON.parse(stop.title),
+                            latitude: primaryPositioning.latitude,
+                            longitude: primaryPositioning.longitude,
+                            radius: primaryPositioning.radius,
+                        };
+                    }
+                } catch { /* skip malformed */ }
+                return null;
+            })
+            .filter(Boolean);
+
+        res.json({ tourId: tour.id, gpsStops });
+    } catch (error) {
+        console.error('Error fetching GPS stops:', error);
+        res.status(500).json({ error: 'Failed to fetch GPS stops' });
+    }
+});
+
+// GET /api/visitor/s/:shortCode - Redirect by short code (O(1) indexed lookup)
 router.get('/s/:shortCode', async (req: Request, res: Response) => {
     try {
         const shortCode = req.params.shortCode as string;
 
-        // Find stop by short code in primaryPositioning
-        const stops = await prisma.stop.findMany();
+        // Indexed lookup on shortCode column
+        const stop = await prisma.stop.findFirst({
+            where: { shortCode },
+            include: { tour: true },
+        });
 
-        for (const stop of stops) {
-            const positioning = JSON.parse(stop.primaryPositioning);
-            if (positioning.shortCode === shortCode) {
-                // Get tour slug
-                const tour = await prisma.tour.findUnique({ where: { id: stop.tourId } });
-                if (tour) {
-                    const redirectUrl = `/visitor/tour/${tour.slug}/stop/${stop.slug}`;
-                    res.json({ redirectUrl, tourSlug: tour.slug, stopSlug: stop.slug });
-                    return;
-                }
-            }
+        if (!stop || !stop.tour) {
+            res.status(404).json({ error: 'Short code not found' });
+            return;
         }
 
-        res.status(404).json({ error: 'Short code not found' });
+        const redirectUrl = `/visitor/tour/${stop.tour.slug}/stop/${stop.slug}`;
+        res.json({ redirectUrl, tourSlug: stop.tour.slug, stopSlug: stop.slug });
     } catch (error) {
         console.error('Error looking up short code:', error);
         res.status(500).json({ error: 'Failed to look up short code' });

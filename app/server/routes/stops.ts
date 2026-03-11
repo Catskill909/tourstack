@@ -3,6 +3,7 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import type { Stop } from '../../src/generated/prisma/index.js';
 import { prisma } from '../db.js';
+import { PositioningConfigSchema } from '../validation/positioning.js';
 
 const router = Router();
 
@@ -144,6 +145,7 @@ router.post('/', async (req: Request, res: Response) => {
                 image: typeof data.image === 'object' ? JSON.stringify(data.image) : (data.image || ''),
                 description: JSON.stringify(data.description || { en: '' }),
                 customFieldValues: JSON.stringify(data.customFieldValues || {}),
+                shortCode,
                 primaryPositioning: JSON.stringify({ method: 'qr_code', url: visitorUrl, shortCode }),
                 backupPositioning: data.backupPositioning ? JSON.stringify(data.backupPositioning) : null,
                 triggers: JSON.stringify(data.triggers || { triggerOnEnter: true, triggerOnExit: false }),
@@ -177,8 +179,30 @@ router.put('/:id', async (req: Request<IdParams>, res: Response) => {
         if (data.content !== undefined) updateData.content = JSON.stringify(data.content);
         if (data.contentBlocks !== undefined) updateData.content = JSON.stringify(data.contentBlocks);
         if (data.customFieldValues !== undefined) updateData.customFieldValues = JSON.stringify(data.customFieldValues);
-        if (data.primaryPositioning !== undefined) updateData.primaryPositioning = JSON.stringify(data.primaryPositioning);
-        if (data.backupPositioning !== undefined) updateData.backupPositioning = data.backupPositioning ? JSON.stringify(data.backupPositioning) : null;
+        if (data.primaryPositioning !== undefined) {
+            const result = PositioningConfigSchema.safeParse(data.primaryPositioning);
+            if (!result.success) {
+                res.status(400).json({ error: 'Invalid positioning config', details: result.error.issues });
+                return;
+            }
+            updateData.primaryPositioning = JSON.stringify(result.data);
+            // Keep shortCode column in sync
+            if ('shortCode' in result.data && (result.data as { shortCode?: string }).shortCode) {
+                updateData.shortCode = (result.data as { shortCode: string }).shortCode;
+            }
+        }
+        if (data.backupPositioning !== undefined) {
+            if (data.backupPositioning) {
+                const result = PositioningConfigSchema.safeParse(data.backupPositioning);
+                if (!result.success) {
+                    res.status(400).json({ error: 'Invalid backup positioning config', details: result.error.issues });
+                    return;
+                }
+                updateData.backupPositioning = JSON.stringify(result.data);
+            } else {
+                updateData.backupPositioning = null;
+            }
+        }
         if (data.triggers !== undefined) updateData.triggers = JSON.stringify(data.triggers);
         if (data.interactive !== undefined) updateData.interactive = data.interactive ? JSON.stringify(data.interactive) : null;
         if (data.links !== undefined) updateData.links = JSON.stringify(data.links);

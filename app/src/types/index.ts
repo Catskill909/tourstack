@@ -227,6 +227,7 @@ export type ContentBlockType =
   | 'comparison'
   | 'positioning'
   | 'map'
+  | 'imageMap'
   | 'tour'
   | 'stopList'
   | 'qrScanner';
@@ -442,6 +443,53 @@ export interface MapBlockData {
   showBlockImage?: boolean;
 }
 
+// Image Map Block - floor plan with tappable markers for indoor navigation
+export type ImageMapIcon = 'pin' | 'dot' | 'number' | 'star' | 'info' | 'accessibility' | 'restroom' | 'stairs' | 'elevator' | 'exit' | 'cafe' | 'gift-shop' | 'ticket' | 'camera' | 'audio-guide' | 'parking';
+
+export interface ImageMapMarker {
+  id: string;
+  x: number;              // 0-100 (percentage from left)
+  y: number;              // 0-100 (percentage from top)
+  label: { [lang: string]: string };
+  stopId?: string;        // Link to a stop (tap → navigate)
+  infoText?: { [lang: string]: string }; // Rich info text shown in popup on tap
+  icon?: ImageMapIcon;
+  color?: string;         // Marker color (hex)
+  number?: number;        // Optional tour order number
+}
+
+export interface ImageMapFloor {
+  id: string;
+  imageUrl: string;
+  imageAlt?: { [lang: string]: string };
+  label: { [lang: string]: string };    // e.g. "Ground Floor", "Level 2"
+  order: number;
+  markers: ImageMapMarker[];
+}
+
+export interface ImageMapBlockData {
+  // Single-floor (backward compatible)
+  imageUrl: string;
+  imageAlt?: { [lang: string]: string };
+  markers: ImageMapMarker[];
+
+  // Multi-floor support
+  floors?: ImageMapFloor[];
+  activeFloorId?: string;
+
+  // Display
+  size?: 'small' | 'medium' | 'large' | 'full';
+  showLabels?: boolean;
+  labelsPosition?: 'above' | 'below' | 'right';
+  zoomable?: boolean;
+  showLegend?: boolean;
+  // Block metadata
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
+}
+
 // Tour Block - Full-screen hero introduction for tours
 export type TourBlockLayout = 'hero-bottom' | 'hero-center' | 'hero-overlay';
 export type TourBlockCtaStyle = 'primary' | 'secondary' | 'outline' | 'ghost';
@@ -544,6 +592,7 @@ export type ContentBlockData =
   | ComparisonBlockData
   | PositioningBlockData
   | MapBlockData
+  | ImageMapBlockData
   | TourBlockData
   | StopListBlockData
   | QRScannerBlockData;

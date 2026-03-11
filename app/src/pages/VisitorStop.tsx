@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Globe, AlertCircle, Loader2, ChevronLeft, ChevronRight, Settings, Maximize, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Globe, AlertCircle, Loader2, ChevronLeft, ChevronRight, Settings, Maximize, RotateCcw, MapPin, QrCode, Smartphone, X, Navigation } from 'lucide-react';
 import { StopContentBlock } from '../components/blocks/StopContentBlock';
 import { DisplaySettingsPanel, type DisplaySettings } from '../components/DisplaySettingsPanel';
 import { ChatDrawer, ChatFloatingButton, KioskChatButton } from '../components/chat/ChatDrawer';
-import type { Stop, ContentBlock, TourQuickAction } from '../types';
+import { useGeofenceMonitor, type GeofenceTarget } from '../hooks/useGeofenceMonitor';
+import type { Stop, ContentBlock, TourQuickAction, PositioningConfig } from '../types';
 
 // API returns tour with full stop objects (not just IDs)
 interface TourWithStops {
@@ -67,12 +68,15 @@ export function VisitorStop() {
     });
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);
+    const [fallbackDismissed, setFallbackDismissed] = useState(false);
+    const [geoTargets, setGeoTargets] = useState<GeofenceTarget[]>([]);
+    const [geoDismissed, setGeoDismissed] = useState(false);
 
     // Determine device type for content rendering
     // Kiosk mode gets kiosk sizing, otherwise detect from screen width
     const deviceType = isKioskMode ? 'kiosk' as const
         : window.innerWidth >= 820 ? 'tablet' as const
-        : 'phone' as const;
+            : 'phone' as const;
 
     // Check if user is staff (simplified - could use auth system later)
     const isStaff = localStorage.getItem('tourstack_staff') === 'true';
@@ -130,6 +134,37 @@ export function VisitorStop() {
 
         fetchData();
     }, [tourSlugOrId, stopSlugOrId, isStaff, urlLang]);
+
+    // Fetch GPS geofence targets for this tour
+    useEffect(() => {
+        if (!tourSlugOrId) return;
+        fetch(`/api/visitor/tour/${tourSlugOrId}/gps-stops`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data?.gpsStops?.length) {
+                    setGeoTargets(data.gpsStops.map((s: any) => ({
+                        id: s.id,
+                        lat: s.latitude,
+                        lng: s.longitude,
+                        radius: s.radius,
+                    })));
+                }
+            })
+            .catch(() => { /* non-critical */ });
+    }, [tourSlugOrId]);
+
+    // Geofence monitoring — auto-navigate when entering a different stop's zone
+    const handleGeofenceEnter = useCallback((stopId: string) => {
+        if (!tour || stopId === stop?.id) return;
+        const target = allStops.find(s => s.id === stopId);
+        if (target) {
+            navigate(`/visitor/tour/${tour.slug || tour.id}/stop/${target.slug || target.id}?${searchParams.toString()}`);
+        }
+    }, [tour, stop, allStops, searchParams, navigate]);
+
+    const geofence = useGeofenceMonitor(geoTargets, handleGeofenceEnter);
+    const hasGpsStops = geoTargets.length > 0;
+    const showGeoPrompt = hasGpsStops && geofence.permission === 'prompt' && !geoDismissed;
 
     // Fullscreen API handling
     useEffect(() => {
@@ -192,6 +227,29 @@ export function VisitorStop() {
     const stopIndex = allStops.findIndex((s) => s.id === stop?.id) ?? -1;
     const prevStop = stopIndex > 0 ? allStops[stopIndex - 1] : null;
     const nextStop = stopIndex >= 0 && stopIndex < allStops.length - 1 ? allStops[stopIndex + 1] : null;
+
+    // Auto-detection positioning methods that can fail (GPS denied, BLE unavailable, etc.)
+    const AUTO_DETECT_METHODS = new Set(['gps', 'ble_beacon', 'ble_virtual', 'wifi', 'uwb', 'audio_watermark', 'image_recognition']);
+
+    // Determine if we should show the backup positioning fallback banner
+    const showFallbackBanner = !fallbackDismissed
+        && stop?.primaryPositioning
+        && AUTO_DETECT_METHODS.has((stop.primaryPositioning as PositioningConfig).method)
+        && stop.backupPositioning
+        && (stop.backupPositioning as PositioningConfig).method;
+
+    function getFallbackMessage(config: PositioningConfig): { icon: React.ReactNode; text: string } {
+        switch (config.method) {
+            case 'qr_code':
+                return { icon: <QrCode className="w-4 h-4 shrink-0" />, text: 'Scan the QR code at this exhibit' };
+            case 'nfc':
+                return { icon: <Smartphone className="w-4 h-4 shrink-0" />, text: 'Tap the NFC tag at this exhibit' };
+            case 'manual':
+                return { icon: <MapPin className="w-4 h-4 shrink-0" />, text: config.instructions || 'Find this exhibit manually' };
+            default:
+                return { icon: <MapPin className="w-4 h-4 shrink-0" />, text: 'Navigate to this exhibit manually' };
+        }
+    }
 
     // Loading state
     if (loading) {
@@ -338,6 +396,56 @@ export function VisitorStop() {
                             <ArrowLeft className="w-4 h-4" />
                             Back to Admin
                         </Link>
+                    </div>
+                </div>
+            )}
+
+            {/* Backup Positioning Fallback Banner */}
+            {showFallbackBanner && (() => {
+                const backup = stop!.backupPositioning as PositioningConfig;
+                const { icon, text } = getFallbackMessage(backup);
+                return (
+                    <div className="bg-blue-500/15 border-b border-blue-500/25">
+                        <div className={`${deviceType === 'kiosk' ? 'max-w-7xl px-10' : 'max-w-4xl px-4'} mx-auto py-2.5 flex items-center justify-between gap-3`}>
+                            <div className="flex items-center gap-2 text-blue-300 text-sm">
+                                {icon}
+                                <span>{text}</span>
+                            </div>
+                            <button
+                                onClick={() => setFallbackDismissed(true)}
+                                className="p-1 text-blue-400/60 hover:text-blue-300 transition-colors"
+                                aria-label="Dismiss"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                );
+            })()}
+
+            {/* GPS Geofence Permission Prompt */}
+            {showGeoPrompt && (
+                <div className="bg-green-500/10 border-b border-green-500/20">
+                    <div className={`${deviceType === 'kiosk' ? 'max-w-7xl px-10' : 'max-w-4xl px-4'} mx-auto py-2.5 flex items-center justify-between gap-3`}>
+                        <div className="flex items-center gap-2 text-green-300 text-sm">
+                            <Navigation className="w-4 h-4 shrink-0" />
+                            <span>Enable location to auto-navigate between stops</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => geofence.start()}
+                                className="px-3 py-1 text-xs font-medium bg-green-500/20 text-green-300 rounded-lg hover:bg-green-500/30 transition-colors"
+                            >
+                                Enable
+                            </button>
+                            <button
+                                onClick={() => setGeoDismissed(true)}
+                                className="p-1 text-green-400/60 hover:text-green-300 transition-colors"
+                                aria-label="Dismiss"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -74,6 +74,7 @@ model Tour {
 model Stop {
   id                 String   @id @default(cuid())
   slug               String?
+  shortCode          String?  @unique
   tourId             String
   order              Int
   type               String   @default("mandatory")
@@ -93,6 +94,20 @@ model Stop {
   tour               Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
 
   @@index([tourId])
+}
+
+model VisitLog {
+  id        String   @id @default(cuid())
+  stopId    String
+  tourId    String
+  token     String?
+  source    String?
+  timestamp DateTime @default(now())
+  userAgent String?
+
+  @@index([stopId])
+  @@index([tourId])
+  @@index([timestamp])
 }
 
 model AppSettings {

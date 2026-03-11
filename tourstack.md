@@ -38,7 +38,7 @@ When museum staff access visitor pages, they see:
 
 ---
 
-## Project Status (February 2026)
+## Project Status (March 2026)
 
 | Phase | Status |
 |-------|--------|
@@ -61,7 +61,7 @@ When museum staff access visitor pages, they see:
 | Phase 16: Tour Block + Visitor System | ✅ Complete |
 | Phase 16.5: Kiosk Launch System (Phase 1-3) | ✅ Complete |
 | Phase 17: Stop Navigation & Links | 🎯 Planned |
-| Phase 18: GPS Positioning Tab | 🎯 Planned |
+| Phase 18: GPS Positioning + Geofencing | ✅ Complete |
 | Phase 19: AI Object Analysis (Full) | ✅ Complete |
 | Phase 20: Media Library | ✅ Complete |
 | Phase 21: Collections Enhancement | ✅ Complete |
@@ -71,6 +71,7 @@ When museum staff access visitor pages, they see:
 | Phase 25: Document Collections | ✅ Complete |
 | Phase 26.1: AI Museum Concierge | ✅ Complete |
 | Phase 27: Google Cloud TTS Integration | ✅ Complete |
+| Phase 28: Image Map Block | ✅ Complete |
 | Database Safety Infrastructure | ✅ Complete |
 | Phase 26.2: Per-Tour AI Concierge | 🎯 NEXT |
 
@@ -320,12 +321,33 @@ Collections → AI Analyze → Translate → Save → Auto-Sync → Media Librar
 - Linked document collections per tour
 - Future: Location-aware responses using positioning tech
 
-**Knowledge Sources Per Tour:**
-1. Tour content (title, description, stop titles, text blocks)
-2. Linked document collections (PDFs, extracted text)
-3. AI analysis results (summary, facts, FAQ, tags)
-
 **Documentation:** See [docs/ai-chatbot-documents-dev.md](docs/ai-chatbot-documents-dev.md)
+
+### Image Map Block (Phase 28) - COMPLETE ✅
+
+**New Content Block Type:** Indoor floor plan maps with tappable markers for museum navigation.
+
+| Feature | Description |
+|---------|-------------|
+| **New Block Type** | `imageMap` — separate from geographic Map block |
+| **Image Upload** | Floor plans via existing media system |
+| **Click-to-Place Markers** | Percentage-based coordinates (resolution-independent) |
+| **5 Marker Icons** | Pin, dot, number, star, info with 7+ color options |
+| **Stop Linking** | Markers link to tour stops for visitor navigation |
+| **Full-Screen Editor Modal** | Large canvas + sidebar with Markers and Settings tabs |
+| **Info Text Popups** | Glass-morphism popup overlay on visitor tap |
+| **Multi-Floor Support** | `ImageMapFloor` type with floor switcher pills |
+| **Pinch-to-Zoom** | CSS transform-based touch zoom for mobile |
+| **Translation** | LanguageSwitcher + global Translate All via `magicTranslate()` |
+| **Responsive Preview** | Width-based sizing, full-width on tablet/kiosk |
+
+**Files:**
+- `ImageMapEditorModal.tsx` - Full-screen editor with floor tabs + translation
+- `ImageMapBlockEditor.tsx` - Summary card with stats + "Open Editor" button
+- `ImageMapBlockPreview.tsx` - Visitor view with zoom, popups, floor switcher
+- `ImageMapMarkerPin.tsx` - Reusable marker component (5 icons, 7+ colors)
+- `types/index.ts` - `ImageMapBlockData`, `ImageMapMarker`, `ImageMapFloor` types
+- `docs/image-map-block-dev.md` - Full development documentation
 
 ---
 
@@ -491,12 +513,15 @@ RSSI (Received Signal Strength Indicator) based positioning
 Accuracy: ±1.5-3 meters
 Configuration: UUID, Major, Minor values
 Typical setup: 2-4 beacons per room (entrance/exit + center positions)
-2. GPS (Lat/Long) Coordinates
+2. GPS (Lat/Long) Coordinates ✅ IMPLEMENTED
 
 For outdoor exhibits, sculpture gardens, archaeological sites
 Standard latitude/longitude coordinates
 Configurable geofence radius (5-100 meters)
 Works with device GPS
+Admin: Interactive map editor (OpenStreetMap/Google), click-to-place, radius slider, coordinate inputs
+Visitor: Haversine-based geofence monitoring, auto-navigation on entry, permission management UI
+Analytics: VisitLog table tracks visits with positioning method used
 3. NFC (Near Field Communication)
 
 Ultra-short range (0-4cm proximity required)

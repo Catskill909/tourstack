@@ -1,9 +1,10 @@
-import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight, List, ScanLine } from 'lucide-react';
+import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight, List, ScanLine, LayoutGrid } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, Tour, Stop } from '../../types';
+import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, Tour, Stop } from '../../types';
 import { GalleryPreview } from './GalleryPreview';
 import { TimelineGalleryPreview } from './TimelineGalleryPreview';
 import { MapPreview } from './MapPreview';
+import { ImageMapBlockPreview } from './ImageMapBlockPreview';
 import { StopListBlockPreview } from './StopListBlockPreview';
 import { QRScannerBlockPreview } from './QRScannerBlockPreview';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
@@ -40,6 +41,7 @@ const BLOCK_ICONS: Record<ContentBlockType, LucideIcon> = {
     comparison: Columns,
     positioning: QrCode,
     map: MapIcon,
+    imageMap: LayoutGrid,
     tour: Play,
     stopList: List,
     qrScanner: ScanLine,
@@ -57,6 +59,7 @@ const BLOCK_LABELS: Record<ContentBlockType, string> = {
     comparison: 'Comparison',
     positioning: 'Positioning',
     map: 'Map',
+    imageMap: 'Image Map',
     tour: 'Tour Intro',
     stopList: 'Stop List',
     qrScanner: 'QR Scanner',
@@ -486,6 +489,30 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                 return renderPositioningBlock(block.data as PositioningBlockData);
             case 'map':
                 return renderMapBlock(block.data as MapBlockData);
+            case 'imageMap': {
+                const imData = block.data as ImageMapBlockData;
+                // On tablet/kiosk, always fill width; on phone, respect size setting
+                const imSizeClass = isTablet ? 'w-full' : ({
+                    small: 'max-w-xs',
+                    medium: 'max-w-md',
+                    large: 'max-w-2xl',
+                    full: 'w-full',
+                } as Record<string, string>)[imData.size || 'large'] || 'max-w-2xl';
+                return (
+                    <>
+                        {renderBlockHeader(imData)}
+                        <div className={imSizeClass}>
+                            <ImageMapBlockPreview
+                                data={imData}
+                                language={language}
+                                deviceType={deviceType}
+                                allStops={allStops}
+                                onNavigateToStop={mode === 'view' ? onNavigateToStop : undefined}
+                            />
+                        </div>
+                    </>
+                );
+            }
             case 'tour':
                 return renderTourBlock(block.data as TourBlockData);
             case 'stopList':

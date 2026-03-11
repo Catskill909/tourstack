@@ -17,11 +17,17 @@ type LeafletMarker = any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type LeafletCircle = any;
 
-const MAP_STYLES: { value: MapStyle; label: string; osmOnly?: boolean }[] = [
+const OSM_STYLES: { value: MapStyle; label: string }[] = [
   { value: 'standard', label: 'Standard' },
   { value: 'satellite', label: 'Satellite' },
   { value: 'terrain', label: 'Terrain' },
-  { value: 'hybrid', label: 'Hybrid', osmOnly: false },
+];
+
+const GOOGLE_STYLES: { value: MapStyle; label: string }[] = [
+  { value: 'standard', label: 'Roadmap' },
+  { value: 'satellite', label: 'Satellite' },
+  { value: 'terrain', label: 'Terrain' },
+  { value: 'hybrid', label: 'Hybrid' },
 ];
 
 const DEFAULT_CENTER = { lat: 40.7128, lng: -74.006 }; // NYC
@@ -33,11 +39,11 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
   const markerRef = useRef<LeafletMarker | null>(null);
   const circleRef = useRef<LeafletCircle | null>(null);
   const leafletRef = useRef<typeof import('leaflet') | null>(null);
-  
+
   // Ref to hold latest data/onChange for click handler
   const dataRef = useRef(data);
   const onChangeRef = useRef(onChange);
-  
+
   // Keep refs updated
   useEffect(() => {
     dataRef.current = data;
@@ -90,8 +96,8 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
           zoomControl: true,
         });
 
-        // Add tile layer
-        updateTileLayer(map, L, data.style || 'standard');
+        // Add tile layer — respect provider for initial tiles
+        updateTileLayer(map, L, data.style || (data.provider === 'google' ? 'satellite' : 'standard'), data.provider || 'openstreetmap');
 
         // Store refs BEFORE adding click handler
         mapInstanceRef.current = map;
@@ -101,16 +107,16 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
         map.on('click', (e: L.LeafletMouseEvent) => {
           const clickLat = Math.round(e.latlng.lat * 1000000) / 1000000;
           const clickLng = Math.round(e.latlng.lng * 1000000) / 1000000;
-          
+
           setLatInput(clickLat.toString());
           setLngInput(clickLng.toString());
-          
+
           // Remove existing marker if any
           if (markerRef.current) {
             map.removeLayer(markerRef.current);
             markerRef.current = null;
           }
-          
+
           // Create custom icon to ensure visibility
           const customIcon = L.icon({
             iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
@@ -121,13 +127,13 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
             popupAnchor: [1, -34],
             shadowSize: [41, 41]
           });
-          
+
           // Create new marker with explicit icon
-          const marker = L.marker([clickLat, clickLng], { 
+          const marker = L.marker([clickLat, clickLng], {
             draggable: true,
             icon: customIcon
           }).addTo(map);
-          
+
           marker.on('dragend', () => {
             const pos = marker.getLatLng();
             const dragLat = Math.round(pos.lat * 1000000) / 1000000;
@@ -142,13 +148,13 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
             });
           });
           markerRef.current = marker;
-          
+
           // Remove existing circle if any
           if (circleRef.current) {
             map.removeLayer(circleRef.current);
             circleRef.current = null;
           }
-          
+
           // Update trigger zone if enabled
           const currentData = dataRef.current;
           if (currentData.showTriggerZone && currentData.triggerRadius) {
@@ -160,7 +166,7 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
               weight: 2,
             }).addTo(map);
           }
-          
+
           onChangeRef.current({
             ...currentData,
             latitude: clickLat,
@@ -203,8 +209,8 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
     };
   }, []);
 
-  // Update tile layer based on style
-  function updateTileLayer(map: LeafletMap, L: typeof import('leaflet'), style: MapStyle) {
+  // Update tile layer based on style and provider
+  function updateTileLayer(map: LeafletMap, L: typeof import('leaflet'), style: MapStyle, provider: MapProvider = 'openstreetmap') {
     // Remove existing tile layers
     map.eachLayer((layer: { _url?: string }) => {
       if (layer._url) {
@@ -212,18 +218,42 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
       }
     });
 
-    let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    let attribution = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+    let tileUrl: string;
+    let attribution: string;
+    const subdomains = 'mt0 mt1 mt2 mt3'.split(' ');
 
-    if (style === 'satellite') {
-      tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-      attribution = '© Esri';
-    } else if (style === 'terrain') {
-      tileUrl = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
-      attribution = '© OpenTopoMap';
+    if (provider === 'google') {
+      // Google Maps tile styles
+      attribution = '© Google';
+      switch (style) {
+        case 'satellite':
+          tileUrl = 'https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}';
+          break;
+        case 'hybrid':
+          tileUrl = 'https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
+          break;
+        case 'terrain':
+          tileUrl = 'https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}';
+          break;
+        default: // 'standard' = roadmap
+          tileUrl = 'https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+          break;
+      }
+      L.tileLayer(tileUrl, { attribution, subdomains }).addTo(map);
+    } else {
+      // OpenStreetMap tile styles
+      tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+      attribution = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+
+      if (style === 'satellite') {
+        tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+        attribution = '© Esri';
+      } else if (style === 'terrain') {
+        tileUrl = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
+        attribution = '© OpenTopoMap';
+      }
+      L.tileLayer(tileUrl, { attribution }).addTo(map);
     }
-
-    L.tileLayer(tileUrl, { attribution }).addTo(map);
   }
 
   // Add/update marker with explicit icon
@@ -233,7 +263,7 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
       map.removeLayer(markerRef.current);
       markerRef.current = null;
     }
-    
+
     // Create custom icon to ensure visibility
     const customIcon = L.icon({
       iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
@@ -244,12 +274,12 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
       popupAnchor: [1, -34],
       shadowSize: [41, 41]
     });
-    
-    markerRef.current = L.marker([lat, lng], { 
+
+    markerRef.current = L.marker([lat, lng], {
       draggable: true,
       icon: customIcon
     }).addTo(map);
-    
+
     markerRef.current.on('dragend', () => {
       const pos = markerRef.current.getLatLng();
       updateMarkerPosition(pos.lat, pos.lng, false);
@@ -272,7 +302,7 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
     }
   }
 
-  
+
   // Update marker position and sync data
   const updateMarkerPosition = useCallback((lat: number, lng: number, panTo = true) => {
     const L = leafletRef.current;
@@ -308,7 +338,7 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
   function handleCoordsSubmit() {
     const lat = parseFloat(latInput);
     const lng = parseFloat(lngInput);
-    
+
     if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
       return; // Invalid coordinates
     }
@@ -330,13 +360,13 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
     setRadiusInput(newRadius.toString());
     const L = leafletRef.current;
     const map = mapInstanceRef.current;
-    
+
     if (L && map && data.latitude && data.longitude) {
       if (data.showTriggerZone) {
         addCircle(L, map, data.latitude, data.longitude, newRadius);
       }
     }
-    
+
     onChange({ ...data, triggerRadius: newRadius });
   }
 
@@ -362,20 +392,26 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
     const L = leafletRef.current;
     const map = mapInstanceRef.current;
     if (L && map) {
-      updateTileLayer(map, L, style);
+      updateTileLayer(map, L, style, data.provider || 'openstreetmap');
     }
     onChange({ ...data, style });
   }
 
   // Handle provider change
   function handleProviderChange(provider: MapProvider) {
-    onChange({ ...data, provider });
+    const style = data.style || (provider === 'google' ? 'satellite' : 'standard');
+    onChange({ ...data, provider, style });
+    const L = leafletRef.current;
+    const map = mapInstanceRef.current;
+    if (L && map) {
+      updateTileLayer(map, L, style, provider);
+    }
   }
 
   // Search for address using Nominatim
   async function handleSearch() {
     if (!searchQuery.trim()) return;
-    
+
     setIsSearching(true);
     setSearchError(null);
 
@@ -390,11 +426,11 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
       );
 
       const results = await response.json();
-      
+
       if (results.length > 0) {
         const { lat, lon } = results[0];
         updateMarkerPosition(parseFloat(lat), parseFloat(lon));
-        
+
         // Zoom to reasonable level for address
         if (mapInstanceRef.current) {
           mapInstanceRef.current.setZoom(17);
@@ -485,49 +521,6 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Provider Toggle - selects which map shows in preview/device */}
-          <div className="flex flex-col items-end gap-1">
-            <div className="flex items-center gap-2 bg-white/5 rounded-lg p-1">
-              <button
-                onClick={() => handleProviderChange('openstreetmap')}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  data.provider === 'openstreetmap' || !data.provider
-                    ? 'bg-emerald-500 text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                OpenStreetMap
-              </button>
-              <button
-                onClick={() => handleProviderChange('google')}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  data.provider === 'google'
-                    ? 'bg-emerald-500 text-white'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                Google Maps
-              </button>
-            </div>
-            <span className="text-[10px] text-gray-500">For device preview</span>
-          </div>
-
-          {/* Style Selector */}
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-gray-400" />
-            <select
-              value={data.style || 'standard'}
-              onChange={(e) => handleStyleChange(e.target.value as MapStyle)}
-              className="bg-white/10 text-white text-sm rounded-lg px-3 py-1.5 border border-white/10 focus:border-emerald-500 focus:outline-none appearance-none cursor-pointer"
-            >
-              {MAP_STYLES.map((style) => (
-                <option key={style.value} value={style.value}>
-                  {style.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <button
             onClick={onClose}
             className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors"
@@ -548,7 +541,48 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
         {/* Map */}
         <div className="flex-1 relative">
           <div ref={mapRef} className="absolute inset-0" />
-          
+
+          {/* Map Controls Overlay - Provider & Style */}
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2">
+            {/* Provider Toggle */}
+            <div className="flex items-center gap-1 bg-black/70 backdrop-blur-sm rounded-lg p-1 shadow-lg">
+              <button
+                onClick={() => handleProviderChange('openstreetmap')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${data.provider === 'openstreetmap' || !data.provider
+                  ? 'bg-emerald-500 text-white'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+              >
+                OpenStreetMap
+              </button>
+              <button
+                onClick={() => handleProviderChange('google')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${data.provider === 'google'
+                  ? 'bg-emerald-500 text-white'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+              >
+                Google Maps
+              </button>
+            </div>
+
+            {/* Style Selector */}
+            <div className="flex items-center gap-1.5 bg-black/70 backdrop-blur-sm rounded-lg px-2.5 py-1 shadow-lg">
+              <Layers className="w-4 h-4 text-gray-300" />
+              <select
+                value={data.style || 'standard'}
+                onChange={(e) => handleStyleChange(e.target.value as MapStyle)}
+                className="bg-transparent text-white text-sm py-1.5 focus:outline-none appearance-none cursor-pointer pr-1"
+              >
+                {(data.provider === 'google' ? GOOGLE_STYLES : OSM_STYLES).map((style) => (
+                  <option key={style.value} value={style.value} className="bg-gray-900 text-white">
+                    {style.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           {/* Crosshair indicator when no marker */}
           {isMapReady && !data.latitude && !data.longitude && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -666,18 +700,16 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
               </label>
               <button
                 onClick={handleToggleTriggerZone}
-                className={`relative w-10 h-6 rounded-full transition-colors ${
-                  data.showTriggerZone ? 'bg-emerald-500' : 'bg-white/20'
-                }`}
+                className={`relative w-10 h-6 rounded-full transition-colors ${data.showTriggerZone ? 'bg-emerald-500' : 'bg-white/20'
+                  }`}
               >
                 <span
-                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                    data.showTriggerZone ? 'left-5' : 'left-1'
-                  }`}
+                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${data.showTriggerZone ? 'left-5' : 'left-1'
+                    }`}
                 />
               </button>
             </div>
-            
+
             {data.showTriggerZone && (
               <div>
                 <label className="block text-xs text-gray-500 mb-1">
@@ -709,11 +741,10 @@ export function MapEditorModal({ data, language, onChange, onClose }: MapEditorM
                 <button
                   key={size}
                   onClick={() => onChange({ ...data, size })}
-                  className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                    (data.size || 'medium') === size
-                      ? 'bg-emerald-500 border-emerald-500 text-white'
-                      : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10'
-                  }`}
+                  className={`px-3 py-2 text-sm rounded-lg border transition-colors ${(data.size || 'medium') === size
+                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                    : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10'
+                    }`}
                 >
                   {size.charAt(0).toUpperCase() + size.slice(1)}
                 </button>

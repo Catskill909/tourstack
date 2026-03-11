@@ -3,9 +3,11 @@ import { QRCodeSVG } from 'qrcode.react';
 import {
     X, QrCode, RefreshCw, Copy, Check, ExternalLink, Download,
     MapPin, Radio, Smartphone, Scan, Wifi, Target, Clock, HelpCircle,
-    Nfc, CheckCircle2, AlertCircle, Loader2
+    Nfc, CheckCircle2, AlertCircle, Loader2, Navigation, Search
 } from 'lucide-react';
-import type { Stop, PositioningConfig, QRCodeConfig, PositioningMethod } from '../types';
+import type { Stop, PositioningConfig, QRCodeConfig, GPSConfig, PositioningMethod, MapBlockData, MapProvider, MapStyle } from '../types';
+import { MapEditorModal } from './blocks/MapEditorModal';
+import { MapPreview } from './blocks/MapPreview';
 
 interface PositioningEditorModalProps {
     stop: Stop;
@@ -46,7 +48,7 @@ const TABS: TabConfig[] = [
         id: 'gps',
         label: 'GPS',
         icon: MapPin,
-        implemented: false,
+        implemented: true,
         description: 'Outdoor positioning with geofencing',
         useCases: ['Sculpture gardens', 'Archaeological sites', 'City tours']
     },
@@ -101,6 +103,65 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
     const [isRegenerating, setIsRegenerating] = useState(false);
     const qrRef = useRef<HTMLDivElement>(null);
 
+    // GPS state
+    const existingGps = stop.primaryPositioning && (stop.primaryPositioning as PositioningConfig).method === 'gps'
+        ? (stop.primaryPositioning as GPSConfig)
+        : null;
+    const [gpsLat, setGpsLat] = useState(existingGps?.latitude ?? 0);
+    const [gpsLng, setGpsLng] = useState(existingGps?.longitude ?? 0);
+    const [gpsRadius, setGpsRadius] = useState(existingGps?.radius ?? 25);
+    const [gpsProvider, setGpsProvider] = useState<MapProvider>(existingGps?.mapProvider ?? 'openstreetmap');
+    const [showMapEditor, setShowMapEditor] = useState(false);
+    const [isGettingGpsLocation, setIsGettingGpsLocation] = useState(false);
+    const hasGpsCoords = gpsLat !== 0 || gpsLng !== 0;
+
+    // Compute a zoom level that shows the trigger radius circle well
+    function radiusToZoom(radiusMeters: number): number {
+        // At zoom 15, ~1 tile = ~4.8km. We want the circle diameter to be roughly 1/3 of the view.
+        // Formula: zoom ≈ 15.5 - log2(radius / 50)
+        if (radiusMeters <= 10) return 18;
+        if (radiusMeters <= 25) return 17;
+        if (radiusMeters <= 50) return 16;
+        if (radiusMeters <= 100) return 15;
+        if (radiusMeters <= 200) return 14;
+        return 13;
+    }
+
+    // Build MapBlockData for MapEditorModal
+    function buildMapData(): MapBlockData {
+        return {
+            latitude: gpsLat,
+            longitude: gpsLng,
+            zoom: radiusToZoom(gpsRadius),
+            provider: gpsProvider,
+            style: 'standard' as MapStyle,
+            showMarker: true,
+            triggerRadius: gpsRadius,
+            showTriggerZone: true,
+        };
+    }
+
+    function handleMapChange(mapData: MapBlockData) {
+        setGpsLat(mapData.latitude);
+        setGpsLng(mapData.longitude);
+        if (mapData.triggerRadius !== undefined) setGpsRadius(mapData.triggerRadius);
+        if (mapData.provider) setGpsProvider(mapData.provider);
+    }
+
+    function handleGetCurrentLocation() {
+        if (!navigator.geolocation) return;
+        setIsGettingGpsLocation(true);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setGpsLat(pos.coords.latitude);
+                setGpsLng(pos.coords.longitude);
+                setIsGettingGpsLocation(false);
+            },
+            () => setIsGettingGpsLocation(false),
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    }
+
     // Get current config
     const qrConfig = (stop.primaryPositioning as QRCodeConfig) || {
         method: 'qr_code' as const,
@@ -114,13 +175,13 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
     // Use slugs for cleaner URLs, fall back to IDs
     const tourIdentifier = tourSlug || tourId;
     const stopIdentifier = stop.slug || stop.id;
-    
+
     // Canonical visitor URL for this stop - this is what NFC tags should point to
     const visitorUrl = `${defaultBaseUrl}/visitor/tour/${tourIdentifier}/stop/${stopIdentifier}`;
-    
+
     // NFC URL is just the visitor URL (optionally with source tracking)
     const nfcUrl = `${visitorUrl}?src=nfc`;
-    
+
     // Extract existing token from saved URL or generate new one (for QR tracking)
     const getInitialUrl = () => {
         if (qrConfig.url) return qrConfig.url;
@@ -129,7 +190,7 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
 
     const [targetUrl, setTargetUrl] = useState(getInitialUrl);
     const [shortCode, setShortCode] = useState(qrConfig.shortCode || generateShortCode());
-    
+
     // NFC-specific state
     const [nfcCopied, setNfcCopied] = useState(false);
     const [nfcTagType, setNfcTagType] = useState<'NTAG213' | 'NTAG215' | 'NTAG216'>('NTAG213');
@@ -137,37 +198,37 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
     const [showNfcHelp, setShowNfcHelp] = useState(false);
     const [nfcWriteStatus, setNfcWriteStatus] = useState<'idle' | 'waiting' | 'writing' | 'success' | 'error'>('idle');
     const [nfcWriteError, setNfcWriteError] = useState<string | null>(null);
-    
+
     // Check if Web NFC is available (Chrome Android only)
     const hasWebNfc = typeof window !== 'undefined' && 'NDEFReader' in window;
-    
+
     function handleCopyNfcUrl() {
         navigator.clipboard.writeText(nfcUrl);
         setNfcCopied(true);
         setTimeout(() => setNfcCopied(false), 2000);
     }
-    
+
     // Web NFC Write function
     async function handleWriteNfcTag() {
         if (!hasWebNfc) {
             setNfcWriteError('Web NFC not supported. Use Chrome on Android, or copy the URL and use NFC Tools app.');
             return;
         }
-        
+
         setNfcWriteStatus('waiting');
         setNfcWriteError(null);
-        
+
         try {
             // @ts-ignore - NDEFReader is not in TypeScript types yet
             const ndef = new window.NDEFReader();
-            
+
             setNfcWriteStatus('writing');
-            
+
             await ndef.write({
                 records: [{ recordType: 'url', data: nfcUrl }]
             });
-            
-            
+
+
             setNfcWriteStatus('success');
             setTimeout(() => setNfcWriteStatus('idle'), 3000);
         } catch (error: any) {
@@ -210,11 +271,23 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
     }
 
     function handleSave() {
-        const updatedPositioning: PositioningConfig = {
-            method: 'qr_code',
-            url: targetUrl,
-            shortCode: shortCode,
-        };
+        let updatedPositioning: PositioningConfig;
+
+        if (activeTab === 'gps') {
+            updatedPositioning = {
+                method: 'gps',
+                latitude: gpsLat,
+                longitude: gpsLng,
+                radius: gpsRadius,
+                mapProvider: gpsProvider,
+            };
+        } else {
+            updatedPositioning = {
+                method: 'qr_code',
+                url: targetUrl,
+                shortCode: shortCode,
+            };
+        }
 
         onSave({
             ...stop,
@@ -314,7 +387,7 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                                             ⚠️ Only works on Chrome for Android. Not supported on iPhone, desktop, or other browsers.
                                         </p>
                                     </div>
-                                    
+
                                     {/* Method 2: NFC Tools App */}
                                     <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-4">
                                         <h4 className="text-sm font-semibold text-blue-400 mb-2 flex items-center gap-2">
@@ -332,7 +405,7 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                                             <li>5. Hold your NFC tag to your phone</li>
                                         </ol>
                                     </div>
-                                    
+
                                     {/* Testing */}
                                     <div className="bg-[var(--color-accent-primary)]/5 border border-[var(--color-accent-primary)]/20 rounded-lg p-4">
                                         <h4 className="text-sm font-semibold text-[var(--color-accent-primary)] mb-2">🧪 Testing Your Tag</h4>
@@ -342,7 +415,7 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                                             <li><strong>iPhone 7/8/X:</strong> Open NFC reader app first, then tap</li>
                                         </ul>
                                     </div>
-                                    
+
                                     {/* Tag Types */}
                                     <div className="bg-[var(--color-bg-elevated)] rounded-lg p-4">
                                         <h4 className="text-sm font-semibold text-[var(--color-text-primary)] mb-2">📋 Tag Types</h4>
@@ -367,7 +440,7 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                             </div>
                         </div>
                     )}
-                    
+
                     <div className="space-y-5">
                         {/* Header with Help Button */}
                         <div className="flex items-center justify-between">
@@ -383,7 +456,7 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                                 How to Pair
                             </button>
                         </div>
-                        
+
                         {/* Method 1: Direct NFC Write (always shown, grayed out if unavailable) */}
                         <div className={`bg-[var(--color-bg-elevated)] border rounded-xl p-5 ${hasWebNfc ? 'border-green-500/30' : 'border-[var(--color-border-default)] opacity-60'}`}>
                             <div className="space-y-4">
@@ -405,19 +478,18 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                                         </p>
                                     </div>
                                 </div>
-                                
+
                                 <button
                                     onClick={handleWriteNfcTag}
                                     disabled={!hasWebNfc || nfcWriteStatus === 'waiting' || nfcWriteStatus === 'writing'}
-                                    className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
-                                        !hasWebNfc
-                                            ? 'bg-[var(--color-bg-base)] text-[var(--color-text-muted)] border border-[var(--color-border-default)] cursor-not-allowed'
-                                            : nfcWriteStatus === 'success' 
-                                            ? 'bg-green-500 text-white' 
+                                    className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${!hasWebNfc
+                                        ? 'bg-[var(--color-bg-base)] text-[var(--color-text-muted)] border border-[var(--color-border-default)] cursor-not-allowed'
+                                        : nfcWriteStatus === 'success'
+                                            ? 'bg-green-500 text-white'
                                             : nfcWriteStatus === 'error'
-                                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                                            : 'bg-[var(--color-accent-primary)] text-white hover:bg-[var(--color-accent-primary)]/90'
-                                    } disabled:opacity-50`}
+                                                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                                : 'bg-[var(--color-accent-primary)] text-white hover:bg-[var(--color-accent-primary)]/90'
+                                        } disabled:opacity-50`}
                                 >
                                     {!hasWebNfc ? (
                                         <><Nfc className="w-5 h-5" /> Write to NFC Tag</>
@@ -433,11 +505,11 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                                         <><AlertCircle className="w-5 h-5" /> Write Failed</>
                                     )}
                                 </button>
-                                
+
                                 {nfcWriteError && (
                                     <p className="text-xs text-red-400 text-center">{nfcWriteError}</p>
                                 )}
-                                
+
                                 {!hasWebNfc && (
                                     <p className="text-xs text-[var(--color-text-muted)] text-center">
                                         Web NFC requires <strong>Chrome on Android</strong>. Not available on iPhone, desktop, or other browsers.
@@ -445,7 +517,7 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                                 )}
                             </div>
                         </div>
-                        
+
                         {/* Method 2: Copy URL (always available) */}
                         <div className="bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl p-5">
                             <div className="space-y-4">
@@ -461,11 +533,11 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                                         <p className="text-xs text-[var(--color-text-muted)]">Works on iPhone and Android with free NFC Tools app</p>
                                     </div>
                                 </div>
-                                
+
                                 <div className="bg-[var(--color-bg-base)] rounded-lg p-3 font-mono text-xs text-[var(--color-text-secondary)] break-all">
                                     {nfcUrl}
                                 </div>
-                                
+
                                 <div className="flex gap-2">
                                     <button
                                         onClick={handleCopyNfcUrl}
@@ -486,8 +558,8 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                                 </div>
                             </div>
                         </div>
-                        
-                        
+
+
                         {/* Tag Info (collapsible details) */}
                         <details className="group">
                             <summary className="flex items-center gap-2 cursor-pointer text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
@@ -540,12 +612,164 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                                 </div>
                             </div>
                         </details>
-                        
+
                         {/* Quick tip */}
                         <div className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
                             <span className="text-amber-400 text-sm">💡</span>
                             <p className="text-xs text-[var(--color-text-muted)]">
                                 <strong className="text-amber-400">Tip:</strong> After programming, test by tapping the tag with your phone. The tour stop should open automatically.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // GPS tab - fully implemented
+        if (activeTab === 'gps') {
+            return (
+                <div className="p-6">
+                    {/* Map Editor Sub-Modal */}
+                    {showMapEditor && (
+                        <MapEditorModal
+                            data={buildMapData()}
+                            language="en"
+                            onChange={handleMapChange}
+                            onClose={() => setShowMapEditor(false)}
+                        />
+                    )}
+
+                    <div className="space-y-5">
+                        {/* Map Preview */}
+                        <div className="rounded-xl overflow-hidden border border-[var(--color-border-default)]" style={{ height: 220 }}>
+                            {hasGpsCoords ? (
+                                <MapPreview data={{
+                                    latitude: gpsLat,
+                                    longitude: gpsLng,
+                                    zoom: radiusToZoom(gpsRadius),
+                                    provider: gpsProvider,
+                                    style: 'standard' as MapStyle,
+                                    showMarker: true,
+                                    triggerRadius: gpsRadius,
+                                    showTriggerZone: true,
+                                }} language="en" />
+                            ) : (
+                                <div className="w-full h-full bg-[var(--color-bg-elevated)] flex flex-col items-center justify-center text-[var(--color-text-muted)]">
+                                    <MapPin className="w-10 h-10 mb-2 opacity-30" />
+                                    <p className="text-sm">No coordinates set</p>
+                                    <p className="text-xs mt-1">Use the controls below to set a location</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleGetCurrentLocation}
+                                disabled={isGettingGpsLocation}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg hover:bg-[var(--color-bg-hover)] text-sm text-[var(--color-text-primary)] disabled:opacity-50"
+                            >
+                                {isGettingGpsLocation ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Navigation className="w-4 h-4" />
+                                )}
+                                {isGettingGpsLocation ? 'Getting location...' : 'Use My Location'}
+                            </button>
+                            <button
+                                onClick={() => setShowMapEditor(true)}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[var(--color-accent-primary)]/10 border border-[var(--color-accent-primary)]/30 rounded-lg hover:bg-[var(--color-accent-primary)]/20 text-sm text-[var(--color-accent-primary)] font-medium"
+                            >
+                                <Search className="w-4 h-4" />
+                                Open Map Editor
+                            </button>
+                        </div>
+
+                        {/* Coordinates */}
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+                                    Latitude
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.000001"
+                                    value={gpsLat || ''}
+                                    onChange={(e) => setGpsLat(parseFloat(e.target.value) || 0)}
+                                    className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm font-mono focus:border-[var(--color-accent-primary)] focus:outline-none"
+                                    placeholder="0.000000"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+                                    Longitude
+                                </label>
+                                <input
+                                    type="number"
+                                    step="0.000001"
+                                    value={gpsLng || ''}
+                                    onChange={(e) => setGpsLng(parseFloat(e.target.value) || 0)}
+                                    className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] text-sm font-mono focus:border-[var(--color-accent-primary)] focus:outline-none"
+                                    placeholder="0.000000"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Trigger Radius */}
+                        <div>
+                            <div className="flex items-center justify-between mb-1">
+                                <label className="text-xs font-medium text-[var(--color-text-secondary)]">
+                                    Trigger Radius
+                                </label>
+                                <span className="text-xs text-[var(--color-text-muted)] font-mono">{gpsRadius}m</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="5"
+                                max="200"
+                                value={gpsRadius}
+                                onChange={(e) => setGpsRadius(parseInt(e.target.value))}
+                                className="w-full accent-[var(--color-accent-primary)]"
+                            />
+                            <div className="flex justify-between text-[10px] text-[var(--color-text-muted)] mt-0.5">
+                                <span>5m</span>
+                                <span>200m</span>
+                            </div>
+                        </div>
+
+                        {/* Map Provider */}
+                        <div>
+                            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+                                Map Provider
+                            </label>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setGpsProvider('openstreetmap')}
+                                    className={`flex-1 px-3 py-2 text-xs rounded-lg border transition-colors ${gpsProvider === 'openstreetmap'
+                                        ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/30 text-[var(--color-accent-primary)] font-medium'
+                                        : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'
+                                        }`}
+                                >
+                                    OpenStreetMap
+                                </button>
+                                <button
+                                    onClick={() => setGpsProvider('google')}
+                                    className={`flex-1 px-3 py-2 text-xs rounded-lg border transition-colors ${gpsProvider === 'google'
+                                        ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/30 text-[var(--color-accent-primary)] font-medium'
+                                        : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'
+                                        }`}
+                                >
+                                    Google Maps
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Tip */}
+                        <div className="flex items-start gap-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
+                            <span className="text-blue-400 text-sm">📍</span>
+                            <p className="text-xs text-[var(--color-text-muted)]">
+                                <strong className="text-blue-400">Tip:</strong> Set the trigger radius to match your exhibit area.
+                                Smaller radius = more precise, larger = easier to trigger outdoors.
                             </p>
                         </div>
                     </div>
@@ -694,14 +918,6 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                 </div>
 
                 {/* Technology-specific hints */}
-                {activeTab === 'gps' && (
-                    <div className="mt-6 p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg max-w-sm">
-                        <p className="text-xs text-blue-400 text-center">
-                            📍 GPS positioning will use the existing Map Block component
-                            with geofence radius configuration.
-                        </p>
-                    </div>
-                )}
                 {activeTab === 'ble_beacon' && (
                     <div className="mt-6 p-4 bg-purple-500/5 border border-purple-500/20 rounded-lg max-w-sm">
                         <p className="text-xs text-purple-400 text-center">
@@ -774,8 +990,8 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${isActive
-                                            ? 'border-[var(--color-accent-primary)] text-[var(--color-accent-primary)]'
-                                            : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-border-default)]'
+                                        ? 'border-[var(--color-accent-primary)] text-[var(--color-accent-primary)]'
+                                        : 'border-transparent text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-border-default)]'
                                         }`}
                                 >
                                     <TabIcon className="w-4 h-4" />
@@ -828,7 +1044,7 @@ export function PositioningEditorModal({ stop, tourId, tourSlug, onSave, onClose
                         </button>
                         <button
                             onClick={handleSave}
-                            disabled={activeTab !== 'qr_code' && activeTab !== 'nfc'}
+                            disabled={activeTab !== 'qr_code' && activeTab !== 'nfc' && activeTab !== 'gps'}
                             className="px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Save Changes

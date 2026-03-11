@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: March 5, 2026
-**Session Status**: NFC Tag Pairing Phase 1 COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅
+**Last Updated**: March 10, 2026
+**Session Status**: Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅
 
 ---
 
@@ -466,6 +466,20 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Settings API** - Persistent settings storage with env var overrides
 - [x] **Coolify Ready** - `GOOGLE_MAPS_API_KEY` env var support for production
 
+### Phase 28: Image Map Block ✅ (March 10, 2026)
+- [x] **New Block Type** - `imageMap` content block for indoor floor plans
+- [x] **Image Upload** - Upload floor plan images via existing media system
+- [x] **Click-to-Place Markers** - Percentage-based coordinates, drag to reposition
+- [x] **5 Marker Icons** - Pin, dot, number, star, info with 7+ color options
+- [x] **Stop Linking** - Link markers to tour stops for visitor navigation
+- [x] **Full-Screen Editor Modal** - `ImageMapEditorModal.tsx` with large canvas + sidebar
+- [x] **Info Text Popups** - Glass-morphism popup overlays on visitor tap
+- [x] **Multi-Floor Support** - `ImageMapFloor` type with floor switcher pills
+- [x] **Pinch-to-Zoom** - Touch gestures for mobile visitors
+- [x] **Translation Integration** - LanguageSwitcher + global Translate All via `magicTranslate()`
+- [x] **Responsive Preview** - Width-based sizing, `w-full` on tablet/kiosk devices
+- [x] **Dev Guide** - `docs/image-map-block-dev.md`
+
 ### Phase 12: Audio TTS Section ✅ (Jan 22, 2026)
 - [x] **Deepgram Aura-2 TTS** - Full text-to-speech integration
 - [x] **7 Languages** - English, Spanish, German, French, Dutch, Italian, Japanese
@@ -833,11 +847,51 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [ ] **Tour Progress** - Visual completion indicator
 - [ ] **Tour Map View** - Interactive map with all stops
 
-### 🎯 Phase 18: GPS Positioning Tab (Planned)
-- [ ] Reuse Map Block components (Leaflet/Google Maps)
-- [ ] Geofence radius visualization with circle overlay
-- [ ] "Get Current Location" button
-- [ ] Lat/Long input with map click selection
+### ✅ Phase 18: GPS Positioning & Geofencing (Complete - March 9, 2026)
+
+**Phase 3A — Foundation Hardening:**
+- [x] **Indexed `shortCode` column** — Added `shortCode` column with unique index to Stop table, O(1) lookup
+- [x] **Zod validation schemas** — Discriminated union for all 10 positioning method configs (`server/validation/positioning.ts`)
+- [x] **VisitLog analytics table** — Logs stop visits with stopId, tourId, token, source, timestamp, userAgent + 3 indexes
+- [x] **Backup positioning fallback banner** — Visitor sees contextual fallback message (QR/NFC/manual) when primary is auto-detect
+
+**Phase 3B — GPS Admin Tab:**
+- [x] **GPS tab in PositioningEditorModal** — Replaced placeholder with full GPS configuration UI
+- [x] **Map preview** — Shows current coordinates with trigger zone circle via MapPreview component
+- [x] **"Use My Location" button** — Geolocation API with loading state
+- [x] **"Open Map Editor" button** — Launches MapEditorModal as sub-modal (search, click-to-place, radius slider)
+- [x] **Coordinate inputs** — Manual lat/lng entry with 6 decimal precision
+- [x] **Trigger radius slider** — 5–200m range with live label
+- [x] **Map provider toggle** — OpenStreetMap or Google Maps
+- [x] **Radius-to-zoom auto-sync** — `radiusToZoom()` maps trigger radius to appropriate zoom level (removed hardcoded gpsZoom)
+- [x] **Save as GPSConfig** — Saves lat, lng, radius, mapProvider to `primaryPositioning`
+
+**Phase 3C — Visitor-Side Geofencing:**
+- [x] **Haversine distance utility** — `src/lib/geo.ts` with `haversineDistance()` and `isInsideGeofence()`
+- [x] **useGeofenceMonitor hook** — Full geofence engine: permission management, `watchPosition`, enter/exit detection, auto-navigate
+- [x] **GPS stops batch endpoint** — `GET /api/visitor/tour/:id/gps-stops` returns lightweight geofence targets
+- [x] **Geofence permission UI** — Green "Enable location" banner prompts visitor to share location
+- [x] **Auto-navigate on entry** — When visitor enters a geofenced stop's radius, auto-navigates to that stop
+
+> **Key Files Created:**
+> - `app/src/lib/geo.ts` — Haversine distance + geofence check
+> - `app/src/hooks/useGeofenceMonitor.ts` — Geofence monitoring hook
+> - `app/server/validation/positioning.ts` — Zod schemas for all positioning configs
+>
+> **Key Files Modified:**
+> - `app/src/components/PositioningEditorModal.tsx` — GPS tab, save logic, radiusToZoom(), imports
+> - `app/src/components/blocks/MapEditorModal.tsx` — Google/OSM tile switching, floating controls overlay, style options
+> - `app/src/pages/Docs.tsx` — Added GPS Geofencing Help Center page
+> - `app/src/pages/VisitorStop.tsx` — Fallback banner, geofence integration, permission UI
+> - `app/server/routes/visitor.ts` — VisitLog analytics, GPS stops endpoint
+> - `app/server/routes/stops.ts` — Zod validation, shortCode sync
+> - `app/prisma/schema.prisma` — shortCode on Stop, VisitLog model
+>
+> **Database Changes:**
+> - Stop table: Added `shortCode TEXT` with unique index
+> - VisitLog table: New table with 3 indexes (stopId, tourId, timestamp)
+>
+> **New npm dependency:** `zod` (runtime validation)
 
 ### ✅ Phase 3: Collections View Enhancement (Complete via Phase 21)
 - [x] **Collection Type Selection** - Modal with Images/Audio/Video/Documents options
@@ -920,11 +974,20 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | Visitor Stop Page | `app/src/pages/VisitorStop.tsx` |
 | Display Settings Panel | `app/src/components/DisplaySettingsPanel.tsx` |
 | Visitor API Routes | `app/server/routes/visitor.ts` |
+| Geofence Monitor Hook | `app/src/hooks/useGeofenceMonitor.ts` |
+| Geo Utilities | `app/src/lib/geo.ts` |
+| Positioning Validation | `app/server/validation/positioning.ts` |
 | **Map Block** | |
 | Map Preview | `app/src/components/blocks/MapPreview.tsx` |
 | Map Editor Modal | `app/src/components/blocks/MapEditorModal.tsx` |
 | Map Block Editor | `app/src/components/blocks/MapBlockEditor.tsx` |
 | Settings API | `app/server/routes/settings.ts` |
+| **Image Map Block** | |
+| Image Map Editor Modal | `app/src/components/blocks/ImageMapEditorModal.tsx` |
+| Image Map Block Editor | `app/src/components/blocks/ImageMapBlockEditor.tsx` |
+| Image Map Block Preview | `app/src/components/blocks/ImageMapBlockPreview.tsx` |
+| Image Map Marker Pin | `app/src/components/blocks/ImageMapMarkerPin.tsx` |
+| Image Map Dev Guide | `docs/image-map-block-dev.md` |
 | **Audio TTS** | |
 | Audio Page | `app/src/pages/Audio.tsx` |
 | TextPreviewModal | `app/src/components/TextPreviewModal.tsx` |

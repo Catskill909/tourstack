@@ -41,7 +41,10 @@ import {
     Clock,
     ArrowLeftRight,
     Radio,
-    Settings
+    Settings,
+    Navigation,
+    Target,
+    LayoutGrid
 } from 'lucide-react';
 
 // Types
@@ -100,6 +103,7 @@ const docsStructure: DocSection[] = [
         items: [
             { slug: 'qr-codes', title: 'QR Codes', description: 'Print and display codes', icon: QrCode },
             { slug: 'nfc-tags', title: 'NFC Tags', description: 'Tap-to-open with NFC cards', icon: Radio },
+            { slug: 'gps-geofencing', title: 'GPS Geofencing', description: 'Auto-navigate with GPS location triggers', icon: Navigation },
             { slug: 'visitor-view', title: 'The Visitor View', description: 'What visitors see', icon: Eye },
             { slug: 'kiosk-mode', title: 'Kiosk Mode', description: 'Museum kiosk deployments', icon: Monitor },
             { slug: 'publishing', title: 'Publishing Your Tour', description: 'Draft to published workflow', icon: Send },
@@ -336,8 +340,8 @@ const WelcomePage = () => (
                     <div>
                         <h3 className="font-medium text-white mb-1">Content Blocks</h3>
                         <p className="text-neutral-400 text-sm">
-                            Stops are built from 12 block types - text, images, galleries, audio, video,
-                            timeline galleries, maps, quotes, and more. Drag to reorder. Mix and match freely.
+                            Stops are built from 13 block types - text, images, galleries, audio, video,
+                            timeline galleries, maps, image maps, quotes, and more. Drag to reorder. Mix and match freely.
                         </p>
                     </div>
                 </div>
@@ -794,7 +798,7 @@ const NFCTagsPage = () => (
             <p className="text-neutral-300 mb-4">
                 TourStack provides two methods to program NFC tags with your tour stop URLs:
             </p>
-            
+
             <div className="space-y-4">
                 <div className="p-5 bg-green-500/5 border border-green-500/20 rounded-xl">
                     <div className="flex items-start gap-3">
@@ -933,6 +937,187 @@ const NFCTagsPage = () => (
                     </ul>
                 </div>
             </div>
+        </div>
+    </div>
+);
+
+const GPSGeofencingPage = () => (
+    <div className="space-y-8">
+        <header>
+            <h1 className="text-3xl font-bold text-white mb-4">GPS Geofencing</h1>
+            <p className="text-xl text-neutral-400">
+                Automatically trigger stop content when visitors walk into a GPS-defined zone. Perfect for outdoor tours, sculpture gardens, and archaeological sites.
+            </p>
+        </header>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">How It Works</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-3">
+                        <Target className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="font-medium text-white mb-1">1. Set Location</h3>
+                    <p className="text-sm text-neutral-400">Place a pin on the map and set a trigger radius around each stop</p>
+                </div>
+                <div className="text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-3">
+                        <Navigation className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="font-medium text-white mb-1">2. Visitors Walk</h3>
+                    <p className="text-sm text-neutral-400">The visitor's phone monitors their GPS location as they explore</p>
+                </div>
+                <div className="text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-3">
+                        <CheckCircle2 className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="font-medium text-white mb-1">3. Auto-Navigate</h3>
+                    <p className="text-sm text-neutral-400">When they enter a geofence zone, the stop content opens automatically</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Setting Up GPS Positioning</h2>
+            <div className="space-y-4">
+                <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold">1</div>
+                        <div>
+                            <h3 className="font-medium text-white mb-1">Open Positioning Settings</h3>
+                            <p className="text-sm text-neutral-400">Navigate to Tours → Select Tour → Click the positioning icon on any stop</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold">2</div>
+                        <div>
+                            <h3 className="font-medium text-white mb-1">Select GPS Tab</h3>
+                            <p className="text-sm text-neutral-400">Click the "GPS" tab in the Positioning Settings modal</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold">3</div>
+                        <div>
+                            <h3 className="font-medium text-white mb-1">Set Coordinates</h3>
+                            <p className="text-sm text-neutral-400">Use "Use My Location" for your current position, or "Open Map Editor" to search for an address and click to place a pin</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold">4</div>
+                        <div>
+                            <h3 className="font-medium text-white mb-1">Set Trigger Radius</h3>
+                            <p className="text-sm text-neutral-400">Use the slider to set how close a visitor must be (5m–200m) before the stop triggers</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="flex items-start gap-3">
+                        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-white text-black text-xs font-bold">5</div>
+                        <div>
+                            <h3 className="font-medium text-white mb-1">Save Changes</h3>
+                            <p className="text-sm text-neutral-400">Click "Save Changes" to store the GPS configuration for this stop</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">GPS Settings</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Trigger Radius</h3>
+                    <p className="text-sm text-neutral-400">
+                        How close visitors must be to trigger the stop. Smaller radius (5–25m) for precise spots, larger (50–200m) for open outdoor areas.
+                    </p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Map Provider</h3>
+                    <p className="text-sm text-neutral-400">
+                        Choose OpenStreetMap (free, no API key) or Google Maps (satellite views, requires API key in Settings).
+                    </p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Map Editor</h3>
+                    <p className="text-sm text-neutral-400">
+                        Full-screen map with address search, click-to-place pins, drag markers, zoom controls, and a visual trigger zone circle.
+                    </p>
+                </div>
+                <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Use My Location</h3>
+                    <p className="text-sm text-neutral-400">
+                        One-click to set the stop's coordinates to your current GPS position. Great when you're on-site at the exhibit.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Visitor Experience</h2>
+            <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl space-y-4">
+                <p className="text-neutral-300">
+                    When a visitor opens any stop on a GPS-enabled tour, they'll see a prompt to enable location services:
+                </p>
+                <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                        <div className="p-1.5 rounded-lg bg-green-500/10 shrink-0">
+                            <Navigation className="w-4 h-4 text-green-400" />
+                        </div>
+                        <p className="text-sm text-neutral-400">
+                            <strong className="text-white">Location prompt</strong> — A banner asks visitors to enable GPS for auto-navigation between stops
+                        </p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                        <div className="p-1.5 rounded-lg bg-purple-500/10 shrink-0">
+                            <Target className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <p className="text-sm text-neutral-400">
+                            <strong className="text-white">Geofence monitoring</strong> — Their phone continuously checks GPS position against all stop zones
+                        </p>
+                    </div>
+                    <div className="flex items-start gap-3">
+                        <div className="p-1.5 rounded-lg bg-blue-500/10 shrink-0">
+                            <CheckCircle2 className="w-4 h-4 text-blue-400" />
+                        </div>
+                        <p className="text-sm text-neutral-400">
+                            <strong className="text-white">Auto-navigate</strong> — When they walk into a geofence zone, the app automatically opens that stop's content
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div className="flex items-start gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div>
+                <h3 className="font-semibold text-white mb-1">Best Practices</h3>
+                <ul className="text-neutral-400 text-sm space-y-1">
+                    <li>• Use 25–50m radius for outdoor sculptures and garden stops</li>
+                    <li>• Use 10–25m radius for clustered stops like building entrances</li>
+                    <li>• GPS works best outdoors — for indoor use, consider QR codes or NFC instead</li>
+                    <li>• Test the trigger radius on-site before publishing</li>
+                    <li>• GPS accuracy varies by device — a wider radius is more forgiving</li>
+                </ul>
+            </div>
+        </div>
+
+        <div className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-2xl">
+            <h3 className="font-semibold text-blue-400 mb-2">💡 Combine Methods</h3>
+            <p className="text-neutral-300 text-sm mb-3">
+                GPS works great alongside QR codes. Set GPS as the primary method for hands-free navigation,
+                and QR codes as a backup for visitors who prefer to scan. Both can be configured on the same stop.
+            </p>
+            <a href="/docs/qr-codes" className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300">
+                Learn about QR Codes <ArrowRight className="w-4 h-4" />
+            </a>
         </div>
     </div>
 );
@@ -1429,6 +1614,7 @@ const ContentBlocksPage = () => (
                 { icon: ArrowLeftRight, name: 'Comparison', desc: 'Side-by-side before/after image comparison' },
                 { icon: Radio, name: 'Positioning', desc: 'QR code, GPS, BLE beacon, NFC configuration' },
                 { icon: MapPin, name: 'Map', desc: 'Interactive OpenStreetMap or Google Maps with markers' },
+                { icon: LayoutGrid, name: 'Image Map', desc: 'Upload floor plans with tappable markers for indoor navigation' },
                 { icon: FileText, name: 'Tour Intro', desc: 'Full-screen hero with image, title, and CTA button' },
             ].map(block => (
                 <div key={block.name} className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
@@ -1666,6 +1852,32 @@ const MapsLocationPage = () => (
                 <div className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
                     <h3 className="font-medium text-white mb-2">Trigger Zones</h3>
                     <p className="text-sm text-neutral-400">Configurable radius for geofencing around locations</p>
+                </div>
+            </div>
+        </div>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">Image Map Block</h2>
+            <p className="text-neutral-300 mb-4">
+                For indoor spaces where GPS doesn't work, the Image Map block lets you upload a floor plan
+                and place tappable markers directly on it. Perfect for museums, galleries, and multi-floor buildings.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Floor Plan Upload</h3>
+                    <p className="text-sm text-neutral-400">Upload any image as your base map — architectural drawings, custom illustrations, or photos</p>
+                </div>
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Click-to-Place Markers</h3>
+                    <p className="text-sm text-neutral-400">Click anywhere on the image to add markers. Drag to reposition. 5 icon styles and 7+ colors</p>
+                </div>
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Multi-Floor Support</h3>
+                    <p className="text-sm text-neutral-400">Add multiple floors, each with its own image and markers. Visitors switch floors with tabs</p>
+                </div>
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <h3 className="font-medium text-white mb-2">Info Popups & Stop Links</h3>
+                    <p className="text-sm text-neutral-400">Markers can show info text popups or navigate visitors directly to a linked stop</p>
                 </div>
             </div>
         </div>
@@ -2161,6 +2373,7 @@ const pageComponents: Record<string, React.ComponentType> = {
     'collections': CollectionsPage,
     'qr-codes': QRCodesPage,
     'nfc-tags': NFCTagsPage,
+    'gps-geofencing': GPSGeofencingPage,
     'visitor-view': VisitorViewPage,
     'kiosk-mode': KioskModePage,
     'publishing': PublishingPage,

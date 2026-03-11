@@ -154,4 +154,192 @@ ${text}`;
     }
 });
 
+// Analyze floor plan image for auto-marker placement
+router.post('/analyze-floorplan', async (req, res) => {
+    try {
+        const { image } = req.body;
+
+        if (!image) {
+            return res.status(400).json({ error: 'No image data provided' });
+        }
+
+        if (!GEMINI_API_KEY) {
+            return res.status(500).json({ error: 'Server configuration error: Gemini API Key missing' });
+        }
+
+        const imagePart = {
+            inlineData: {
+                data: image,
+                mimeType: "image/jpeg",
+            },
+        };
+
+        const prompt = `You are analyzing a museum or building floor plan image. Identify all distinct rooms, exhibits, areas of interest, entrances, exits, stairs, elevators, restrooms, and notable features visible on this floor plan.
+
+For each area you identify, provide:
+1. A descriptive label (e.g. "Main Gallery", "Gift Shop", "Restroom", "East Wing Entrance")
+2. The approximate center position as x,y percentages where 0,0 is top-left and 100,100 is bottom-right
+3. A suggested icon type from this list — pick the BEST match:
+   - "pin" for exhibits, galleries, display areas
+   - "info" for information desks, welcome areas
+   - "number" for numbered rooms or sequenced stops
+   - "star" for highlights, featured areas, must-see spots
+   - "dot" for general points of interest
+   - "accessibility" for wheelchair access, accessible routes, ramps
+   - "restroom" for bathrooms, washrooms, toilets
+   - "stairs" for staircases, steps between levels
+   - "elevator" for elevators, lifts
+   - "exit" for exits, entrances, emergency exits, doors
+   - "cafe" for cafés, restaurants, food courts, water fountains
+   - "gift-shop" for gift shops, museum stores, retail
+   - "ticket" for ticket counters, admissions, box office
+   - "camera" for photo spots, scenic viewpoints, photo-allowed areas
+   - "audio-guide" for audio guide stations, listening points
+   - "parking" for parking areas, garages
+4. A suggested category: "exhibit", "facility", "entrance", or "navigation"
+
+Return ONLY a JSON object with this exact structure:
+{
+  "markers": [
+    {
+      "label": "string - descriptive name",
+      "x": number (0-100 percentage from left),
+      "y": number (0-100 percentage from top),
+      "icon": "pin" | "dot" | "number" | "star" | "info" | "accessibility" | "restroom" | "stairs" | "elevator" | "exit" | "cafe" | "gift-shop" | "ticket" | "camera" | "audio-guide" | "parking",
+      "category": "exhibit" | "facility" | "entrance" | "navigation",
+      "description": "string - brief 1-2 sentence visitor description of this area"
+    }
+  ],
+  "floorName": "string - suggested name for this floor based on any visible text or context",
+  "summary": "string - brief description of the overall floor plan layout"
+}
+
+Be thorough — identify ALL distinct areas, not just the obvious ones. Aim for 5-20 markers depending on the complexity of the floor plan. Place markers at the visual center of each identified area.`;
+
+        const result = await model.generateContent([prompt, imagePart]);
+        const response = await result.response;
+        const text = response.text();
+
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error("Failed to parse Gemini floor plan response:", text);
+            return res.status(500).json({ error: "Failed to parse AI response", raw: text });
+        }
+
+        res.json(data);
+
+    } catch (error: any) {
+        console.error('Gemini Floor Plan Analysis Error:', error);
+        res.status(500).json({
+            error: 'Failed to analyze floor plan with Gemini',
+            details: error.message
+        });
+    }
+});
+
+// Generate info text for markers
+router.post('/generate-marker-info', async (req, res) => {
+    try {
+        const { image, markers, language } = req.body;
+
+        if (!markers || !Array.isArray(markers) || markers.length === 0) {
+            return res.status(400).json({ error: 'No markers provided' });
+        }
+
+        if (!GEMINI_API_KEY) {
+            return res.status(500).json({ error: 'Server configuration error: Gemini API Key missing' });
+        }
+
+        const markerList = markers.map((m: { id: string; label: string; category?: string }, i: number) =>
+            `${i + 1}. "${m.label}" (${m.category || 'unknown'} area)`
+        ).join('\n');
+
+        let prompt: string;
+        const langName = language || 'English';
+
+        if (image) {
+            const imagePart = {
+                inlineData: {
+                    data: image,
+                    mimeType: "image/jpeg",
+                },
+            };
+
+            prompt = `You are writing visitor-friendly descriptions for a museum floor plan. Here is the floor plan image and a list of marked locations on it.
+
+Locations:
+${markerList}
+
+For each location, write a brief, engaging 1-2 sentence description that would help a museum visitor understand what they'll find there. Write in ${langName}.
+
+Return ONLY a JSON object:
+{
+  "descriptions": [
+    {
+      "id": "marker id exactly as provided",
+      "infoText": "visitor-friendly description in ${langName}"
+    }
+  ]
+}`;
+
+            const result = await model.generateContent([prompt, imagePart]);
+            const response = await result.response;
+            const text = response.text();
+
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                return res.status(500).json({ error: "Failed to parse AI response", raw: text });
+            }
+            return res.json(data);
+        } else {
+            prompt = `You are writing visitor-friendly descriptions for museum locations. Here are the named locations:
+
+${markerList}
+
+For each location, write a brief, engaging 1-2 sentence description that would help a museum visitor understand what they'll find there. Write in ${langName}.
+
+Return ONLY a JSON object:
+{
+  "descriptions": [
+    {
+      "id": "marker id exactly as provided",
+      "infoText": "visitor-friendly description in ${langName}"
+    }
+  ]
+}`;
+
+            const markerIds = markers.map((m: { id: string }) => m.id);
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+
+            let data;
+            try {
+                data = JSON.parse(text);
+                // Ensure IDs match what was sent
+                if (data.descriptions) {
+                    data.descriptions = data.descriptions.map((d: { id: string; infoText: string }, i: number) => ({
+                        ...d,
+                        id: markerIds[i] || d.id,
+                    }));
+                }
+            } catch (e) {
+                return res.status(500).json({ error: "Failed to parse AI response", raw: text });
+            }
+            return res.json(data);
+        }
+
+    } catch (error: any) {
+        console.error('Gemini Marker Info Generation Error:', error);
+        res.status(500).json({
+            error: 'Failed to generate marker descriptions',
+            details: error.message
+        });
+    }
+});
+
 export default router;

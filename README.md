@@ -78,11 +78,13 @@ npm run start
 > **Preview = Real Device:** The admin device preview renders at actual device pixels (375×812 iPhone, 820×1180 iPad). What you see IS what visitors see. The same React components power both admin preview and live visitor pages.
 
 - **7 Positioning Technologies**: QR Code, GPS, BLE Beacon, NFC, RFID, WiFi, UWB
-- **Positioning Editor**: Tabbed modal with NFC pairing, QR generator, and placeholder tabs for other technologies
+- **Positioning Editor**: Tabbed modal with NFC pairing, QR generator, GPS geofencing (3 tabs live, 4 placeholder)
+- **GPS Geofencing**: Map editor with trigger radius, "Use My Location", address search, auto-navigate between stops
 - **NFC Tag Pairing**: Copy URL for NFC Tools app, Web NFC direct write (Chrome Android), help modal
 - **Native QR Generator**: `qrcode.react` with regeneration, unique tokens, PNG download
+- **Visit Analytics**: VisitLog table tracks stop visits with source, token, timestamp, and user agent
 - **Tour Block**: Full-screen hero intro with architectural design system aesthetic
-- **12 Content Blocks**: Text, Image, Gallery, Timeline Gallery, Audio, Video, Quote, Timeline, Comparison, Positioning, Map, Tour
+- **13 Content Blocks**: Text, Image, Gallery, Timeline Gallery, Audio, Video, Quote, Timeline, Comparison, Positioning, Map, Image Map, Tour
 - **Stop Editor**: Split-pane editor with live preview mode
 - **Timeline Gallery**: Audio-synced image galleries with **thumbnail markers** on waveform
 - **Multilingual**: All content supports multiple languages with Magic Translate AI
@@ -123,6 +125,8 @@ TourStack/
 | State | Zustand |
 | Audio | wavesurfer.js |
 | Animation | Framer Motion |
+| Validation | Zod |
+| Maps | Leaflet + Google Maps API |
 | Icons | Lucide React |
 
 ## 📖 Documentation
@@ -132,6 +136,7 @@ TourStack/
 | [HANDOFF.md](./HANDOFF.md) | Development status & next steps |
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Content block system design |
 | [docs/timeline-gallery.md](./docs/timeline-gallery.md) | Timeline Gallery feature |
+| [docs/image-map-block-dev.md](./docs/image-map-block-dev.md) | Image Map block feature |
 | [tourstack.md](./tourstack.md) | Full scope reference |
 
 ## 🔧 Commands
