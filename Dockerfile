@@ -63,7 +63,7 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Healthcheck - Coolify uses this to verify container is running
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=10s --timeout=10s --start-period=60s --retries=5 \
   CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Start using the startup script (runs migrations, seed, then server)

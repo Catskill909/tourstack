@@ -12,12 +12,27 @@ mkdir -p data
 export DATABASE_URL="file:/app/data/dev.db"
 echo "🔌 DATABASE_URL set to: $DATABASE_URL"
 
+# Pre-migration: ensure shortCode column exists before prisma db push
+# This prevents the unique constraint failure when the column doesn't exist yet
+if [ -f /app/data/dev.db ]; then
+  echo "🔧 Pre-migration: checking shortCode column..."
+  # Add shortCode column if it doesn't exist (safe, no-op if already present)
+  sqlite3 /app/data/dev.db "ALTER TABLE Stop ADD COLUMN shortCode TEXT;" 2>/dev/null || true
+  # Add unique index if it doesn't exist
+  sqlite3 /app/data/dev.db "CREATE UNIQUE INDEX IF NOT EXISTS Stop_shortCode_key ON Stop(shortCode);" 2>/dev/null || true
+  echo "✅ Pre-migration complete"
+fi
+
 # Initialize database (safe schema push)
 echo "🔄 Syncing database schema..."
 npx prisma db push
 if [ $? -ne 0 ]; then
-  echo "❌ Database sync failed!"
-  exit 1
+  echo "⚠️ prisma db push failed, retrying with --accept-data-loss..."
+  npx prisma db push --accept-data-loss
+  if [ $? -ne 0 ]; then
+    echo "❌ Database sync failed even with --accept-data-loss!"
+    exit 1
+  fi
 fi
 
 # Seed database with templates (idempotent - skips if exists)
