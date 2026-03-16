@@ -11,7 +11,7 @@ interface EditTourModalProps {
     onSave: (id: string, data: Partial<Tour>) => Promise<void>;
 }
 
-import { getNativeLanguageName } from '../constants/languages';
+import { getNativeLanguageName, sortLanguagesCommonFirst, COMMON_MUSEUM_LANGUAGES } from '../constants/languages';
 import { useTranslationLanguages } from '../hooks/useTranslationLanguages';
 
 const durations = [
@@ -28,11 +28,11 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
 
     // Dynamic language list from active translation provider
     const { languages: providerLanguages } = useTranslationLanguages();
-    const languages = providerLanguages.map(l => ({
+    const languages = sortLanguagesCommonFirst(providerLanguages.map(l => ({
         code: l.code,
         name: getNativeLanguageName(l.code, l.name),
         hint: l.code.toUpperCase() + (l.name !== getNativeLanguageName(l.code, l.name) ? ` - ${l.name}` : ''),
-    }));
+    })));
 
     // Form state
     const [title, setTitle] = useState('');
@@ -246,8 +246,10 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                         <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
                             Supported Languages
                         </label>
-                        <div className="grid grid-cols-3 gap-3">
-                            {languages.map((lang) => {
+                        {(() => {
+                            const commonLangs = languages.filter(l => COMMON_MUSEUM_LANGUAGES.includes(l.code));
+                            const otherLangs = languages.filter(l => !COMMON_MUSEUM_LANGUAGES.includes(l.code));
+                            const renderLang = (lang: typeof languages[0]) => {
                                 const isSelected = supportedLanguages.includes(lang.code);
                                 const isPrimary = lang.code === primaryLanguage;
                                 return (
@@ -262,7 +264,7 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                                             type="checkbox"
                                             checked={isSelected}
                                             onChange={(e) => {
-                                                if (isPrimary) return; // Cannot uncheck primary
+                                                if (isPrimary) return;
                                                 if (e.target.checked) {
                                                     setSupportedLanguages([...supportedLanguages, lang.code]);
                                                 } else {
@@ -280,8 +282,25 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                                         </span>
                                     </label>
                                 );
-                            })}
-                        </div>
+                            };
+                            return (
+                                <>
+                                    <p className="text-xs text-[var(--color-text-muted)] mb-2">Common</p>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {commonLangs.map(renderLang)}
+                                    </div>
+                                    {otherLangs.length > 0 && (
+                                        <>
+                                            <div className="border-t border-[var(--color-border-default)] my-3" />
+                                            <p className="text-xs text-[var(--color-text-muted)] mb-2">All Languages</p>
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {otherLangs.map(renderLang)}
+                                            </div>
+                                        </>
+                                    )}
+                                </>
+                            );
+                        })()}
                         <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                             Multi-language tours render translation tabs in the editor.
                         </p>

@@ -71,7 +71,7 @@ interface GenerationResult {
     error?: string;
 }
 
-import { LIBRE_TRANSLATE_LANGUAGES } from '../constants/languages';
+import { LIBRE_TRANSLATE_LANGUAGES, sortLanguagesCommonFirst, COMMON_MUSEUM_LANGUAGES } from '../constants/languages';
 
 // Translation is available for all languages via the configured provider (Google Cloud or LibreTranslate)
 const isTranslationAvailable = (_code: string): boolean => true;
@@ -185,7 +185,7 @@ export function AudioCollectionModal({
                     translationAvailable: isTranslationAvailable(code),
                 };
             });
-            setLanguages(langSelections);
+            setLanguages(sortLanguagesCommonFirst(langSelections));
         } else if (provider === 'elevenlabs') {
             // ElevenLabs: Fetch voices and assign DIFFERENT default voice to each language
             setIsLoadingVoices(true);
@@ -231,7 +231,7 @@ export function AudioCollectionModal({
                 voiceName: '',
                 translationAvailable: isTranslationAvailable(lang.code),
             }));
-            setLanguages(langSelections);
+            setLanguages(sortLanguagesCommonFirst(langSelections));
         } else if (provider === 'google_cloud' && googleLanguages && googleVoices) {
             // Google Cloud: use language list and voice data from parent
             const langSelections: LanguageSelection[] = googleLanguages
@@ -248,7 +248,7 @@ export function AudioCollectionModal({
                         translationAvailable: isTranslationAvailable(lang.code),
                     };
                 });
-            setLanguages(langSelections);
+            setLanguages(sortLanguagesCommonFirst(langSelections));
         }
 
         // Reset state
@@ -806,7 +806,18 @@ export function AudioCollectionModal({
                                     Languages to Generate ({enabledLanguages.length} selected)
                                 </h3>
                                 <div className="space-y-2 overflow-y-auto flex-1 min-h-0 pr-1 overscroll-contain">
-                                    {languages.map((lang) => (
+                                    <p className="text-xs text-[var(--color-text-muted)]">Common</p>
+                                    {languages.map((lang, index) => {
+                                        // Insert separator between common and other languages
+                                        const isFirstNonCommon = index > 0
+                                            && !COMMON_MUSEUM_LANGUAGES.includes(lang.code)
+                                            && COMMON_MUSEUM_LANGUAGES.includes(languages[index - 1].code);
+                                        return (<>
+                                        {isFirstNonCommon && (
+                                            <div key="lang-separator" className="border-t border-[var(--color-border-default)] my-2 pt-2">
+                                                <p className="text-xs text-[var(--color-text-muted)]">All Languages</p>
+                                            </div>
+                                        )}
                                         <div
                                             key={lang.code}
                                             className={`flex items-center justify-between p-3 rounded-lg border transition-all ${lang.enabled
@@ -912,7 +923,7 @@ export function AudioCollectionModal({
                                                 <span className="text-xs text-[var(--color-text-muted)]">Loading voices...</span>
                                             )}
                                         </div>
-                                    ))}
+                                    </>)})}
                                 </div>
                             </div>
                             </div>

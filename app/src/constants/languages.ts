@@ -60,3 +60,40 @@ export const NATIVE_LANGUAGE_NAMES: Record<string, string> = {
 export function getNativeLanguageName(code: string, englishName?: string): string {
     return NATIVE_LANGUAGE_NAMES[code] || englishName || code.toUpperCase();
 }
+
+// Common museum tour languages — shown first in language selectors
+// These cover the vast majority of museum visitor demographics worldwide
+export const COMMON_MUSEUM_LANGUAGES = [
+    'en', // English
+    'es', // Spanish
+    'fr', // French
+    'de', // German
+    'it', // Italian
+    'ja', // Japanese
+    'zh', // Chinese (Mandarin)
+    'ko', // Korean
+    'ru', // Russian
+];
+
+// Sort languages so common museum languages appear first, then the rest alphabetically
+export function sortLanguagesCommonFirst<T extends { code: string; name?: string }>(languages: T[]): T[] {
+    const commonSet = new Set(COMMON_MUSEUM_LANGUAGES);
+    const commonOrder = new Map(COMMON_MUSEUM_LANGUAGES.map((code, i) => [code, i]));
+
+    const common: T[] = [];
+    const rest: T[] = [];
+
+    for (const lang of languages) {
+        if (commonSet.has(lang.code)) {
+            common.push(lang);
+        } else {
+            rest.push(lang);
+        }
+    }
+
+    // Sort common by defined order, rest alphabetically by name
+    common.sort((a, b) => (commonOrder.get(a.code) ?? 99) - (commonOrder.get(b.code) ?? 99));
+    rest.sort((a, b) => (a.name || a.code).localeCompare(b.name || b.code));
+
+    return [...common, ...rest];
+}

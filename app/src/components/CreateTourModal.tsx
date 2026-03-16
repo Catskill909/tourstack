@@ -12,7 +12,7 @@ interface CreateTourModalProps {
 
 type Step = 'template' | 'info' | 'review';
 
-import { getNativeLanguageName } from '../constants/languages';
+import { getNativeLanguageName, sortLanguagesCommonFirst, COMMON_MUSEUM_LANGUAGES } from '../constants/languages';
 import { useTranslationLanguages } from '../hooks/useTranslationLanguages';
 
 const durations = [
@@ -30,11 +30,11 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
 
     // Dynamic language list from active translation provider
     const { languages: providerLanguages } = useTranslationLanguages();
-    const languages = providerLanguages.map(l => ({
+    const languages = sortLanguagesCommonFirst(providerLanguages.map(l => ({
         code: l.code,
         name: getNativeLanguageName(l.code, l.name),
         hint: l.code.toUpperCase() + (l.name !== getNativeLanguageName(l.code, l.name) ? ` - ${l.name}` : ''),
-    }));
+    })));
 
     // Form state
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -266,8 +266,10 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                                 <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
                                     Supported Languages
                                 </label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {languages.map((lang) => {
+                                {(() => {
+                                    const commonLangs = languages.filter(l => COMMON_MUSEUM_LANGUAGES.includes(l.code));
+                                    const otherLangs = languages.filter(l => !COMMON_MUSEUM_LANGUAGES.includes(l.code));
+                                    const renderLang = (lang: typeof languages[0]) => {
                                         const isSelected = supportedLanguages.includes(lang.code);
                                         const isPrimary = lang.code === primaryLanguage;
                                         return (
@@ -300,8 +302,25 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                                                 </span>
                                             </label>
                                         );
-                                    })}
-                                </div>
+                                    };
+                                    return (
+                                        <>
+                                            <p className="text-xs text-[var(--color-text-muted)] mb-2">Common</p>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {commonLangs.map(renderLang)}
+                                            </div>
+                                            {otherLangs.length > 0 && (
+                                                <>
+                                                    <div className="border-t border-[var(--color-border-default)] my-3" />
+                                                    <p className="text-xs text-[var(--color-text-muted)] mb-2">All Languages</p>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        {otherLangs.map(renderLang)}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </>
+                                    );
+                                })()}
                                 <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                                     Select multiple languages to enable the "Translate to All" feature in content editors.
                                 </p>
