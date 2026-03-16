@@ -6,8 +6,13 @@
  */
 
 import session from 'express-session';
+import BetterSqlite3 from 'better-sqlite3';
+import BetterSqlite3StoreFactory from 'better-sqlite3-session-store';
 import crypto from 'crypto';
+import path from 'path';
 import type { Request, Response, NextFunction } from 'express';
+
+const BetterSqlite3Store = BetterSqlite3StoreFactory(session);
 
 // Extend session type to include our custom properties
 declare module 'express-session' {
@@ -44,7 +49,20 @@ export function getAdminPassword(): string {
 /**
  * Session middleware configuration
  */
+// Store sessions in a separate SQLite database (NOT the main app database)
+const dbDir = process.env.DATABASE_URL
+    ? process.env.DATABASE_URL.replace('file:', '').replace(/\/[^/]+$/, '')
+    : path.join(process.cwd(), 'data');
+const sessionDb = new BetterSqlite3(path.join(dbDir, 'sessions.db'));
+
 export const sessionMiddleware = session({
+    store: new BetterSqlite3Store({
+        client: sessionDb,
+        expired: {
+            clear: true,
+            intervalMs: 15 * 60 * 1000, // Clear expired sessions every 15 min
+        },
+    }),
     secret: getSessionSecret(),
     resave: false,
     saveUninitialized: false,
