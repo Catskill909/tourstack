@@ -67,6 +67,27 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
         cancelAnimationFrame(rafRef.current);
     }, []);
 
+    // Full reset when audio source changes (e.g., language switch)
+    // Pause playback, reset all state so player starts clean with new source
+    const prevSrcRef = useRef(src);
+    useEffect(() => {
+        if (prevSrcRef.current !== src) {
+            prevSrcRef.current = src;
+            const audio = audioRef.current;
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+            stopRAF();
+            setIsPlaying(false);
+            setCurrentTime(0);
+            setDuration(0);
+            setDragTime(0);
+            setIsDragging(false);
+            isDraggingRef.current = false;
+        }
+    }, [src, stopRAF]);
+
     // Audio element event listeners (registered once, stable)
     useEffect(() => {
         const audio = audioRef.current;

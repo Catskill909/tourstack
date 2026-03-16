@@ -113,6 +113,24 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
         }
     }, [previousIndex, transitionDuration]);
 
+    // Full reset when audio source changes (e.g., future per-language audio support)
+    const prevAudioUrlRef = useRef(data.audioUrl);
+    useEffect(() => {
+        if (prevAudioUrlRef.current !== data.audioUrl) {
+            prevAudioUrlRef.current = data.audioUrl;
+            const audio = audioRef.current;
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+            stopRAF();
+            setIsPlaying(false);
+            setCurrentTime(0);
+            setCurrentIndex(0);
+            setPreviousIndex(null);
+        }
+    }, [data.audioUrl, stopRAF]);
+
     // rAF loop for smooth progress bar updates (~60fps)
     const startRAF = useCallback(() => {
         const animate = () => {
