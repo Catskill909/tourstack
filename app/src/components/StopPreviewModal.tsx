@@ -264,11 +264,12 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
             {/* Device Preview Area */}
             <div
                 ref={previewContainerRef}
-                className="flex-1 flex items-center justify-center overflow-auto p-8"
+                className="flex-1 overflow-auto p-8"
                 onClick={(e) => e.stopPropagation()}
             >
                 {isKioskMode ? (
                     /* ===== KIOSK MODE: Frameless, fills available space ===== */
+                    <div className="w-full h-full flex items-center justify-center">
                     <div
                         className="w-full h-full overflow-hidden rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-primary)]"
                         style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}
@@ -406,13 +407,32 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                             })()}
                         </div>
                     </div>
+                    </div>
                 ) : (
                     /* ===== PHONE / TABLET MODE: Device frame with bezel ===== */
                     <div
-                        className="relative transition-transform duration-300 ease-out"
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minWidth: '100%',
+                            minHeight: '100%',
+                        }}
+                    >
+                    <div
+                        style={{
+                            width: scaledWidth * scale,
+                            height: scaledHeight * scale,
+                            flexShrink: 0,
+                            transition: 'width 300ms ease-out, height 300ms ease-out',
+                        }}
+                    >
+                    <div
+                        className="relative"
                         style={{
                             transform: `scale(${scale})`,
-                            transformOrigin: 'center center',
+                            transformOrigin: 'top left',
+                            transition: 'transform 300ms ease-out',
                         }}
                     >
                         {/* Device Frame - Outer Shell */}
@@ -672,6 +692,8 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                                 />
                             </div>
                         </div>
+                    </div>
+                    </div>
                     </div>
                 )}
             </div>

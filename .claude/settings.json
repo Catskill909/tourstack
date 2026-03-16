@@ -15,7 +15,8 @@
       "Bash(git status:*)",
       "Bash(xargs -I {} git show --stat --format=\"%h %s%n%b\" {})",
       "Bash(git mv:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(grep -r \"Preview\\\\|preview\" /Users/paulhenshaw/Desktop/TourStack/app/src --include=*.tsx -l)"
     ]
   }
 }

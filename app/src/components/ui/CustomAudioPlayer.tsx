@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, Captions } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward, MessageSquareText } from 'lucide-react';
 import { ClosedCaptions } from './ClosedCaptions';
 
 interface TranscriptWord {
@@ -410,7 +410,7 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
                                 }`}
                                 title={localShowCaptions ? 'Hide captions' : 'Show captions'}
                             >
-                                <Captions className="w-5 h-5" />
+                                <MessageSquareText className="w-5 h-5" />
                             </button>
                         )}
                         <button

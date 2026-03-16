@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Images, Loader, Captions } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Images, Loader, MessageSquareText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { TimelineGalleryBlockData, TransitionType } from '../../types';
 import { ClosedCaptions } from '../ui/ClosedCaptions';
@@ -375,7 +375,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
                                 }`}
                                 title={showCaptions ? 'Hide captions' : 'Show captions'}
                             >
-                                <Captions className="w-5 h-5" />
+                                <MessageSquareText className="w-5 h-5" />
                             </button>
                         )}
                         <button
