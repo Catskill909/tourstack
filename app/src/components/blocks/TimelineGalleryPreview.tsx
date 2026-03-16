@@ -113,6 +113,23 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
         }
     }, [previousIndex, transitionDuration]);
 
+    // rAF loop for smooth progress bar updates (~60fps)
+    const startRAF = useCallback(() => {
+        const animate = () => {
+            const audio = audioRef.current;
+            if (audio && !audio.paused) {
+                setCurrentTime(audio.currentTime);
+            }
+            animationFrameRef.current = requestAnimationFrame(animate);
+        };
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = requestAnimationFrame(animate);
+    }, []);
+
+    const stopRAF = useCallback(() => {
+        cancelAnimationFrame(animationFrameRef.current);
+    }, []);
+
     // Full reset when audio source changes (e.g., future per-language audio support)
     const prevAudioUrlRef = useRef(data.audioUrl);
     useEffect(() => {
@@ -130,23 +147,6 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
             setPreviousIndex(null);
         }
     }, [data.audioUrl, stopRAF]);
-
-    // rAF loop for smooth progress bar updates (~60fps)
-    const startRAF = useCallback(() => {
-        const animate = () => {
-            const audio = audioRef.current;
-            if (audio && !audio.paused) {
-                setCurrentTime(audio.currentTime);
-            }
-            animationFrameRef.current = requestAnimationFrame(animate);
-        };
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = requestAnimationFrame(animate);
-    }, []);
-
-    const stopRAF = useCallback(() => {
-        cancelAnimationFrame(animationFrameRef.current);
-    }, []);
 
     // Audio element event listeners (registered once, stable)
     useEffect(() => {
