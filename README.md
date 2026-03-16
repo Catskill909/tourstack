@@ -84,6 +84,7 @@ npm run start
 - **Native QR Generator**: `qrcode.react` with regeneration, unique tokens, PNG download
 - **Visit Analytics**: VisitLog table tracks stop visits with source, token, timestamp, and user agent
 - **Tour Block**: Full-screen hero intro with architectural design system aesthetic
+- **Language Reconciliation**: Smart import detects language mismatches, prompts to expand tour or filter import
 - **13 Content Blocks**: Text, Image, Gallery, Timeline Gallery, Audio, Video, Quote, Timeline, Comparison, Positioning, Map, Image Map, Tour
 - **Stop Editor**: Split-pane editor with live preview mode
 - **Timeline Gallery**: Audio-synced image galleries with **thumbnail markers** on waveform
@@ -137,6 +138,7 @@ TourStack/
 | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Content block system design |
 | [docs/timeline-gallery.md](./docs/timeline-gallery.md) | Timeline Gallery feature |
 | [docs/image-map-block-dev.md](./docs/image-map-block-dev.md) | Image Map block feature |
+| [docs/language-collection-import-audit.md](./docs/language-collection-import-audit.md) | Language import reconciliation audit |
 | [tourstack.md](./tourstack.md) | Full scope reference |
 
 ## 🔧 Commands

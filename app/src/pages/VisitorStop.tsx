@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Globe, AlertCircle, Loader2, ChevronLeft, ChevronRight, Settings, Maximize, RotateCcw, MapPin, QrCode, Smartphone, X, Navigation } from 'lucide-react';
 import { StopContentBlock } from '../components/blocks/StopContentBlock';
@@ -56,7 +56,8 @@ export function VisitorStop() {
     const showChat = searchParams.get('showChat') === 'true';
 
     const [tour, setTour] = useState<TourWithStops | null>(null);
-    const [allStops, setAllStops] = useState<Stop[]>([]);
+    const [allStopsRaw, setAllStopsRaw] = useState<Stop[]>([]);
+    const allStops = useMemo(() => [...allStopsRaw].sort((a, b) => a.order - b.order), [allStopsRaw]);
     const [stop, setStop] = useState<Stop | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -107,7 +108,7 @@ export function VisitorStop() {
 
                 setTour(data.tour);
                 setStop(data.stop);
-                setAllStops(data.allStops || []);
+                setAllStopsRaw(data.allStops || []);
 
                 // Set initial language from URL param or tour's first language
                 if (urlLang && data.tour.languages?.includes(urlLang)) {

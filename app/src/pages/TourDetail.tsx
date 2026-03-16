@@ -137,7 +137,7 @@ export function TourDetail() {
 
                 // Load stops from database API
                 const tourStops = await fetchStopsFromAPI(id);
-                setStops(tourStops);
+                setStops([...tourStops].sort((a, b) => a.order - b.order));
                 setIsLoading(false);
             }
         }

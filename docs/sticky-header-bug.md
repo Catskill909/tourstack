@@ -2,7 +2,7 @@
 **Incident Duration**: ~2 Hours
 **Total Failed Attempts**: 12
 **Status**: RESOLVED
-**File Location**: `TourStack/sticky-header-bug.md`
+**File Location**: `TourStack/docs/sticky-header-bug.md`
 
 ## Overview
 This document serves as a complete forensic record of the persistent failures encountered while attempting to make the "AI Object Analysis" header sticky and flush with the viewport top. It documents the "loop" of errors, the files modified, and the systematic breakdown of why each attempt failed.

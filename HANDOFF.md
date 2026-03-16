@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: March 10, 2026
-**Session Status**: Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅
+**Last Updated**: March 16, 2026
+**Session Status**: Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅
 
 ---
 
@@ -255,7 +255,7 @@ NFC tags allow visitors to tap their phone on a sticker/card to open tour conten
 - `app/server/routes/visitor.ts` — Visitor routes (same for NFC and QR)
 
 ### Documentation
-See [nfc-tag-dev.md](nfc-tag-dev.md) for full NFC development roadmap and Phase 2 plans.
+See [docs/nfc-tag-dev.md](docs/nfc-tag-dev.md) for full NFC development roadmap and Phase 2 plans.
 
 ---
 
@@ -831,6 +831,49 @@ TourStack uses a **modular content block system** where tours and stops are comp
 > - `app/scripts/backup-db.sh` - Database backup + sync script
 > - `app/prisma/schema.prisma` - Cleaned up formatting
 
+### Phase 29: Language Reconciliation & UX Polish ✅ (March 16, 2026)
+
+**Language Reconciliation on Import:**
+- [x] **Language Mismatch Detection** — CollectionPickerModal detects when collection languages differ from tour languages
+- [x] **Reconciliation UI** — Modal prompts user to expand tour languages or filter import to match tour
+- [x] **Tour Language Update** — `onLanguagesChanged` callback propagates new languages up to TourDetail
+- [x] **Feed Language Filtering** — `cleanContentBlocks()` in feeds.ts now filters block languages to `tour.languages`
+- [x] **Audit Document** — Full audit in `docs/language-collection-import-audit.md`
+
+**Session Management:**
+- [x] **better-sqlite3 Session Store** — Replaced in-memory sessions with persistent SQLite-backed sessions
+- [x] **TypeScript Definitions** — Added `better-sqlite3-session-store.d.ts` type declarations
+
+**Positioning Validation:**
+- [x] **Stop Update Validation** — Improved validation handling for primary and backup positioning in stop updates
+
+**Language Selector UX:**
+- [x] **Common Museum Languages** — 12 most common museum languages sorted to top in Create/Edit Tour modals and Audio Collection modal
+- [x] **Language Sorting Utility** — `sortLanguagesMuseumFirst()` function in `constants/languages.ts`
+- [x] **Google TTS Language Sorting** — Server-side language sorting for Google Cloud TTS voice endpoint
+
+**Voice Gallery Enhancement:**
+- [x] **Language Names** — Voice gallery now displays full language names alongside voice info
+- [x] **Additional Voice Info** — Enhanced voice metadata display in Audio TTS page
+
+**TourCard UX:**
+- [x] **"Unpublish" Label** — Changed "Archive" button to "Unpublish" for clearer status semantics
+- [x] **Status Handling** — Adjusted status transitions for unpublish action
+
+> **Key Files Created/Modified:**
+> - `app/src/components/CollectionPickerModal.tsx` — Language reconciliation UI + filtering
+> - `app/src/components/blocks/AudioBlockEditor.tsx` — Passes `availableLanguages` to picker
+> - `app/src/components/StopEditor.tsx` — Wires `onLanguagesChanged` callback
+> - `app/src/pages/TourDetail.tsx` — Handles language update from import
+> - `app/server/routes/feeds.ts` — Feed language filtering
+> - `app/server/middleware/auth.ts` — SQLite session store integration
+> - `app/src/constants/languages.ts` — `COMMON_MUSEUM_LANGUAGES`, `sortLanguagesMuseumFirst()`
+> - `app/src/components/CreateTourModal.tsx` — Sorted language selector
+> - `app/src/components/EditTourModal.tsx` — Sorted language selector
+> - `app/src/components/AudioCollectionModal.tsx` — Sorted language selector
+> - `app/src/components/TourCard.tsx` — Unpublish button rename
+> - `docs/language-collection-import-audit.md` — Full language import audit
+
 ### 🎯 Phase 26.2: Per-Tour AI Concierge (NEXT)
 - [ ] Add concierge fields to Tour model (conciergeEnabled, conciergePersona, conciergeWelcome, conciergeCollections)
 - [ ] Create tour concierge settings UI (new tab in Tour Editor)
@@ -1050,6 +1093,10 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | Kiosk Dev Guide | `docs/kiosk-dev.md` |
 | Tour Card (Run button) | `app/src/components/TourCard.tsx` |
 | Tour Detail (Run button) | `app/src/pages/TourDetail.tsx` |
+| **Language Reconciliation** | |
+| Collection Picker Modal | `app/src/components/CollectionPickerModal.tsx` |
+| Language Constants | `app/src/constants/languages.ts` |
+| Language Import Audit | `docs/language-collection-import-audit.md` |
 
 ---
 

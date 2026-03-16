@@ -73,6 +73,7 @@ When museum staff access visitor pages, they see:
 | Phase 27: Google Cloud TTS Integration | ✅ Complete |
 | Phase 28: Image Map Block | ✅ Complete |
 | Database Safety Infrastructure | ✅ Complete |
+| Phase 29: Language Reconciliation & UX Polish | ✅ Complete |
 | Phase 26.2: Per-Tour AI Concierge | 🎯 NEXT |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
@@ -309,6 +310,28 @@ Collections → AI Analyze → Translate → Save → Auto-Sync → Media Librar
 - `app/server/routes/google-tts.ts` - Backend Express route
 - `app/src/services/googleTtsService.ts` - Frontend service layer
 - `app/src/pages/Audio.tsx` - GoogleCloudTab component
+
+### Language Reconciliation & UX Polish (Phase 29) - COMPLETE ✅ (March 16, 2026)
+
+**New Feature:** Smart language handling during collection imports, plus session management and UX improvements.
+
+| Feature | Description |
+|---------|-------------|
+| **Language Reconciliation** | CollectionPickerModal detects language mismatches between collection and tour |
+| **Reconciliation UI** | Prompts user to expand tour languages or filter import |
+| **Tour Language Update** | Propagates new languages from import up to tour level |
+| **Feed Language Filtering** | Exports only tour-declared languages in JSON feeds |
+| **SQLite Session Store** | Persistent sessions via better-sqlite3 (replaces in-memory) |
+| **Museum Language Sorting** | 12 common museum languages sorted to top in language selectors |
+| **Voice Gallery Enhancement** | Full language names and additional voice metadata in TTS gallery |
+| **Unpublish Button** | TourCard "Archive" renamed to "Unpublish" for clarity |
+| **Positioning Validation** | Improved primary/backup positioning validation on stop updates |
+
+**Files:**
+- `CollectionPickerModal.tsx` - Language reconciliation UI and filtering
+- `constants/languages.ts` - `COMMON_MUSEUM_LANGUAGES`, `sortLanguagesMuseumFirst()`
+- `server/middleware/auth.ts` - SQLite session store integration
+- `docs/language-collection-import-audit.md` - Full audit document
 
 ### Per-Tour AI Concierge (Phase 26.2) - NEXT 🎯
 
