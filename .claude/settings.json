@@ -2,7 +2,14 @@
   "permissions": {
     "allow": [
       "Bash(find /Users/paulhenshaw/Desktop/TourStack/app/prisma/migrations -name \"*.sql\" -exec basename {})",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(grep -A 20 \"else if.*activeTab.*nfc\\\\|activeTab === ''nfc''\" /Users/paulhenshaw/Desktop/TourStack/app/src/components/PositioningEditorModal.tsx)",
+      "Read(//function handleSave\\\\\\(\\\\\\)/**)",
+      "Read(//const TABS/,/**)",
+      "Bash(sqlite3 /Users/paulhenshaw/Desktop/TourStack/app/data/dev.db \"SELECT id, substr\\(primaryPositioning, 1, 200\\) FROM Stop WHERE id = ''cmkt9gp0z0003xdthoo9cv4rd'';\")",
+      "Bash(sqlite3 /Users/paulhenshaw/Desktop/TourStack/app/data/dev.db \"SELECT id, substr\\(primaryPositioning, 1, 200\\) FROM Stop LIMIT 5;\")",
+      "Bash(node -e \"const z = require\\(''zod''\\); console.log\\(z.ZodFirstPartyTypeKind ? ''zod loaded'' : ''err''\\); const s = z.object\\({ method: z.literal\\(''qr_code''\\), url: z.string\\(\\), shortCode: z.string\\(\\).min\\(1\\).max\\(10\\) }\\); const r = z.discriminatedUnion\\(''method'', [s]\\); console.log\\(r.safeParse\\({ method: ''qr_code'', url: ''test'', shortCode: ''ABC'', extraField: ''oops'' }\\)\\);\")",
+      "Bash(node -e \":*)"
     ]
   }
 }

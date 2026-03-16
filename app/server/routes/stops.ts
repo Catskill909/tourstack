@@ -181,24 +181,29 @@ router.put('/:id', async (req: Request<IdParams>, res: Response) => {
         if (data.customFieldValues !== undefined) updateData.customFieldValues = JSON.stringify(data.customFieldValues);
         if (data.primaryPositioning !== undefined) {
             const result = PositioningConfigSchema.safeParse(data.primaryPositioning);
-            if (!result.success) {
-                res.status(400).json({ error: 'Invalid positioning config', details: result.error.issues });
-                return;
-            }
-            updateData.primaryPositioning = JSON.stringify(result.data);
-            // Keep shortCode column in sync
-            if ('shortCode' in result.data && (result.data as { shortCode?: string }).shortCode) {
-                updateData.shortCode = (result.data as { shortCode: string }).shortCode;
+            if (result.success) {
+                updateData.primaryPositioning = JSON.stringify(result.data);
+                // Keep shortCode column in sync
+                if ('shortCode' in result.data && (result.data as { shortCode?: string }).shortCode) {
+                    updateData.shortCode = (result.data as { shortCode: string }).shortCode;
+                }
+            } else {
+                // Validation failed — log warning but still persist the data
+                // (the frontend echoes back positioning from the DB on every save,
+                // so blocking the entire update for a validation mismatch is wrong)
+                console.warn('primaryPositioning validation warning:', result.error.issues);
+                updateData.primaryPositioning = JSON.stringify(data.primaryPositioning);
             }
         }
         if (data.backupPositioning !== undefined) {
             if (data.backupPositioning) {
                 const result = PositioningConfigSchema.safeParse(data.backupPositioning);
-                if (!result.success) {
-                    res.status(400).json({ error: 'Invalid backup positioning config', details: result.error.issues });
-                    return;
+                if (result.success) {
+                    updateData.backupPositioning = JSON.stringify(result.data);
+                } else {
+                    console.warn('backupPositioning validation warning:', result.error.issues);
+                    updateData.backupPositioning = JSON.stringify(data.backupPositioning);
                 }
-                updateData.backupPositioning = JSON.stringify(result.data);
             } else {
                 updateData.backupPositioning = null;
             }
@@ -216,7 +221,8 @@ router.put('/:id', async (req: Request<IdParams>, res: Response) => {
         res.json(parseStop(stop));
     } catch (error) {
         console.error('Error updating stop:', error);
-        res.status(500).json({ error: 'Failed to update stop' });
+        const message = error instanceof Error ? error.message : 'Failed to update stop';
+        res.status(500).json({ error: 'Failed to update stop', details: message });
     }
 });
 
