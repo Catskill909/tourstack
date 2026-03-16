@@ -1150,9 +1150,12 @@ function DeepgramTab({
             <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h2 className="font-semibold text-[var(--color-text-primary)]">Voice Gallery</h2>
+                        <h2 className="font-semibold text-[var(--color-text-primary)]">
+                            Voice Gallery
+                            <span className="ml-2 text-sm font-normal text-[var(--color-text-muted)]">— {voices?.[selectedLanguage]?.name || selectedLanguage}</span>
+                        </h2>
                         <p className="text-sm text-[var(--color-text-muted)]">
-                            {currentLanguageVoices.length} voices available in {voices?.[selectedLanguage]?.name || selectedLanguage}
+                            {currentLanguageVoices.length} voices available
                         </p>
                     </div>
                 </div>
@@ -1925,9 +1928,12 @@ function ElevenLabsTab({
             {/* Voice Gallery - Native Language Voices */}
             <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6">
                 <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">Voice Gallery</h3>
+                    <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                        Voice Gallery
+                        <span className="ml-2 text-sm font-normal text-[var(--color-text-muted)]">— {languages.find(l => l.code === selectedLanguage)?.name || 'English'}</span>
+                    </h3>
                     <p className="text-sm text-[var(--color-text-muted)]">
-                        {isLoadingVoices ? 'Loading...' : `${filteredVoices.length} native ${languages.find(l => l.code === selectedLanguage)?.name || 'English'} voices`}
+                        {isLoadingVoices ? 'Loading...' : `${filteredVoices.length} native voices`}
                     </p>
                 </div>
                 {isLoadingVoices ? (
@@ -2531,17 +2537,27 @@ function GoogleCloudTab({
             <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] p-6">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h2 className="font-semibold text-[var(--color-text-primary)]">Voice Gallery</h2>
+                        <h2 className="font-semibold text-[var(--color-text-primary)]">
+                            Voice Gallery
+                            <span className="ml-2 text-sm font-normal text-[var(--color-text-muted)]">— {languages.find(l => l.code === selectedLanguage)?.name || selectedLanguage}</span>
+                        </h2>
                         <p className="text-sm text-[var(--color-text-muted)]">
-                            {currentVoices.length} voices available in {languages.find(l => l.googleCode === selectedLanguage)?.name || selectedLanguage}
+                            {currentVoices.length} voices available
+                            {currentVoices.some(v => v.type === 'Neural2') && (
+                                <span> · <span className="text-blue-400">Neural2</span> = higher quality, more natural sounding</span>
+                            )}
                         </p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-h-96 overflow-y-auto p-1">
-                    {currentVoices.map((voice) => {
+                    {currentVoices.map((voice, idx) => {
                         const gender = voice.ssmlGender?.toLowerCase() || 'neutral';
                         const isNeural2 = voice.type === 'Neural2';
+                        const genderLabel = gender === 'female' ? 'Female' : gender === 'male' ? 'Male' : 'Voice';
+                        const sameGenderVoices = currentVoices.filter(v => v.ssmlGender === voice.ssmlGender);
+                        const voiceNum = sameGenderVoices.indexOf(voice) + 1;
+                        const friendlyName = `${genderLabel} Voice ${voiceNum}`;
 
                         return (
                             <div
@@ -2575,12 +2591,12 @@ function GoogleCloudTab({
 
                                     {/* Name */}
                                     <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate w-full mb-0.5">
-                                        {voice.displayName}
+                                        {friendlyName}
                                     </span>
 
                                     {/* Gender & Type */}
                                     <span className="text-xs text-[var(--color-text-muted)] capitalize mb-2">
-                                        {gender} · {voice.type}
+                                        {voice.type} · {voice.displayName}
                                     </span>
 
                                     {/* Preview Button */}
