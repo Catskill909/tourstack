@@ -175,7 +175,6 @@ export function Tours() {
                             <option value="all">All Status</option>
                             <option value="draft">Draft</option>
                             <option value="published">Published</option>
-                            <option value="archived">Archived</option>
                         </select>
                     </div>
                 </div>

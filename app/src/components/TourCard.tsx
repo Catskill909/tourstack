@@ -8,10 +8,10 @@ import {
     MapPin,
     Clock,
     Eye,
-    Archive,
     Play,
     ExternalLink,
-    Monitor
+    Monitor,
+    EyeOff
 } from 'lucide-react';
 import type { Tour, Template, TourStatus, Stop } from '../types';
 import { KioskLauncherModal } from './KioskLauncherModal';
@@ -268,11 +268,11 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
                         )}
                         {tour.status === 'published' && (
                             <button
-                                onClick={() => { onStatusChange(tour, 'archived'); setMenuOpen(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] transition-colors"
+                                onClick={() => { onStatusChange(tour, 'draft'); setMenuOpen(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-amber-400 hover:bg-[var(--color-bg-hover)] transition-colors"
                             >
-                                <Archive className="w-4 h-4" />
-                                Archive
+                                <EyeOff className="w-4 h-4" />
+                                Unpublish
                             </button>
                         )}
                         <button
