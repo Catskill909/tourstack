@@ -18,9 +18,11 @@ interface AudioBlockEditorProps {
     language: string;
     availableLanguages?: string[];
     onChange: (data: AudioBlockData) => void;
+    /** Called when a collection import adds new languages to the tour */
+    onLanguagesChanged?: (newLanguages: string[]) => void;
 }
 
-export function AudioBlockEditor({ data, language, availableLanguages = ['en'], onChange }: AudioBlockEditorProps) {
+export function AudioBlockEditor({ data, language, availableLanguages = ['en'], onChange, onLanguagesChanged }: AudioBlockEditorProps) {
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [transcribeError, setTranscribeError] = useState<string | null>(null);
     const [isTranslating, setIsTranslating] = useState(false);
@@ -329,6 +331,8 @@ export function AudioBlockEditor({ data, language, availableLanguages = ['en'], 
                 onClose={() => setShowCollectionPicker(false)}
                 onImport={handleImportFromCollection}
                 mode="multi"
+                tourLanguages={availableLanguages}
+                onLanguagesChanged={onLanguagesChanged}
             />
         </div>
     );

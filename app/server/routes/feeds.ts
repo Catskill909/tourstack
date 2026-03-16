@@ -131,7 +131,7 @@ router.get('/tours/:id/stops', async (req: Request, res: Response) => {
             tour_title: localizedTitle,
             total_stops: tourData.stops?.length || 0,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            stops: (tourData.stops || []).map((stop: any) => formatStopForFeed(stop, lang)),
+            stops: (tourData.stops || []).map((stop: any) => formatStopForFeed(stop, lang, parseJsonArray(tourData.languages))),
         };
 
         res.json(feed);
@@ -235,7 +235,7 @@ function formatTourForFeed(tour: any, lang?: string, format: string = 'full') {
         created_at: tour.createdAt.toISOString(),
         updated_at: tour.updatedAt.toISOString(),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        stops: tour.stops?.map((stop: any) => formatStopForFeed(stop, lang)) || [],
+        stops: tour.stops?.map((stop: any) => formatStopForFeed(stop, lang, parseJsonArray(tour.languages))) || [],
         stop_count: tour.stops?.length || 0,
     };
 }
@@ -278,9 +278,44 @@ function cleanContentBlocks(blocks: any[]): any[] {
     });
 }
 
+// Helper: Filter a multilingual object to only include allowed languages
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterLanguageKeys(obj: any, tourLanguages?: string[]): any {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj) || !tourLanguages) return obj;
+    // Only filter if it looks like a language map (keys are 2-3 char language codes)
+    const keys = Object.keys(obj);
+    const looksLikeLangMap = keys.length > 0 && keys.every(k => /^[a-z]{2,3}$/.test(k));
+    if (!looksLikeLangMap) return obj;
+    const filtered: Record<string, unknown> = {};
+    for (const lang of tourLanguages) {
+        if (lang in obj) filtered[lang] = obj[lang];
+    }
+    // Always include 'en' as fallback if present
+    if ('en' in obj && !('en' in filtered)) filtered['en'] = obj['en'];
+    return filtered;
+}
+
+// Helper: Filter all multilingual fields in a content block's data to tour languages
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterBlockLanguages(block: any, tourLanguages?: string[]): any {
+    if (!block || !tourLanguages) return block;
+    const cleaned = { ...block };
+    if (cleaned.data && typeof cleaned.data === 'object') {
+        const data = { ...cleaned.data };
+        // Filter known multilingual fields
+        for (const field of ['content', 'title', 'caption', 'credit', 'transcript', 'audioFiles', 'text', 'description', 'question']) {
+            if (data[field] && typeof data[field] === 'object' && !Array.isArray(data[field])) {
+                data[field] = filterLanguageKeys(data[field], tourLanguages);
+            }
+        }
+        cleaned.data = data;
+    }
+    return cleaned;
+}
+
 // Helper: Format stop for feed output
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function formatStopForFeed(stop: any, lang?: string) {
+function formatStopForFeed(stop: any, lang?: string, tourLanguages?: string[]) {
     const title = parseLocalizedField(stop.title);
     const localizedTitle = lang ? { [lang]: title[lang] || title['en'] || '' } : title;
 
@@ -320,7 +355,11 @@ function formatStopForFeed(stop: any, lang?: string) {
     let contentBlocks = [];
     try {
         const parsed = stop.content ? JSON.parse(stop.content) : [];
-        contentBlocks = cleanContentBlocks(parsed);
+        const cleaned = cleanContentBlocks(parsed);
+        // Filter block language keys to only include tour languages
+        contentBlocks = tourLanguages
+            ? cleaned.map((b: any) => filterBlockLanguages(b, tourLanguages))
+            : cleaned;
     } catch {
         contentBlocks = [];
     }

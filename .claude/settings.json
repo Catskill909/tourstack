@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/paulhenshaw/Desktop/TourStack/app/prisma/migrations -name \"*.sql\" -exec basename {})",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

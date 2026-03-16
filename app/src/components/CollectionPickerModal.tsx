@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, FolderOpen, Volume2, Play, Pause, Check, Globe, Mic2, Search } from 'lucide-react';
+import { X, FolderOpen, Volume2, Play, Pause, Check, Globe, Mic2, Search, AlertTriangle, Plus, ChevronRight } from 'lucide-react';
 import {
     collectionService,
     type Collection,
     type AudioCollectionItem,
 } from '../lib/collectionService';
+import { getNativeLanguageName, getLanguageNameFromCode } from '../constants/languages';
 
 // Language display names - Must match LT_LOAD_ONLY on LibreTranslate server
 // Server loads: en,es,fr,de,ja,it,ko,zh,pt
@@ -41,6 +42,10 @@ export interface CollectionPickerModalProps {
     mode: 'multi' | 'single';
     /** When mode='single', which field to populate */
     singleLanguageTarget?: string;
+    /** Tour's current language list — used for reconciliation on multi-import */
+    tourLanguages?: string[];
+    /** Called when user opts to add extra collection languages to the tour */
+    onLanguagesChanged?: (newLanguages: string[]) => void;
 }
 
 export function CollectionPickerModal({
@@ -48,12 +53,18 @@ export function CollectionPickerModal({
     onClose,
     onImport,
     mode,
+    tourLanguages,
+    onLanguagesChanged,
 }: CollectionPickerModalProps) {
     const [collections, setCollections] = useState<Collection[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
     const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
+
+    // Language reconciliation state (multi-import mode)
+    const [showReconciliation, setShowReconciliation] = useState(false);
+    const [languagesToAdd, setLanguagesToAdd] = useState<Set<string>>(new Set());
 
     // Audio preview state
     const [playingId, setPlayingId] = useState<string | null>(null);
@@ -119,8 +130,34 @@ export function CollectionPickerModal({
         setPlayingId(item.id);
     }
 
-    // Handle import
-    function handleImport() {
+    // Compute language mismatch for multi-import mode
+    const collectionLanguages = [...new Set(audioItems.map(i => i.language))];
+    const extraLanguages = tourLanguages
+        ? collectionLanguages.filter(l => !tourLanguages.includes(l))
+        : [];
+    const missingLanguages = tourLanguages
+        ? tourLanguages.filter(l => !collectionLanguages.includes(l))
+        : [];
+    const hasLanguageMismatch = mode === 'multi' && tourLanguages && (extraLanguages.length > 0 || missingLanguages.length > 0);
+
+    // Handle the import button click — check for mismatch first
+    function handleImportClick() {
+        if (!selectedCollection) return;
+
+        // In multi mode with tour context, check for language mismatch
+        if (mode === 'multi' && tourLanguages && extraLanguages.length > 0) {
+            // Default: pre-select all extra languages for addition
+            setLanguagesToAdd(new Set(extraLanguages));
+            setShowReconciliation(true);
+            return;
+        }
+
+        // No mismatch (or single mode) — import directly
+        executeImport();
+    }
+
+    // Execute the actual import with the resolved language set
+    function executeImport(addLanguages?: string[]) {
         if (!selectedCollection) return;
 
         const audioFiles: { [lang: string]: string } = {};
@@ -128,15 +165,26 @@ export function CollectionPickerModal({
         const voiceInfo: { [lang: string]: { name: string; provider: string } } = {};
 
         if (mode === 'multi') {
-            // Import all languages
-            audioItems.forEach(item => {
-                audioFiles[item.language] = item.url;
-                transcript[item.language] = item.text;
-                voiceInfo[item.language] = {
-                    name: item.voice.name,
-                    provider: item.provider,
-                };
-            });
+            // Determine which languages to include
+            const approvedLanguages = tourLanguages
+                ? [...tourLanguages, ...(addLanguages || [])]
+                : collectionLanguages;
+
+            audioItems
+                .filter(item => approvedLanguages.includes(item.language))
+                .forEach(item => {
+                    audioFiles[item.language] = item.url;
+                    transcript[item.language] = item.text;
+                    voiceInfo[item.language] = {
+                        name: item.voice.name,
+                        provider: item.provider,
+                    };
+                });
+
+            // Notify parent to update tour languages if any were added
+            if (addLanguages && addLanguages.length > 0 && onLanguagesChanged) {
+                onLanguagesChanged([...tourLanguages!, ...addLanguages]);
+            }
         } else {
             // Import single language only
             const item = audioItems.find(i => i.language === selectedLanguage);
@@ -151,7 +199,18 @@ export function CollectionPickerModal({
         }
 
         onImport({ audioFiles, transcript, voiceInfo });
+        setShowReconciliation(false);
         handleClose();
+    }
+
+    // Toggle a language in the add-set during reconciliation
+    function toggleLanguageToAdd(lang: string) {
+        setLanguagesToAdd(prev => {
+            const next = new Set(prev);
+            if (next.has(lang)) next.delete(lang);
+            else next.add(lang);
+            return next;
+        });
     }
 
     function handleClose() {
@@ -163,6 +222,8 @@ export function CollectionPickerModal({
         setSelectedCollection(null);
         setSelectedLanguage('en');
         setSearchQuery('');
+        setShowReconciliation(false);
+        setLanguagesToAdd(new Set());
         onClose();
     }
 
@@ -170,7 +231,7 @@ export function CollectionPickerModal({
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl mx-4 flex flex-col">
+            <div className="relative bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl mx-4 flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border-default)]">
                     <div className="flex items-center gap-3">
@@ -266,16 +327,23 @@ export function CollectionPickerModal({
                                                                 {new Date(collection.updatedAt).toLocaleDateString()}
                                                             </span>
                                                         </div>
-                                                        {/* Language badges */}
+                                                        {/* Language badges — color-coded for tour match */}
                                                         <div className="flex flex-wrap gap-1.5 mt-2">
-                                                            {languages.map(lang => (
-                                                                <span
-                                                                    key={lang}
-                                                                    className="px-2 py-0.5 bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] text-xs rounded-full border border-[var(--color-border-default)]"
-                                                                >
-                                                                    {LANGUAGE_NAMES[lang] || lang.toUpperCase()}
-                                                                </span>
-                                                            ))}
+                                                            {languages.map(lang => {
+                                                                const inTour = !tourLanguages || tourLanguages.includes(lang);
+                                                                return (
+                                                                    <span
+                                                                        key={lang}
+                                                                        className={`px-2 py-0.5 text-xs rounded-full border ${
+                                                                            inTour
+                                                                                ? 'bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] border-[var(--color-border-default)]'
+                                                                                : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                                                        }`}
+                                                                    >
+                                                                        {!inTour && '+ '}{LANGUAGE_NAMES[lang] || lang.toUpperCase()}
+                                                                    </span>
+                                                                );
+                                                            })}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -391,25 +459,175 @@ export function CollectionPickerModal({
                     )}
                 </div>
 
+                {/* Language Reconciliation Overlay */}
+                {showReconciliation && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-2xl">
+                        <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] w-full max-w-md mx-6 shadow-2xl overflow-hidden">
+                            {/* Header */}
+                            <div className="px-6 pt-6 pb-4">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-400">
+                                        <AlertTriangle className="w-5 h-5" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                                        Language Mismatch
+                                    </h3>
+                                </div>
+                                <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+                                    This collection has languages that aren't in your tour yet.
+                                    Choose which to add:
+                                </p>
+                            </div>
+
+                            {/* Extra languages (in collection, not in tour) */}
+                            <div className="px-6 pb-4 space-y-2">
+                                <div className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
+                                    New languages from collection
+                                </div>
+                                {extraLanguages.map(lang => {
+                                    const selected = languagesToAdd.has(lang);
+                                    return (
+                                        <button
+                                            key={lang}
+                                            onClick={() => toggleLanguageToAdd(lang)}
+                                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
+                                                selected
+                                                    ? 'bg-[var(--color-accent-primary)]/10 border-[var(--color-accent-primary)]/40 text-[var(--color-text-primary)]'
+                                                    : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-hover)]'
+                                            }`}
+                                        >
+                                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                                                selected
+                                                    ? 'bg-[var(--color-accent-primary)] border-[var(--color-accent-primary)]'
+                                                    : 'border-[var(--color-border-default)]'
+                                            }`}>
+                                                {selected && <Check className="w-3.5 h-3.5 text-white" />}
+                                            </div>
+                                            <div className="flex-1 text-left">
+                                                <span className="font-medium">{getLanguageNameFromCode(lang)}</span>
+                                                <span className="text-[var(--color-text-muted)] ml-2 text-sm">
+                                                    {getNativeLanguageName(lang)}
+                                                </span>
+                                            </div>
+                                            <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-bg-surface)] text-[var(--color-text-muted)] border border-[var(--color-border-default)]">
+                                                {lang.toUpperCase()}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Missing languages warning */}
+                            {missingLanguages.length > 0 && (
+                                <div className="px-6 pb-4">
+                                    <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+                                        <p className="text-xs text-amber-400/90">
+                                            <span className="font-medium">Note:</span> Your tour includes{' '}
+                                            {missingLanguages.map(l => getLanguageNameFromCode(l)).join(', ')}{' '}
+                                            but this collection doesn't have audio for {missingLanguages.length === 1 ? 'it' : 'them'}.
+                                            Those slots will remain empty.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Tour languages summary */}
+                            <div className="px-6 pb-4">
+                                <div className="text-xs text-[var(--color-text-muted)] flex items-center gap-2 flex-wrap">
+                                    <span>Tour languages:</span>
+                                    {tourLanguages?.map(lang => (
+                                        <span key={lang} className="px-1.5 py-0.5 rounded bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] text-xs border border-[var(--color-border-default)]">
+                                            {lang.toUpperCase()}
+                                        </span>
+                                    ))}
+                                    {[...languagesToAdd].map(lang => (
+                                        <span key={lang} className="px-1.5 py-0.5 rounded bg-green-500/10 text-green-400 text-xs border border-green-500/20">
+                                            + {lang.toUpperCase()}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="px-6 py-4 border-t border-[var(--color-border-default)] flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        // Import only tour languages (skip extras)
+                                        executeImport([]);
+                                    }}
+                                    className="flex-1 px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors"
+                                >
+                                    Skip extras
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        executeImport([...languagesToAdd]);
+                                    }}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium bg-[var(--color-accent-primary)] text-white rounded-xl hover:opacity-90 transition-all"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    {languagesToAdd.size > 0
+                                        ? `Add ${languagesToAdd.size} & Import`
+                                        : 'Import'
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Footer */}
-                <div className="px-6 py-4 border-t border-[var(--color-border-default)] flex items-center justify-end gap-3">
-                    <button
-                        onClick={handleClose}
-                        className="px-4 py-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleImport}
-                        disabled={!selectedCollection || (mode === 'single' && !audioItems.find(i => i.language === selectedLanguage))}
-                        className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                        <Check className="w-4 h-4" />
-                        {mode === 'multi'
-                            ? `Import ${audioItems.length} Files`
-                            : 'Import Selected'}
-                    </button>
-                </div>
+                {!showReconciliation && (
+                    <div className="px-6 py-4 border-t border-[var(--color-border-default)] flex items-center justify-between gap-3">
+                        {/* Language match indicator for multi mode */}
+                        <div className="flex-1 min-w-0">
+                            {selectedCollection && mode === 'multi' && tourLanguages && (
+                                hasLanguageMismatch ? (
+                                    <div className="flex items-center gap-2 text-xs text-amber-400">
+                                        <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                                        <span>
+                                            {extraLanguages.length > 0 && `${extraLanguages.length} extra language${extraLanguages.length > 1 ? 's' : ''}`}
+                                            {extraLanguages.length > 0 && missingLanguages.length > 0 && ' · '}
+                                            {missingLanguages.length > 0 && `${missingLanguages.length} missing`}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 text-xs text-green-400">
+                                        <Check className="w-3.5 h-3.5 flex-shrink-0" />
+                                        <span>Languages match your tour</span>
+                                    </div>
+                                )
+                            )}
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleClose}
+                                className="px-4 py-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)] rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleImportClick}
+                                disabled={!selectedCollection || (mode === 'single' && !audioItems.find(i => i.language === selectedLanguage))}
+                                className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg hover:bg-[var(--color-accent-primary)]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                {mode === 'multi' && hasLanguageMismatch ? (
+                                    <>
+                                        <ChevronRight className="w-4 h-4" />
+                                        Review & Import
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="w-4 h-4" />
+                                        {mode === 'multi'
+                                            ? `Import ${audioItems.length} Files`
+                                            : 'Import Selected'}
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

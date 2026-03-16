@@ -241,6 +241,13 @@ export function TourDetail() {
         setShowEditTour(false);
     }
 
+    // Called when a collection import adds new languages to the tour
+    async function handleLanguagesChanged(newLanguages: string[]) {
+        if (!tour) return;
+        await updateTour(tour.id, { languages: newLanguages });
+        setTour(prev => prev ? { ...prev, languages: newLanguages } : null);
+    }
+
     // ============================================
     // DRAG AND DROP HANDLERS
     // ============================================
@@ -698,6 +705,7 @@ export function TourDetail() {
                     translationProvider={tour.defaultTranslationProvider || 'libretranslate'}
                     onSave={handleSaveStop}
                     onClose={() => setEditingStop(null)}
+                    onLanguagesChanged={handleLanguagesChanged}
                 />
             )}
 

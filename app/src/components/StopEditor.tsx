@@ -31,6 +31,8 @@ interface StopEditorProps {
     translationProvider?: TranslationProvider;
     onSave: (stop: Stop, shouldClose?: boolean) => void;
     onClose: () => void;
+    /** Called when a collection import adds new languages to the tour */
+    onLanguagesChanged?: (newLanguages: string[]) => void;
 }
 
 function generateBlockId(): string {
@@ -66,7 +68,7 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
     }
 }
 
-export function StopEditor({ stop, tourData, allStops = [], availableLanguages = ['en'], translationProvider = 'libretranslate', onSave, onClose }: StopEditorProps) {
+export function StopEditor({ stop, tourData, allStops = [], availableLanguages = ['en'], translationProvider = 'libretranslate', onSave, onClose, onLanguagesChanged }: StopEditorProps) {
     // Ensure contentBlocks is always an array - defensive check
     const safeContentBlocks = Array.isArray(stop.contentBlocks) ? stop.contentBlocks : [];
 
@@ -785,6 +787,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                                         language={language}
                                         availableLanguages={availableLanguages}
                                         onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
+                                        onLanguagesChanged={onLanguagesChanged}
                                     />
                                 )}
                                 {editingBlock.type === 'timelineGallery' && (
