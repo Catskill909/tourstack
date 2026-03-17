@@ -105,7 +105,9 @@ const docsStructure: DocSection[] = [
             { slug: 'nfc-tags', title: 'NFC Tags', description: 'Tap-to-open with NFC cards', icon: Radio },
             { slug: 'gps-geofencing', title: 'GPS Geofencing', description: 'Auto-navigate with GPS location triggers', icon: Navigation },
             { slug: 'visitor-view', title: 'The Visitor View', description: 'What visitors see', icon: Eye },
-            { slug: 'kiosk-mode', title: 'Kiosk Mode', description: 'Museum kiosk deployments', icon: Monitor },
+            { slug: 'kiosk-mode', title: 'Kiosk Mode', description: 'Museum display & device options', icon: Monitor },
+            { slug: 'staff-handoff', title: 'Staff Handoff', description: 'Hand devices to visitors with one tap', icon: Smartphone },
+            { slug: 'offline-export', title: 'Offline Export', description: 'Download tours for no-WiFi devices', icon: Target },
             { slug: 'publishing', title: 'Publishing Your Tour', description: 'Draft to published workflow', icon: Send },
         ]
     },
@@ -2052,43 +2054,58 @@ const CollectionsPage = () => (
 const KioskModePage = () => (
     <div className="space-y-8">
         <header>
-            <h1 className="text-3xl font-bold text-white mb-4">Kiosk Mode</h1>
+            <h1 className="text-3xl font-bold text-white mb-4">Kiosk & Device Modes</h1>
             <p className="text-xl text-neutral-400">
-                Deploy tours on museum kiosks with fullscreen display and auto-restart.
+                Three ways to deploy tours on museum devices — from WiFi displays to fully offline tablets.
             </p>
         </header>
 
+        {/* Overview of the three modes */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+                { title: 'Kiosk Mode', desc: 'WiFi-connected display with full options. Best for wall-mounted screens and lobby kiosks.', icon: '🖥️' },
+                { title: 'Staff Handoff', desc: 'Staff picks a language, taps Start, hands device to visitor. Auto-resets when idle.', icon: '📱' },
+                { title: 'Offline Export', desc: 'Download a ZIP with all tour data and media. No WiFi needed on the device.', icon: '📦' },
+            ].map(m => (
+                <div key={m.title} className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                    <div className="text-2xl mb-3">{m.icon}</div>
+                    <h3 className="font-semibold text-white mb-2">{m.title}</h3>
+                    <p className="text-xs text-neutral-400">{m.desc}</p>
+                </div>
+            ))}
+        </div>
+
         <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
-            <h2 className="text-xl font-semibold text-white mb-4">What is Kiosk Mode?</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">How to Access</h2>
             <p className="text-neutral-300 mb-4">
-                Kiosk mode lets you run a tour on a dedicated museum screen or tablet. The tour runs
-                in fullscreen, navigation can be hidden, and it auto-restarts when visitors finish.
-                Perfect for lobby displays, exhibit stations, or interactive kiosks.
+                All three modes are accessed from the same place:
+            </p>
+            <div className="p-5 bg-black/50 border border-white/10 rounded-xl">
+                <ol className="space-y-3 text-sm">
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">1</span>
+                        <span className="text-neutral-300">Open any tour from the <strong className="text-white">Tours</strong> page</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">2</span>
+                        <span className="text-neutral-300">Click the <strong className="text-white">monitor icon</strong> in the header bar</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">3</span>
+                        <span className="text-neutral-300">Choose a tab: <strong className="text-white">Kiosk Mode</strong>, <strong className="text-white">Staff Handoff</strong>, or <strong className="text-white">Export Offline</strong></span>
+                    </li>
+                </ol>
+            </div>
+            <p className="text-neutral-400 text-sm mt-4">
+                The <strong className="text-white">Run</strong> / <strong className="text-white">Preview</strong> button also opens the Staff Handoff screen directly — the quickest way to launch a tour.
             </p>
         </div>
 
         <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Launching a Kiosk</h2>
-            <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
-                <ol className="space-y-3 text-sm">
-                    <li className="flex items-start gap-3">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">1</span>
-                        <span className="text-neutral-300">Find your tour on the Tours page and click the <strong className="text-white">monitor icon</strong> (kiosk button)</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">2</span>
-                        <span className="text-neutral-300">Configure options in the Kiosk Launcher modal</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">3</span>
-                        <span className="text-neutral-300">Click <strong className="text-white">"Launch Kiosk"</strong> to open in a new tab</span>
-                    </li>
-                </ol>
-            </div>
-        </div>
-
-        <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Kiosk Options</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">Kiosk Mode Options</h2>
+            <p className="text-neutral-300 mb-4">
+                Kiosk mode is for WiFi-connected displays. It opens the tour in a new browser tab with these options:
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
                     { title: 'Language', desc: 'Pre-select the language for the kiosk display' },
@@ -2106,13 +2123,207 @@ const KioskModePage = () => (
             </div>
         </div>
 
-        <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Kiosk Preview</h2>
-            <p className="text-neutral-300">
-                You can also preview how content looks in kiosk mode from the Stop Editor.
-                Click <strong className="text-white">"Preview"</strong> and switch to the kiosk device type (third option)
-                to see a frameless, full-width preview.
+        <div className="flex items-start gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div>
+                <h3 className="font-semibold text-white mb-1">Which mode should I use?</h3>
+                <p className="text-neutral-400 text-sm">
+                    <strong className="text-neutral-300">WiFi available?</strong> Use Kiosk Mode for full control, or Staff Handoff for the simplest visitor experience.
+                    <br />
+                    <strong className="text-neutral-300">No WiFi?</strong> Use Export Offline to download the tour, then load it onto devices via USB or a local network.
+                </p>
+            </div>
+        </div>
+    </div>
+);
+
+const StaffHandoffPage = () => (
+    <div className="space-y-8">
+        <header>
+            <h1 className="text-3xl font-bold text-white mb-4">Staff Handoff</h1>
+            <p className="text-xl text-neutral-400">
+                The simplest way to hand a tour device to a visitor. Pick a language, tap Start, done.
             </p>
+        </header>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">How It Works</h2>
+            <div className="space-y-4">
+                {[
+                    { step: '1', title: 'Staff sees the loading screen', desc: 'Shows the tour name, hero image, stop count, duration, and device status (battery, WiFi, cache).' },
+                    { step: '2', title: 'Staff picks the visitor\'s language', desc: 'Large flag buttons with native language names. One tap to select.' },
+                    { step: '3', title: 'Staff taps "Start Tour"', desc: 'Device enters fullscreen visitor mode, locked to that language. No settings, no distractions.' },
+                    { step: '4', title: 'Visitor explores the tour', desc: 'Single-language experience — audio, text, and UI all in their language. Navigation between stops works normally.' },
+                    { step: '5', title: 'Device auto-resets', desc: 'After 5 minutes of no interaction, a "Still exploring?" prompt appears. If no response in 30 seconds, device returns to the staff screen.' },
+                ].map(item => (
+                    <div key={item.step} className="flex items-start gap-4">
+                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                            <span className="text-sm font-bold text-white">{item.step}</span>
+                        </div>
+                        <div>
+                            <h3 className="font-medium text-white text-sm">{item.title}</h3>
+                            <p className="text-xs text-neutral-400 mt-1">{item.desc}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Accessing the Staff Screen</h2>
+            <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
+                <p className="text-sm text-neutral-300 mb-3">Two ways to open it:</p>
+                <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-white shrink-0 mt-0.5" />
+                        <span className="text-neutral-300"><strong className="text-white">Run / Preview button</strong> — on any tour detail page, this opens the staff handoff screen directly</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-white shrink-0 mt-0.5" />
+                        <span className="text-neutral-300"><strong className="text-white">Monitor icon → Staff Handoff tab</strong> — the second tab in the Device & Display modal</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Staff Screen Features</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                    { title: 'Device Status Bar', desc: 'Shows WiFi connection, battery level, and whether the tour is cached and ready' },
+                    { title: 'Language Buttons', desc: 'Large, clear buttons with flag emoji and native language name. One tap to select.' },
+                    { title: 'Tour Info', desc: 'Hero image, title, description, stop count, and duration — confirms the right tour is loaded' },
+                    { title: 'PIN-Protected Settings', desc: 'Tap the gear icon and enter the staff PIN (default: 0000) to access device settings' },
+                    { title: 'Inactivity Reset', desc: '5 minutes idle → "Still exploring?" prompt → 30 second countdown → auto-return to staff screen' },
+                    { title: '"Return Device" Button', desc: 'Visitors or staff can also manually return to the staff screen from the reset prompt' },
+                ].map(f => (
+                    <div key={f.title} className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                        <h3 className="font-medium text-white text-sm mb-1">{f.title}</h3>
+                        <p className="text-xs text-neutral-400">{f.desc}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        <div className="flex items-start gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div>
+                <h3 className="font-semibold text-white mb-1">Best for museum device racks</h3>
+                <p className="text-neutral-400 text-sm">
+                    The staff handoff screen is designed for museums with a rack of tablets at the entrance.
+                    Staff grabs a device, picks the visitor's language, taps Start, and hands it over.
+                    When the visitor returns the device, it resets automatically — ready for the next visitor.
+                </p>
+            </div>
+        </div>
+    </div>
+);
+
+const OfflineExportPage = () => (
+    <div className="space-y-8">
+        <header>
+            <h1 className="text-3xl font-bold text-white mb-4">Offline Export</h1>
+            <p className="text-xl text-neutral-400">
+                Download your tour as a ZIP file with all data, images, and audio — no WiFi needed on the device.
+            </p>
+        </header>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">How to Export</h2>
+            <div className="p-5 bg-black/50 border border-white/10 rounded-xl">
+                <ol className="space-y-3 text-sm">
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">1</span>
+                        <span className="text-neutral-300">Open any tour from the <strong className="text-white">Tours</strong> page</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">2</span>
+                        <span className="text-neutral-300">Click the <strong className="text-white">monitor icon</strong> in the header</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">3</span>
+                        <span className="text-neutral-300">Select the <strong className="text-white">Export Offline</strong> tab</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">4</span>
+                        <span className="text-neutral-300">Click <strong className="text-white">Download ZIP</strong> — the file saves to your downloads folder</span>
+                    </li>
+                </ol>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">What's in the ZIP</h2>
+            <div className="p-5 bg-black/50 border border-white/10 rounded-xl font-mono text-sm space-y-1">
+                <p className="text-white">tourstack-your-tour.zip</p>
+                <p className="text-neutral-400 pl-4">manifest.json <span className="text-neutral-600">— export metadata</span></p>
+                <p className="text-neutral-400 pl-4">data/tour.json <span className="text-neutral-600">— all stops, content blocks, and settings</span></p>
+                <p className="text-neutral-400 pl-4">media/images/ <span className="text-neutral-600">— every referenced image</span></p>
+                <p className="text-neutral-400 pl-4">media/audio/ <span className="text-neutral-600">— all narration audio files</span></p>
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">What's Included</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                    { title: 'All languages', included: true, desc: 'Every translation of every stop is included' },
+                    { title: 'Images & galleries', included: true, desc: 'Hero images, gallery images, timeline images' },
+                    { title: 'Audio narration', included: true, desc: 'All audio files for every language' },
+                    { title: 'Stop content', included: true, desc: 'Text, quotes, timelines, comparisons — everything' },
+                    { title: 'YouTube / Vimeo', included: false, desc: 'External video embeds require internet' },
+                    { title: 'AI Concierge chat', included: false, desc: 'Requires a live AI connection' },
+                ].map(item => (
+                    <div key={item.title} className={`p-4 rounded-xl border ${item.included ? 'bg-white/[0.02] border-white/10' : 'bg-white/[0.01] border-white/5'}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                            {item.included ? (
+                                <CheckCircle2 className="w-4 h-4 text-green-400" />
+                            ) : (
+                                <X className="w-4 h-4 text-neutral-600" />
+                            )}
+                            <h3 className={`font-medium text-sm ${item.included ? 'text-white' : 'text-neutral-500'}`}>{item.title}</h3>
+                        </div>
+                        <p className={`text-xs ${item.included ? 'text-neutral-400' : 'text-neutral-600'}`}>{item.desc}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        <div>
+            <h2 className="text-xl font-semibold text-white mb-4">Loading onto Devices</h2>
+            <p className="text-neutral-300 mb-4">
+                Once you have the ZIP file, you can transfer it to museum devices via:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                    { title: 'USB transfer', desc: 'Connect the device and copy the extracted folder directly' },
+                    { title: 'Local WiFi', desc: 'Set up a local network (no internet needed) and serve from a laptop or Raspberry Pi' },
+                    { title: 'AirDrop / Bluetooth', desc: 'Share the ZIP wirelessly for small device fleets' },
+                    { title: 'MDM / Fleet management', desc: 'For larger deployments, push via Jamf, Google Workspace, etc.' },
+                ].map(m => (
+                    <div key={m.title} className="p-4 bg-white/[0.02] border border-white/10 rounded-xl">
+                        <h3 className="font-medium text-white text-sm mb-1">{m.title}</h3>
+                        <p className="text-xs text-neutral-400">{m.desc}</p>
+                    </div>
+                ))}
+            </div>
+        </div>
+
+        <div className="flex items-start gap-4 p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <div className="p-2 rounded-lg bg-white/5 shrink-0">
+                <Lightbulb className="w-5 h-5 text-white" />
+            </div>
+            <div>
+                <h3 className="font-semibold text-white mb-1">URL Rewriting</h3>
+                <p className="text-neutral-400 text-sm">
+                    The export automatically rewrites all media URLs from <code className="text-neutral-300 bg-white/5 px-1 rounded">/uploads/images/...</code> to
+                    relative <code className="text-neutral-300 bg-white/5 px-1 rounded">./media/images/...</code> paths, so everything works from a local folder.
+                </p>
+            </div>
         </div>
     </div>
 );
@@ -2376,6 +2587,8 @@ const pageComponents: Record<string, React.ComponentType> = {
     'gps-geofencing': GPSGeofencingPage,
     'visitor-view': VisitorViewPage,
     'kiosk-mode': KioskModePage,
+    'staff-handoff': StaffHandoffPage,
+    'offline-export': OfflineExportPage,
     'publishing': PublishingPage,
     'multilingual': MultilingualPage,
     'magic-translate': MagicTranslatePage,

@@ -122,7 +122,6 @@ export function TourDetail() {
     const titleInputRef = useRef<HTMLInputElement>(null);
 
     // Tour launch state
-    const [isLaunching, setIsLaunching] = useState(false);
     const [showKioskModal, setShowKioskModal] = useState(false);
 
     useEffect(() => {
@@ -381,24 +380,15 @@ export function TourDetail() {
         }
     }
 
-    // Launch tour in visitor mode
+    // Launch tour — opens staff handoff screen where you pick language and start
     function handleLaunchTour() {
         if (stops.length === 0) {
             alert('This tour has no stops yet. Add stops before launching.');
             return;
         }
 
-        setIsLaunching(true);
-
-        // Sort by order and get first stop
-        const sortedStops = [...stops].sort((a, b) => a.order - b.order);
-        const firstStop = sortedStops[0];
-
-        // Open visitor view in new tab
-        const visitorUrl = `/visitor/tour/${tour?.id}/stop/${firstStop.id}`;
-        window.open(visitorUrl, '_blank');
-
-        setIsLaunching(false);
+        const slug = tour?.slug || tour?.id;
+        window.open(`/kiosk/tour/${slug}`, '_blank');
     }
 
     if (isLoading) {
@@ -435,19 +425,17 @@ export function TourDetail() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    {/* Run/Preview Tour Button */}
+                    {/* Run Tour Button — opens staff handoff screen */}
                     <button
                         onClick={handleLaunchTour}
-                        disabled={isLaunching || stops.length === 0}
+                        disabled={stops.length === 0}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${tour.status === 'published'
                                 ? 'bg-green-600 hover:bg-green-700 text-white'
                                 : 'bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]'
-                            } ${(isLaunching || stops.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title={stops.length === 0 ? 'Add stops to enable launch' : (tour.status === 'published' ? 'Run tour in visitor mode' : 'Preview tour (staff only)')}
+                            } ${stops.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        title={stops.length === 0 ? 'Add stops to enable launch' : 'Run tour'}
                     >
-                        {isLaunching ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : tour.status === 'published' ? (
+                        {tour.status === 'published' ? (
                             <Play className="w-4 h-4" />
                         ) : (
                             <Eye className="w-4 h-4" />
@@ -455,12 +443,12 @@ export function TourDetail() {
                         <span>{tour.status === 'published' ? 'Run' : 'Preview'}</span>
                         <ExternalLink className="w-3 h-3 opacity-60" />
                     </button>
-                    {/* Kiosk Mode Button */}
+                    {/* Device & Kiosk Mode */}
                     <button
                         onClick={() => setShowKioskModal(true)}
                         disabled={stops.length === 0}
                         className={`p-2 bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-default)] rounded-lg transition-all ${stops.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title={stops.length === 0 ? 'Add stops to enable kiosk mode' : 'Kiosk Mode Settings'}
+                        title={stops.length === 0 ? 'Add stops to enable device modes' : 'Device & Kiosk Settings'}
                     >
                         <Monitor className="w-5 h-5" />
                     </button>

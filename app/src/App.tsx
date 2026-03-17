@@ -12,6 +12,8 @@ import { ApiFeeds } from './pages/ApiFeeds';
 import { AIAssistance } from './pages/AIAssistance';
 import { Media } from './pages/Media';
 import { VisitorStop } from './pages/VisitorStop';
+import { KioskTourList } from './pages/KioskTourList';
+import { KioskStaffScreen } from './pages/KioskStaffScreen';
 import Concierge from './pages/Concierge';
 import { Docs } from './pages/Docs';
 import { Login } from './pages/Login';
@@ -27,6 +29,10 @@ function App() {
 
         {/* Visitor Routes - NO admin layout, NO auth required */}
         <Route path="/visitor/tour/:tourId/stop/:stopId" element={<VisitorStop />} />
+
+        {/* Kiosk Routes - Staff handoff screen for museum devices */}
+        <Route path="/kiosk" element={<KioskTourList />} />
+        <Route path="/kiosk/tour/:tourId" element={<KioskStaffScreen />} />
 
         {/* Documentation - Full-screen, no admin layout */}
         <Route path="/docs" element={<Docs />} />

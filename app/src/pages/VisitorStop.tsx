@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Globe, AlertCircle, Loader2, ChevronLeft, ChevronRight, Settings, Maximize, RotateCcw, MapPin, QrCode, Smartphone, X, Navigation } from 'lucide-react';
 import { StopContentBlock } from '../components/blocks/StopContentBlock';
@@ -54,6 +54,7 @@ export function VisitorStop() {
     const autoRestart = searchParams.get('autoRestart') === 'true';
     const requestFullscreen = searchParams.get('fullscreen') === 'true';
     const showChat = searchParams.get('showChat') === 'true';
+    const kioskReset = searchParams.get('kioskReset'); // URL to return to staff screen
 
     const [tour, setTour] = useState<TourWithStops | null>(null);
     const [allStopsRaw, setAllStopsRaw] = useState<Stop[]>([]);
@@ -72,6 +73,12 @@ export function VisitorStop() {
     const [fallbackDismissed, setFallbackDismissed] = useState(false);
     const [geoTargets, setGeoTargets] = useState<GeofenceTarget[]>([]);
     const [geoDismissed, setGeoDismissed] = useState(false);
+
+    // Kiosk inactivity reset
+    const [showKioskReset, setShowKioskReset] = useState(false);
+    const [resetCountdown, setResetCountdown] = useState(30);
+    const inactivityTimerRef = useRef<ReturnType<typeof setTimeout>>();
+    const countdownTimerRef = useRef<ReturnType<typeof setInterval>>();
 
     // Determine device type for content rendering
     // Kiosk mode gets kiosk sizing, otherwise detect from screen width
@@ -207,6 +214,48 @@ export function VisitorStop() {
             console.log('Fullscreen toggle failed:', err);
         }
     }, []);
+
+    // Kiosk inactivity reset — returns to staff screen after idle period
+    const resetInactivityTimer = useCallback(() => {
+        if (!kioskReset || showKioskReset) return;
+        if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+        inactivityTimerRef.current = setTimeout(() => {
+            setShowKioskReset(true);
+            setResetCountdown(30);
+        }, 5 * 60 * 1000); // 5 minutes
+    }, [kioskReset, showKioskReset]);
+
+    useEffect(() => {
+        if (!kioskReset) return;
+        const events = ['touchstart', 'mousedown', 'scroll', 'keydown'] as const;
+        events.forEach(e => window.addEventListener(e, resetInactivityTimer, { passive: true }));
+        resetInactivityTimer();
+        return () => {
+            events.forEach(e => window.removeEventListener(e, resetInactivityTimer));
+            if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+        };
+    }, [kioskReset, resetInactivityTimer]);
+
+    useEffect(() => {
+        if (!showKioskReset) return;
+        countdownTimerRef.current = setInterval(() => {
+            setResetCountdown(prev => {
+                if (prev <= 1) {
+                    navigate(decodeURIComponent(kioskReset!));
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+        return () => { if (countdownTimerRef.current) clearInterval(countdownTimerRef.current); };
+    }, [showKioskReset, kioskReset, navigate]);
+
+    function dismissKioskReset() {
+        setShowKioskReset(false);
+        setResetCountdown(30);
+        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+        resetInactivityTimer();
+    }
 
     // Handle tour restart (for kiosk auto-restart)
     const handleRestartTour = useCallback(() => {
@@ -694,6 +743,37 @@ export function VisitorStop() {
                 iconColor={tour?.conciergeChatIconColor}
                 iconBgColor={tour?.conciergeChatIconBgColor}
             />
+
+            {/* Kiosk inactivity reset overlay */}
+            {showKioskReset && kioskReset && (
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6">
+                    <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-[var(--color-border-default)] shadow-2xl max-w-sm w-full p-8 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-[var(--color-accent-primary)]/10 flex items-center justify-center mx-auto mb-5">
+                            <RotateCcw className="w-8 h-8 text-[var(--color-accent-primary)]" />
+                        </div>
+                        <h2 className="text-xl font-semibold text-[var(--color-text-primary)] mb-2">
+                            Still exploring?
+                        </h2>
+                        <p className="text-[var(--color-text-secondary)] text-sm mb-6">
+                            This device will reset in <span className="font-bold text-[var(--color-accent-primary)]">{resetCountdown}s</span>
+                        </p>
+                        <div className="space-y-3">
+                            <button
+                                onClick={dismissKioskReset}
+                                className="w-full px-6 py-3 bg-[var(--color-accent-primary)] text-[#1a1a1a] font-semibold rounded-xl hover:opacity-90 transition-opacity"
+                            >
+                                Continue Tour
+                            </button>
+                            <button
+                                onClick={() => navigate(decodeURIComponent(kioskReset))}
+                                className="w-full px-6 py-3 bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)] rounded-xl border border-[var(--color-border-default)] hover:bg-[var(--color-bg-hover)] transition-colors text-sm"
+                            >
+                                Return Device
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
