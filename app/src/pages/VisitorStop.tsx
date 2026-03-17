@@ -45,7 +45,7 @@ export function VisitorStop() {
     const { tourId: tourSlugOrId, stopId: stopSlugOrId } = useParams<{ tourId: string; stopId: string }>();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const token = searchParams.get('t');
+
 
     // Kiosk mode URL parameters
     const urlLang = searchParams.get('lang');
