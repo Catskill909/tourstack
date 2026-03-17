@@ -14,9 +14,21 @@ type TourWithStops = Tour & { stops: Stop[] };
 // Helper to parse stop JSON fields
 function parseStop(stop: Stop) {
     const content = JSON.parse(stop.content);
+
+    // Parse image field - handle both old string format and new object format
+    let parsedImage: unknown;
+    try {
+        parsedImage = typeof stop.image === 'string' && stop.image.startsWith('{')
+            ? JSON.parse(stop.image)
+            : stop.image;
+    } catch {
+        parsedImage = stop.image;
+    }
+
     return {
         ...stop,
         title: JSON.parse(stop.title),
+        image: parsedImage,
         description: JSON.parse(stop.description),
         content: content,
         contentBlocks: content,
