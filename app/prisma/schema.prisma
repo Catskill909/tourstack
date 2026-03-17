@@ -49,7 +49,7 @@ model Tour {
   primaryLanguage            String    @default("en")
   duration                   Int
   difficulty                 String    @default("general")
-  defaultTranslationProvider String    @default("libretranslate")
+  defaultTranslationProvider String    @default("google_cloud")
   primaryPositioningMethod   String
   backupPositioningMethod    String?
   accessibility              String

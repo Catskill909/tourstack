@@ -19,7 +19,21 @@
       "Bash(grep -r \"Preview\\\\|preview\" /Users/paulhenshaw/Desktop/TourStack/app/src --include=*.tsx -l)",
       "Bash(grep -r \"offline\\\\|pwa\\\\|service.*worker\\\\|cache\" /Users/paulhenshaw/Desktop/TourStack/app/src --include=*.ts --include=*.tsx)",
       "Bash(sqlite3 /Users/paulhenshaw/Desktop/TourStack/app/data/dev.db \"SELECT id, slug, status, JSON_EXTRACT\\(title, ''$.en''\\) as title FROM Tour LIMIT 10;\")",
-      "Bash(find /Users/paulhenshaw/Desktop/TourStack/app/server/routes -type f -name *docs* -o -name *content*)"
+      "Bash(find /Users/paulhenshaw/Desktop/TourStack/app/server/routes -type f -name *docs* -o -name *content*)",
+      "Bash(npx prisma:*)",
+      "Bash(sqlite3 /Users/paulhenshaw/Desktop/TourStack/app/data/dev.db \"SELECT id, name, icon, description FROM Template ORDER BY name;\")",
+      "Bash(sqlite3 /Users/paulhenshaw/Desktop/TourStack/app/prisma/data/dev.db \"SELECT id, name, icon, description FROM Template ORDER BY name;\")",
+      "Bash(sqlite3 /Users/paulhenshaw/Desktop/TourStack/app/data/dev.db \".schema Template\")",
+      "Bash(sqlite3 /Users/paulhenshaw/Desktop/TourStack/app/data/dev.db \"SELECT customFields FROM Template LIMIT 1;\")",
+      "Bash(sqlite3 /Users/paulhenshaw/Desktop/TourStack/app/data/dev.db \"SELECT id, name, icon FROM Template ORDER BY name;\")",
+      "Bash(SQL=\"UPDATE Template SET description = ''No hardware needed. Visitors follow numbered stops at their own pace.'' WHERE id = ''cmself_guided_0000notech'';\")",
+      "Bash(sqlite3 /Users/paulhenshaw/Desktop/TourStack/app/data/dev.db \"$SQL\")",
+      "Bash(sqlite3 /Users/paulhenshaw/Desktop/TourStack/app/prisma/data/dev.db \"$SQL\")",
+      "Bash(npx vite:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

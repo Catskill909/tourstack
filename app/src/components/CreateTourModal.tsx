@@ -45,6 +45,7 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
     const [duration, setDuration] = useState(30);
     const [heroImage, setHeroImage] = useState<string>('');
     const [_imageFile, setImageFile] = useState<File | null>(null);
+    const [defaultTranslationProvider, setDefaultTranslationProvider] = useState<'google_cloud' | 'libretranslate'>('google_cloud');
 
     // Reset form when modal opens
     useEffect(() => {
@@ -97,6 +98,7 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                 languages: supportedLanguages,
                 duration,
                 heroImage: heroImage || '',
+                defaultTranslationProvider,
             });
             onClose();
         } catch (error) {
@@ -160,8 +162,13 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                 <div className="p-6 overflow-y-auto max-h-[60vh]">
                     {/* Step 1: Template Selection */}
                     {step === 'template' && (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {templates.map((template) => (
+                        <div className="grid grid-cols-2 gap-4">
+                            {[...templates].sort((a, b) => {
+                                // Show "Self-Guided Tour" (no-tech) first
+                                const aNoTech = a.id === 'cmself_guided_0000notech' ? 0 : 1;
+                                const bNoTech = b.id === 'cmself_guided_0000notech' ? 0 : 1;
+                                return aNoTech - bNoTech;
+                            }).map((template) => (
                                 <button
                                     key={template.id}
                                     onClick={() => setSelectedTemplate(template)}
@@ -170,9 +177,11 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                                         : 'border-[var(--color-border-default)] hover:border-[var(--color-border-hover)]'
                                         }`}
                                 >
-                                    <div className="text-3xl mb-2">{template.icon}</div>
-                                    <h3 className="font-medium text-[var(--color-text-primary)]">{template.name}</h3>
-                                    <p className="text-xs text-[var(--color-text-muted)] mt-1 line-clamp-2">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="text-2xl shrink-0">{template.icon}</div>
+                                        <h3 className="font-medium text-[var(--color-text-primary)] leading-tight">{template.name}</h3>
+                                    </div>
+                                    <p className="text-xs text-[var(--color-text-muted)] line-clamp-3">
                                         {template.description}
                                     </p>
                                     {selectedTemplate?.id === template.id && (
@@ -259,6 +268,44 @@ export function CreateTourModal({ isOpen, onClose, onCreate, templates }: Create
                                         ))}
                                     </select>
                                 </div>
+                            </div>
+
+                            {/* Default Translation Provider */}
+                            <div>
+                                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-3">
+                                    Default Translation Provider
+                                </label>
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setDefaultTranslationProvider('google_cloud')}
+                                        className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${defaultTranslationProvider === 'google_cloud'
+                                                ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
+                                                : 'border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'
+                                            }`}
+                                    >
+                                        <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                                            G
+                                        </div>
+                                        <span>Google Cloud</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDefaultTranslationProvider('libretranslate')}
+                                        className={`flex-1 py-3 px-4 rounded-lg border-2 transition-all flex items-center justify-center gap-2 ${defaultTranslationProvider === 'libretranslate'
+                                                ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10 text-[var(--color-text-primary)]'
+                                                : 'border-[var(--color-border-default)] text-[var(--color-text-muted)] hover:border-[var(--color-text-muted)]'
+                                            }`}
+                                    >
+                                        <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                                            LT
+                                        </div>
+                                        <span>LibreTranslate</span>
+                                    </button>
+                                </div>
+                                <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                                    Provider used for Magic Translate in the Stop Editor.
+                                </p>
                             </div>
 
                             {/* Supported Languages */}
