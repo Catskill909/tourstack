@@ -87,7 +87,9 @@ export function VisitorStop() {
             : 'phone' as const;
 
     // Check if user is staff (simplified - could use auth system later)
-    const isStaff = localStorage.getItem('tourstack_staff') === 'true';
+    // Kiosk mode and staff param (from admin preview) both indicate staff access
+    const isStaffParam = searchParams.get('staff') === 'true';
+    const isStaff = localStorage.getItem('tourstack_staff') === 'true' || isKioskMode || isStaffParam;
 
     // Fetch tour and stop data using visitor API (supports slugs)
     useEffect(() => {
@@ -425,30 +427,6 @@ export function VisitorStop() {
                     ) : null}
                 </div>
             </header>
-
-            {/* Staff Banner — absolute when Tour Intro is first so it doesn't push content down */}
-            {isStaff && (
-                <div className={`${hasTourIntroFirst ? 'absolute inset-x-0 z-40' : ''} bg-amber-500/20 border-b border-amber-500/30`} style={hasTourIntroFirst ? { top: '3.5rem' } : {}}>
-                    <div className={`${deviceType === 'kiosk' ? 'max-w-7xl px-10' : 'max-w-4xl px-4'} mx-auto py-2 flex items-center justify-between`}>
-                        <div className="flex items-center gap-2 text-amber-300 text-sm">
-                            <Settings className="w-4 h-4" />
-                            <span>Staff Preview Mode</span>
-                            {tour.status !== 'published' && (
-                                <span className="px-2 py-0.5 bg-amber-500/30 rounded text-xs font-medium">
-                                    DRAFT
-                                </span>
-                            )}
-                        </div>
-                        <Link
-                            to={`/tours/${tour.id}`}
-                            className="flex items-center gap-1.5 text-sm text-amber-300 hover:text-amber-200 transition-colors"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            Back to Admin
-                        </Link>
-                    </div>
-                </div>
-            )}
 
             {/* Backup Positioning Fallback Banner */}
             {showFallbackBanner && (() => {

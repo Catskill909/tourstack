@@ -380,7 +380,7 @@ export function TourDetail() {
         }
     }
 
-    // Launch tour — opens staff handoff screen where you pick language and start
+    // Preview tour — opens visitor view directly for admin staff review
     function handleLaunchTour() {
         if (stops.length === 0) {
             alert('This tour has no stops yet. Add stops before launching.');
@@ -388,7 +388,10 @@ export function TourDetail() {
         }
 
         const slug = tour?.slug || tour?.id;
-        window.open(`/kiosk/tour/${slug}`, '_blank');
+        const sortedStops = [...stops].sort((a, b) => a.order - b.order);
+        const firstStop = sortedStops[0];
+        const stopSlug = firstStop.slug || firstStop.id;
+        window.open(`/visitor/tour/${slug}/stop/${stopSlug}?staff=true`, '_blank');
     }
 
     if (isLoading) {
@@ -690,7 +693,7 @@ export function TourDetail() {
                     tourData={tour}
                     allStops={stops}
                     availableLanguages={tour.languages || ['en']}
-                    translationProvider={tour.defaultTranslationProvider || 'libretranslate'}
+                    translationProvider={tour.defaultTranslationProvider || 'google_cloud'}
                     onSave={handleSaveStop}
                     onClose={() => setEditingStop(null)}
                     onLanguagesChanged={handleLanguagesChanged}
