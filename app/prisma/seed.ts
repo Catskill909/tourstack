@@ -16,6 +16,14 @@ const prisma = new PrismaClient({
 // Built-in templates based on positioning technology
 const builtInTemplates = [
     {
+        id: 'cmself_guided_0000notech',
+        name: 'Self-Guided Tour',
+        description: 'No hardware needed. Visitors follow numbered stops at their own pace.',
+        icon: '🗺️',
+        builtIn: true,
+        customFields: JSON.stringify([]),
+    },
+    {
         name: 'QR Code',
         description: 'Zero hardware cost. Visitors scan codes with their camera. Perfect for getting started quickly.',
         icon: '📱',

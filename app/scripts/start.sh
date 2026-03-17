@@ -12,25 +12,94 @@ mkdir -p data
 export DATABASE_URL="file:/app/data/dev.db"
 echo "🔌 DATABASE_URL set to: $DATABASE_URL"
 
-# Pre-migration: ensure shortCode column exists before prisma db push
-# This prevents the unique constraint failure when the column doesn't exist yet
+# Safe schema migrations using ALTER TABLE (NEVER use prisma db push - it can drop tables!)
+# Each migration is idempotent: errors are suppressed if column/index already exists.
 if [ -f /app/data/dev.db ]; then
-  echo "🔧 Pre-migration: checking shortCode column..."
-  # Add shortCode column if it doesn't exist (safe, no-op if already present)
-  sqlite3 /app/data/dev.db "ALTER TABLE Stop ADD COLUMN shortCode TEXT;" 2>/dev/null || true
-  # Add unique index if it doesn't exist
-  sqlite3 /app/data/dev.db "CREATE UNIQUE INDEX IF NOT EXISTS Stop_shortCode_key ON Stop(shortCode);" 2>/dev/null || true
-  echo "✅ Pre-migration complete"
-fi
+  echo "🔧 Running safe schema migrations..."
 
-# Initialize database (safe schema push)
-echo "🔄 Syncing database schema..."
-npx prisma db push
-if [ $? -ne 0 ]; then
-  echo "⚠️ prisma db push failed, retrying with --accept-data-loss..."
-  npx prisma db push --accept-data-loss
+  # Stop table migrations
+  sqlite3 /app/data/dev.db "ALTER TABLE Stop ADD COLUMN shortCode TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "CREATE UNIQUE INDEX IF NOT EXISTS Stop_shortCode_key ON Stop(shortCode);" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Stop ADD COLUMN slug TEXT;" 2>/dev/null || true
+
+  # Tour table migrations
+  sqlite3 /app/data/dev.db "ALTER TABLE Tour ADD COLUMN slug TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Tour ADD COLUMN defaultTranslationProvider TEXT DEFAULT 'google_cloud';" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Tour ADD COLUMN conciergeEnabled INTEGER DEFAULT 1;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Tour ADD COLUMN conciergePersona TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Tour ADD COLUMN conciergeWelcome TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Tour ADD COLUMN conciergeCollections TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Tour ADD COLUMN conciergeQuickActions TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Tour ADD COLUMN conciergeChatIcon TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Tour ADD COLUMN conciergeChatIconBgColor TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Tour ADD COLUMN conciergeChatIconColor TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Tour ADD COLUMN scheduledPublishAt DATETIME;" 2>/dev/null || true
+
+  # Media table migrations
+  sqlite3 /app/data/dev.db "ALTER TABLE Media ADD COLUMN aiMetadata TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Media ADD COLUMN aiTranslations TEXT;" 2>/dev/null || true
+
+  # Collection table migrations
+  sqlite3 /app/data/dev.db "ALTER TABLE Collection ADD COLUMN sourceLanguage TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Collection ADD COLUMN texts TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Collection ADD COLUMN ttsSettings TEXT;" 2>/dev/null || true
+
+  # ConciergeConfig table (create if not exists)
+  sqlite3 /app/data/dev.db "CREATE TABLE IF NOT EXISTS ConciergeConfig (
+    id TEXT PRIMARY KEY NOT NULL,
+    museumId TEXT,
+    enabled INTEGER NOT NULL DEFAULT 0,
+    persona TEXT NOT NULL DEFAULT 'friendly',
+    customPersona TEXT,
+    welcomeMessage TEXT NOT NULL DEFAULT '{}',
+    primaryLanguage TEXT NOT NULL DEFAULT 'en',
+    enabledLanguages TEXT NOT NULL DEFAULT '[\"en\"]',
+    autoTranslate INTEGER NOT NULL DEFAULT 1,
+    showNewChat INTEGER NOT NULL DEFAULT 1,
+    showSources INTEGER NOT NULL DEFAULT 0,
+    allowFeedback INTEGER NOT NULL DEFAULT 0,
+    createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );" 2>/dev/null || true
+
+  # ConciergeKnowledge table (create if not exists)
+  sqlite3 /app/data/dev.db "CREATE TABLE IF NOT EXISTS ConciergeKnowledge (
+    id TEXT PRIMARY KEY NOT NULL,
+    configId TEXT NOT NULL,
+    sourceType TEXT NOT NULL,
+    sourceId TEXT,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    characterCount INTEGER NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    priority INTEGER NOT NULL DEFAULT 0,
+    createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (configId) REFERENCES ConciergeConfig(id) ON DELETE CASCADE
+  );" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "CREATE INDEX IF NOT EXISTS ConciergeKnowledge_configId_idx ON ConciergeKnowledge(configId);" 2>/dev/null || true
+
+  # ConciergeQuickAction table (create if not exists)
+  sqlite3 /app/data/dev.db "CREATE TABLE IF NOT EXISTS ConciergeQuickAction (
+    id TEXT PRIMARY KEY NOT NULL,
+    configId TEXT NOT NULL,
+    question TEXT NOT NULL,
+    category TEXT NOT NULL,
+    icon TEXT,
+    \"order\" INTEGER NOT NULL DEFAULT 0,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (configId) REFERENCES ConciergeConfig(id) ON DELETE CASCADE
+  );" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "CREATE INDEX IF NOT EXISTS ConciergeQuickAction_configId_idx ON ConciergeQuickAction(configId);" 2>/dev/null || true
+
+  echo "✅ Schema migrations complete"
+else
+  # Fresh install - no existing DB, use prisma db push to create all tables from scratch
+  echo "🆕 No existing database found. Creating fresh database..."
+  npx prisma db push
   if [ $? -ne 0 ]; then
-    echo "❌ Database sync failed even with --accept-data-loss!"
+    echo "❌ Failed to create database!"
     exit 1
   fi
 fi
