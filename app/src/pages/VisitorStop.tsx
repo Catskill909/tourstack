@@ -356,7 +356,7 @@ export function VisitorStop() {
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                         {!hideNav && prevStop ? (
                             <Link
-                                to={`/visitor/tour/${tour.slug}/stop/${prevStop.slug}${token ? `?t=${token}` : ''}`}
+                                to={`/visitor/tour/${tour.slug}/stop/${prevStop.slug}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
                                 className="p-2 -ml-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                                 title={`Previous: ${getLocalizedText(prevStop.title)}`}
                             >
@@ -416,7 +416,7 @@ export function VisitorStop() {
                     {/* Next Stop */}
                     {!hideNav && nextStop ? (
                         <Link
-                            to={`/visitor/tour/${tour.slug}/stop/${nextStop.slug}${token ? `?t=${token}` : ''}`}
+                            to={`/visitor/tour/${tour.slug}/stop/${nextStop.slug}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
                             className="p-2 -mr-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                             title={`Next: ${getLocalizedText(nextStop.title)}`}
                         >
@@ -622,7 +622,7 @@ export function VisitorStop() {
                     <div className={`${deviceType === 'kiosk' ? 'max-w-7xl px-10' : 'max-w-4xl px-4'} mx-auto py-3 flex items-center justify-between`}>
                         {prevStop ? (
                             <Link
-                                to={`/visitor/tour/${tour.slug}/stop/${prevStop.slug}${token ? `?t=${token}` : ''}`}
+                                to={`/visitor/tour/${tour.slug}/stop/${prevStop.slug}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
                                 className="flex items-center gap-2 px-4 py-2 bg-[var(--color-bg-elevated)] rounded-lg text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
                             >
                                 <ChevronLeft className="w-4 h-4" />
@@ -650,7 +650,7 @@ export function VisitorStop() {
 
                         {nextStop ? (
                             <Link
-                                to={`/visitor/tour/${tour.slug}/stop/${nextStop.slug}${token ? `?t=${token}` : ''}`}
+                                to={`/visitor/tour/${tour.slug}/stop/${nextStop.slug}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`}
                                 className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] text-[#1a1a1a] rounded-lg font-medium hover:opacity-90 transition-opacity"
                             >
                                 <span className="hidden sm:inline">{getLocalizedText(nextStop.title)}</span>
