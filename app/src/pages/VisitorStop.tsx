@@ -77,8 +77,8 @@ export function VisitorStop() {
     // Kiosk inactivity reset
     const [showKioskReset, setShowKioskReset] = useState(false);
     const [resetCountdown, setResetCountdown] = useState(30);
-    const inactivityTimerRef = useRef<ReturnType<typeof setTimeout>>();
-    const countdownTimerRef = useRef<ReturnType<typeof setInterval>>();
+    const inactivityTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+    const countdownTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
     // Determine device type for content rendering
     // Kiosk mode gets kiosk sizing, otherwise detect from screen width

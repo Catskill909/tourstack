@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
     X, Monitor, Play, Globe, MapPin, Maximize, Navigation, RotateCcw,
-    Lock, MessageCircle, Tablet, Download, Loader2, Package, ChevronRight,
+    Lock, MessageCircle, Tablet, Download, Loader2,
     Wifi, WifiOff, CheckCircle2
 } from 'lucide-react';
 import type { Tour, Stop, KioskSettings } from '../types';

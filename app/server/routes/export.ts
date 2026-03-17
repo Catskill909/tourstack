@@ -103,7 +103,7 @@ function rewriteUrls(data: any, urlMap: Map<string, string>): any {
 // GET /api/export/:tourId — Download tour as ZIP
 router.get('/:tourId', async (req: Request, res: Response) => {
     try {
-        const tourId = req.params.tourId;
+        const tourId = req.params.tourId as string;
 
         // Find tour by slug or ID
         let tour = await prisma.tour.findFirst({
@@ -112,7 +112,7 @@ router.get('/:tourId', async (req: Request, res: Response) => {
         });
         if (!tour) {
             tour = await prisma.tour.findUnique({
-                where: { id: tourId },
+                where: { id: tourId as string },
                 include: { stops: { orderBy: { order: 'asc' } } },
             });
         }
