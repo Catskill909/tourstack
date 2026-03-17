@@ -22,7 +22,7 @@ interface CustomAudioPlayerProps {
     onCaptionsToggle?: (show: boolean) => void;
 }
 
-export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'phone', autoplay = false, className = '', transcriptWords, transcript, showCaptions = false, onCaptionsToggle }: CustomAudioPlayerProps) {
+export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'phone', autoplay = false, className = '', transcriptWords, transcript, showCaptions = true, onCaptionsToggle }: CustomAudioPlayerProps) {
     const isTablet = deviceType === 'tablet' || deviceType === 'kiosk';
     const audioRef = useRef<HTMLAudioElement>(null);
     const rafRef = useRef<number>(0);
@@ -37,6 +37,7 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
     const [isMuted, setIsMuted] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [localShowCaptions, setLocalShowCaptions] = useState(showCaptions);
+    const [showVolumeSlider, setShowVolumeSlider] = useState(false);
 
     const hasCaptions = (transcriptWords && transcriptWords.length > 0) || !!transcript;
     const captionsVisible = localShowCaptions && hasCaptions;
@@ -398,7 +399,7 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-2 group relative">
+                    <div className="flex items-center gap-4">
                         {/* CC Toggle Button */}
                         {hasCaptions && (
                             <button
@@ -413,27 +414,43 @@ export function CustomAudioPlayer({ src, title, size = 'large', deviceType = 'ph
                                 <MessageSquareText className="w-5 h-5" />
                             </button>
                         )}
-                        <button
-                            onClick={toggleMute}
-                            className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-2"
-                        >
-                            {isMuted || volume === 0 ? (
-                                <VolumeX className="w-5 h-5" />
-                            ) : (
-                                <Volume2 className="w-5 h-5" />
+                        {/* Volume button + vertical slider */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowVolumeSlider(!showVolumeSlider)}
+                                className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors p-2"
+                            >
+                                {isMuted || volume === 0 ? (
+                                    <VolumeX className="w-5 h-5" />
+                                ) : (
+                                    <Volume2 className="w-5 h-5" />
+                                )}
+                            </button>
+                            {/* Vertical volume slider (tap to toggle, expands upward) */}
+                            {showVolumeSlider && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-xl p-3 shadow-lg flex flex-col items-center">
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.1"
+                                        value={isMuted ? 0 : volume}
+                                        onChange={handleVolumeChange}
+                                        className="h-24 w-1.5 bg-[var(--color-bg-active)] rounded-lg appearance-none cursor-pointer accent-[var(--color-accent-primary)]"
+                                        style={{ writingMode: 'vertical-lr', direction: 'rtl' }}
+                                    />
+                                    <button
+                                        onClick={toggleMute}
+                                        className="mt-2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                                    >
+                                        {isMuted || volume === 0 ? (
+                                            <VolumeX className="w-4 h-4" />
+                                        ) : (
+                                            <Volume2 className="w-4 h-4" />
+                                        )}
+                                    </button>
+                                </div>
                             )}
-                        </button>
-                        {/* Volume slider (hidden on mobile, hover on desktop) */}
-                        <div className="hidden sm:block w-0 overflow-hidden group-hover:w-20 transition-all duration-300">
-                            <input
-                                type="range"
-                                min="0"
-                                max="1"
-                                step="0.1"
-                                value={isMuted ? 0 : volume}
-                                onChange={handleVolumeChange}
-                                className="w-20 h-1 bg-[var(--color-bg-active)] rounded-lg appearance-none cursor-pointer accent-[var(--color-accent-primary)]"
-                            />
                         </div>
                     </div>
                 </div>

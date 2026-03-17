@@ -68,6 +68,12 @@ export function StopListEditorModal({
     const subheadingContent = data.subheading?.[activeSubheadingLang] || '';
     const ctaContent = data.ctaText?.[activeCtaLang] || '';
 
+    // Filter out the current stop (can't link to itself)
+    const availableStops = useMemo(() =>
+        stop ? allStops.filter(s => s.id !== stop.id) : allStops,
+        [allStops, stop]
+    );
+
     const selectedIds = useMemo(() => new Set(data.stopIds || []), [data.stopIds]);
 
     const toggleStop = useCallback((stopId: string) => {
@@ -84,8 +90,8 @@ export function StopListEditorModal({
     }, [data, onChange]);
 
     const selectAll = useCallback(() => {
-        onChange({ ...data, stopIds: allStops.map(s => s.id) });
-    }, [data, allStops, onChange]);
+        onChange({ ...data, stopIds: availableStops.map(s => s.id) });
+    }, [data, availableStops, onChange]);
 
     const deselectAll = useCallback(() => {
         onChange({ ...data, stopIds: [] });
@@ -119,9 +125,9 @@ export function StopListEditorModal({
 
     const selectedStops = useMemo(() =>
         (data.stopIds || [])
-            .map(id => allStops.find(s => s.id === id))
+            .map(id => availableStops.find(s => s.id === id))
             .filter(Boolean) as Stop[],
-        [data.stopIds, allStops]
+        [data.stopIds, availableStops]
     );
 
     return (
@@ -168,7 +174,7 @@ export function StopListEditorModal({
                     {/* Stop Selector */}
                     <div className="flex-shrink-0 flex items-center justify-between px-6 pt-5 pb-2">
                         <label className="text-sm font-medium text-[var(--color-text-secondary)]">
-                            Select Stops ({selectedIds.size} of {allStops.length})
+                            Select Stops ({selectedIds.size} of {availableStops.length})
                         </label>
                         <div className="flex gap-3">
                             <button type="button" onClick={selectAll} className="text-xs text-[var(--color-accent-primary)] hover:underline">
@@ -181,13 +187,13 @@ export function StopListEditorModal({
                     </div>
                     <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-2">
                         <div className="border border-[var(--color-border-default)] rounded-lg divide-y divide-[var(--color-border-default)]">
-                            {allStops.map((stop, index) => {
-                                const isSelected = selectedIds.has(stop.id);
+                            {availableStops.map((s, index) => {
+                                const isSelected = selectedIds.has(s.id);
                                 return (
                                     <button
-                                        key={stop.id}
+                                        key={s.id}
                                         type="button"
-                                        onClick={() => toggleStop(stop.id)}
+                                        onClick={() => toggleStop(s.id)}
                                         className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${isSelected
                                             ? 'bg-[var(--color-accent-primary)]/10'
                                             : 'hover:bg-[var(--color-bg-hover)]'
@@ -199,19 +205,19 @@ export function StopListEditorModal({
                                         }`}>
                                             {isSelected && <Check className="w-3 h-3 text-white" />}
                                         </div>
-                                        <img src={getStopImageUrl(stop)} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0" />
+                                        <img src={getStopImageUrl(s)} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0" />
                                         <div className="min-w-0 flex-1">
                                             <span className="text-xs text-[var(--color-accent-primary)] font-semibold tracking-wider uppercase">
                                                 Stop {String(index + 1).padStart(2, '0')}
                                             </span>
                                             <p className="text-sm text-[var(--color-text-primary)] truncate">
-                                                {getStopTitle(stop, language)}
+                                                {getStopTitle(s, language)}
                                             </p>
                                         </div>
                                     </button>
                                 );
                             })}
-                            {allStops.length === 0 && (
+                            {availableStops.length === 0 && (
                                 <div className="px-3 py-8 text-center text-sm text-[var(--color-text-muted)]">
                                     No stops in this tour yet
                                 </div>

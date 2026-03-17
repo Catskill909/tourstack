@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Upload, X, Languages, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import { translateText, type TranslationProvider } from '../../services/translationService';
+import { LanguageSwitcher } from '../LanguageSwitcher';
+import { MagicTranslateButton } from '../MagicTranslateButton';
 import type { StopImageData } from '../../types';
 
 interface BlockMetadataEditorProps {
@@ -34,8 +36,11 @@ export function BlockMetadataEditor({
         return !!(title?.[language] || blockImage?.url || showTitle || showBlockImage);
     });
     const [isDragOver, setIsDragOver] = useState(false);
-    const [isTranslatingTitle, setIsTranslatingTitle] = useState(false);
     const [isTranslatingCaption, setIsTranslatingCaption] = useState(false);
+    const [activeTitleLang, setActiveTitleLang] = useState(language);
+
+    const primaryLang = availableLanguages[0] || 'en';
+    const otherLangs = availableLanguages.filter(l => l !== primaryLang);
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -74,28 +79,6 @@ export function BlockMetadataEditor({
             blockImage: undefined,
             showBlockImage: false
         });
-    }
-
-    async function handleTranslateTitle() {
-        const primaryLang = availableLanguages[0] || 'en';
-        const sourceText = title?.[primaryLang] || title?.['en'];
-
-        if (!sourceText?.trim()) return;
-
-        setIsTranslatingTitle(true);
-        const newTitle = { ...title };
-        for (const lang of availableLanguages) {
-            if (lang === primaryLang) continue;
-            try {
-                const translated = await translateText(sourceText, primaryLang, lang);
-                newTitle[lang] = translated;
-            } catch (error) {
-                console.error(`Failed to translate title to ${lang}:`, error);
-            }
-        }
-
-        onChange({ title: newTitle, showTitle, blockImage, showBlockImage });
-        setIsTranslatingTitle(false);
     }
 
     async function handleTranslateCaption() {
@@ -167,32 +150,58 @@ export function BlockMetadataEditor({
                 <div className="p-4 space-y-4 border-t border-[var(--color-border-default)]">
                     {/* Block Title */}
                     <div>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center justify-between mb-2">
                             <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
-                                Block Title ({language.toUpperCase()})
+                                Block Title ({activeTitleLang.toUpperCase()})
                             </label>
-                            {availableLanguages.length > 1 && (
-                                <button
-                                    type="button"
-                                    onClick={handleTranslateTitle}
-                                    disabled={isTranslatingTitle}
-                                    className="flex items-center gap-1 px-2 py-0.5 text-xs bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded hover:bg-[var(--color-accent-primary)]/20 disabled:opacity-50"
-                                    title="Translate title to all languages"
-                                >
-                                    {isTranslatingTitle ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                        <Languages className="w-3 h-3" />
-                                    )}
-                                    <span>Translate</span>
-                                </button>
-                            )}
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={showTitle}
+                                    onChange={(e) => onChange({
+                                        title,
+                                        showTitle: e.target.checked,
+                                        blockImage,
+                                        showBlockImage
+                                    })}
+                                    className="rounded border-[var(--color-border-default)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
+                                />
+                                <span className="text-xs text-[var(--color-text-secondary)]">Show</span>
+                            </label>
                         </div>
+                        {availableLanguages.length > 1 && (
+                            <div className="flex flex-wrap items-center gap-3 pb-2">
+                                <div className="flex-1 min-w-0">
+                                    <LanguageSwitcher
+                                        availableLanguages={availableLanguages}
+                                        activeLanguage={activeTitleLang}
+                                        onChange={setActiveTitleLang}
+                                        contentMap={title || {}}
+                                        size="sm"
+                                        showStatus={true}
+                                    />
+                                </div>
+                                <MagicTranslateButton
+                                    sourceText={title?.[primaryLang] || ''}
+                                    sourceLang={primaryLang}
+                                    targetLangs={otherLangs}
+                                    onTranslate={(translations) => onChange({
+                                        title: { ...title, ...translations },
+                                        showTitle,
+                                        blockImage,
+                                        showBlockImage
+                                    })}
+                                    provider={_translationProvider}
+                                    size="sm"
+                                    disabled={!(title?.[primaryLang] || '').trim()}
+                                />
+                            </div>
+                        )}
                         <input
                             type="text"
-                            value={title?.[language] || title?.en || ''}
+                            value={title?.[activeTitleLang] || ''}
                             onChange={(e) => onChange({
-                                title: { ...title, [language]: e.target.value },
+                                title: { ...title, [activeTitleLang]: e.target.value },
                                 showTitle,
                                 blockImage,
                                 showBlockImage
@@ -200,20 +209,6 @@ export function BlockMetadataEditor({
                             className="w-full px-3 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
                             placeholder="Block title..."
                         />
-                        <label className="flex items-center gap-2 cursor-pointer mt-2">
-                            <input
-                                type="checkbox"
-                                checked={showTitle}
-                                onChange={(e) => onChange({
-                                    title,
-                                    showTitle: e.target.checked,
-                                    blockImage,
-                                    showBlockImage
-                                })}
-                                className="w-4 h-4 rounded border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] text-[var(--color-accent-primary)] focus:ring-[var(--color-accent-primary)]"
-                            />
-                            <span className="text-sm text-[var(--color-text-secondary)]">Show Block Title</span>
-                        </label>
                     </div>
 
                     {/* Block Image */}

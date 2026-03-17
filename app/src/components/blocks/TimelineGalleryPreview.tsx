@@ -19,7 +19,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
     const [isMuted, setIsMuted] = useState(false);
     const [imagesLoaded, setImagesLoaded] = useState(false);
     const [loadedCount, setLoadedCount] = useState(0);
-    const [showCaptions, setShowCaptions] = useState(data.showCaptions ?? false);
+    const [showCaptions, setShowCaptions] = useState(data.showCaptions ?? true);
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const animationFrameRef = useRef<number>(0);

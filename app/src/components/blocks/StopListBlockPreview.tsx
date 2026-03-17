@@ -8,6 +8,7 @@ interface StopListBlockPreviewProps {
     language: string;
     deviceType?: 'phone' | 'tablet' | 'kiosk';
     allStops?: Stop[];
+    currentStopId?: string;
     tourData?: Tour;
     onNavigateToStop?: (stopId: string) => void;
 }
@@ -49,6 +50,7 @@ export function StopListBlockPreview({
     language,
     deviceType = 'phone',
     allStops = [],
+    currentStopId,
     onNavigateToStop,
 }: StopListBlockPreviewProps) {
     const isTablet = deviceType === 'tablet' || deviceType === 'kiosk';
@@ -57,8 +59,8 @@ export function StopListBlockPreview({
         if (!data.stopIds?.length) return [];
         return data.stopIds
             .map(id => allStops.find(s => s.id === id))
-            .filter(Boolean) as Stop[];
-    }, [allStops, data.stopIds]);
+            .filter((s): s is Stop => !!s && s.id !== currentStopId);
+    }, [allStops, data.stopIds, currentStopId]);
 
     const heading = getLocalizedText(data.heading, language) || 'Tour Stops';
     const subheading = getLocalizedText(data.subheading, language);
@@ -131,10 +133,10 @@ export function StopListBlockPreview({
 
             {/* CTA Button */}
             {showCta && (
-                <div className="mt-4">
+                <div className="mt-4 flex justify-center">
                     <button
                         onClick={() => resolvedStops[0] && handleStopClick(resolvedStops[0].id)}
-                        className={`w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors ${isTablet ? 'py-4 text-lg' : 'py-3 text-base'}`}
+                        className={`inline-flex items-center justify-center gap-2 bg-white hover:bg-neutral-100 text-neutral-900 font-semibold rounded-xl transition-colors ${isTablet ? 'px-10 py-4 text-lg' : 'px-8 py-3 text-base'}`}
                     >
                         {ctaText}
                     </button>
@@ -217,12 +219,12 @@ function StopCard({
             return (
                 <Wrapper
                     {...wrapperProps}
-                    className={`w-full flex items-center gap-3 px-3 py-3 border-b border-[var(--color-border-default)] transition-colors ${isClickable ? 'hover:bg-[var(--color-bg-hover)] cursor-pointer' : ''}`}
+                    className={`w-full flex items-center gap-3 px-3 py-3 text-left border-b border-[var(--color-border-default)] transition-colors ${isClickable ? 'hover:bg-[var(--color-bg-hover)] cursor-pointer' : ''}`}
                 >
-                    <img src={imageUrl} alt={title} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
+                    <img src={imageUrl} alt={title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                    <div className="flex-1 min-w-0 text-left">
                         {showStopNumbers && (
-                            <span className="text-[var(--color-accent-primary)] text-[10px] font-semibold tracking-[0.15em] uppercase">
+                            <span className="block text-[var(--color-accent-primary)] text-[10px] font-semibold tracking-[0.15em] uppercase">
                                 Stop {stopNumber}
                             </span>
                         )}

@@ -512,6 +512,7 @@ export function VisitorStop() {
                                             deviceType={deviceType}
                                             tourData={tour as any}
                                             allStops={allStops}
+                                            currentStopId={stop?.id}
                                             displaySettings={displaySettings}
                                             onNavigateToStop={handleNavigateToStop}
                                         />
@@ -594,6 +595,7 @@ export function VisitorStop() {
                                         deviceType={deviceType}
                                         tourData={tour as any}
                                         allStops={allStops}
+                                        currentStopId={stop?.id}
                                         displaySettings={displaySettings}
                                         onNavigateToStop={handleNavigateToStop}
                                     />

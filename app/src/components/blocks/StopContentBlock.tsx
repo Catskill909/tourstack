@@ -22,6 +22,7 @@ interface StopContentBlockProps {
     deviceType?: 'phone' | 'tablet' | 'kiosk';
     tourData?: Tour; // For tour blocks that need parent tour info
     allStops?: Stop[]; // For stop list blocks
+    currentStopId?: string; // ID of the stop containing this block (to exclude from stop lists)
     displaySettings?: DisplaySettings; // Control title/description visibility
     onNavigateToStop?: (stopId: string) => void; // For stop list navigation
     onEdit?: (block: ContentBlock) => void;
@@ -65,7 +66,7 @@ const BLOCK_LABELS: Record<ContentBlockType, string> = {
     qrScanner: 'QR Scanner',
 };
 
-export function StopContentBlock({ block, mode, language, deviceType = 'phone', tourData, allStops, displaySettings, onNavigateToStop, onEdit, onDelete }: StopContentBlockProps) {
+export function StopContentBlock({ block, mode, language, deviceType = 'phone', tourData, allStops, currentStopId, displaySettings, onNavigateToStop, onEdit, onDelete }: StopContentBlockProps) {
     const Icon = BLOCK_ICONS[block.type];
     const label = BLOCK_LABELS[block.type];
 
@@ -517,14 +518,18 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                 return renderTourBlock(block.data as TourBlockData);
             case 'stopList':
                 return (
-                    <StopListBlockPreview
-                        data={block.data as StopListBlockData}
-                        language={language}
-                        deviceType={deviceType}
-                        allStops={allStops}
-                        tourData={tourData}
-                        onNavigateToStop={mode === 'view' ? onNavigateToStop : undefined}
-                    />
+                    <>
+                        {renderBlockHeader(block.data as StopListBlockData)}
+                        <StopListBlockPreview
+                            data={block.data as StopListBlockData}
+                            language={language}
+                            deviceType={deviceType}
+                            allStops={allStops}
+                            currentStopId={currentStopId}
+                            tourData={tourData}
+                            onNavigateToStop={mode === 'view' ? onNavigateToStop : undefined}
+                        />
+                    </>
                 );
             case 'qrScanner':
                 return renderQRScannerBlock(block.data as QRScannerBlockData);
