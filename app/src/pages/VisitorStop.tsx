@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Globe, AlertCircle, Loader2, ChevronLeft, ChevronRight, Settings, Maximize, RotateCcw, MapPin, QrCode, Smartphone, X, Navigation } from 'lucide-react';
+import { Globe, AlertCircle, Loader2, ChevronLeft, ChevronRight, Settings, Maximize, RotateCcw, MapPin, QrCode, Smartphone, X, Navigation } from 'lucide-react';
 import { StopContentBlock } from '../components/blocks/StopContentBlock';
 import { DisplaySettingsPanel, type DisplaySettings } from '../components/DisplaySettingsPanel';
 import { ChatDrawer, ChatFloatingButton, KioskChatButton } from '../components/chat/ChatDrawer';
