@@ -1,6 +1,10 @@
 // Unified Translation Service
 // Supports Google Cloud Translation API v2 and LibreTranslate
 // All backend routes should import from this module instead of implementing their own translation logic.
+//
+// RATE LIMITING: Google Cloud Translation v2 has a 100K characters per 100 seconds
+// per-user limit. We enforce server-side throttling to avoid "User Rate Limit Exceeded"
+// errors, and retry with exponential backoff + auto-fallback to LibreTranslate.
 
 import fs from 'fs';
 import path from 'path';
@@ -11,6 +15,88 @@ const __dirname = path.dirname(__filename);
 
 // Settings file path (same as settings.ts)
 const SETTINGS_FILE = path.join(__dirname, '../../data/settings.json');
+
+// ============================================================================
+// RATE LIMITER — Prevents Google API "User Rate Limit Exceeded" errors
+// ============================================================================
+// Google v2 allows 100K chars per 100 seconds. We track character usage in a
+// sliding window and delay requests that would exceed the limit.
+
+const GOOGLE_RATE_LIMIT_CHARS = 80_000;   // Stay under the 100K limit with buffer
+const GOOGLE_RATE_WINDOW_MS = 100_000;    // 100-second sliding window
+
+interface RateEntry {
+    chars: number;
+    timestamp: number;
+}
+
+const rateHistory: RateEntry[] = [];
+
+/** How many characters have we used in the current sliding window? */
+function charsUsedInWindow(): number {
+    const cutoff = Date.now() - GOOGLE_RATE_WINDOW_MS;
+    // Prune old entries
+    while (rateHistory.length > 0 && rateHistory[0].timestamp < cutoff) {
+        rateHistory.shift();
+    }
+    return rateHistory.reduce((sum, e) => sum + e.chars, 0);
+}
+
+/** Record character usage */
+function recordUsage(chars: number) {
+    rateHistory.push({ chars, timestamp: Date.now() });
+}
+
+/** Wait if we'd exceed the rate limit, returns when safe to proceed */
+async function waitForRateLimit(charsNeeded: number): Promise<void> {
+    const maxWait = 15_000; // Don't wait more than 15s
+    const start = Date.now();
+
+    while (charsUsedInWindow() + charsNeeded > GOOGLE_RATE_LIMIT_CHARS) {
+        if (Date.now() - start > maxWait) {
+            throw new Error('Google Translate rate limit: request queued too long, try again shortly');
+        }
+        // Wait for oldest entry to expire from the window
+        const oldestAge = rateHistory.length > 0
+            ? Date.now() - rateHistory[0].timestamp
+            : 0;
+        const waitTime = Math.min(GOOGLE_RATE_WINDOW_MS - oldestAge + 50, 2000);
+        await new Promise(resolve => setTimeout(resolve, Math.max(waitTime, 200)));
+    }
+}
+
+// ============================================================================
+// RETRY WITH EXPONENTIAL BACKOFF
+// ============================================================================
+
+/** Check if an error is a rate limit / quota error */
+function isRateLimitError(err: unknown): boolean {
+    const msg = err instanceof Error ? err.message : String(err);
+    return /rate limit|quota|429|too many requests/i.test(msg);
+}
+
+async function withRetry<T>(
+    fn: () => Promise<T>,
+    maxRetries = 2,
+    label = 'translation'
+): Promise<T> {
+    let lastError: Error | undefined;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            return await fn();
+        } catch (err) {
+            lastError = err instanceof Error ? err : new Error(String(err));
+            if (isRateLimitError(err) && attempt < maxRetries) {
+                const delay = Math.min(1000 * Math.pow(2, attempt) + Math.random() * 500, 8000);
+                console.warn(`${label}: rate limited, retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                continue;
+            }
+            throw err;
+        }
+    }
+    throw lastError;
+}
 
 // ============================================================================
 // TYPES
@@ -122,6 +208,9 @@ async function translateWithGoogle(
     targetLang: string,
     apiKey: string
 ): Promise<string> {
+    const charCount = text.length;
+    await waitForRateLimit(charCount);
+
     const requestBody: Record<string, unknown> = {
         q: text,
         target: targetLang,
@@ -154,6 +243,7 @@ async function translateWithGoogle(
         throw new Error('No translation returned from Google');
     }
 
+    recordUsage(charCount);
     return data.data.translations[0].translatedText;
 }
 
@@ -176,6 +266,9 @@ async function batchTranslateWithGoogle(
     if (nonEmptyTexts.length === 0) {
         return texts.map(() => '');
     }
+
+    const charCount = nonEmptyTexts.reduce((sum, t) => sum + t.length, 0);
+    await waitForRateLimit(charCount);
 
     const requestBody: Record<string, unknown> = {
         q: nonEmptyTexts,
@@ -209,6 +302,7 @@ async function batchTranslateWithGoogle(
         throw new Error('No translations returned from Google');
     }
 
+    recordUsage(charCount);
     const translatedTexts = data.data.translations.map(t => t.translatedText);
 
     // Rebuild full array with empty strings for originally empty texts
@@ -323,12 +417,18 @@ async function batchTranslateWithLibreTranslate(
 }
 
 // ============================================================================
-// PUBLIC API - Provider-aware functions
+// PUBLIC API - Provider-aware with rate limiting, retry, and auto-fallback
 // ============================================================================
+
+/** Try LibreTranslate as fallback */
+function getLibreFallbackConfig(config: TranslationConfig): { url: string; apiKey?: string } {
+    const url = config.libreTranslateUrl || 'https://translate.supersoul.top/translate';
+    return { url, apiKey: config.libreTranslateApiKey };
+}
 
 /**
  * Translate a single text string.
- * Automatically routes to the configured provider.
+ * Rate-limited → retries with backoff → falls back to LibreTranslate.
  */
 export async function translateText(
     text: string,
@@ -349,7 +449,19 @@ export async function translateText(
         if (!config.googleApiKey) {
             throw new Error('Google Cloud API key not configured. Set GOOGLE_VISION_API_KEY or configure in Settings.');
         }
-        return translateWithGoogle(text, sourceLang, targetLang, config.googleApiKey);
+        try {
+            return await withRetry(
+                () => translateWithGoogle(text, sourceLang, targetLang, config.googleApiKey!),
+                2, 'translateText'
+            );
+        } catch (err) {
+            if (isRateLimitError(err)) {
+                const fallback = getLibreFallbackConfig(config);
+                console.warn('Google Translate rate limited after retries — falling back to LibreTranslate');
+                return translateWithLibreTranslate(text, sourceLang, targetLang, fallback.url, fallback.apiKey);
+            }
+            throw err;
+        }
     } else {
         if (!config.libreTranslateUrl) {
             throw new Error('LibreTranslate URL not configured.');
@@ -360,7 +472,7 @@ export async function translateText(
 
 /**
  * Translate multiple texts in a single batch request.
- * Significantly faster than individual calls.
+ * Rate-limited → retries with backoff → falls back to LibreTranslate.
  */
 export async function translateBatch(
     texts: string[],
@@ -381,7 +493,19 @@ export async function translateBatch(
         if (!config.googleApiKey) {
             throw new Error('Google Cloud API key not configured.');
         }
-        return batchTranslateWithGoogle(texts, sourceLang, targetLang, config.googleApiKey);
+        try {
+            return await withRetry(
+                () => batchTranslateWithGoogle(texts, sourceLang, targetLang, config.googleApiKey!),
+                2, 'translateBatch'
+            );
+        } catch (err) {
+            if (isRateLimitError(err)) {
+                const fallback = getLibreFallbackConfig(config);
+                console.warn('Google Translate batch rate limited after retries — falling back to LibreTranslate');
+                return batchTranslateWithLibreTranslate(texts, sourceLang, targetLang, fallback.url, fallback.apiKey);
+            }
+            throw err;
+        }
     } else {
         if (!config.libreTranslateUrl) {
             throw new Error('LibreTranslate URL not configured.');

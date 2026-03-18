@@ -1,7 +1,7 @@
 # Image Map Block — Development Guide
 
 **Created:** March 9, 2026 | **Phase 28**
-**Status:** Phase 1 + Phase 1+ COMPLETE ✅
+**Status:** Phase 1 + Phase 1+ + Phase 1.5 Translation Rework COMPLETE ✅
 **Next up:** Phase 2 editor polish, then Phase 3 AI & Accessibility
 
 ---
@@ -59,6 +59,10 @@ Why this matters:
 | **Responsive preview sizing** | ✅ Done | Width-based (`max-w-*` phone, `w-full` tablet/kiosk) |
 | **Marker list sidebar** | ✅ Done | Select, edit, delete markers from list |
 | **TypeScript clean** | ✅ Done | Zero errors, production build passes |
+| **Translation: dirty tracking** | ✅ Done | Source-hash change detection — only retranslate edited fields |
+| **Translation: error handling** | ✅ Done | Error/success banners, per-marker status dots |
+| **Translation: UI consolidation** | ✅ Done | Single translate button per floor, per-marker/per-floor status indicators |
+| **Translation: rate limiting** | ✅ Done | Server-side 80K/100s sliding window, retry + auto-fallback to LibreTranslate |
 | Marker drag-to-reorder in list | 🔜 Next | GripVertical icon shown but reorder not wired |
 | Marker categories & filters | 🔜 Next | Group by exhibits/facilities/exits |
 | "Where Am I?" button | 🔜 Future | Uses last-visited-stop + GPS + QR/NFC |
@@ -226,7 +230,7 @@ export interface ImageMapBlockData {
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `app/src/components/blocks/ImageMapEditorModal.tsx` | ~806 | Full-screen editor: floor tabs, canvas, marker sidebar, settings, translation |
+| `app/src/components/blocks/ImageMapEditorModal.tsx` | ~1150 | Full-screen editor: floor tabs, canvas, marker sidebar, settings, translation with dirty tracking |
 | `app/src/components/blocks/ImageMapBlockEditor.tsx` | ~133 | Inline summary card: thumbnail, stats, "Open Full Editor" button |
 | `app/src/components/blocks/ImageMapBlockPreview.tsx` | ~305 | Visitor view: floor plan, markers, zoom, popups, floor switcher, legend |
 | `app/src/components/blocks/ImageMapMarkerPin.tsx` | ~91 | Reusable marker pin: 5 icons, 7+ colors, selection/drag states |
@@ -276,6 +280,98 @@ Everything uses existing infrastructure:
 ---
 
 ## Roadmap (What's Next)
+
+### Phase 1.5: Translation Rework ✅ (Complete — March 18, 2026)
+
+**Problem:** Translation 500 errors, silent failures, scattered UI, and full-retranslation on every click.
+**Root cause:** Google Cloud Translation daily character quota was set to 5,000 (exhausted quickly). Raised to 500,000.
+
+#### 1. Source-Hash Dirty Tracking (Zero DB Changes)
+
+Store a hash of the source text at translation time inside the existing `{ [lang: string]: string }` objects.
+The `_sourceHash` key coexists safely because all iteration uses `availableLanguages` arrays, never `Object.keys()`.
+
+```typescript
+// After translating "Egyptian Wing" → ko, fr, de, etc:
+marker.label = {
+  en: "Egyptian Wing",       // source (primaryLang)
+  ko: "이집트관",             // translated
+  fr: "Aile égyptienne",     // translated
+  _sourceHash: "a1b2c3"      // simpleHash("Egyptian Wing")
+}
+
+// User edits to "Egyptian Wing (Renovated)"
+// → hash("Egyptian Wing (Renovated)") !== "a1b2c3"
+// → label is STALE, needs retranslation
+
+// User doesn't edit info text
+// → hash(infoText.en) === infoText._sourceHash
+// → info text is CURRENT, skip
+```
+
+**Hash function:** Simple string hash (djb2 or similar), ~6-8 hex chars. Not crypto — just change detection.
+
+```typescript
+function simpleHash(str: string): string {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash + str.charCodeAt(i)) & 0x7fffffff;
+  }
+  return hash.toString(36);
+}
+```
+
+**Decision logic per field on "Translate" click:**
+
+| Condition | Action |
+|-----------|--------|
+| No source text (`en` empty) | Skip |
+| No `_sourceHash` (never translated) | Translate |
+| `_sourceHash` !== `hash(source)` (source edited) | Retranslate |
+| `_sourceHash` === `hash(source)` (source unchanged) | Skip — translations are current |
+| `forceRetranslate` flag (user clicks "Re-translate") | Translate regardless |
+
+**Per-floor fields tracked:**
+- `floor.label` → 1 field
+- `marker[i].label` → N fields
+- `marker[i].infoText` → N fields (if present)
+
+**Savings example:** 17 markers × (label + infoText) + 1 floor label = 35 fields × 9 languages = 315 API calls on full translate. If user edits 1 marker label → only 1 field × 9 languages = 9 API calls.
+
+#### 2. Translation Error Handling
+
+**Current:** `catch { /* skip failed translations */ }` — user sees spinner stop, no feedback.
+
+**New:**
+- Collect errors during translation
+- Show error banner: "Translation failed for 3 fields — check Settings > Translation provider"
+- Per-marker stale/error indicator in sidebar list (yellow dot = stale, red dot = failed, green = current)
+- Check translation status on modal open (`/api/translate/status`) and warn if provider unavailable
+
+#### 3. Translation UI Consolidation
+
+**Current layout (scattered):**
+- Language switcher → sidebar Markers tab
+- Translate button → end of floor tab bar (easy to miss)
+- Coverage counter → floor tab bar (confusing global number)
+
+**New layout:**
+- Language switcher stays in sidebar (it controls editing language, belongs with marker editing)
+- **Per-floor translate button** moves to sidebar, below language switcher, above marker list
+- Button label reflects dirty state: "Translate 3 changed fields" / "All translations current" / "Translate floor (35 fields)"
+- Per-floor badge on floor tab: colored dot (green = all current, yellow = some stale, gray = untranslated)
+- Per-marker indicator in marker list: small colored dot showing translation status
+
+#### 4. Implementation Files
+
+| File | Changes |
+|------|---------|
+| `ImageMapEditorModal.tsx` | `simpleHash()` + `fieldNeedsTranslation()` + `stampSourceHash()` dirty tracking, consolidated translate UI in sidebar, per-floor/per-marker status dots, error/success banners |
+| `server/services/translation.ts` | Sliding window rate limiter (80K chars/100s), `withRetry()` exponential backoff, `isRateLimitError()` detection, auto-fallback to LibreTranslate on quota/rate errors |
+| No type changes needed | `_sourceHash` fits in existing `{ [lang: string]: string }` |
+| No DB changes needed | Hash stored in block JSON data, rate limiter is in-memory |
+
+---
 
 ### Phase 2: Editor Polish 🔜
 

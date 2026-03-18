@@ -1,9 +1,38 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Upload, Trash2, Plus, Minus, RotateCcw, MapPin, Layers, GripVertical, Info, Link2, Type, Palette, Languages, Loader2, Check as CheckIcon, Sparkles, FileText } from 'lucide-react';
+import { X, Upload, Trash2, Plus, Minus, RotateCcw, MapPin, Layers, GripVertical, Info, Link2, Type, Palette, Languages, Loader2, Check as CheckIcon, Sparkles, FileText, AlertTriangle } from 'lucide-react';
 import { ImageMapMarkerPin } from './ImageMapMarkerPin';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { magicTranslate, type TranslationProvider } from '../../services/translationService';
 import type { ImageMapBlockData, ImageMapMarker, ImageMapFloor, ImageMapIcon, Stop } from '../../types';
+
+// --- Dirty-tracking via source hash ---
+// Stored as `_sourceHash` inside { [lang: string]: string } objects.
+// Existing code only iterates `availableLanguages` arrays, never Object.keys(),
+// so the `_sourceHash` key is invisible to all other logic.
+
+function simpleHash(str: string): string {
+    let hash = 5381;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) + hash + str.charCodeAt(i)) & 0x7fffffff;
+    }
+    return hash.toString(36);
+}
+
+/** Check if a multilingual field needs (re)translation based on source hash */
+function fieldNeedsTranslation(field: { [lang: string]: string } | undefined, primaryLang: string): boolean {
+    if (!field) return false;
+    const src = field[primaryLang]?.trim();
+    if (!src) return false;
+    const currentHash = simpleHash(src);
+    return field._sourceHash !== currentHash;
+}
+
+/** Stamp a multilingual field with the hash of its current source text */
+function stampSourceHash(field: { [lang: string]: string }, primaryLang: string): { [lang: string]: string } {
+    const src = field[primaryLang]?.trim();
+    if (!src) return field;
+    return { ...field, _sourceHash: simpleHash(src) };
+}
 
 interface ImageMapEditorModalProps {
     data: ImageMapBlockData;
@@ -106,7 +135,8 @@ export function ImageMapEditorModal({
     const [sidebarTab, setSidebarTab] = useState<'markers' | 'settings'>('markers');
     const [activeLang, setActiveLang] = useState(language);
     const [isTranslatingAll, setIsTranslatingAll] = useState(false);
-    const [translateStatus, setTranslateStatus] = useState<'idle' | 'success'>('idle');
+    const [translateStatus, setTranslateStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [translateMessage, setTranslateMessage] = useState('');
     const [editorScale, setEditorScale] = useState(1);
     const [aiStatus, setAiStatus] = useState<'idle' | 'analyzing' | 'generating' | 'success' | 'error'>('idle');
     const [aiMessage, setAiMessage] = useState('');
@@ -272,10 +302,12 @@ export function ImageMapEditorModal({
         return title?.[activeLang] || title?.en || stop.id;
     }
 
-    // --- Translate active floor only (batch via magicTranslate) ---
+    // --- Translate active floor only (dirty-tracking via _sourceHash) ---
     async function handleTranslateFloor(forceRetranslate = false) {
         if (!hasMultipleLanguages || isTranslatingAll || !activeFloor) return;
         setIsTranslatingAll(true);
+        setTranslateStatus('idle');
+        setTranslateMessage('');
         try {
             type TextRef = { field: 'floorLabel' | 'markerLabel' | 'markerInfo'; markerIdx?: number };
             const jobs: { source: string; ref: TextRef; langsNeeded: string[] }[] = [];
@@ -287,71 +319,132 @@ export function ImageMapEditorModal({
                 markers: activeFloor.markers.map(m => ({ ...m, label: { ...m.label }, infoText: m.infoText ? { ...m.infoText } : undefined })),
             };
 
+            // Floor label — only if source changed (or force)
             const floorSrc = workFloor.label?.[primaryLang]?.trim();
-            if (floorSrc) {
-                const needed = otherLangs.filter(l => forceRetranslate || !workFloor.label?.[l]?.trim());
-                if (needed.length > 0) jobs.push({ source: floorSrc, ref: { field: 'floorLabel' }, langsNeeded: needed });
+            if (floorSrc && (forceRetranslate || fieldNeedsTranslation(workFloor.label, primaryLang))) {
+                jobs.push({ source: floorSrc, ref: { field: 'floorLabel' }, langsNeeded: otherLangs });
             }
+
+            // Marker labels + info text — only if source changed (or force)
             for (let mi = 0; mi < workFloor.markers.length; mi++) {
                 const marker = workFloor.markers[mi];
                 const labelSrc = marker.label?.[primaryLang]?.trim();
-                if (labelSrc) {
-                    const needed = otherLangs.filter(l => forceRetranslate || !marker.label?.[l]?.trim());
-                    if (needed.length > 0) jobs.push({ source: labelSrc, ref: { field: 'markerLabel', markerIdx: mi }, langsNeeded: needed });
+                if (labelSrc && (forceRetranslate || fieldNeedsTranslation(marker.label, primaryLang))) {
+                    jobs.push({ source: labelSrc, ref: { field: 'markerLabel', markerIdx: mi }, langsNeeded: otherLangs });
                 }
                 const infoSrc = marker.infoText?.[primaryLang]?.trim();
-                if (infoSrc) {
-                    const needed = otherLangs.filter(l => forceRetranslate || !marker.infoText?.[l]?.trim());
-                    if (needed.length > 0) jobs.push({ source: infoSrc, ref: { field: 'markerInfo', markerIdx: mi }, langsNeeded: needed });
+                if (infoSrc && (forceRetranslate || fieldNeedsTranslation(marker.infoText, primaryLang))) {
+                    jobs.push({ source: infoSrc, ref: { field: 'markerInfo', markerIdx: mi }, langsNeeded: otherLangs });
                 }
             }
 
+            if (jobs.length === 0) {
+                setTranslateStatus('success');
+                setTranslateMessage('All translations are up to date');
+                setTimeout(() => { setTranslateStatus('idle'); setTranslateMessage(''); }, 2500);
+                setIsTranslatingAll(false);
+                return;
+            }
+
+            let failedCount = 0;
             await Promise.all(jobs.map(async (job) => {
                 try {
                     const translations = await magicTranslate(job.source, primaryLang, job.langsNeeded, undefined, translationProvider);
                     const { ref } = job;
                     if (ref.field === 'floorLabel') {
-                        workFloor.label = { ...workFloor.label, ...translations };
+                        workFloor.label = stampSourceHash({ ...workFloor.label, ...translations }, primaryLang);
                     } else if (ref.field === 'markerLabel' && ref.markerIdx !== undefined) {
-                        workFloor.markers[ref.markerIdx].label = { ...workFloor.markers[ref.markerIdx].label, ...translations };
+                        workFloor.markers[ref.markerIdx].label = stampSourceHash(
+                            { ...workFloor.markers[ref.markerIdx].label, ...translations }, primaryLang
+                        );
                     } else if (ref.field === 'markerInfo' && ref.markerIdx !== undefined) {
-                        workFloor.markers[ref.markerIdx].infoText = { ...workFloor.markers[ref.markerIdx].infoText, ...translations };
+                        workFloor.markers[ref.markerIdx].infoText = stampSourceHash(
+                            { ...workFloor.markers[ref.markerIdx].infoText, ...translations }, primaryLang
+                        );
                     }
-                } catch { /* skip failed translations */ }
+                } catch (err) {
+                    failedCount++;
+                    console.error('Translation job failed:', err);
+                }
             }));
 
             const updatedFloors = floors.map(f => f.id === activeFloorId ? workFloor : f);
             setFloors(updatedFloors);
             emitChange(updatedFloors);
-            setTranslateStatus('success');
-            setTimeout(() => setTranslateStatus('idle'), 2500);
+
+            if (failedCount > 0) {
+                setTranslateStatus('error');
+                setTranslateMessage(`${failedCount} of ${jobs.length} field${jobs.length > 1 ? 's' : ''} failed — check translation provider in Settings`);
+                setTimeout(() => { setTranslateStatus('idle'); setTranslateMessage(''); }, 5000);
+            } else {
+                setTranslateStatus('success');
+                setTranslateMessage(`Translated ${jobs.length} field${jobs.length > 1 ? 's' : ''}`);
+                setTimeout(() => { setTranslateStatus('idle'); setTranslateMessage(''); }, 2500);
+            }
         } catch (err) {
             console.error('Translation failed:', err);
+            setTranslateStatus('error');
+            setTranslateMessage('Translation failed — check translation provider in Settings');
+            setTimeout(() => { setTranslateStatus('idle'); setTranslateMessage(''); }, 5000);
         } finally {
             setIsTranslatingAll(false);
         }
     }
 
-    // Count translation coverage for active floor only
-    function getFloorTranslationCoverage(): { translated: number; total: number } {
-        if (!hasMultipleLanguages || !activeFloor) return { translated: 0, total: 0 };
+    // Count dirty (needs translation) fields for active floor
+    function getFloorTranslationStatus(): { dirty: number; total: number; translated: number } {
+        if (!hasMultipleLanguages || !activeFloor) return { dirty: 0, total: 0, translated: 0 };
         let total = 0;
+        let dirty = 0;
         let translated = 0;
+
         if (activeFloor.label?.[primaryLang]?.trim()) {
-            total += otherLangs.length;
-            translated += otherLangs.filter(l => activeFloor.label?.[l]?.trim()).length;
+            total++;
+            if (fieldNeedsTranslation(activeFloor.label, primaryLang)) {
+                dirty++;
+            } else if (activeFloor.label._sourceHash) {
+                translated++;
+            }
         }
         for (const marker of activeFloor.markers) {
             if (marker.label?.[primaryLang]?.trim()) {
-                total += otherLangs.length;
-                translated += otherLangs.filter(l => marker.label?.[l]?.trim()).length;
+                total++;
+                if (fieldNeedsTranslation(marker.label, primaryLang)) {
+                    dirty++;
+                } else if (marker.label._sourceHash) {
+                    translated++;
+                }
             }
             if (marker.infoText?.[primaryLang]?.trim()) {
-                total += otherLangs.length;
-                translated += otherLangs.filter(l => marker.infoText?.[l]?.trim()).length;
+                total++;
+                if (fieldNeedsTranslation(marker.infoText, primaryLang)) {
+                    dirty++;
+                } else if (marker.infoText._sourceHash) {
+                    translated++;
+                }
             }
         }
-        return { translated, total };
+        return { dirty, total, translated };
+    }
+
+    /** Check if a specific marker has any dirty (untranslated) fields */
+    function isMarkerDirty(marker: ImageMapMarker): boolean {
+        if (!hasMultipleLanguages) return false;
+        if (fieldNeedsTranslation(marker.label, primaryLang)) return true;
+        if (marker.infoText && fieldNeedsTranslation(marker.infoText, primaryLang)) return true;
+        return false;
+    }
+
+    /** Check if a specific marker is fully translated (has _sourceHash and it matches) */
+    function isMarkerTranslated(marker: ImageMapMarker): boolean {
+        if (!hasMultipleLanguages) return false;
+        const labelSrc = marker.label?.[primaryLang]?.trim();
+        if (labelSrc && !marker.label._sourceHash) return false;
+        if (labelSrc && fieldNeedsTranslation(marker.label, primaryLang)) return false;
+        const infoSrc = marker.infoText?.[primaryLang]?.trim();
+        if (infoSrc && !marker.infoText?._sourceHash) return false;
+        if (infoSrc && fieldNeedsTranslation(marker.infoText, primaryLang)) return false;
+        return !!(labelSrc || infoSrc);
     }
 
     // --- AI: Auto-suggest markers from floor plan ---
@@ -519,30 +612,58 @@ export function ImageMapEditorModal({
 
                 {/* Floor tabs */}
                 <div className="flex items-center gap-1 px-4 py-2 bg-[var(--color-bg-elevated)] border-b border-[var(--color-border-default)] overflow-x-auto">
-                    {floors.map(floor => (
-                        <div
-                            key={floor.id}
-                            role="tab"
-                            tabIndex={0}
-                            onClick={() => { setActiveFloorId(floor.id); setSelectedMarkerId(null); }}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveFloorId(floor.id); setSelectedMarkerId(null); } }}
-                            className={`group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap cursor-pointer select-none ${floor.id === activeFloorId
-                                ? 'bg-[var(--color-accent-primary)] text-white shadow-md'
-                                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
-                                }`}
-                        >
-                            <span>{floor.label?.[activeLang] || floor.label?.en || `Floor ${floor.order + 1}`}</span>
-                            <span className="text-[10px] opacity-60">{floor.markers.length}</span>
-                            {floors.length > 1 && floor.id !== activeFloorId && (
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); deleteFloor(floor.id); }}
-                                    className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity"
-                                >
-                                    <X className="w-3 h-3" />
-                                </button>
-                            )}
-                        </div>
-                    ))}
+                    {floors.map(floor => {
+                        // Per-floor translation status dot
+                        const floorStatus = (() => {
+                            if (!hasMultipleLanguages) return null;
+                            let hasDirty = false;
+                            let hasTranslated = false;
+                            const checkField = (f: { [lang: string]: string } | undefined) => {
+                                if (!f?.[primaryLang]?.trim()) return;
+                                if (fieldNeedsTranslation(f, primaryLang)) hasDirty = true;
+                                else if (f._sourceHash) hasTranslated = true;
+                            };
+                            checkField(floor.label);
+                            for (const m of floor.markers) {
+                                checkField(m.label);
+                                if (m.infoText) checkField(m.infoText);
+                            }
+                            if (hasDirty) return 'dirty';     // yellow — some fields changed
+                            if (hasTranslated) return 'current'; // green — all translated, up to date
+                            return 'none';                       // gray — never translated
+                        })();
+
+                        return (
+                            <div
+                                key={floor.id}
+                                role="tab"
+                                tabIndex={0}
+                                onClick={() => { setActiveFloorId(floor.id); setSelectedMarkerId(null); }}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveFloorId(floor.id); setSelectedMarkerId(null); } }}
+                                className={`group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap cursor-pointer select-none ${floor.id === activeFloorId
+                                    ? 'bg-[var(--color-accent-primary)] text-white shadow-md'
+                                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
+                                    }`}
+                            >
+                                <span>{floor.label?.[activeLang] || floor.label?.en || `Floor ${floor.order + 1}`}</span>
+                                <span className="text-[10px] opacity-60">{floor.markers.length}</span>
+                                {floorStatus && floorStatus !== 'none' && (
+                                    <span
+                                        className={`w-2 h-2 rounded-full shrink-0 ${floorStatus === 'current' ? 'bg-green-400' : 'bg-yellow-400'}`}
+                                        title={floorStatus === 'current' ? 'Translations up to date' : 'Has untranslated changes'}
+                                    />
+                                )}
+                                {floors.length > 1 && floor.id !== activeFloorId && (
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); deleteFloor(floor.id); }}
+                                        className="opacity-0 group-hover:opacity-100 hover:text-red-400 transition-opacity"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    })}
                     <button
                         onClick={addFloor}
                         className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-accent-primary)] transition-colors"
@@ -550,38 +671,6 @@ export function ImageMapEditorModal({
                         <Plus className="w-4 h-4" />
                         Add Floor
                     </button>
-                    {/* Per-floor translate */}
-                    {hasMultipleLanguages && (() => {
-                        const { translated, total } = getFloorTranslationCoverage();
-                        const allDone = total > 0 && translated === total;
-                        const hasSome = translated > 0 && translated < total;
-                        return (
-                            <div className="flex items-center gap-2 ml-auto">
-                                {total > 0 && (
-                                    <span className="text-xs text-[var(--color-text-muted)]">
-                                        {translated}/{total}
-                                    </span>
-                                )}
-                                <button
-                                    onClick={() => handleTranslateFloor(allDone)}
-                                    disabled={isTranslatingAll || total === 0}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg disabled:opacity-50 transition-colors ${allDone
-                                        ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
-                                        : 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/20'
-                                        }`}
-                                >
-                                    {isTranslatingAll ? (
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    ) : translateStatus === 'success' ? (
-                                        <CheckIcon className="w-3.5 h-3.5" />
-                                    ) : (
-                                        <Languages className="w-3.5 h-3.5" />
-                                    )}
-                                    {allDone ? 'Re-translate floor' : hasSome ? 'Translate remaining' : 'Translate floor'}
-                                </button>
-                            </div>
-                        );
-                    })()}
                 </div>
 
                 {/* Canvas */}
@@ -714,17 +803,100 @@ export function ImageMapEditorModal({
                 <div className="flex-1 overflow-y-auto">
                     {sidebarTab === 'markers' ? (
                         <div className="p-4 space-y-4">
-                            {/* Language switcher */}
+                            {/* Language switcher + Translation controls */}
                             {hasMultipleLanguages && (
-                                <div>
-                                    <label className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-1">Editing Language</label>
-                                    <LanguageSwitcher
-                                        availableLanguages={availableLanguages}
-                                        activeLanguage={activeLang}
-                                        onChange={setActiveLang}
-                                        size="sm"
-                                        showStatus={false}
-                                    />
+                                <div className="space-y-2">
+                                    <div>
+                                        <label className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-1">Editing Language</label>
+                                        <LanguageSwitcher
+                                            availableLanguages={availableLanguages}
+                                            activeLanguage={activeLang}
+                                            onChange={setActiveLang}
+                                            size="sm"
+                                            showStatus={false}
+                                        />
+                                    </div>
+
+                                    {/* Translate floor button — right below language switcher */}
+                                    {(() => {
+                                        const { dirty, total, translated } = getFloorTranslationStatus();
+                                        const allCurrent = total > 0 && dirty === 0 && translated === total;
+                                        const neverTranslated = translated === 0 && dirty === 0;
+                                        const hasUntranslated = total > 0 && (dirty > 0 || (translated < total && !neverTranslated));
+
+                                        // Button label based on state
+                                        let buttonLabel: string;
+                                        let buttonStyle: string;
+                                        if (translateStatus === 'success' && translateMessage) {
+                                            buttonLabel = translateMessage;
+                                            buttonStyle = 'bg-green-500/10 text-green-400 border-green-500/20';
+                                        } else if (translateStatus === 'error') {
+                                            buttonLabel = 'Retry translation';
+                                            buttonStyle = 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20';
+                                        } else if (allCurrent) {
+                                            buttonLabel = 'Re-translate floor';
+                                            buttonStyle = 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20';
+                                        } else if (dirty > 0) {
+                                            buttonLabel = `Translate ${dirty} changed field${dirty > 1 ? 's' : ''}`;
+                                            buttonStyle = 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20 hover:bg-yellow-500/20';
+                                        } else if (neverTranslated && total > 0) {
+                                            buttonLabel = `Translate floor (${total} field${total > 1 ? 's' : ''})`;
+                                            buttonStyle = 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/20 hover:bg-[var(--color-accent-primary)]/20';
+                                        } else if (hasUntranslated) {
+                                            buttonLabel = `Translate ${total - translated} remaining`;
+                                            buttonStyle = 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/20 hover:bg-[var(--color-accent-primary)]/20';
+                                        } else {
+                                            buttonLabel = 'Translate floor';
+                                            buttonStyle = 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/20 hover:bg-[var(--color-accent-primary)]/20';
+                                        }
+
+                                        return (
+                                            <div className="space-y-1.5">
+                                                <button
+                                                    onClick={() => handleTranslateFloor(allCurrent)}
+                                                    disabled={isTranslatingAll || total === 0}
+                                                    className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border disabled:opacity-50 transition-all ${buttonStyle}`}
+                                                >
+                                                    {isTranslatingAll ? (
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : translateStatus === 'success' ? (
+                                                        <CheckIcon className="w-3.5 h-3.5" />
+                                                    ) : translateStatus === 'error' ? (
+                                                        <AlertTriangle className="w-3.5 h-3.5" />
+                                                    ) : (
+                                                        <Languages className="w-3.5 h-3.5" />
+                                                    )}
+                                                    {isTranslatingAll ? 'Translating...' : buttonLabel}
+                                                </button>
+
+                                                {/* Status summary */}
+                                                {total > 0 && !isTranslatingAll && translateStatus === 'idle' && (
+                                                    <div className="flex items-center justify-between text-[10px] text-[var(--color-text-muted)] px-1">
+                                                        <span>{translated}/{total} fields translated</span>
+                                                        {dirty > 0 && (
+                                                            <span className="text-yellow-400">{dirty} changed</span>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {/* Error message banner */}
+                                                {translateStatus === 'error' && translateMessage && (
+                                                    <div className="flex items-start gap-2 text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-2">
+                                                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                                        <span>{translateMessage}</span>
+                                                    </div>
+                                                )}
+
+                                                {/* Success message */}
+                                                {translateStatus === 'success' && translateMessage && (
+                                                    <div className="flex items-center gap-2 text-[11px] text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-2.5 py-1.5">
+                                                        <CheckIcon className="w-3.5 h-3.5 shrink-0" />
+                                                        <span>{translateMessage}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             )}
 
@@ -951,6 +1123,13 @@ export function ImageMapEditorModal({
                                                         {marker.number ? `${marker.number}. ` : ''}{marker.label?.[activeLang] || marker.label?.en || 'Unlabeled'}
                                                     </span>
                                                     <div className="flex items-center gap-1 shrink-0">
+                                                        {hasMultipleLanguages && (() => {
+                                                            const dirty = isMarkerDirty(marker);
+                                                            const translated = isMarkerTranslated(marker);
+                                                            if (dirty) return <span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0" title="Has untranslated changes" />;
+                                                            if (translated) return <span className="w-2 h-2 rounded-full bg-green-400 shrink-0" title="Translations current" />;
+                                                            return null;
+                                                        })()}
                                                         {linkedStop && (
                                                             <Link2 className="w-3 h-3 text-[var(--color-accent-primary)]" aria-label={`→ ${getStopTitle(linkedStop)}`} />
                                                         )}

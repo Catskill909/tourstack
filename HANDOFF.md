@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: March 18, 2026
-**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅
+**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅
 
 ---
 
@@ -830,6 +830,26 @@ TourStack uses a **modular content block system** where tours and stops are comp
 > - `CLAUDE.md` - Database safety rules for AI assistants
 > - `app/scripts/backup-db.sh` - Database backup + sync script
 > - `app/prisma/schema.prisma` - Cleaned up formatting
+
+### Translation Rework (Image Map Phase 1.5) ✅ (March 18, 2026)
+
+**Root cause fix:** Google Cloud Translation daily character quota was set to 5,000 — raised to 500,000.
+
+**Server-side resilience:**
+- [x] **Rate limiter** — Sliding window tracking (80K chars per 100s) prevents Google API "User Rate Limit Exceeded" errors
+- [x] **Retry with backoff** — Exponential backoff (2 retries with jitter) on rate limit/quota errors
+- [x] **Auto-fallback** — When Google rate-limits after retries, automatically falls back to LibreTranslate
+
+**Frontend (Image Map editor):**
+- [x] **Dirty tracking** — `_sourceHash` (djb2 hash) stored in multilingual field objects detects which fields changed since last translation — only changed fields are retranslated
+- [x] **UI consolidation** — Removed scattered translate button from floor tab bar; added consolidated translate section in sidebar with context-aware labels ("Translate 3 changed fields" / "All current")
+- [x] **Status indicators** — Per-floor dots (green/yellow) on floor tabs, per-marker dots in marker list
+- [x] **Error handling** — Error/success banners replace silent failures; failed translation count shown to user
+
+> **Key Files:**
+> - `app/server/services/translation.ts` — Rate limiter, retry, auto-fallback to LibreTranslate
+> - `app/src/components/blocks/ImageMapEditorModal.tsx` — Dirty tracking, consolidated translate UI, status indicators
+> - `docs/image-map-block-dev.md` — Updated Phase 1.5 docs
 
 ### Phase 29: Language Reconciliation & UX Polish ✅ (March 16, 2026)
 
