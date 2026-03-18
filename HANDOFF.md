@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: March 16, 2026
-**Session Status**: Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅
+**Last Updated**: March 18, 2026
+**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅
 
 ---
 
@@ -101,7 +101,7 @@
 >
 > The preview device dimensions ARE the actual visitor screen:
 > - **iPhone:** 375 × 812px (real device resolution)
-> - **iPad:** 820 × 1180px (real device resolution)
+> - **iPad:** 820 × 1180px portrait / 1180 × 820px landscape (real device resolution)
 >
 > The admin UI scales it down to fit, but content renders at true pixel dimensions.
 > **NEVER use `100vh` or `100dvh`** - these refer to browser viewport, not device screen.
@@ -873,6 +873,45 @@ TourStack uses a **modular content block system** where tours and stops are comp
 > - `app/src/components/AudioCollectionModal.tsx` — Sorted language selector
 > - `app/src/components/TourCard.tsx` — Unpublish button rename
 > - `docs/language-collection-import-audit.md` — Full language import audit
+
+### Phase 30: Unified Preview System & iPad Orientation ✅ (March 18, 2026)
+
+**Unified Preview Choice Modal:**
+- [x] **PreviewChoiceModal** — New unified entry point replaces separate "Run Tour" + "Kiosk" buttons
+- [x] **Two preview paths** — Simulator (in-app device frame) or Tour Device (opens in new tab via KioskLauncherModal)
+- [x] **Consistent access** — Same modal from TourCard, TourDetail header, StopEditor, StopListEditorModal, and TimelineGalleryEditorModal
+- [x] **Simplified TourCard** — Single "Run/Preview" button instead of two buttons
+
+**iPad Portrait/Landscape Toggle:**
+- [x] **Orientation toggle** — `RotateCw` icon button appears only when iPad device is selected
+- [x] **Dimension swapping** — Swaps 820×1180 ↔ 1180×820 (no CSS rotate hacks)
+- [x] **Auto-scale adjustment** — Portrait defaults to 0.55, landscape to 0.45
+- [x] **Dimensions badge** — Updates to show effective orientation dimensions
+- [x] **Side buttons** — Hidden in landscape mode (cosmetic simplification)
+- [x] **Inner bezel fix** — Fixed hardcoded `rounded-[43px]` to use `device.bezelRadius - 1`
+- [x] **Smooth animation** — Existing CSS transitions animate the orientation change
+
+**Bug Fixes & UX Improvements:**
+- [x] **Edit Tour translation preservation** — Title/description edits no longer overwrite other language translations
+- [x] **Tour API fix** — `defaultTranslationProvider` now saveable via PUT `/api/tours/:id`
+- [x] **Visitor language default** — Uses `primaryLanguage` instead of first language in array
+- [x] **iOS safe area support** — Added `viewport-fit=cover` meta tag and `env(safe-area-inset-top)` header padding
+- [x] **Removed ExternalLink icons** — Cleaner button styling on TourCard and TourDetail
+
+> **Key Files Created:**
+> - `app/src/components/PreviewChoiceModal.tsx` — Unified preview entry point modal
+>
+> **Key Files Modified:**
+> - `app/src/components/StopPreviewModal.tsx` — iPad orientation toggle (portrait/landscape)
+> - `app/src/components/TourCard.tsx` — Simplified to single preview button using PreviewChoiceModal
+> - `app/src/pages/TourDetail.tsx` — Replaced KioskLauncherModal with PreviewChoiceModal
+> - `app/src/components/StopEditor.tsx` — Uses PreviewChoiceModal instead of StopPreviewModal directly
+> - `app/src/components/blocks/StopListEditorModal.tsx` — Uses PreviewChoiceModal
+> - `app/src/components/blocks/TimelineGalleryEditorModal.tsx` — Uses PreviewChoiceModal
+> - `app/src/components/EditTourModal.tsx` — Preserves existing translations on save
+> - `app/server/routes/tours.ts` — Accepts `defaultTranslationProvider` in PUT
+> - `app/src/pages/VisitorStop.tsx` — Primary language default + safe area padding
+> - `app/index.html` — `viewport-fit=cover` for iOS notch support
 
 ### 🎯 Phase 26.2: Per-Tour AI Concierge (NEXT)
 - [ ] Add concierge fields to Tour model (conciergeEnabled, conciergePersona, conciergeWelcome, conciergeCollections)

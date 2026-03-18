@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Smartphone, Tablet, RotateCcw, ZoomIn, ZoomOut, Monitor, MonitorOff, ChevronLeft, MonitorPlay } from 'lucide-react';
+import { X, Smartphone, Tablet, RotateCcw, RotateCw, ZoomIn, ZoomOut, Monitor, MonitorOff, ChevronLeft, MonitorPlay } from 'lucide-react';
 import { StopContentBlock } from './blocks/StopContentBlock';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { DisplaySettingsPanel, type DisplaySettings } from './DisplaySettingsPanel';
@@ -65,9 +65,10 @@ const DEVICE_CONFIGS = {
 
 export function StopPreviewModal({ stop, tourData, allStops, availableLanguages = ['en'], onClose }: StopPreviewModalProps) {
     const [deviceType, setDeviceType] = useState<DeviceType>('phone');
-    const [previewLanguage, setPreviewLanguage] = useState(availableLanguages[0] || 'en');
+    const [previewLanguage, setPreviewLanguage] = useState(tourData?.primaryLanguage || availableLanguages[0] || 'en');
     const [scale, setScale] = useState(0.85);
     const [showStatusBar, setShowStatusBar] = useState(true);
+    const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
     const [displaySettings, setDisplaySettings] = useState<DisplaySettings>({
         showTitles: tourData?.displaySettings?.showTitles ?? true,
         showDescriptions: tourData?.displaySettings?.showDescriptions ?? true,
@@ -112,17 +113,28 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
     }, [isKioskMode]);
 
     // Calculate appropriate scale when device changes
-    const getDefaultScale = (type: DeviceType) => {
+    const getDefaultScale = (type: DeviceType, orient: 'portrait' | 'landscape' = 'portrait') => {
         if (type === 'kiosk') return 1;
-        return type === 'tablet' ? 0.55 : 0.85;
+        if (type === 'tablet') return orient === 'landscape' ? 0.45 : 0.55;
+        return 0.85;
     };
 
     const handleDeviceChange = (type: DeviceType) => {
         setDeviceType(type);
-        setScale(getDefaultScale(type));
+        if (type !== 'tablet') setOrientation('portrait');
+        setScale(getDefaultScale(type, type === 'tablet' ? orientation : 'portrait'));
+    };
+
+    const toggleOrientation = () => {
+        const newOrient = orientation === 'portrait' ? 'landscape' : 'portrait';
+        setOrientation(newOrient);
+        setScale(getDefaultScale('tablet', newOrient));
     };
 
     const device = DEVICE_CONFIGS[deviceType];
+    const isLandscape = deviceType === 'tablet' && orientation === 'landscape';
+    const effectiveWidth = isLandscape ? device.height : device.width;
+    const effectiveHeight = isLandscape ? device.width : device.height;
     const blocks = currentStop.contentBlocks || [];
 
     function getStopTitle(): string {
@@ -144,11 +156,11 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
         setScale(prev => Math.min(1.2, Math.max(0.5, prev + delta)));
     };
 
-    const resetScale = () => setScale(0.85);
+    const resetScale = () => setScale(getDefaultScale(deviceType, orientation));
 
     // Calculate scaled dimensions
-    const scaledWidth = device.width + (device.bezelWidth * 2);
-    const scaledHeight = device.height + (device.bezelWidth * 2);
+    const scaledWidth = effectiveWidth + (device.bezelWidth * 2);
+    const scaledHeight = effectiveHeight + (device.bezelWidth * 2);
 
     return (
         <div
@@ -190,11 +202,27 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                     })}
                 </div>
 
+                {/* Orientation Toggle - iPad only */}
+                {deviceType === 'tablet' && (
+                    <button
+                        onClick={toggleOrientation}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                            isLandscape
+                                ? 'bg-[var(--color-accent-primary)]/15 border-[var(--color-accent-primary)]/40 text-[var(--color-accent-primary)]'
+                                : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                        }`}
+                        title={orientation === 'portrait' ? 'Switch to landscape' : 'Switch to portrait'}
+                    >
+                        <RotateCw className="w-4 h-4" />
+                        <span className="hidden lg:inline">{isLandscape ? 'Portrait' : 'Landscape'}</span>
+                    </button>
+                )}
+
                 {/* Dimensions Badge */}
                 <span className="hidden md:inline text-xs text-[var(--color-text-muted)] font-mono bg-[var(--color-bg-elevated)] px-2 py-1 rounded">
                     {isKioskMode
                         ? `${containerSize.width || '—'} × ${containerSize.height || '—'}`
-                        : `${device.width} × ${device.height}`
+                        : `${effectiveWidth} × ${effectiveHeight}`
                     }
                 </span>
 
@@ -451,30 +479,35 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                                 `,
                             }}
                         >
-                            {/* Side Buttons - Volume (left side) */}
-                            <div
-                                className="absolute -left-[3px] top-[100px] w-[3px] h-[32px] rounded-l-sm"
-                                style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
-                            />
-                            <div
-                                className="absolute -left-[3px] top-[145px] w-[3px] h-[56px] rounded-l-sm"
-                                style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
-                            />
-                            <div
-                                className="absolute -left-[3px] top-[210px] w-[3px] h-[56px] rounded-l-sm"
-                                style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
-                            />
-
-                            {/* Side Button - Power (right side) */}
-                            <div
-                                className="absolute -right-[3px] top-[160px] w-[3px] h-[80px] rounded-r-sm"
-                                style={{ background: 'linear-gradient(270deg, #1a1a1a, #2a2a2a)' }}
-                            />
+                            {/* Side Buttons - hidden in landscape */}
+                            {!isLandscape && (
+                                <>
+                                    {/* Volume (left side) */}
+                                    <div
+                                        className="absolute -left-[3px] top-[100px] w-[3px] h-[32px] rounded-l-sm"
+                                        style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
+                                    />
+                                    <div
+                                        className="absolute -left-[3px] top-[145px] w-[3px] h-[56px] rounded-l-sm"
+                                        style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
+                                    />
+                                    <div
+                                        className="absolute -left-[3px] top-[210px] w-[3px] h-[56px] rounded-l-sm"
+                                        style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
+                                    />
+                                    {/* Power (right side) */}
+                                    <div
+                                        className="absolute -right-[3px] top-[160px] w-[3px] h-[80px] rounded-r-sm"
+                                        style={{ background: 'linear-gradient(270deg, #1a1a1a, #2a2a2a)' }}
+                                    />
+                                </>
+                            )}
 
                             {/* Inner Bezel */}
                             <div
-                                className="absolute inset-0 m-[1px] rounded-[43px]"
+                                className="absolute inset-0 m-[1px]"
                                 style={{
+                                    borderRadius: device.bezelRadius - 1,
                                     background: 'linear-gradient(180deg, #1f1f1f 0%, #171717 100%)',
                                 }}
                             />
@@ -485,15 +518,48 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                                 style={{
                                     top: device.bezelWidth,
                                     left: device.bezelWidth,
-                                    width: device.width,
-                                    height: device.height,
+                                    width: effectiveWidth,
+                                    height: effectiveHeight,
                                     borderRadius: device.screenRadius,
                                 }}
                             >
-                                {/* Dynamic Island / Notch (Phone only) */}
+                                {/* Status Bar — positioned absolutely at top, BEHIND the notch (like real iOS) */}
+                                {showStatusBar && (
+                                    <div
+                                        className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6"
+                                        style={{
+                                            paddingTop: deviceType === 'phone' ? 14 : 8,
+                                            paddingBottom: 4,
+                                        }}
+                                    >
+                                        <span className="text-xs font-semibold text-[var(--color-text-primary)]">9:41</span>
+                                        <div className="flex items-center gap-1.5">
+                                            {/* Signal bars */}
+                                            <div className="flex items-end gap-[2px]">
+                                                <div className="w-[3px] h-[4px] rounded-sm bg-[var(--color-text-primary)]" />
+                                                <div className="w-[3px] h-[6px] rounded-sm bg-[var(--color-text-primary)]" />
+                                                <div className="w-[3px] h-[8px] rounded-sm bg-[var(--color-text-primary)]" />
+                                                <div className="w-[3px] h-[10px] rounded-sm bg-[var(--color-text-primary)]" />
+                                            </div>
+                                            {/* WiFi */}
+                                            <svg className="w-4 h-4 text-[var(--color-text-primary)]" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-4.9-2.3l1.4 1.4C9.4 16.4 10.6 16 12 16s2.6.4 3.5 1.1l1.4-1.4C15.6 14.6 13.9 14 12 14s-3.6.6-4.9 1.7zm-2.8-2.8l1.4 1.4C7.3 13 9.5 12 12 12s4.7 1 6.3 2.3l1.4-1.4C17.7 11.1 15 10 12 10s-5.7 1.1-7.7 2.9zM1.5 10l1.4 1.4C5.1 9.2 8.4 8 12 8s6.9 1.2 9.1 3.4L22.5 10C19.8 7.3 16.1 6 12 6s-7.8 1.3-10.5 4z" />
+                                            </svg>
+                                            {/* Battery */}
+                                            <div className="flex items-center gap-1">
+                                                <div className="relative w-6 h-3 rounded-[3px] border border-[var(--color-text-primary)] p-[2px]">
+                                                    <div className="h-full w-full rounded-[1px] bg-green-500" />
+                                                </div>
+                                                <div className="w-[2px] h-[4px] rounded-r-sm bg-[var(--color-text-primary)]" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Dynamic Island / Notch (Phone only) — above status bar and content */}
                                 {deviceType === 'phone' && (
                                     <div
-                                        className="absolute top-[10px] left-1/2 -translate-x-1/2 z-20 flex items-center justify-center"
+                                        className="absolute top-[10px] left-1/2 -translate-x-1/2 z-30 flex items-center justify-center"
                                         style={{
                                             width: device.notchWidth,
                                             height: device.notchHeight,
@@ -506,46 +572,16 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                                     </div>
                                 )}
 
-                                {/* Screen Content */}
+                                {/* Screen Content — starts below the notch safe area */}
                                 <div
                                     className="h-full overflow-y-auto"
-                                    style={{ scrollbarWidth: 'none', height: device.height }}
+                                    style={{ scrollbarWidth: 'none', height: effectiveHeight }}
                                 >
-                                    {/* Sticky header: status bar + back navigation */}
-                                    {(showStatusBar || stopHistory.length > 0) && !(blocks.length > 0 && blocks[0].type === 'tour') && (
+                                    {/* Safe area spacer + back navigation */}
+                                    {!(blocks.length > 0 && blocks[0].type === 'tour') && (
                                         <div className="sticky top-0 z-10 bg-[var(--color-bg-surface)]/95 backdrop-blur-md">
-                                            {/* Status Bar */}
-                                            {showStatusBar && (
-                                                <div
-                                                    className="flex items-center justify-between px-6"
-                                                    style={{
-                                                        paddingTop: deviceType === 'phone' ? 48 : 12,
-                                                        paddingBottom: 8,
-                                                    }}
-                                                >
-                                                    <span className="text-xs font-semibold text-[var(--color-text-primary)]">9:41</span>
-                                                    <div className="flex items-center gap-1.5">
-                                                        {/* Signal bars */}
-                                                        <div className="flex items-end gap-[2px]">
-                                                            <div className="w-[3px] h-[4px] rounded-sm bg-[var(--color-text-primary)]" />
-                                                            <div className="w-[3px] h-[6px] rounded-sm bg-[var(--color-text-primary)]" />
-                                                            <div className="w-[3px] h-[8px] rounded-sm bg-[var(--color-text-primary)]" />
-                                                            <div className="w-[3px] h-[10px] rounded-sm bg-[var(--color-text-primary)]" />
-                                                        </div>
-                                                        {/* WiFi */}
-                                                        <svg className="w-4 h-4 text-[var(--color-text-primary)]" viewBox="0 0 24 24" fill="currentColor">
-                                                            <path d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-4.9-2.3l1.4 1.4C9.4 16.4 10.6 16 12 16s2.6.4 3.5 1.1l1.4-1.4C15.6 14.6 13.9 14 12 14s-3.6.6-4.9 1.7zm-2.8-2.8l1.4 1.4C7.3 13 9.5 12 12 12s4.7 1 6.3 2.3l1.4-1.4C17.7 11.1 15 10 12 10s-5.7 1.1-7.7 2.9zM1.5 10l1.4 1.4C5.1 9.2 8.4 8 12 8s6.9 1.2 9.1 3.4L22.5 10C19.8 7.3 16.1 6 12 6s-7.8 1.3-10.5 4z" />
-                                                        </svg>
-                                                        {/* Battery */}
-                                                        <div className="flex items-center gap-1">
-                                                            <div className="relative w-6 h-3 rounded-[3px] border border-[var(--color-text-primary)] p-[2px]">
-                                                                <div className="h-full w-full rounded-[1px] bg-green-500" />
-                                                            </div>
-                                                            <div className="w-[2px] h-[4px] rounded-r-sm bg-[var(--color-text-primary)]" />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
+                                            {/* Safe area spacer — always present to keep content below notch */}
+                                            <div style={{ height: deviceType === 'phone' ? 48 : 24 }} />
 
                                             {/* Back navigation bar when viewing a different stop */}
                                             {stopHistory.length > 0 && (
@@ -565,15 +601,15 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                                         </div>
                                     )}
 
-                                    {/* Content - with safe area padding when status bar is hidden */}
+                                    {/* Content */}
                                     {/* Remove padding for Tour Intro blocks to allow full-bleed */}
                                     {(() => {
                                         const hasTourIntroFirst = blocks.length > 0 && blocks[0].type === 'tour';
                                         return (
                                             <div
                                                 className={hasTourIntroFirst ? '' : `space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`}
-                                                style={hasTourIntroFirst ? { height: device.height, minHeight: device.height } : {
-                                                    paddingTop: showStatusBar ? 16 : (deviceType === 'phone' ? 56 : 20),
+                                                style={hasTourIntroFirst ? { height: effectiveHeight, minHeight: effectiveHeight } : {
+                                                    paddingTop: 16,
                                                     fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem',
                                                 }}
                                             >
@@ -621,7 +657,7 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                                                                 src={imageData.url}
                                                                 alt=""
                                                                 className="w-full h-auto object-cover"
-                                                                style={{ maxHeight: device.height * 0.4 }}
+                                                                style={{ maxHeight: effectiveHeight * 0.4 }}
                                                             />
                                                             {caption && (
                                                                 <figcaption
@@ -659,7 +695,7 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                                                                             ? `space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`
                                                                             : ''
                                                                 }
-                                                                style={index === 0 && hasTourIntroFirst ? { height: device.height, minHeight: device.height } : {}}
+                                                                style={index === 0 && hasTourIntroFirst ? { height: effectiveHeight, minHeight: effectiveHeight } : {}}
                                                             >    <StopContentBlock
                                                                     block={block}
                                                                     mode="view"

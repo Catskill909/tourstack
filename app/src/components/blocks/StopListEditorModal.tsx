@@ -3,7 +3,7 @@ import { GripVertical, X, Check, LayoutGrid, LayoutList, Rows3, Maximize2, Eye }
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { MagicTranslateButton } from '../MagicTranslateButton';
 import { BlockMetadataEditor } from './BlockMetadataEditor';
-import { StopPreviewModal } from '../StopPreviewModal';
+import { PreviewChoiceModal } from '../PreviewChoiceModal';
 import type { StopListBlockData, StopListLayout, Stop, Tour, StopImageData } from '../../types';
 import type { TranslationProvider } from '../../services/translationService';
 import fallbackImage from '../../assets/fallback.jpg';
@@ -483,12 +483,13 @@ export function StopListEditorModal({
                 </div>
             </div>
 
-            {/* Stop Preview Modal */}
-            {showStopPreview && stop && (
-                <StopPreviewModal
-                    stop={stop}
-                    tourData={tourData}
-                    allStops={allStops}
+            {/* Preview Choice Modal */}
+            {showStopPreview && stop && tourData && (
+                <PreviewChoiceModal
+                    isOpen={showStopPreview}
+                    tour={tourData}
+                    stops={allStops}
+                    initialStop={stop}
                     availableLanguages={availableLanguages}
                     onClose={() => setShowStopPreview(false)}
                 />

@@ -119,9 +119,11 @@ export function VisitorStop() {
                 setStop(data.stop);
                 setAllStopsRaw(data.allStops || []);
 
-                // Set initial language from URL param or tour's first language
+                // Set initial language from URL param or tour's primary language
                 if (urlLang && data.tour.languages?.includes(urlLang)) {
                     setLanguage(urlLang);
+                } else if (data.tour.primaryLanguage) {
+                    setLanguage(data.tour.primaryLanguage);
                 } else if (data.tour.languages?.length > 0) {
                     setLanguage(data.tour.languages[0]);
                 }
@@ -350,7 +352,7 @@ export function VisitorStop() {
     return (
         <div className="relative min-h-screen bg-[var(--color-bg-primary)]">
             {/* Header — transparent overlay when Tour Intro is first block so it doesn't push content down */}
-            <header className={`${hasTourIntroFirst ? 'absolute inset-x-0 top-0' : 'sticky top-0'} z-50 ${hasTourIntroFirst ? 'bg-transparent' : 'bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-b border-[var(--color-border-default)]'}`}>
+            <header className={`${hasTourIntroFirst ? 'absolute inset-x-0 top-0' : 'sticky top-0'} z-50 ${hasTourIntroFirst ? 'bg-transparent' : 'bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-b border-[var(--color-border-default)]'}`} style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
                 <div className={`${deviceType === 'kiosk' ? 'max-w-7xl px-10' : 'max-w-4xl px-4'} mx-auto py-3 flex items-center justify-between`}>
                     {/* Back / Tour Title */}
                     <div className="flex items-center gap-3 min-w-0 flex-1">

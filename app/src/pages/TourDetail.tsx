@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, Pencil, Settings, Check, X, Languages, Loader2, Play, Eye, ExternalLink, Monitor, MapPin, Bot } from 'lucide-react';
+import { ArrowLeft, Plus, GripVertical, Trash2, QrCode, Pencil, Settings, Check, X, Languages, Loader2, Play, Eye, MapPin, Bot } from 'lucide-react';
 import { translateText } from '../services/translationService';
 import { useToursStore } from '../stores/useToursStore';
 import { StopEditor } from '../components/StopEditor';
 import { PositioningEditorModal } from '../components/PositioningEditorModal';
 import { EditTourModal } from '../components/EditTourModal';
-import { KioskLauncherModal } from '../components/KioskLauncherModal';
+import { PreviewChoiceModal } from '../components/PreviewChoiceModal';
 import { TourConciergeTab } from '../components/TourConciergeTab';
 import type { Stop, Tour, PositioningConfig } from '../types';
 
@@ -122,7 +122,7 @@ export function TourDetail() {
     const titleInputRef = useRef<HTMLInputElement>(null);
 
     // Tour launch state
-    const [showKioskModal, setShowKioskModal] = useState(false);
+    const [showPreviewChoice, setShowPreviewChoice] = useState(false);
 
     useEffect(() => {
         fetchTours();
@@ -380,19 +380,6 @@ export function TourDetail() {
         }
     }
 
-    // Preview tour — opens visitor view directly for admin staff review
-    function handleLaunchTour() {
-        if (stops.length === 0) {
-            alert('This tour has no stops yet. Add stops before launching.');
-            return;
-        }
-
-        const slug = tour?.slug || tour?.id;
-        const sortedStops = [...stops].sort((a, b) => a.order - b.order);
-        const firstStop = sortedStops[0];
-        const stopSlug = firstStop.slug || firstStop.id;
-        window.open(`/visitor/tour/${slug}/stop/${stopSlug}?staff=true`, '_blank');
-    }
 
     if (isLoading) {
         return <div className="p-6 text-center text-[var(--color-text-muted)]">Loading...</div>;
@@ -428,15 +415,15 @@ export function TourDetail() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    {/* Run Tour Button — opens staff handoff screen */}
+                    {/* Preview / Run Tour — unified modal */}
                     <button
-                        onClick={handleLaunchTour}
+                        onClick={() => setShowPreviewChoice(true)}
                         disabled={stops.length === 0}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${tour.status === 'published'
                                 ? 'bg-green-600 hover:bg-green-700 text-white'
                                 : 'bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]'
                             } ${stops.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title={stops.length === 0 ? 'Add stops to enable launch' : 'Run tour'}
+                        title={stops.length === 0 ? 'Add stops to enable preview' : 'Preview tour'}
                     >
                         {tour.status === 'published' ? (
                             <Play className="w-4 h-4" />
@@ -444,16 +431,6 @@ export function TourDetail() {
                             <Eye className="w-4 h-4" />
                         )}
                         <span>{tour.status === 'published' ? 'Run' : 'Preview'}</span>
-                        <ExternalLink className="w-3 h-3 opacity-60" />
-                    </button>
-                    {/* Device & Kiosk Mode */}
-                    <button
-                        onClick={() => setShowKioskModal(true)}
-                        disabled={stops.length === 0}
-                        className={`p-2 bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-default)] rounded-lg transition-all ${stops.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title={stops.length === 0 ? 'Add stops to enable device modes' : 'Device & Kiosk Settings'}
-                    >
-                        <Monitor className="w-5 h-5" />
                     </button>
                     <button
                         onClick={() => setShowEditTour(true)}
@@ -712,13 +689,14 @@ export function TourDetail() {
                 />
             )}
 
-            {/* Kiosk Launcher Modal */}
+            {/* Preview Choice Modal */}
             {tour && (
-                <KioskLauncherModal
-                    isOpen={showKioskModal}
+                <PreviewChoiceModal
+                    isOpen={showPreviewChoice}
                     tour={tour}
                     stops={stops}
-                    onClose={() => setShowKioskModal(false)}
+                    availableLanguages={tour.languages}
+                    onClose={() => setShowPreviewChoice(false)}
                 />
             )}
 

@@ -7,7 +7,7 @@ import { transcribeAudio } from '../../services/transcriptionService';
 import { magicTranslate } from '../../services/translationService';
 import { ClosedCaptions } from '../ui/ClosedCaptions';
 import { CollectionPickerModal, type ImportedAudioData } from '../CollectionPickerModal';
-import { StopPreviewModal } from '../StopPreviewModal';
+import { PreviewChoiceModal } from '../PreviewChoiceModal';
 import { Eye } from 'lucide-react';
 
 interface TimelineGalleryImage {
@@ -732,12 +732,13 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                 mode="single"
             />
 
-            {/* Stop Preview Modal */}
-            {showStopPreview && stop && (
-                <StopPreviewModal
-                    stop={stop}
-                    tourData={tourData}
-                    allStops={allStops}
+            {/* Preview Choice Modal */}
+            {showStopPreview && stop && tourData && (
+                <PreviewChoiceModal
+                    isOpen={showStopPreview}
+                    tour={tourData}
+                    stops={allStops || []}
+                    initialStop={stop}
                     availableLanguages={availableLanguages}
                     onClose={() => setShowStopPreview(false)}
                 />

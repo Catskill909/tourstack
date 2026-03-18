@@ -186,6 +186,7 @@ router.put('/:id', async (req: Request<IdParams>, res: Response) => {
         if (data.primaryLanguage !== undefined) updateData.primaryLanguage = data.primaryLanguage;
         if (data.duration !== undefined) updateData.duration = data.duration;
         if (data.difficulty !== undefined) updateData.difficulty = data.difficulty;
+        if (data.defaultTranslationProvider !== undefined) updateData.defaultTranslationProvider = data.defaultTranslationProvider;
         if (data.status !== undefined) updateData.status = data.status;
         if (data.accessibility !== undefined) updateData.accessibility = JSON.stringify(data.accessibility);
         if (data.primaryPositioningMethod !== undefined) updateData.primaryPositioningMethod = data.primaryPositioningMethod;

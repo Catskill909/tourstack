@@ -16,7 +16,7 @@ import { ImageMapBlockEditor } from './blocks/ImageMapBlockEditor';
 import { ImageMapEditorModal } from './blocks/ImageMapEditorModal';
 import { TourBlockEditor } from './blocks/TourBlockEditor';
 import { StopListEditorModal } from './blocks/StopListEditorModal';
-import { StopPreviewModal } from './StopPreviewModal';
+import { PreviewChoiceModal } from './PreviewChoiceModal';
 import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, StopImageData } from '../types';
 
 interface StopEditorProps {
@@ -937,12 +937,13 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                 </div>
             )}
 
-            {/* Device Preview Modal */}
-            {showPreview && (
-                <StopPreviewModal
-                    stop={editedStop}
-                    tourData={tourData}
-                    allStops={allStops}
+            {/* Preview Choice Modal */}
+            {showPreview && tourData && (
+                <PreviewChoiceModal
+                    isOpen={showPreview}
+                    tour={tourData}
+                    stops={allStops}
+                    initialStop={editedStop}
                     availableLanguages={availableLanguages}
                     onClose={() => setShowPreview(false)}
                 />

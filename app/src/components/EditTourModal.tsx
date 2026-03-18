@@ -84,9 +84,11 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
 
         setIsSaving(true);
         try {
+            const existingTitle = typeof tour.title === 'object' ? tour.title : {};
+            const existingDescription = typeof tour.description === 'object' ? tour.description : {};
             await onSave(tour.id, {
-                title: { [primaryLanguage]: title.trim() },
-                description: { [primaryLanguage]: description.trim() },
+                title: { ...existingTitle, [primaryLanguage]: title.trim() },
+                description: { ...existingDescription, [primaryLanguage]: description.trim() },
                 languages: supportedLanguages,
                 primaryLanguage,
                 duration,
@@ -225,20 +227,6 @@ export function EditTourModal({ isOpen, tour, template, onClose, onSave }: EditT
                             </select>
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
-                                Estimated Duration
-                            </label>
-                            <select
-                                value={duration}
-                                onChange={(e) => setDuration(Number(e.target.value))}
-                                className="w-full px-4 py-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none transition-colors"
-                            >
-                                {durations.map((d) => (
-                                    <option key={d.value} value={d.value}>{d.label}</option>
-                                ))}
-                            </select>
-                        </div>
                     </div>
 
                     {/* Default Translation Provider */}

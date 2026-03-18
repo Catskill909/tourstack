@@ -74,6 +74,7 @@ When museum staff access visitor pages, they see:
 | Phase 28: Image Map Block | ✅ Complete |
 | Database Safety Infrastructure | ✅ Complete |
 | Phase 29: Language Reconciliation & UX Polish | ✅ Complete |
+| Phase 30: Unified Preview System & iPad Orientation | ✅ Complete |
 | Phase 26.2: Per-Tour AI Concierge | 🎯 NEXT |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
@@ -333,6 +334,26 @@ Collections → AI Analyze → Translate → Save → Auto-Sync → Media Librar
 - `server/middleware/auth.ts` - SQLite session store integration
 - `docs/language-collection-import-audit.md` - Full audit document
 
+### Unified Preview System & iPad Orientation (Phase 30) - COMPLETE ✅ (March 18, 2026)
+
+**New Feature:** Unified preview entry point and iPad portrait/landscape orientation toggle.
+
+| Feature | Description |
+|---------|-------------|
+| **PreviewChoiceModal** | Unified entry point — Simulator or Tour Device |
+| **iPad Orientation Toggle** | Portrait (820×1180) ↔ Landscape (1180×820) |
+| **Dimension Swapping** | Clean width/height swap, no CSS rotate transforms |
+| **Auto-Scale** | 0.55 portrait, 0.45 landscape default zoom |
+| **Smooth Animation** | CSS transitions animate orientation changes |
+| **Translation Preservation** | Edit Tour no longer overwrites other language data |
+| **iOS Safe Areas** | `viewport-fit=cover` + `env(safe-area-inset-top)` |
+
+**Files:**
+- `PreviewChoiceModal.tsx` - Unified preview entry point (Simulator vs Tour Device)
+- `StopPreviewModal.tsx` - iPad orientation toggle with dimension swapping
+- `TourCard.tsx` - Simplified single preview button
+- `TourDetail.tsx` - Unified preview replacing separate Run/Kiosk buttons
+
 ### Per-Tour AI Concierge (Phase 26.2) - NEXT 🎯
 
 **Vision:** Each tour gets its own AI chatbot that knows specifically about THAT tour.
@@ -385,7 +406,7 @@ Collections → AI Analyze → Translate → Save → Auto-Sync → Media Librar
 >
 > The device preview in admin IS the real visitor screen. Dimensions are actual device pixels:
 > - **iPhone:** 375 × 812px - exactly what visitors see on real iPhones
-> - **iPad:** 820 × 1180px - exactly what visitors see on real iPads
+> - **iPad:** 820 × 1180px portrait / 1180 × 820px landscape - exactly what visitors see on real iPads
 >
 > The `scale(0.55)` transform only shrinks it to fit the admin UI - content renders at true device resolution.
 > **NEVER use browser viewport units (vh/dvh) for content sizing** - use the device's pixel height.

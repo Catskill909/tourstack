@@ -9,12 +9,10 @@ import {
     Clock,
     Eye,
     Play,
-    ExternalLink,
-    Monitor,
     EyeOff
 } from 'lucide-react';
 import type { Tour, Template, TourStatus, Stop } from '../types';
-import { KioskLauncherModal } from './KioskLauncherModal';
+import { PreviewChoiceModal } from './PreviewChoiceModal';
 
 interface TourCardProps {
     tour: Tour;
@@ -40,36 +38,28 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
     const navigate = useNavigate();
     const [menuOpen, setMenuOpen] = useState(false);
 
-    const [showKioskModal, setShowKioskModal] = useState(false);
+    const [showPreviewChoice, setShowPreviewChoice] = useState(false);
     const [tourStops, setTourStops] = useState<Stop[]>([]);
     const menuRef = useRef<HTMLDivElement>(null);
 
-    // Launch tour — opens staff handoff screen where you pick language and start
-    function handleLaunchTour(e: React.MouseEvent) {
-        e.stopPropagation(); // Prevent card click navigation
-        const slug = tour.slug || tour.id;
-        window.open(`/kiosk/tour/${slug}`, '_blank');
-    }
-
-    // Open kiosk launcher modal
-    async function handleOpenKiosk(e: React.MouseEvent) {
+    // Open unified preview choice modal
+    async function handlePreview(e: React.MouseEvent) {
         e.stopPropagation(); // Prevent card click navigation
 
         try {
-            // Fetch stops for this tour
             const response = await fetch(`/api/stops/${tour.id}`);
             if (!response.ok) throw new Error('Failed to fetch stops');
             const stops = await response.json();
 
             if (stops.length === 0) {
-                alert('This tour has no stops yet. Add stops before launching kiosk mode.');
+                alert('This tour has no stops yet. Add stops before previewing.');
                 return;
             }
 
             setTourStops(stops);
-            setShowKioskModal(true);
+            setShowPreviewChoice(true);
         } catch (error) {
-            console.error('Error fetching stops for kiosk:', error);
+            console.error('Error fetching stops:', error);
             alert('Failed to load tour stops. Please try again.');
         }
     }
@@ -154,12 +144,12 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
                 </span>
             </div>
 
-            {/* Launch Buttons */}
+            {/* Preview Button */}
             {stopCount > 0 && (
-                <div className="mb-4 flex gap-2">
+                <div className="mb-4">
                     <button
-                        onClick={handleLaunchTour}
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
+                        onClick={handlePreview}
+                        className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
                             tour.status === 'published'
                                 ? 'bg-green-600 hover:bg-green-700 text-white'
                                 : 'bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]'
@@ -169,22 +159,13 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
                             <>
                                 <Play className="w-4 h-4" />
                                 <span>Run Tour</span>
-                                <ExternalLink className="w-3 h-3 opacity-60" />
                             </>
                         ) : (
                             <>
                                 <Eye className="w-4 h-4" />
                                 <span>Preview</span>
-                                <ExternalLink className="w-3 h-3 opacity-60" />
                             </>
                         )}
-                    </button>
-                    <button
-                        onClick={handleOpenKiosk}
-                        className="p-2.5 bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)] rounded-lg transition-all"
-                        title="Kiosk Mode Settings"
-                    >
-                        <Monitor className="w-4 h-4" />
                     </button>
                 </div>
             )}
@@ -256,12 +237,13 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
                 )}
             </div>
 
-            {/* Kiosk Launcher Modal */}
-            <KioskLauncherModal
-                isOpen={showKioskModal}
+            {/* Preview Choice Modal */}
+            <PreviewChoiceModal
+                isOpen={showPreviewChoice}
                 tour={tour}
                 stops={tourStops}
-                onClose={() => setShowKioskModal(false)}
+                availableLanguages={tour.languages}
+                onClose={() => setShowPreviewChoice(false)}
             />
         </div>
     );
