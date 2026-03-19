@@ -48,19 +48,6 @@ lsof -i :3000 -i :5173 | grep LISTEN
 # Should show TWO node processes
 ```
 
-## 🔊 ElevenLabs Voice Limitation (CRITICAL!)
-
-> [!CAUTION]
-> **Before modifying ANY ElevenLabs code:**
-> - We use **PREMADE VOICES ONLY** (21 voices, work for ALL 32 languages)
-> - **DO NOT** try to add native language voices via `/shared-voices` API
-> - Using shared voices for generation AUTO-ADDS them to account (10 slot limit)
-> - After 10 slots: "voice_limit_reached" - ALL GENERATION FAILS
->
-> **We wasted 8 hours learning this on January 24, 2026. Don't repeat our mistake.**
->
-> 📖 Full details: [docs/ELEVENLABS-VOICES-ISSUE.md](docs/ELEVENLABS-VOICES-ISSUE.md)
-
 ## 🔥 Server Not Working?
 
 **Symptom**: API errors, `Cannot POST /api/*`, changes not showing
@@ -139,6 +126,8 @@ TourStack/
 | [docs/timeline-gallery.md](./docs/timeline-gallery.md) | Timeline Gallery feature |
 | [docs/image-map-block-dev.md](./docs/image-map-block-dev.md) | Image Map block feature |
 | [docs/language-collection-import-audit.md](./docs/language-collection-import-audit.md) | Language import reconciliation audit |
+| [docs/ai-chatbot-documents-dev.md](./docs/ai-chatbot-documents-dev.md) | AI Chatbot & Documents development |
+| [docs/ELEVENLABS-VOICES-ISSUE.md](./docs/ELEVENLABS-VOICES-ISSUE.md) | ElevenLabs voice API limitations |
 | [tourstack.md](./tourstack.md) | Full scope reference |
 
 ## 🔧 Commands

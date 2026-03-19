@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: March 18, 2026
-**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅
+**Last Updated**: March 19, 2026
+**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅ | Chatbot UX Unification COMPLETE ✅
 
 ---
 
@@ -933,14 +933,38 @@ TourStack uses a **modular content block system** where tours and stops are comp
 > - `app/src/pages/VisitorStop.tsx` — Primary language default + safe area padding
 > - `app/index.html` — `viewport-fit=cover` for iOS notch support
 
-### 🎯 Phase 26.2: Per-Tour AI Concierge (NEXT)
-- [ ] Add concierge fields to Tour model (conciergeEnabled, conciergePersona, conciergeWelcome, conciergeCollections)
-- [ ] Create tour concierge settings UI (new tab in Tour Editor)
-- [ ] Update chat API for tour-specific context
-- [ ] Auto-build knowledge from tour content (title, description, stops, text blocks)
-- [ ] Link document collections to specific tours
+### ✅ Phase 26.2: Per-Tour AI Concierge (Complete - February 2, 2026)
+- [x] Add concierge fields to Tour model (conciergeEnabled, conciergePersona, conciergeWelcome, conciergeCollections, conciergeQuickActions)
+- [x] Create tour concierge settings UI (AI Chatbot tab in Tour Editor)
+- [x] Update chat API for tour-specific context
+- [x] Auto-build knowledge from tour content (title, description, stops, text blocks)
+- [x] Link document collections to specific tours
 
 > **Vision:** Each tour gets its own AI chatbot that knows specifically about THAT tour. Visitors on "Ancient Egypt" get an Egypt expert.
+>
+> **Key Files Created/Modified:**
+> - `app/src/components/TourConciergeTab.tsx` — Complete per-tour AI chatbot configuration tab
+> - `app/prisma/schema.prisma` — Added `conciergeQuickActions` field to Tour model
+> - `app/src/types/index.ts` — Added `TourQuickAction` interface
+> - `app/server/routes/tours.ts` — Parse/save conciergeQuickActions JSON
+
+### ✅ Phase 26.3: Chatbot UX Unification (Complete - March 19, 2026)
+- [x] Add chatbot to Simulator preview (phone, tablet, kiosk modes) with `contained` prop
+- [x] Rework Quick Actions translation — LanguageSwitcher + MagicTranslateButton per action row
+- [x] Add per-language editing for existing quick action prompts
+- [x] Add LanguageSwitcher + MagicTranslateButton to Welcome Message field
+- [x] Remove hardcoded "How can I help you today?" from ChatDrawer
+- [x] Restyle ChatDrawer from orange/amber to black/white/gray monochrome aesthetic
+- [x] Reset chat conversation on drawer close (reopening shows quick actions start screen)
+
+> **What changed:** The chatbot now appears identically in the Simulator preview and on visitor devices. Quick Actions and Welcome Message use the same LanguageSwitcher + MagicTranslateButton translation pattern as the rest of the app (stop editors, text blocks, etc.). ChatDrawer visual style unified to monochrome.
+>
+> **Key technical detail:** Added `contained?: boolean` prop to ChatDrawer, ChatFloatingButton, and KioskChatButton. When `contained`, components use `absolute` instead of `fixed` positioning so they render inside the simulator's scaled device frame.
+>
+> **Key Files Modified:**
+> - `app/src/components/chat/ChatDrawer.tsx` — `contained` prop, monochrome restyle, chat reset on close
+> - `app/src/components/StopPreviewModal.tsx` — Integrated chatbot in phone/tablet/kiosk simulator frames
+> - `app/src/components/TourConciergeTab.tsx` — LanguageSwitcher + MagicTranslateButton for Quick Actions and Welcome Message
 
 ### 🎯 Phase 17: Stop Navigation & Links (Planned)
 - [ ] **Next/Previous Buttons** - Navigate between stops

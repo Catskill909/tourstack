@@ -1,8 +1,8 @@
 # AI Chatbot & Documents Collection Development Plan
 
-> **Phase 25 COMPLETE | Phase 26.1 COMPLETE | Phase 26.2 COMPLETE ✅**
-> Museum-wide concierge + Per-tour concierge with full feature parity
-> **Last Updated:** February 2, 2026
+> **Phase 25 COMPLETE | Phase 26.1 COMPLETE | Phase 26.2 COMPLETE | Phase 26.3 COMPLETE ✅**
+> Museum-wide concierge + Per-tour concierge + Chatbot UX Unification
+> **Last Updated:** March 19, 2026
 
 ---
 
@@ -371,23 +371,19 @@ model TourQuickAction {
 | **Test Concierge** | ✅ | Live preview with response |
 | **Import Collection Modal** | ✅ | Select & import docs |
 
-### What TourConciergeTab Currently Has (INCOMPLETE)
+### What TourConciergeTab Has (COMPLETE — Updated March 19, 2026)
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Enable/Disable toggle | ✅ | Working |
-| Persona selection | ✅ | But missing "Custom" option |
-| Welcome Message | ⚠️ | Single language only |
-| Link Document Collections | ⚠️ | Checkboxes but not same UX |
-| Test Chat | ⚠️ | Basic, no quick actions |
-| **Quick Actions** | ❌ MISSING | Need per-tour quick actions |
-| **Translate All** | ❌ MISSING | No bulk translate |
-| **Knowledge Sources list** | ❌ MISSING | No visual of what's imported |
-| **Import Modal** | ❌ MISSING | Different UX pattern |
-
-### The Problem
-
-I tried to build a **simplified** TourConciergeTab but it's **too different** from the working `/concierge` page. We should **reuse** the existing patterns, not reinvent them.
+| Persona selection | ✅ | 6 options including "Inherit Museum Default" |
+| Welcome Message | ✅ | Multilingual with LanguageSwitcher + MagicTranslateButton |
+| Link Document Collections | ✅ | Import modal + list with delete |
+| Test Chat | ✅ | Full preview panel |
+| **Quick Actions** | ✅ | Add/delete/drag-reorder with per-language editing |
+| **Per-Action Translate** | ✅ | LanguageSwitcher + MagicTranslateButton per action row |
+| **Knowledge Sources list** | ✅ | Visual list of linked collections |
+| **Import Modal** | ✅ | Select & import document collections |
 
 ---
 
@@ -478,7 +474,8 @@ conciergeQuickActions String? // JSON array of TourQuickAction
 | **Phase 25** | Documents Collection (Staff Tools) | COMPLETE ✅ |
 | **Phase 26.1** | Museum-Wide AI Concierge | COMPLETE ✅ |
 | **Phase 26.2** | Per-Tour AI Concierge | COMPLETE ✅ |
-| **Phase 26.3** | AI Analysis Integration | PLANNED |
+| **Phase 26.3** | Chatbot UX Unification | COMPLETE ✅ |
+| **Phase 26.4** | AI Analysis Integration | PLANNED |
 | **Phase 27** | Location-Aware AI Responses | FUTURE VISION |
 
 ---
@@ -632,7 +629,47 @@ Tour Editor Tabs:
 
 ---
 
-## PHASE 26.3: AI Analysis Integration (PLANNED)
+## ✅ PHASE 26.3: Chatbot UX Unification (COMPLETE - March 19, 2026)
+
+### What Was Done
+
+Unified chatbot behavior between Simulator preview and visitor device views. Added consistent translation UX across all chatbot configuration fields.
+
+### Changes
+
+| Change | Description |
+|--------|-------------|
+| **Simulator Chatbot** | ChatDrawer + floating button now render inside phone/tablet/kiosk simulator frames via `contained` prop (absolute vs fixed positioning) |
+| **Quick Actions Translation** | Replaced bulk "Translate All" button with per-action LanguageSwitcher + MagicTranslateButton — same pattern as TextBlockEditor, StopEditor |
+| **Quick Actions Editing** | Each action is now an editable mini-card: category badge, inline text editing, per-language switching, translate button |
+| **Welcome Message Translation** | Added LanguageSwitcher + MagicTranslateButton above the welcome textarea — matches Quick Actions pattern |
+| **ChatDrawer Restyle** | Monochrome black/white/gray aesthetic replacing orange/amber gradient theme |
+| **Chat Reset on Close** | Closing the drawer resets messages so reopening shows the quick actions start screen |
+| **Removed hardcoded text** | Removed "How can I help you today?" — only the editable/translatable welcome message is shown |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `app/src/components/chat/ChatDrawer.tsx` | Added `contained` prop to all 3 exports (ChatDrawer, ChatFloatingButton, KioskChatButton); monochrome restyle; chat reset on close; removed hardcoded welcome text |
+| `app/src/components/StopPreviewModal.tsx` | Integrated ChatDrawer + ChatFloatingButton (phone/tablet) and KioskChatButton (kiosk) with `contained` prop; passes tour concierge data |
+| `app/src/components/TourConciergeTab.tsx` | Added LanguageSwitcher + MagicTranslateButton imports; rebuilt Quick Actions as editable cards with per-language translation; converted Welcome Message to multilingual `Record<string, string>` with LanguageSwitcher |
+
+### Technical Details
+
+**`contained` prop pattern:**
+- When `contained={true}`, chat components use `absolute` instead of `fixed` CSS positioning
+- This makes them render relative to the nearest positioned ancestor (the simulator device frame) instead of the browser viewport
+- The simulator's Screen Area div has `relative` class to establish the positioning context
+
+**Translation pattern consistency:**
+- LanguageSwitcher pills: green checkmark (✓) for languages with content, empty circle (○) for missing
+- MagicTranslateButton: sparkle → spinner → green check → red alert state transitions
+- Same `magicTranslate()` → `batchTranslate()` → `POST /api/translate/batch` service chain used app-wide
+
+---
+
+## PHASE 26.4: AI Analysis Integration (PLANNED)
 
 ### Current Problem
 
@@ -777,13 +814,19 @@ When giving directions:
 
 ## Implementation Roadmap
 
-### NOW (Phase 26.2)
-- [ ] Add concierge fields to Tour model
-- [ ] Create tour concierge settings UI
-- [ ] Update chat API for tour-specific context
-- [ ] Auto-build knowledge from tour content
+### DONE (Phase 26.2) ✅
+- [x] Add concierge fields to Tour model
+- [x] Create tour concierge settings UI
+- [x] Update chat API for tour-specific context
+- [x] Auto-build knowledge from tour content
 
-### NEXT (Phase 26.3)
+### DONE (Phase 26.3) ✅
+- [x] Chatbot in Simulator preview (phone/tablet/kiosk)
+- [x] Quick Actions per-language translation with LanguageSwitcher + MagicTranslateButton
+- [x] Welcome Message multilingual editing with LanguageSwitcher + MagicTranslateButton
+- [x] ChatDrawer monochrome restyle + chat reset on close
+
+### NEXT (Phase 26.4)
 - [ ] Enhance document import with AI analysis
 - [ ] Include FAQ, facts, summary in knowledge
 - [ ] Re-import existing collections with enhanced data
