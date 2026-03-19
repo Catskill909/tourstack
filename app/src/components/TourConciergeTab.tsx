@@ -17,8 +17,8 @@ import {
     Loader2,
     Check,
     Info,
-    Languages,
     Import,
+    Pencil,
     ExternalLink,
     Palette,
     Headphones,
@@ -44,6 +44,8 @@ import { HexColorPicker } from 'react-colorful';
 import type { Tour, TourQuickAction } from '../types';
 import { collectionService } from '../lib/collectionService';
 import * as conciergeService from '../lib/conciergeService';
+import { LanguageSwitcher } from './LanguageSwitcher';
+import { MagicTranslateButton } from './MagicTranslateButton';
 
 // Curated icons for chat button picker
 const CHAT_ICON_OPTIONS: { name: string; icon: LucideIcon }[] = [
@@ -111,19 +113,25 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
     const [testMessage, setTestMessage] = useState('');
     const [testResponse, setTestResponse] = useState('');
     const [testing, setTesting] = useState(false);
-    const [translating, setTranslating] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
+
+    // Quick action editing state
+    const [editingActionId, setEditingActionId] = useState<string | null>(null);
+    const [editingLang, setEditingLang] = useState(tour.primaryLanguage || 'en');
 
     // Quick action form state
     const [newActionQuestion, setNewActionQuestion] = useState('');
     const [newActionCategory, setNewActionCategory] = useState('general');
     const [draggedActionId, setDraggedActionId] = useState<string | null>(null);
 
+    // Welcome message language editing
+    const [welcomeLang, setWelcomeLang] = useState(tour.primaryLanguage || 'en');
+
     // Local state for form fields
     const [enabled, setEnabled] = useState(tour.conciergeEnabled ?? true);
     const [persona, setPersona] = useState(tour.conciergePersona || 'inherit');
-    const [welcomeMessage, setWelcomeMessage] = useState(
-        tour.conciergeWelcome?.[tour.primaryLanguage] || tour.conciergeWelcome?.en || ''
+    const [welcomeMessages, setWelcomeMessages] = useState<Record<string, string>>(
+        tour.conciergeWelcome || {}
     );
     const [linkedCollections, setLinkedCollections] = useState<string[]>(
         tour.conciergeCollections || []
@@ -161,7 +169,7 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
             await onUpdate(tour.id, {
                 conciergeEnabled: enabled,
                 conciergePersona: persona === 'inherit' ? null : persona,
-                conciergeWelcome: welcomeMessage ? { [tour.primaryLanguage]: welcomeMessage } : undefined,
+                conciergeWelcome: Object.values(welcomeMessages).some(v => v.trim()) ? welcomeMessages : undefined,
                 conciergeCollections: linkedCollections,
                 conciergeQuickActions: quickActions,
                 conciergeChatIcon: chatIcon,
@@ -189,8 +197,8 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
     }
 
     function handleDeleteQuickAction(id: string) {
-        if (!confirm('Delete this quick action?')) return;
         setQuickActions(quickActions.filter(a => a.id !== id));
+        if (editingActionId === id) setEditingActionId(null);
     }
 
     function handleDragStart(e: React.DragEvent, actionId: string) {
@@ -234,56 +242,31 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
         setDraggedActionId(null);
     }
 
-    async function handleTranslateAll() {
-        if (quickActions.length === 0) return;
-        setTranslating(true);
-        try {
-            // Get tour's enabled languages
-            const languages = tour.languages || ['en'];
-            const targetLangs = languages.filter(l => l !== 'en');
+    // Update a single quick action's question text for a specific language
+    function handleUpdateActionText(actionId: string, lang: string, text: string) {
+        setQuickActions(prev => prev.map(a =>
+            a.id === actionId
+                ? { ...a, question: { ...a.question, [lang]: text } }
+                : a
+        ));
+    }
 
-            if (targetLangs.length === 0) {
-                alert('No additional languages to translate to. Add languages to this tour first.');
-                setTranslating(false);
-                return;
-            }
+    // Handle translation result for a single quick action
+    function handleActionTranslated(actionId: string, translations: { [lang: string]: string }) {
+        setQuickActions(prev => prev.map(a =>
+            a.id === actionId
+                ? { ...a, question: { ...a.question, ...translations } }
+                : a
+        ));
+    }
 
-            // Translate each quick action
-            const translatedActions = await Promise.all(
-                quickActions.map(async (action) => {
-                    const translations = { ...action.question };
-                    for (const lang of targetLangs) {
-                        if (!translations[lang] && translations.en) {
-                            try {
-                                const res = await fetch('/api/translate', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        text: translations.en,
-                                        targetLang: lang,
-                                    }),
-                                });
-                                if (res.ok) {
-                                    const data = await res.json();
-                                    translations[lang] = data.translatedText;
-                                }
-                            } catch (e) {
-                                console.error(`Failed to translate to ${lang}:`, e);
-                            }
-                        }
-                    }
-                    return { ...action, question: translations };
-                })
-            );
-
-            setQuickActions(translatedActions);
-            alert(`Translated ${quickActions.length} quick actions to: ${targetLangs.join(', ')}`);
-        } catch (error) {
-            console.error('Failed to translate:', error);
-            alert('Failed to translate quick actions');
-        } finally {
-            setTranslating(false);
-        }
+    // Update category of an existing quick action
+    function handleUpdateActionCategory(actionId: string, category: string) {
+        setQuickActions(prev => prev.map(a =>
+            a.id === actionId
+                ? { ...a, category: category as TourQuickAction['category'] }
+                : a
+        ));
     }
 
     function handleToggleCollection(collectionId: string) {
@@ -325,7 +308,7 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
     const hasChanges =
         enabled !== (tour.conciergeEnabled ?? true) ||
         (persona === 'inherit' ? null : persona) !== tour.conciergePersona ||
-        welcomeMessage !== (tour.conciergeWelcome?.[tour.primaryLanguage] || tour.conciergeWelcome?.en || '') ||
+        JSON.stringify(welcomeMessages) !== JSON.stringify(tour.conciergeWelcome || {}) ||
         JSON.stringify(linkedCollections) !== JSON.stringify(tour.conciergeCollections || []) ||
         JSON.stringify(quickActions) !== JSON.stringify(tour.conciergeQuickActions || []) ||
         chatIcon !== (tour.conciergeChatIcon || 'MessageCircle') ||
@@ -418,9 +401,32 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
                             <MessageCircle className="w-4 h-4 text-[var(--color-text-muted)]" />
                             <h3 className="font-medium text-[var(--color-text-primary)]">Welcome Message</h3>
                         </div>
+
+                        {/* Language controls */}
+                        {(tour.languages || ['en']).length > 1 && (
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <LanguageSwitcher
+                                    availableLanguages={tour.languages || ['en']}
+                                    activeLanguage={welcomeLang}
+                                    onChange={setWelcomeLang}
+                                    contentMap={welcomeMessages}
+                                    size="sm"
+                                    showStatus={true}
+                                />
+                                <MagicTranslateButton
+                                    sourceText={welcomeMessages[tour.primaryLanguage || 'en'] || welcomeMessages.en || ''}
+                                    sourceLang={tour.primaryLanguage || 'en'}
+                                    targetLangs={(tour.languages || ['en']).filter(l => l !== (tour.primaryLanguage || 'en'))}
+                                    onTranslate={(translations) => setWelcomeMessages(prev => ({ ...prev, ...translations }))}
+                                    size="sm"
+                                    disabled={!(welcomeMessages[tour.primaryLanguage || 'en'] || welcomeMessages.en || '').trim()}
+                                />
+                            </div>
+                        )}
+
                         <textarea
-                            value={welcomeMessage}
-                            onChange={(e) => setWelcomeMessage(e.target.value)}
+                            value={welcomeMessages[welcomeLang] || ''}
+                            onChange={(e) => setWelcomeMessages(prev => ({ ...prev, [welcomeLang]: e.target.value }))}
                             placeholder={`Welcome to the ${typeof tour.title === 'object' ? tour.title.en || Object.values(tour.title)[0] : tour.title} tour! Ask me anything about what you'll see.`}
                             rows={3}
                             className="w-full bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-lg px-3 py-2 text-[var(--color-text-primary)] text-sm"
@@ -498,15 +504,6 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
                                 <MessageCircle className="w-5 h-5 text-[var(--color-text-muted)]" />
                                 <h3 className="font-medium text-[var(--color-text-primary)]">Quick Actions</h3>
                             </div>
-                            <button
-                                onClick={handleTranslateAll}
-                                disabled={translating || quickActions.length === 0}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] rounded-lg hover:bg-[var(--color-bg-hover)] text-sm disabled:opacity-50"
-                                title="Translate all to tour's languages"
-                            >
-                                {translating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Languages className="w-4 h-4" />}
-                                {translating ? 'Translating...' : 'Translate All'}
-                            </button>
                         </div>
 
                         {/* Add new action */}
@@ -545,33 +542,121 @@ export function TourConciergeTab({ tour, onUpdate }: TourConciergeTabProps) {
                                 <p className="text-sm">Add common questions visitors might ask about this tour</p>
                             </div>
                         ) : (
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 {quickActions.map((action) => {
                                     const CategoryIcon = CATEGORY_ICONS[action.category] || MessageCircle;
+                                    const isEditing = editingActionId === action.id;
+                                    const tourLangs = tour.languages || ['en'];
+                                    const primaryLang = tour.primaryLanguage || 'en';
+                                    const activeLang = isEditing ? editingLang : primaryLang;
+                                    const sourceText = action.question[primaryLang] || action.question.en || '';
+                                    const targetLangs = tourLangs.filter(l => l !== primaryLang);
+                                    const hasMultipleLangs = tourLangs.length > 1;
+
                                     return (
                                         <div
                                             key={action.id}
-                                            draggable
+                                            draggable={!isEditing}
                                             onDragStart={(e) => handleDragStart(e, action.id)}
                                             onDragOver={handleDragOver}
                                             onDrop={(e) => handleDrop(e, action.id)}
                                             onDragEnd={handleDragEnd}
-                                            className={`flex items-center gap-3 p-3 bg-[var(--color-bg-surface)] rounded-lg border transition-all ${draggedActionId === action.id
+                                            className={`bg-[var(--color-bg-surface)] rounded-lg border transition-all ${
+                                                draggedActionId === action.id
                                                     ? 'border-purple-500/50 opacity-50'
-                                                    : 'border-[var(--color-border-default)] hover:border-[var(--color-border-subtle)]'
-                                                }`}
+                                                    : isEditing
+                                                        ? 'border-[var(--color-accent-primary)]/40'
+                                                        : 'border-[var(--color-border-default)] hover:border-[var(--color-border-subtle)]'
+                                            }`}
                                         >
-                                            <GripVertical className="w-4 h-4 text-[var(--color-text-muted)] cursor-grab active:cursor-grabbing" />
-                                            <div className={`p-1.5 rounded ${CATEGORY_COLORS[action.category] || CATEGORY_COLORS.general}`}>
-                                                <CategoryIcon className="w-4 h-4" />
+                                            {/* Top row: drag, category, text, delete */}
+                                            <div className="flex items-center gap-2 p-3 pb-2">
+                                                <GripVertical className="w-4 h-4 text-[var(--color-text-muted)] cursor-grab active:cursor-grabbing shrink-0" />
+
+                                                {/* Category badge - clickable when editing */}
+                                                {isEditing ? (
+                                                    <select
+                                                        value={action.category}
+                                                        onChange={(e) => handleUpdateActionCategory(action.id, e.target.value)}
+                                                        className={`appearance-none px-2 py-1 rounded text-xs font-medium cursor-pointer border-0 ${CATEGORY_COLORS[action.category] || CATEGORY_COLORS.general}`}
+                                                    >
+                                                        {conciergeService.QUICK_ACTION_CATEGORIES.map(c => (
+                                                            <option key={c.id} value={c.id}>{c.label}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <div className={`p-1.5 rounded shrink-0 ${CATEGORY_COLORS[action.category] || CATEGORY_COLORS.general}`}>
+                                                        <CategoryIcon className="w-4 h-4" />
+                                                    </div>
+                                                )}
+
+                                                {/* Editable text / static text */}
+                                                {isEditing ? (
+                                                    <input
+                                                        type="text"
+                                                        value={action.question[activeLang] || ''}
+                                                        onChange={(e) => handleUpdateActionText(action.id, activeLang, e.target.value)}
+                                                        placeholder={`Question text (${activeLang.toUpperCase()})`}
+                                                        className="flex-1 min-w-0 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg px-3 py-1.5 text-[var(--color-text-primary)] text-sm focus:ring-2 focus:ring-[var(--color-accent-primary)]/30 focus:border-[var(--color-accent-primary)]/50"
+                                                        autoFocus
+                                                    />
+                                                ) : (
+                                                    <span
+                                                        className="flex-1 text-[var(--color-text-primary)] min-w-0 truncate cursor-pointer hover:text-[var(--color-accent-primary)] transition-colors"
+                                                        onClick={() => { setEditingActionId(action.id); setEditingLang(primaryLang); }}
+                                                        title="Click to edit"
+                                                    >
+                                                        {action.question[primaryLang] || action.question.en || '(empty)'}
+                                                    </span>
+                                                )}
+
+                                                {/* Edit toggle */}
+                                                <button
+                                                    onClick={() => {
+                                                        if (isEditing) {
+                                                            setEditingActionId(null);
+                                                        } else {
+                                                            setEditingActionId(action.id);
+                                                            setEditingLang(primaryLang);
+                                                        }
+                                                    }}
+                                                    className={`p-1.5 rounded transition-colors shrink-0 ${isEditing ? 'text-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'}`}
+                                                    title={isEditing ? 'Done editing' : 'Edit'}
+                                                >
+                                                    {isEditing ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteQuickAction(action.id)}
+                                                    className="p-1.5 text-[var(--color-text-muted)] hover:text-red-400 shrink-0"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </div>
-                                            <span className="flex-1 text-[var(--color-text-primary)]">{action.question.en}</span>
-                                            <button
-                                                onClick={() => handleDeleteQuickAction(action.id)}
-                                                className="p-1.5 text-[var(--color-text-muted)] hover:text-red-400"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+
+                                            {/* Bottom row: language pills + translate — always visible when multiple languages */}
+                                            {hasMultipleLangs && (
+                                                <div className="flex flex-wrap items-center gap-3 px-3 pb-3 pt-1 border-t border-[var(--color-border-default)]/50 mx-3 mb-0">
+                                                    <LanguageSwitcher
+                                                        availableLanguages={tourLangs}
+                                                        activeLanguage={activeLang}
+                                                        onChange={(lang) => { setEditingActionId(action.id); setEditingLang(lang); }}
+                                                        contentMap={action.question}
+                                                        size="sm"
+                                                        showStatus={true}
+                                                    />
+                                                    {targetLangs.length > 0 && (
+                                                        <MagicTranslateButton
+                                                            sourceText={sourceText}
+                                                            sourceLang={primaryLang}
+                                                            targetLangs={targetLangs}
+                                                            onTranslate={(translations) => handleActionTranslated(action.id, translations)}
+                                                            size="sm"
+                                                            disabled={!sourceText.trim()}
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}

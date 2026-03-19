@@ -38,6 +38,7 @@ interface ChatDrawerProps {
     iconName?: string;      // Custom Lucide icon name
     iconColor?: string;     // Custom icon color hex
     iconBgColor?: string;   // Custom background color hex
+    contained?: boolean;    // Use absolute positioning (for simulator previews)
 }
 
 // Category icons mapping
@@ -59,7 +60,7 @@ const DEFAULT_QUICK_ACTIONS = [
     { icon: '🅿️', label: 'Parking', question: 'Where can I park?' },
 ];
 
-export function ChatDrawer({ isOpen, onClose, language = 'en', tourId, tourQuickActions, tourWelcomeMessage, iconName, iconColor, iconBgColor }: ChatDrawerProps) {
+export function ChatDrawer({ isOpen, onClose, language = 'en', tourId, tourQuickActions, tourWelcomeMessage, iconName, iconColor, iconBgColor, contained }: ChatDrawerProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
@@ -88,10 +89,14 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId, tourQuick
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    // Focus input when drawer opens
+    // Focus input when drawer opens; reset chat when it closes
     useEffect(() => {
         if (isOpen) {
             setTimeout(() => inputRef.current?.focus(), 300);
+        } else {
+            // Reset so reopening shows the start screen with quick actions
+            setMessages([]);
+            setInput('');
         }
     }, [isOpen]);
 
@@ -179,7 +184,7 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId, tourQuick
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/50 z-40"
+                        className={`${contained ? 'absolute' : 'fixed'} inset-0 bg-black/50 z-40`}
                     />
 
                     {/* Drawer */}
@@ -188,14 +193,14 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId, tourQuick
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="fixed right-0 top-0 h-full w-full sm:w-96 bg-zinc-900 border-l border-zinc-700 shadow-2xl z-50 flex flex-col"
+                        className={`${contained ? 'absolute' : 'fixed'} right-0 top-0 h-full ${contained ? 'w-full' : 'w-full sm:w-96'} bg-zinc-900 border-l border-zinc-700 shadow-2xl z-50 flex flex-col`}
                     >
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-zinc-700 bg-zinc-800/50">
                             <div className="flex items-center gap-2">
                                 {(() => {
                                     const HeaderIcon = getIconByName(iconName);
-                                    return <HeaderIcon className="w-5 h-5" style={{ color: iconBgColor || '#fbbf24' }} />;
+                                    return <HeaderIcon className="w-5 h-5" style={{ color: iconBgColor || '#ffffff' }} />;
                                 })()}
                                 <h2 className="text-lg font-medium text-white">Museum Concierge</h2>
                             </div>
@@ -224,16 +229,15 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId, tourQuick
                                 <>
                                     <div className="text-center py-4">
                                         <div
-                                            className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${iconBgColor ? '' : 'bg-gradient-to-br from-amber-500/20 to-orange-500/20'}`}
+                                            className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${iconBgColor ? '' : 'bg-white/10'}`}
                                             style={iconBgColor ? { backgroundColor: iconBgColor } : undefined}
                                         >
                                             {(() => {
                                                 const WelcomeIcon = getIconByName(iconName);
-                                                return <WelcomeIcon className="w-8 h-8" style={{ color: iconColor || '#fbbf24' }} />;
+                                                return <WelcomeIcon className="w-8 h-8" style={{ color: iconColor || '#ffffff' }} />;
                                             })()}
                                         </div>
-                                        <p className="text-zinc-300 mb-1">{welcomeMessage}</p>
-                                        <p className="text-zinc-500 text-sm">How can I help you today?</p>
+                                        <p className="text-zinc-300">{welcomeMessage}</p>
                                     </div>
 
                                     <div className="space-y-2">
@@ -252,7 +256,7 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId, tourQuick
                                                             onClick={() => handleQuickAction(action.question)}
                                                             className="flex items-center gap-3 px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-left text-sm transition-colors"
                                                         >
-                                                            <CategoryIcon className="w-4 h-4" style={{ color: iconBgColor || '#fbbf24' }} />
+                                                            <CategoryIcon className="w-4 h-4" style={{ color: iconBgColor || '#ffffff' }} />
                                                             <span className="text-zinc-300">{action.question}</span>
                                                         </button>
                                                     );
@@ -282,7 +286,7 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId, tourQuick
                                     >
                                         <div
                                             className={`max-w-[85%] rounded-2xl px-4 py-2 ${msg.role === 'user'
-                                                ? 'bg-amber-600 text-white rounded-br-md'
+                                                ? 'bg-white text-zinc-900 rounded-br-md'
                                                 : 'bg-zinc-800 text-zinc-100 rounded-bl-md'
                                                 }`}
                                         >
@@ -295,7 +299,7 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId, tourQuick
                             {loading && (
                                 <div className="flex justify-start">
                                     <div className="bg-zinc-800 rounded-2xl rounded-bl-md px-4 py-3">
-                                        <Loader2 className="w-5 h-5 text-amber-400 animate-spin" />
+                                        <Loader2 className="w-5 h-5 text-zinc-400 animate-spin" />
                                     </div>
                                 </div>
                             )}
@@ -313,12 +317,12 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId, tourQuick
                                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage(input)}
                                     placeholder="Ask a question..."
                                     disabled={loading}
-                                    className="flex-1 bg-zinc-700 text-white placeholder-zinc-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+                                    className="flex-1 bg-zinc-700 text-white placeholder-zinc-400 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-white/30"
                                 />
                                 <button
                                     onClick={() => sendMessage(input)}
                                     disabled={loading || !input.trim()}
-                                    className="p-3 bg-amber-600 hover:bg-amber-500 disabled:bg-zinc-700 disabled:text-zinc-500 rounded-xl transition-colors"
+                                    className="p-3 bg-white text-zinc-900 hover:bg-zinc-200 disabled:bg-zinc-700 disabled:text-zinc-500 rounded-xl transition-colors"
                                 >
                                     <Send className="w-5 h-5" />
                                 </button>
@@ -334,7 +338,7 @@ export function ChatDrawer({ isOpen, onClose, language = 'en', tourId, tourQuick
 /**
  * Floating chat button for visitor pages
  */
-export function ChatFloatingButton({ onClick, iconName, iconColor, iconBgColor }: { onClick: () => void } & ChatButtonIconProps) {
+export function ChatFloatingButton({ onClick, iconName, iconColor, iconBgColor, contained }: { onClick: () => void; contained?: boolean } & ChatButtonIconProps) {
     const Icon = getIconByName(iconName);
     const hasCustomBg = !!iconBgColor;
     return (
@@ -343,7 +347,7 @@ export function ChatFloatingButton({ onClick, iconName, iconColor, iconBgColor }
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.5 }}
             onClick={onClick}
-            className={`fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center z-30 transition-all hover:scale-105 ${hasCustomBg ? '' : 'bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 shadow-amber-900/30'}`}
+            className={`${contained ? 'absolute' : 'fixed'} bottom-6 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center z-30 transition-all hover:scale-105 ${hasCustomBg ? '' : 'bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 shadow-amber-900/30'}`}
             style={hasCustomBg ? { backgroundColor: iconBgColor } : undefined}
         >
             <Icon className="w-6 h-6" style={{ color: iconColor || '#ffffff' }} />
@@ -354,7 +358,7 @@ export function ChatFloatingButton({ onClick, iconName, iconColor, iconBgColor }
 /**
  * Kiosk-style floating chat button — black circle with white border and white icon
  */
-export function KioskChatButton({ onClick, iconName, iconColor, iconBgColor }: { onClick: () => void } & ChatButtonIconProps) {
+export function KioskChatButton({ onClick, iconName, iconColor, iconBgColor, contained }: { onClick: () => void; contained?: boolean } & ChatButtonIconProps) {
     const Icon = getIconByName(iconName);
     const hasCustomBg = !!iconBgColor;
     return (
@@ -363,7 +367,7 @@ export function KioskChatButton({ onClick, iconName, iconColor, iconBgColor }: {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.5 }}
             onClick={onClick}
-            className={`fixed bottom-6 right-6 w-14 h-14 backdrop-blur-sm border-2 rounded-full shadow-lg flex items-center justify-center z-30 transition-all hover:scale-105 ${hasCustomBg ? 'border-white/30 hover:border-white/50' : 'bg-black/80 border-white/80 hover:bg-black hover:border-white'}`}
+            className={`${contained ? 'absolute' : 'fixed'} bottom-6 right-6 w-14 h-14 backdrop-blur-sm border-2 rounded-full shadow-lg flex items-center justify-center z-30 transition-all hover:scale-105 ${hasCustomBg ? 'border-white/30 hover:border-white/50' : 'bg-black/80 border-white/80 hover:bg-black hover:border-white'}`}
             style={hasCustomBg ? { backgroundColor: iconBgColor } : undefined}
         >
             <Icon className="w-6 h-6" style={{ color: iconColor || '#ffffff' }} />

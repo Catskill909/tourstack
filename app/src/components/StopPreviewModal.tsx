@@ -3,6 +3,7 @@ import { X, Smartphone, Tablet, RotateCcw, RotateCw, ZoomIn, ZoomOut, Monitor, M
 import { StopContentBlock } from './blocks/StopContentBlock';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { DisplaySettingsPanel, type DisplaySettings } from './DisplaySettingsPanel';
+import { ChatDrawer, ChatFloatingButton, KioskChatButton } from './chat/ChatDrawer';
 import type { Stop, Tour, ContentBlock } from '../types';
 
 interface StopPreviewModalProps {
@@ -73,6 +74,9 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
         showTitles: tourData?.displaySettings?.showTitles ?? true,
         showDescriptions: tourData?.displaySettings?.showDescriptions ?? true,
     });
+
+    // Chat state
+    const [isChatOpen, setIsChatOpen] = useState(false);
 
     // Navigation within the simulator — clicking a stop list item loads that stop
     const [currentStop, setCurrentStop] = useState<Stop>(stop);
@@ -299,7 +303,7 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                     /* ===== KIOSK MODE: Frameless, fills available space ===== */
                     <div className="w-full h-full flex items-center justify-center">
                     <div
-                        className="w-full h-full overflow-hidden rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-primary)]"
+                        className="relative w-full h-full overflow-hidden rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-primary)]"
                         style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}
                     >
                         {/* Screen Content */}
@@ -434,6 +438,41 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                                 );
                             })()}
                         </div>
+
+                        {/* Kiosk Chat Button + Drawer */}
+                        {tourData?.conciergeEnabled !== false && (
+                            <>
+                                <KioskChatButton
+                                    onClick={() => setIsChatOpen(true)}
+                                    contained
+                                    iconName={tourData?.conciergeChatIcon}
+                                    iconColor={tourData?.conciergeChatIconColor}
+                                    iconBgColor={tourData?.conciergeChatIconBgColor}
+                                />
+                                <ChatDrawer
+                                    isOpen={isChatOpen}
+                                    onClose={() => setIsChatOpen(false)}
+                                    language={previewLanguage}
+                                    tourId={tourData?.id}
+                                    contained
+                                    tourQuickActions={(() => {
+                                        const raw = tourData?.conciergeQuickActions;
+                                        if (!raw) return undefined;
+                                        if (Array.isArray(raw)) return raw;
+                                        try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
+                                    })()}
+                                    tourWelcomeMessage={(() => {
+                                        const raw = tourData?.conciergeWelcome;
+                                        if (!raw) return undefined;
+                                        if (typeof raw === 'object') return raw;
+                                        try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
+                                    })()}
+                                    iconName={tourData?.conciergeChatIcon}
+                                    iconColor={tourData?.conciergeChatIconColor}
+                                    iconBgColor={tourData?.conciergeChatIconBgColor}
+                                />
+                            </>
+                        )}
                     </div>
                     </div>
                 ) : (
@@ -717,6 +756,43 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                                         );
                                     })()}
                                 </div>
+
+                                {/* Chat Floating Button + Drawer (inside device screen) */}
+                                {tourData?.conciergeEnabled !== false && (
+                                    <>
+                                        {!isKioskMode && (
+                                            <ChatFloatingButton
+                                                onClick={() => setIsChatOpen(true)}
+                                                contained
+                                                iconName={tourData?.conciergeChatIcon}
+                                                iconColor={tourData?.conciergeChatIconColor}
+                                                iconBgColor={tourData?.conciergeChatIconBgColor}
+                                            />
+                                        )}
+                                        <ChatDrawer
+                                            isOpen={isChatOpen}
+                                            onClose={() => setIsChatOpen(false)}
+                                            language={previewLanguage}
+                                            tourId={tourData?.id}
+                                            contained
+                                            tourQuickActions={(() => {
+                                                const raw = tourData?.conciergeQuickActions;
+                                                if (!raw) return undefined;
+                                                if (Array.isArray(raw)) return raw;
+                                                try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
+                                            })()}
+                                            tourWelcomeMessage={(() => {
+                                                const raw = tourData?.conciergeWelcome;
+                                                if (!raw) return undefined;
+                                                if (typeof raw === 'object') return raw;
+                                                try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
+                                            })()}
+                                            iconName={tourData?.conciergeChatIcon}
+                                            iconColor={tourData?.conciergeChatIconColor}
+                                            iconBgColor={tourData?.conciergeChatIconBgColor}
+                                        />
+                                    </>
+                                )}
 
                                 {/* Home Indicator */}
                                 <div
