@@ -6,7 +6,7 @@ Build interactive tours with QR codes, GPS, Bluetooth beacons, NFC, and more. Su
 
 ---
 
-## ⛔️ CRITICAL: APP DIRECTORY + SERVER STARTUP ⛔️
+## ⛔️ APP DIRECTORY + SERVER STARTUP ⛔️
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
