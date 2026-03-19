@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Images } from 'lucide-react';
 import type { GalleryBlockData } from '../../types';
 
@@ -13,6 +13,38 @@ export function GalleryPreview({ data, language }: GalleryPreviewProps) {
 
     const images = data.images || [];
     const crossfadeDuration = data.crossfadeDuration || 500;
+    const showCaptions = data.showCaptions !== false;
+    const showCredits = data.showCredits !== false;
+    const showArrows = data.showArrows !== false;
+    const showThumbnails = data.showThumbnails !== false;
+    const showDots = data.showDots || false;
+    const imageFit = data.imageFit || 'contain';
+    const aspectRatio = data.aspectRatio || '16:9';
+    const gap = data.gap ?? 8;
+    const borderRadius = data.borderRadius ?? 12;
+    const autoAdvanceRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Auto-advance
+    useEffect(() => {
+        if (data.autoAdvance && images.length > 1 && (data.layout === 'carousel' || data.layout === 'slideshow')) {
+            autoAdvanceRef.current = setInterval(() => {
+                setCurrentIndex(prev => (prev + 1) % images.length);
+            }, (data.autoAdvanceInterval || 5) * 1000);
+        }
+        return () => {
+            if (autoAdvanceRef.current) clearInterval(autoAdvanceRef.current);
+        };
+    }, [data.autoAdvance, data.autoAdvanceInterval, images.length, data.layout]);
+
+    const getAspectClass = useCallback(() => {
+        switch (aspectRatio) {
+            case '16:9': return 'aspect-video';
+            case '4:3': return 'aspect-[4/3]';
+            case '3:2': return 'aspect-[3/2]';
+            case '1:1': return 'aspect-square';
+            default: return 'aspect-video';
+        }
+    }, [aspectRatio]);
 
     if (images.length === 0) {
         return (
@@ -41,12 +73,28 @@ export function GalleryPreview({ data, language }: GalleryPreviewProps) {
 
     const currentImage = images[currentIndex];
 
-    // CAROUSEL layout - beautiful slideshow with prev/next
-    if (data.layout === 'carousel') {
+    function renderCaption(img: typeof images[0]) {
+        const caption = img.caption?.[language] || img.caption?.en;
+        const credit = img.credit?.[language];
+        if ((!showCaptions || !caption) && (!showCredits || !credit)) return null;
         return (
-            <div className="bg-[var(--color-bg-surface)] rounded-2xl overflow-hidden border border-[var(--color-border-default)]">
-                {/* Main Image */}
-                <div className="relative aspect-[16/10] bg-black">
+            <div className="space-y-0.5">
+                {showCaptions && caption && (
+                    <p className="text-sm text-[var(--color-text-primary)] font-medium">{caption}</p>
+                )}
+                {showCredits && credit && (
+                    <p className="text-xs text-[var(--color-text-muted)] italic">Credit: {credit}</p>
+                )}
+            </div>
+        );
+    }
+
+    // CAROUSEL / SLIDESHOW layout — hero image, no rounded corners
+    if (data.layout === 'carousel' || data.layout === 'slideshow') {
+        return (
+            <div className="bg-[var(--color-bg-surface)]">
+                {/* Main Image — no border radius */}
+                <div className={`relative bg-black ${getAspectClass()}`}>
                     <div
                         className={`absolute inset-0 transition-opacity ${isFading ? 'opacity-0' : 'opacity-100'}`}
                         style={{ transitionDuration: `${crossfadeDuration / 2}ms` }}
@@ -55,13 +103,13 @@ export function GalleryPreview({ data, language }: GalleryPreviewProps) {
                             <img
                                 src={currentImage.url}
                                 alt=""
-                                className="w-full h-full object-contain"
+                                className={`w-full h-full ${imageFit === 'cover' ? 'object-cover' : 'object-contain'}`}
                             />
                         )}
                     </div>
 
                     {/* Navigation Arrows */}
-                    {images.length > 1 && (
+                    {showArrows && images.length > 1 && (
                         <>
                             <button
                                 type="button"
@@ -86,64 +134,94 @@ export function GalleryPreview({ data, language }: GalleryPreviewProps) {
                     </div>
                 </div>
 
-                {/* Caption and Credit */}
-                <div className="p-4 bg-gradient-to-r from-[var(--color-bg-elevated)] to-[var(--color-bg-surface)]">
-                    {currentImage && (
-                        <div className="space-y-1">
-                            <p className="text-[var(--color-text-primary)] font-medium">
-                                {currentImage.caption?.[language] || currentImage.caption?.en || ''}
-                            </p>
-                            {currentImage.credit?.[language] && (
-                                <p className="text-sm text-[var(--color-text-muted)] italic">
-                                    Credit: {currentImage.credit[language]}
-                                </p>
-                            )}
-                        </div>
-                    )}
+                {/* Dot Navigation */}
+                {showDots && images.length > 1 && (
+                    <div className="flex justify-center gap-1.5 py-2.5 bg-[var(--color-bg-elevated)]">
+                        {images.map((_, index) => (
+                            <button
+                                key={index}
+                                type="button"
+                                onClick={() => triggerCrossfade(index)}
+                                className={`rounded-full transition-all ${index === currentIndex
+                                    ? 'w-6 h-2 bg-[var(--color-accent-primary)]'
+                                    : 'w-2 h-2 bg-white/30 hover:bg-white/50'
+                                    }`}
+                            />
+                        ))}
+                    </div>
+                )}
 
-                    {/* Thumbnail Navigation */}
-                    {images.length > 1 && (
-                        <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                            {images.map((img, index) => (
-                                <button
-                                    key={index}
-                                    type="button"
-                                    onClick={() => triggerCrossfade(index)}
-                                    className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all ${index === currentIndex
-                                        ? 'ring-2 ring-[var(--color-accent-primary)] ring-offset-2 ring-offset-[var(--color-bg-surface)]'
-                                        : 'opacity-60 hover:opacity-100'
-                                        }`}
-                                >
-                                    <img src={img.url} alt="" className="w-full h-full object-cover" />
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                {/* Caption and Credit */}
+                {currentImage && (showCaptions || showCredits) && (
+                    <div className="p-4">
+                        {renderCaption(currentImage)}
+                    </div>
+                )}
+
+                {/* Thumbnail Navigation — slideshow only, not carousel */}
+                {showThumbnails && data.layout === 'slideshow' && images.length > 1 && (
+                    <div className="flex gap-2 p-3 overflow-x-auto border-t border-[var(--color-border-default)]">
+                        {images.map((img, index) => (
+                            <button
+                                key={index}
+                                type="button"
+                                onClick={() => triggerCrossfade(index)}
+                                className={`relative flex-shrink-0 w-16 h-16 overflow-hidden transition-all ${index === currentIndex
+                                    ? 'ring-2 ring-[var(--color-accent-primary)] ring-offset-2 ring-offset-[var(--color-bg-surface)]'
+                                    : 'opacity-60 hover:opacity-100'
+                                    }`}
+                                style={{ borderRadius: `${Math.min(borderRadius, 8)}px` }}
+                            >
+                                <img src={img.url} alt="" className="w-full h-full object-cover" />
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
         );
     }
 
-    // Masonry layout
-    if (data.layout === 'masonry') {
+    // FILMSTRIP layout
+    if (data.layout === 'filmstrip') {
         return (
-            <div className="columns-2 md:columns-3 gap-4">
+            <div className="flex overflow-x-auto pb-2 scrollbar-thin" style={{ gap: `${gap}px` }}>
                 {images.map((img, idx) => (
-                    <figure key={idx} className="break-inside-avoid mb-4">
+                    <div key={idx} className="flex-shrink-0 w-48">
                         <img
                             src={img.url}
                             alt=""
-                            className="rounded-xl w-full object-cover shadow-lg"
+                            className={`w-full ${getAspectClass()} ${imageFit === 'cover' ? 'object-cover' : 'object-contain'} shadow-lg`}
+                            style={{ borderRadius: `${borderRadius}px` }}
                         />
-                        {img.caption && (
-                            <figcaption className="text-sm text-[var(--color-text-secondary)] mt-2">
-                                {img.caption[language] || img.caption.en}
-                            </figcaption>
+                        {(showCaptions || showCredits) && (
+                            <div className="mt-2">
+                                {renderCaption(img)}
+                            </div>
                         )}
-                        {img.credit?.[language] && (
-                            <p className="text-xs text-[var(--color-text-muted)] italic mt-1">
-                                {img.credit[language]}
-                            </p>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    // MASONRY layout
+    if (data.layout === 'masonry') {
+        return (
+            <div className="columns-2 md:columns-3" style={{ gap: `${gap}px` }}>
+                {images.map((img, idx) => (
+                    <figure
+                        key={idx}
+                        className="break-inside-avoid"
+                        style={{ marginBottom: `${gap}px` }}
+                    >
+                        <img
+                            src={img.url}
+                            alt=""
+                            className="w-full object-cover shadow-lg"
+                            style={{ borderRadius: `${borderRadius}px` }}
+                        />
+                        {(showCaptions || showCredits) && (
+                            <div className="mt-2">{renderCaption(img)}</div>
                         )}
                     </figure>
                 ))}
@@ -151,29 +229,23 @@ export function GalleryPreview({ data, language }: GalleryPreviewProps) {
         );
     }
 
-    // Grid layout (default)
+    // GRID layout (default — also handles 'lightbox' layout as simple grid)
     const cols = data.itemsPerRow || 3;
     return (
         <div
-            className="grid gap-4"
-            style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+            className="grid"
+            style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gap}px` }}
         >
             {images.map((img, idx) => (
                 <figure key={idx}>
                     <img
                         src={img.url}
                         alt=""
-                        className="rounded-xl w-full aspect-square object-cover shadow-lg"
+                        className={`w-full ${getAspectClass()} ${imageFit === 'cover' ? 'object-cover' : 'object-contain'} shadow-lg`}
+                        style={{ borderRadius: `${borderRadius}px` }}
                     />
-                    {img.caption && (
-                        <figcaption className="text-sm text-[var(--color-text-secondary)] mt-2">
-                            {img.caption[language] || img.caption.en}
-                        </figcaption>
-                    )}
-                    {img.credit?.[language] && (
-                        <p className="text-xs text-[var(--color-text-muted)] italic mt-1">
-                            {img.credit[language]}
-                        </p>
+                    {(showCaptions || showCredits) && (
+                        <div className="mt-2">{renderCaption(img)}</div>
                     )}
                 </figure>
             ))}

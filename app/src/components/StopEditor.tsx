@@ -902,6 +902,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                         tourData={tourData}
                         allStops={allStops}
                         availableLanguages={availableLanguages}
+                        wide={block.type === 'gallery'}
                     >
                         {block.type === 'text' && (
                             <TextBlockEditor

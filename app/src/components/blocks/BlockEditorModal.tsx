@@ -13,9 +13,10 @@ interface BlockEditorModalProps {
     tourData?: Tour;
     allStops?: Stop[];
     availableLanguages?: string[];
+    wide?: boolean;
 }
 
-export function BlockEditorModal({ title, icon: Icon, onClose, children, stop, tourData, allStops, availableLanguages = ['en'] }: BlockEditorModalProps) {
+export function BlockEditorModal({ title, icon: Icon, onClose, children, stop, tourData, allStops, availableLanguages = ['en'], wide = false }: BlockEditorModalProps) {
     const [showPreview, setShowPreview] = useState(false);
 
     return (
@@ -55,7 +56,7 @@ export function BlockEditorModal({ title, icon: Icon, onClose, children, stop, t
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-6">
-                <div className="max-w-2xl mx-auto">
+                <div className={wide ? 'max-w-6xl mx-auto' : 'max-w-2xl mx-auto'}>
                     {children}
                 </div>
             </div>

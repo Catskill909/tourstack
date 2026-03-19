@@ -263,6 +263,8 @@ export interface ImageBlockData {
   showBlockImage?: boolean;
 }
 
+export type GalleryLayout = 'carousel' | 'grid' | 'masonry' | 'slideshow' | 'filmstrip';
+
 export interface GalleryBlockData {
   images: Array<{
     id?: string;                        // Unique image ID
@@ -270,13 +272,24 @@ export interface GalleryBlockData {
     caption?: { [lang: string]: string }; // Optional
     credit?: { [lang: string]: string }; // Optional
   }>;
-  layout: 'carousel' | 'grid' | 'masonry';
+  layout: GalleryLayout;
   itemsPerRow?: number;
 
   // Sequential gallery controls
   crossfadeDuration?: number;          // Crossfade duration in ms (default 500)
   autoAdvance?: boolean;               // Auto-advance to next image
   autoAdvanceInterval?: number;        // Auto-advance interval in seconds
+
+  // Display options
+  showCaptions?: boolean;              // Show captions on images (default true)
+  showCredits?: boolean;               // Show credits on images (default true)
+  showArrows?: boolean;                // Show prev/next arrows (default true)
+  showThumbnails?: boolean;            // Show thumbnail strip (default true)
+  showDots?: boolean;                  // Show dot navigation (default false)
+  imageFit?: 'contain' | 'cover';     // How images fill their container (default 'contain')
+  aspectRatio?: '16:9' | '4:3' | '1:1' | '3:2' | 'auto'; // Image aspect ratio (default '16:9')
+  gap?: number;                        // Gap between images in px (default 8)
+  borderRadius?: number;               // Image border radius in px (default 12)
 
   // Block metadata
   title?: { [lang: string]: string };
