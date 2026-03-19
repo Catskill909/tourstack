@@ -5,7 +5,7 @@ export { AudioBlockEditor } from './AudioBlockEditor';
 export { GalleryBlockEditor } from './GalleryBlockEditor';
 export { TimelineGalleryBlockEditor } from './TimelineGalleryBlockEditor';
 export { PositioningBlockEditor } from './PositioningBlockEditor';
-export { MapBlockEditor } from './MapBlockEditor';
+export { BlockEditorModal } from './BlockEditorModal';
 export { MapEditorModal } from './MapEditorModal';
 export { MapPreview } from './MapPreview';
 export { TourBlockEditor } from './TourBlockEditor';

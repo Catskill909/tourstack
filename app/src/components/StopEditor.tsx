@@ -1,18 +1,17 @@
 import { useState } from 'react';
-import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle, Maximize2, Music, Languages, Loader2, Image as ImageIcon } from 'lucide-react';
+import { X, Plus, Eye, Save, GripVertical, ChevronUp, ChevronDown, Trash2, AlertTriangle, Languages, Loader2, Image as ImageIcon } from 'lucide-react';
 import { BLOCK_ICONS, BLOCK_LABELS } from './blocks/StopContentBlock';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { translateText, type TranslationProvider } from '../services/translationService';
+import { BlockEditorModal } from './blocks/BlockEditorModal';
 import { TextBlockEditor } from './blocks/TextBlockEditor';
 import { ImageBlockEditor } from './blocks/ImageBlockEditor';
 import { AudioBlockEditor } from './blocks/AudioBlockEditor';
 import { GalleryBlockEditor } from './blocks/GalleryBlockEditor';
 import { TimelineGalleryEditorModal } from './blocks/TimelineGalleryEditorModal';
 import { MapEditorModal } from './blocks/MapEditorModal';
-import { MapBlockEditor } from './blocks/MapBlockEditor';
 import { PositioningBlockEditor } from './blocks/PositioningBlockEditor';
 import { QRScannerBlockEditor } from './blocks/QRScannerBlockEditor';
-import { ImageMapBlockEditor } from './blocks/ImageMapBlockEditor';
 import { ImageMapEditorModal } from './blocks/ImageMapEditorModal';
 import { TourBlockEditor } from './blocks/TourBlockEditor';
 import { StopListEditorModal } from './blocks/StopListEditorModal';
@@ -77,13 +76,9 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
         contentBlocks: safeContentBlocks,
     });
     const [showPreview, setShowPreview] = useState(false);
-    const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+    const [activeBlockEditorId, setActiveBlockEditorId] = useState<string | null>(null);
     const [showAddBlock, setShowAddBlock] = useState(false);
     const [deleteBlockId, setDeleteBlockId] = useState<string | null>(null);
-    const [showTimelineEditorId, setShowTimelineEditorId] = useState<string | null>(null);
-    const [showMapEditorId, setShowMapEditorId] = useState<string | null>(null);
-    const [showStopListEditorId, setShowStopListEditorId] = useState<string | null>(null);
-    const [showImageMapEditorId, setShowImageMapEditorId] = useState<string | null>(null);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
     const [showSaveModal, setShowSaveModal] = useState(false);
@@ -311,7 +306,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
             contentBlocks: [...blocks, newBlock],
         });
         setShowAddBlock(false);
-        setEditingBlockId(newBlock.id);
+        setActiveBlockEditorId(newBlock.id);
         setHasUnsavedChanges(true);
     }
 
@@ -335,8 +330,8 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
             ...editedStop,
             contentBlocks: blocks.filter((b) => b.id !== deleteBlockId).map((b, i) => ({ ...b, order: i })),
         });
-        if (editingBlockId === deleteBlockId) {
-            setEditingBlockId(null);
+        if (activeBlockEditorId === deleteBlockId) {
+            setActiveBlockEditorId(null);
         }
         setDeleteBlockId(null);
         setHasUnsavedChanges(true);
@@ -377,8 +372,6 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
         setShowUnsavedWarning(false);
         onClose();
     }
-
-    const editingBlock = editingBlockId ? blocks.find((b) => b.id === editingBlockId) : null;
 
     return (
         <div className="fixed inset-0 z-50 flex overflow-hidden bg-black/50 backdrop-blur-sm">
@@ -678,6 +671,10 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                             </div>
                         </div>
 
+                    </div>
+
+                    {/* Content Blocks (right column) */}
+                    <div className="w-1/2 overflow-y-auto p-6 bg-[var(--color-bg-base)]">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="font-medium text-[var(--color-text-primary)]">Content Blocks</h3>
                             <button
@@ -703,15 +700,11 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                             <div className="space-y-2">
                                 {blocks.map((block, index) => {
                                     const Icon = BLOCK_ICONS[block.type];
-                                    const isActive = editingBlockId === block.id;
                                     return (
                                         <div
                                             key={block.id}
-                                            onClick={() => setEditingBlockId(block.id)}
-                                            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${isActive
-                                                ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10'
-                                                : 'border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50'
-                                                }`}
+                                            onClick={() => setActiveBlockEditorId(block.id)}
+                                            className="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50"
                                         >
                                             <GripVertical className="w-4 h-4 text-[var(--color-text-muted)] cursor-grab" />
                                             <Icon className="w-4 h-4 text-[var(--color-text-muted)]" />
@@ -743,164 +736,6 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                                         </div>
                                     );
                                 })}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Block editor */}
-                    <div className="w-1/2 overflow-y-auto p-6 bg-[var(--color-bg-base)]">
-                        {editingBlock ? (
-                            <div>
-                                <h3 className="font-medium text-[var(--color-text-primary)] mb-4">
-                                    Edit {BLOCK_LABELS[editingBlock.type]} Block
-                                </h3>
-                                {editingBlock.type === 'text' && (
-                                    <TextBlockEditor
-                                        data={editingBlock.data as TextBlockData}
-                                        language={language}
-                                        availableLanguages={availableLanguages}
-                                        translationProvider={translationProvider}
-                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
-                                    />
-                                )}
-                                {editingBlock.type === 'image' && (
-                                    <ImageBlockEditor
-                                        data={editingBlock.data as ImageBlockData}
-                                        language={language}
-                                        availableLanguages={availableLanguages}
-                                        translationProvider={translationProvider}
-                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
-                                    />
-                                )}
-                                {editingBlock.type === 'gallery' && (
-                                    <GalleryBlockEditor
-                                        data={editingBlock.data as GalleryBlockData}
-                                        language={language}
-                                        availableLanguages={availableLanguages}
-                                        translationProvider={translationProvider}
-                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
-                                    />
-                                )}
-                                {editingBlock.type === 'audio' && (
-                                    <AudioBlockEditor
-                                        data={editingBlock.data as AudioBlockData}
-                                        language={language}
-                                        availableLanguages={availableLanguages}
-                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
-                                        onLanguagesChanged={onLanguagesChanged}
-                                    />
-                                )}
-                                {editingBlock.type === 'timelineGallery' && (
-                                    <div className="space-y-4">
-                                        <div className="bg-gradient-to-br from-[var(--color-bg-elevated)] to-[var(--color-bg-surface)] rounded-xl p-6 border border-[var(--color-border-default)]">
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <div className="p-3 rounded-xl bg-gradient-to-br from-[var(--color-accent-primary)] to-purple-500">
-                                                    <Music className="w-6 h-6 text-white" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-medium text-[var(--color-text-primary)]">
-                                                        Timeline Gallery
-                                                    </h4>
-                                                    <p className="text-sm text-[var(--color-text-muted)]">
-                                                        {(editingBlock.data as TimelineGalleryBlockData).images?.length || 0} images synced to audio
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => setShowTimelineEditorId(editingBlock.id)}
-                                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-[var(--color-accent-primary)] to-purple-500 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-[1.02] transition-all"
-                                            >
-                                                <Maximize2 className="w-5 h-5" />
-                                                Open Full Editor
-                                            </button>
-                                        </div>
-                                        <p className="text-xs text-[var(--color-text-muted)] text-center">
-                                            The Timeline Gallery editor opens in a full-screen view for precise audio-image synchronization
-                                        </p>
-                                    </div>
-                                )}
-                                {editingBlock.type === 'positioning' && (
-                                    <PositioningBlockEditor
-                                        data={editingBlock.data as PositioningBlockData}
-                                        stopId={editedStop.id}
-                                        tourId={editedStop.tourId}
-                                        language={language}
-                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
-                                    />
-                                )}
-                                {editingBlock.type === 'map' && (
-                                    <MapBlockEditor
-                                        data={editingBlock.data as MapBlockData}
-                                        language={language}
-                                        availableLanguages={availableLanguages}
-                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
-                                        onOpenFullEditor={() => setShowMapEditorId(editingBlock.id)}
-                                    />
-                                )}
-                                {editingBlock.type === 'tour' && (
-                                    <TourBlockEditor
-                                        data={editingBlock.data as TourBlockData}
-                                        language={language}
-                                        availableLanguages={availableLanguages}
-                                        translationProvider={translationProvider}
-                                        tourData={tourData}
-                                        allStops={allStops}
-                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
-                                    />
-                                )}
-                                {editingBlock.type === 'stopList' && (
-                                    <div className="space-y-4">
-                                        <div className="bg-gradient-to-br from-[var(--color-bg-elevated)] to-[var(--color-bg-surface)] rounded-xl p-6 border border-[var(--color-border-default)]">
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <div className="p-3 rounded-xl bg-gradient-to-br from-[var(--color-accent-primary)] to-blue-500">
-                                                    <Languages className="w-6 h-6 text-white" />
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-medium text-[var(--color-text-primary)]">
-                                                        Stop List
-                                                    </h4>
-                                                    <p className="text-sm text-[var(--color-text-muted)]">
-                                                        {(editingBlock.data as StopListBlockData).stopIds?.length || 0} stops selected • {(editingBlock.data as StopListBlockData).layout || 'card'} layout
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => setShowStopListEditorId(editingBlock.id)}
-                                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-[var(--color-accent-primary)] to-blue-500 text-white rounded-xl font-medium hover:shadow-lg transform hover:scale-[1.02] transition-all"
-                                            >
-                                                <Maximize2 className="w-5 h-5" />
-                                                Open Full Editor
-                                            </button>
-                                        </div>
-                                        <p className="text-xs text-[var(--color-text-muted)] text-center">
-                                            The Stop List editor opens in a full-screen view for configuring stop selection and layout
-                                        </p>
-                                    </div>
-                                )}
-                                {editingBlock.type === 'qrScanner' && (
-                                    <QRScannerBlockEditor
-                                        data={editingBlock.data as QRScannerBlockData}
-                                        language={language}
-                                        availableLanguages={availableLanguages}
-                                        translationProvider={translationProvider}
-                                        allStops={allStops}
-                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
-                                    />
-                                )}
-                                {editingBlock.type === 'imageMap' && (
-                                    <ImageMapBlockEditor
-                                        data={editingBlock.data as ImageMapBlockData}
-                                        language={language}
-                                        availableLanguages={availableLanguages}
-                                        allStops={allStops}
-                                        onChange={(data) => handleUpdateBlock(editingBlock.id, data)}
-                                        onOpenFullEditor={() => setShowImageMapEditorId(editingBlock.id)}
-                                    />
-                                )}
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center h-full text-[var(--color-text-muted)]">
-                                Select a block to edit or add a new one
                             </div>
                         )}
                     </div>
@@ -992,74 +827,149 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                 </div>
             )}
 
-            {/* Timeline Gallery Full Editor Modal */}
-            {showTimelineEditorId && (() => {
-                const timelineBlock = blocks.find(b => b.id === showTimelineEditorId);
-                if (!timelineBlock || timelineBlock.type !== 'timelineGallery') return null;
+            {/* Block Editor Modals */}
+            {activeBlockEditorId && (() => {
+                const block = blocks.find(b => b.id === activeBlockEditorId);
+                if (!block) return null;
+                const closeEditor = () => setActiveBlockEditorId(null);
+                const updateBlock = (data: ContentBlockData) => handleUpdateBlock(activeBlockEditorId, data);
+
+                // Blocks with dedicated full-screen modals
+                if (block.type === 'timelineGallery') {
+                    return (
+                        <TimelineGalleryEditorModal
+                            data={block.data as TimelineGalleryBlockData}
+                            language={language}
+                            availableLanguages={availableLanguages}
+                            stop={editedStop}
+                            tourData={tourData}
+                            allStops={allStops}
+                            onChange={updateBlock}
+                            onClose={closeEditor}
+                        />
+                    );
+                }
+                if (block.type === 'map') {
+                    return (
+                        <MapEditorModal
+                            data={block.data as MapBlockData}
+                            language={language}
+                            availableLanguages={availableLanguages}
+                            onChange={updateBlock}
+                            onClose={closeEditor}
+                        />
+                    );
+                }
+                if (block.type === 'stopList') {
+                    return (
+                        <StopListEditorModal
+                            data={block.data as StopListBlockData}
+                            language={language}
+                            availableLanguages={availableLanguages}
+                            translationProvider={translationProvider}
+                            stop={editedStop}
+                            tourData={tourData}
+                            allStops={allStops}
+                            onChange={updateBlock}
+                            onClose={closeEditor}
+                        />
+                    );
+                }
+                if (block.type === 'imageMap') {
+                    return (
+                        <ImageMapEditorModal
+                            data={block.data as ImageMapBlockData}
+                            language={language}
+                            availableLanguages={availableLanguages}
+                            allStops={allStops}
+                            translationProvider={translationProvider}
+                            stop={editedStop}
+                            tourData={tourData}
+                            onChange={updateBlock}
+                            onClose={closeEditor}
+                        />
+                    );
+                }
+
+                // All other blocks: wrap in generic BlockEditorModal
+                const BlockIcon = BLOCK_ICONS[block.type];
                 return (
-                    <TimelineGalleryEditorModal
-                        data={timelineBlock.data as TimelineGalleryBlockData}
-                        language={language}
-                        availableLanguages={availableLanguages}
+                    <BlockEditorModal
+                        title={BLOCK_LABELS[block.type]}
+                        icon={BlockIcon}
+                        onClose={closeEditor}
                         stop={editedStop}
                         tourData={tourData}
                         allStops={allStops}
-                        onChange={(data) => handleUpdateBlock(showTimelineEditorId, data)}
-                        onClose={() => setShowTimelineEditorId(null)}
-                    />
-                );
-            })()}
-
-            {/* Map Editor Modal */}
-            {showMapEditorId && (() => {
-                const mapBlock = blocks.find(b => b.id === showMapEditorId);
-                if (!mapBlock || mapBlock.type !== 'map') return null;
-                return (
-                    <MapEditorModal
-                        data={mapBlock.data as MapBlockData}
-                        language={language}
                         availableLanguages={availableLanguages}
-                        onChange={(data) => handleUpdateBlock(showMapEditorId, data)}
-                        onClose={() => setShowMapEditorId(null)}
-                    />
-                );
-            })()}
-
-            {/* Stop List Editor Modal */}
-            {showStopListEditorId && (() => {
-                const stopListBlock = blocks.find(b => b.id === showStopListEditorId);
-                if (!stopListBlock || stopListBlock.type !== 'stopList') return null;
-                return (
-                    <StopListEditorModal
-                        data={stopListBlock.data as StopListBlockData}
-                        language={language}
-                        availableLanguages={availableLanguages}
-                        translationProvider={translationProvider}
-                        stop={editedStop}
-                        tourData={tourData}
-                        allStops={allStops}
-                        onChange={(data) => handleUpdateBlock(showStopListEditorId, data)}
-                        onClose={() => setShowStopListEditorId(null)}
-                    />
-                );
-            })()}
-
-            {/* Image Map Editor Modal */}
-            {showImageMapEditorId && (() => {
-                const imageMapBlock = blocks.find(b => b.id === showImageMapEditorId);
-                if (!imageMapBlock || imageMapBlock.type !== 'imageMap') return null;
-                return (
-                    <ImageMapEditorModal
-                        data={imageMapBlock.data as ImageMapBlockData}
-                        language={language}
-                        availableLanguages={availableLanguages}
-                        allStops={allStops}
-                        translationProvider={translationProvider}
-                        stop={editedStop}
-                        tourData={tourData}
-                        onChange={(data) => handleUpdateBlock(showImageMapEditorId, data)}
-                        onClose={() => setShowImageMapEditorId(null)}
-                    />
+                    >
+                        {block.type === 'text' && (
+                            <TextBlockEditor
+                                data={block.data as TextBlockData}
+                                language={language}
+                                availableLanguages={availableLanguages}
+                                translationProvider={translationProvider}
+                                onChange={updateBlock}
+                            />
+                        )}
+                        {block.type === 'image' && (
+                            <ImageBlockEditor
+                                data={block.data as ImageBlockData}
+                                language={language}
+                                availableLanguages={availableLanguages}
+                                translationProvider={translationProvider}
+                                onChange={updateBlock}
+                            />
+                        )}
+                        {block.type === 'gallery' && (
+                            <GalleryBlockEditor
+                                data={block.data as GalleryBlockData}
+                                language={language}
+                                availableLanguages={availableLanguages}
+                                translationProvider={translationProvider}
+                                onChange={updateBlock}
+                            />
+                        )}
+                        {block.type === 'audio' && (
+                            <AudioBlockEditor
+                                data={block.data as AudioBlockData}
+                                language={language}
+                                availableLanguages={availableLanguages}
+                                onChange={updateBlock}
+                                onLanguagesChanged={onLanguagesChanged}
+                            />
+                        )}
+                        {block.type === 'positioning' && (
+                            <PositioningBlockEditor
+                                data={block.data as PositioningBlockData}
+                                stopId={editedStop.id}
+                                tourId={editedStop.tourId}
+                                language={language}
+                                onChange={updateBlock}
+                            />
+                        )}
+                        {block.type === 'tour' && (
+                            <TourBlockEditor
+                                data={block.data as TourBlockData}
+                                language={language}
+                                availableLanguages={availableLanguages}
+                                translationProvider={translationProvider}
+                                tourData={tourData}
+                                allStops={allStops}
+                                onChange={updateBlock}
+                            />
+                        )}
+                        {block.type === 'qrScanner' && (
+                            <QRScannerBlockEditor
+                                data={block.data as QRScannerBlockData}
+                                language={language}
+                                availableLanguages={availableLanguages}
+                                translationProvider={translationProvider}
+                                allStops={allStops}
+                                onChange={updateBlock}
+                            />
+                        )}
+                    </BlockEditorModal>
                 );
             })()}
 
