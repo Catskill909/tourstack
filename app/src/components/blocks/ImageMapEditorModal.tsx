@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { X, Upload, Trash2, Plus, Minus, RotateCcw, MapPin, Layers, GripVertical, Info, Link2, Type, Palette, Languages, Loader2, Check as CheckIcon, Sparkles, FileText, AlertTriangle } from 'lucide-react';
+import { X, Upload, Trash2, Plus, Minus, RotateCcw, MapPin, Layers, GripVertical, Info, Link2, Type, Palette, Languages, Loader2, Check as CheckIcon, Sparkles, AlertTriangle, Eye, ChevronUp, Wand2 } from 'lucide-react';
 import { ImageMapMarkerPin } from './ImageMapMarkerPin';
 import { LanguageSwitcher } from '../LanguageSwitcher';
+import { PreviewChoiceModal } from '../PreviewChoiceModal';
+import { ColorPicker, PRESET_COLORS } from '../ui/ColorPicker';
 import { magicTranslate, type TranslationProvider } from '../../services/translationService';
-import type { ImageMapBlockData, ImageMapMarker, ImageMapFloor, ImageMapIcon, Stop } from '../../types';
+import type { ImageMapBlockData, ImageMapMarker, ImageMapFloor, ImageMapIcon, Stop, Tour } from '../../types';
 
 // --- Dirty-tracking via source hash ---
 // Stored as `_sourceHash` inside { [lang: string]: string } objects.
@@ -40,6 +42,9 @@ interface ImageMapEditorModalProps {
     availableLanguages?: string[];
     allStops?: Stop[];
     translationProvider?: TranslationProvider;
+    /** Current stop for preview */
+    stop?: Stop;
+    tourData?: Tour;
     onChange: (data: ImageMapBlockData) => void;
     onClose: () => void;
 }
@@ -65,16 +70,7 @@ const ICON_OPTIONS: { value: ImageMapIcon; label: string; icon: string }[] = [
 
 const ALL_ICON_VALUES = ICON_OPTIONS.map(o => o.value);
 
-const COLOR_OPTIONS = [
-    { value: '#3b82f6', label: 'Blue' },
-    { value: '#ef4444', label: 'Red' },
-    { value: '#22c55e', label: 'Green' },
-    { value: '#f97316', label: 'Orange' },
-    { value: '#8b5cf6', label: 'Purple' },
-    { value: '#ec4899', label: 'Pink' },
-    { value: '#eab308', label: 'Yellow' },
-    { value: '#6b7280', label: 'Gray' },
-];
+// COLOR_OPTIONS is now imported from ColorPicker as PRESET_COLORS
 
 // --- Helpers ---
 
@@ -122,6 +118,8 @@ export function ImageMapEditorModal({
     availableLanguages = ['en'],
     allStops = [],
     translationProvider,
+    stop,
+    tourData,
     onChange,
     onClose,
 }: ImageMapEditorModalProps) {
@@ -140,6 +138,8 @@ export function ImageMapEditorModal({
     const [editorScale, setEditorScale] = useState(1);
     const [aiStatus, setAiStatus] = useState<'idle' | 'analyzing' | 'generating' | 'success' | 'error'>('idle');
     const [aiMessage, setAiMessage] = useState('');
+    const [aiSuggestRan, setAiSuggestRan] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
     const imageContainerRef = useRef<HTMLDivElement>(null);
 
     const primaryLang = availableLanguages[0] || 'en';
@@ -293,6 +293,10 @@ export function ImageMapEditorModal({
         const updated = activeMarkers.filter(m => m.id !== markerId).map((m, i) => ({ ...m, number: i + 1 }));
         updateActiveFloorMarkers(updated);
         if (selectedMarkerId === markerId) setSelectedMarkerId(null);
+    }
+
+    function updateAllMarkers(updates: Partial<ImageMapMarker>) {
+        updateActiveFloorMarkers(activeMarkers.map(m => ({ ...m, ...updates })));
     }
 
     function getStopTitle(stop: Stop): string {
@@ -498,80 +502,13 @@ export function ImageMapEditorModal({
             emitChange(updatedFloors);
 
             setAiStatus('success');
+            setAiSuggestRan(true);
             setAiMessage(`Added ${newMarkers.length} markers`);
             setTimeout(() => { setAiStatus('idle'); setAiMessage(''); }, 3000);
         } catch (error: any) {
             console.error('AI floor plan analysis failed:', error);
             setAiStatus('error');
             setAiMessage(error.message || 'Analysis failed');
-            setTimeout(() => { setAiStatus('idle'); setAiMessage(''); }, 4000);
-        }
-    }
-
-    // --- AI: Generate info text for existing markers ---
-    async function handleAIGenerateDescriptions() {
-        const markersNeedingInfo = activeMarkers.filter(m =>
-            m.label?.[activeLang]?.trim() && !m.infoText?.[activeLang]?.trim()
-        );
-        if (markersNeedingInfo.length === 0) {
-            setAiStatus('error');
-            setAiMessage('All markers already have descriptions');
-            setTimeout(() => { setAiStatus('idle'); setAiMessage(''); }, 3000);
-            return;
-        }
-
-        setAiStatus('generating');
-        setAiMessage(`Writing ${markersNeedingInfo.length} descriptions...`);
-        try {
-            let base64: string | undefined;
-            if (activeFloor?.imageUrl) {
-                const response = await fetch(activeFloor.imageUrl);
-                const blob = await response.blob();
-                base64 = await new Promise<string>((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-                    reader.readAsDataURL(blob);
-                });
-            }
-
-            const apiResponse = await fetch('/api/gemini/generate-marker-info', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    image: base64,
-                    markers: markersNeedingInfo.map(m => ({
-                        id: m.id,
-                        label: m.label?.[activeLang] || m.label?.en || 'Unknown',
-                    })),
-                    language: activeLang,
-                }),
-            });
-
-            if (!apiResponse.ok) throw new Error('API request failed');
-
-            const data = await apiResponse.json();
-            if (!data.descriptions || !Array.isArray(data.descriptions)) throw new Error('Invalid response');
-
-            // Map descriptions back to markers by index
-            const updatedMarkers = activeMarkers.map(marker => {
-                const matchIndex = markersNeedingInfo.findIndex(m => m.id === marker.id);
-                if (matchIndex === -1) return marker;
-                const desc = data.descriptions[matchIndex];
-                if (!desc?.infoText) return marker;
-                return {
-                    ...marker,
-                    infoText: { ...marker.infoText, [activeLang]: desc.infoText },
-                };
-            });
-
-            updateActiveFloorMarkers(updatedMarkers);
-            setAiStatus('success');
-            setAiMessage(`Generated ${data.descriptions.length} descriptions`);
-            setTimeout(() => { setAiStatus('idle'); setAiMessage(''); }, 3000);
-        } catch (error: any) {
-            console.error('AI description generation failed:', error);
-            setAiStatus('error');
-            setAiMessage(error.message || 'Generation failed');
             setTimeout(() => { setAiStatus('idle'); setAiMessage(''); }, 4000);
         }
     }
@@ -597,10 +534,27 @@ export function ImageMapEditorModal({
                             <h2 className="font-semibold text-[var(--color-text-primary)]">Image Map Editor</h2>
                             <p className="text-xs text-[var(--color-text-muted)]">
                                 {floors.length} floor{floors.length !== 1 ? 's' : ''} • {activeMarkers.length} marker{activeMarkers.length !== 1 ? 's' : ''}
+                                {hasMultipleLanguages && (() => {
+                                    const { dirty, total, translated } = getFloorTranslationStatus();
+                                    if (total === 0) return null;
+                                    if (dirty === 0 && translated === total) return <span className="text-green-400"> • Translated</span>;
+                                    if (dirty > 0) return <span className="text-yellow-400"> • {dirty} field{dirty > 1 ? 's' : ''} changed</span>;
+                                    if (translated > 0) return <span className="text-blue-400"> • {translated}/{total} translated</span>;
+                                    return <span> • Not translated</span>;
+                                })()}
                             </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        {stop && tourData && (
+                            <button
+                                onClick={() => setShowPreview(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] text-[var(--color-text-primary)] rounded-lg font-medium hover:bg-[var(--color-bg-hover)] transition-colors"
+                            >
+                                <Eye className="w-4 h-4" />
+                                Preview
+                            </button>
+                        )}
                         <button
                             onClick={onClose}
                             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[var(--color-accent-primary)] to-blue-600 text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
@@ -633,6 +587,7 @@ export function ImageMapEditorModal({
                             return 'none';                       // gray — never translated
                         })();
 
+                        const floorColor = floor.color || 'var(--color-accent-primary)';
                         return (
                             <div
                                 key={floor.id}
@@ -641,9 +596,10 @@ export function ImageMapEditorModal({
                                 onClick={() => { setActiveFloorId(floor.id); setSelectedMarkerId(null); }}
                                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveFloorId(floor.id); setSelectedMarkerId(null); } }}
                                 className={`group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap cursor-pointer select-none ${floor.id === activeFloorId
-                                    ? 'bg-[var(--color-accent-primary)] text-white shadow-md'
+                                    ? 'text-white shadow-md'
                                     : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
                                     }`}
+                                style={floor.id === activeFloorId ? { backgroundColor: floorColor } : undefined}
                             >
                                 <span>{floor.label?.[activeLang] || floor.label?.en || `Floor ${floor.order + 1}`}</span>
                                 <span className="text-[10px] opacity-60">{floor.markers.length}</span>
@@ -671,6 +627,23 @@ export function ImageMapEditorModal({
                         <Plus className="w-4 h-4" />
                         Add Floor
                     </button>
+
+                    {/* Floor color picker — right-aligned */}
+                    {activeFloor && (
+                        <div className="ml-auto flex items-center gap-2 shrink-0 pl-3 border-l border-[var(--color-border-default)]">
+                            <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider">Floor Color</span>
+                            <ColorPicker
+                                value={activeFloor.color || '#3b82f6'}
+                                onChange={(color) => {
+                                    const updated = floors.map(f =>
+                                        f.id === activeFloorId ? { ...f, color } : f
+                                    );
+                                    updateFloors(updated);
+                                }}
+                                size="sm"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Canvas */}
@@ -803,107 +776,44 @@ export function ImageMapEditorModal({
                 <div className="flex-1 overflow-y-auto">
                     {sidebarTab === 'markers' ? (
                         <div className="p-4 space-y-4">
-                            {/* Language switcher + Translation controls */}
+                            {/* Language switcher */}
                             {hasMultipleLanguages && (
-                                <div className="space-y-2">
-                                    <div>
-                                        <label className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-1">Editing Language</label>
-                                        <LanguageSwitcher
-                                            availableLanguages={availableLanguages}
-                                            activeLanguage={activeLang}
-                                            onChange={setActiveLang}
-                                            size="sm"
-                                            showStatus={false}
-                                        />
-                                    </div>
-
-                                    {/* Translate floor button — right below language switcher */}
-                                    {(() => {
-                                        const { dirty, total, translated } = getFloorTranslationStatus();
-                                        const allCurrent = total > 0 && dirty === 0 && translated === total;
-                                        const neverTranslated = translated === 0 && dirty === 0;
-                                        const hasUntranslated = total > 0 && (dirty > 0 || (translated < total && !neverTranslated));
-
-                                        // Button label based on state
-                                        let buttonLabel: string;
-                                        let buttonStyle: string;
-                                        if (translateStatus === 'success' && translateMessage) {
-                                            buttonLabel = translateMessage;
-                                            buttonStyle = 'bg-green-500/10 text-green-400 border-green-500/20';
-                                        } else if (translateStatus === 'error') {
-                                            buttonLabel = 'Retry translation';
-                                            buttonStyle = 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20';
-                                        } else if (allCurrent) {
-                                            buttonLabel = 'Re-translate floor';
-                                            buttonStyle = 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20';
-                                        } else if (dirty > 0) {
-                                            buttonLabel = `Translate ${dirty} changed field${dirty > 1 ? 's' : ''}`;
-                                            buttonStyle = 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20 hover:bg-yellow-500/20';
-                                        } else if (neverTranslated && total > 0) {
-                                            buttonLabel = `Translate floor (${total} field${total > 1 ? 's' : ''})`;
-                                            buttonStyle = 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/20 hover:bg-[var(--color-accent-primary)]/20';
-                                        } else if (hasUntranslated) {
-                                            buttonLabel = `Translate ${total - translated} remaining`;
-                                            buttonStyle = 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/20 hover:bg-[var(--color-accent-primary)]/20';
-                                        } else {
-                                            buttonLabel = 'Translate floor';
-                                            buttonStyle = 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/20 hover:bg-[var(--color-accent-primary)]/20';
-                                        }
-
-                                        return (
-                                            <div className="space-y-1.5">
-                                                <button
-                                                    onClick={() => handleTranslateFloor(allCurrent)}
-                                                    disabled={isTranslatingAll || total === 0}
-                                                    className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border disabled:opacity-50 transition-all ${buttonStyle}`}
-                                                >
-                                                    {isTranslatingAll ? (
-                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                    ) : translateStatus === 'success' ? (
-                                                        <CheckIcon className="w-3.5 h-3.5" />
-                                                    ) : translateStatus === 'error' ? (
-                                                        <AlertTriangle className="w-3.5 h-3.5" />
-                                                    ) : (
-                                                        <Languages className="w-3.5 h-3.5" />
-                                                    )}
-                                                    {isTranslatingAll ? 'Translating...' : buttonLabel}
-                                                </button>
-
-                                                {/* Status summary */}
-                                                {total > 0 && !isTranslatingAll && translateStatus === 'idle' && (
-                                                    <div className="flex items-center justify-between text-[10px] text-[var(--color-text-muted)] px-1">
-                                                        <span>{translated}/{total} fields translated</span>
-                                                        {dirty > 0 && (
-                                                            <span className="text-yellow-400">{dirty} changed</span>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* Error message banner */}
-                                                {translateStatus === 'error' && translateMessage && (
-                                                    <div className="flex items-start gap-2 text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-2">
-                                                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                                                        <span>{translateMessage}</span>
-                                                    </div>
-                                                )}
-
-                                                {/* Success message */}
-                                                {translateStatus === 'success' && translateMessage && (
-                                                    <div className="flex items-center gap-2 text-[11px] text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-2.5 py-1.5">
-                                                        <CheckIcon className="w-3.5 h-3.5 shrink-0" />
-                                                        <span>{translateMessage}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })()}
+                                <div>
+                                    <label className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-1">Editing Language</label>
+                                    <LanguageSwitcher
+                                        availableLanguages={availableLanguages}
+                                        activeLanguage={activeLang}
+                                        onChange={setActiveLang}
+                                        size="sm"
+                                        showStatus={false}
+                                    />
                                 </div>
                             )}
 
-                            {/* Floor label edit */}
+                            {/* Floor label edit — with translation status badge */}
                             {activeFloor && (
                                 <div>
-                                    <label className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-1">Floor Label</label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">Floor Label</label>
+                                        {hasMultipleLanguages && (() => {
+                                            const labelDirty = fieldNeedsTranslation(activeFloor.label, primaryLang);
+                                            const labelTranslated = !labelDirty && !!activeFloor.label?._sourceHash;
+                                            if (labelTranslated) return (
+                                                <span className="flex items-center gap-1 text-[10px] text-green-400">
+                                                    <CheckIcon className="w-3 h-3" /> Translated
+                                                </span>
+                                            );
+                                            if (labelDirty) return (
+                                                <span className="flex items-center gap-1 text-[10px] text-yellow-400">
+                                                    <AlertTriangle className="w-3 h-3" /> Changed
+                                                </span>
+                                            );
+                                            if (activeFloor.label?.[primaryLang]?.trim()) return (
+                                                <span className="text-[10px] text-[var(--color-text-muted)]">Not translated</span>
+                                            );
+                                            return null;
+                                        })()}
+                                    </div>
                                     <input
                                         type="text"
                                         value={activeFloor.label?.[activeLang] || ''}
@@ -954,26 +864,108 @@ export function ImageMapEditorModal({
                                     <button
                                         onClick={handleAISuggestMarkers}
                                         disabled={aiStatus === 'analyzing' || aiStatus === 'generating'}
-                                        className="w-full flex items-center gap-2 px-3 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 hover:text-violet-200 rounded-lg text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                                            aiSuggestRan
+                                                ? 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20'
+                                                : 'bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 hover:text-violet-200'
+                                        }`}
                                     >
-                                        <Sparkles className="w-3.5 h-3.5" />
-                                        Suggest Markers
-                                        <span className="ml-auto text-[10px] text-violet-400/60">Gemini</span>
+                                        {aiSuggestRan ? <CheckIcon className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+                                        {aiSuggestRan ? 'Markers Suggested' : 'Suggest Markers'}
+                                        <span className={`ml-auto text-[10px] ${aiSuggestRan ? 'text-green-400/60' : 'text-violet-400/60'}`}>Gemini</span>
                                     </button>
-
-                                    {activeMarkers.length > 0 && (
-                                        <button
-                                            onClick={handleAIGenerateDescriptions}
-                                            disabled={aiStatus === 'analyzing' || aiStatus === 'generating'}
-                                            className="w-full flex items-center gap-2 px-3 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 hover:text-violet-200 rounded-lg text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            <FileText className="w-3.5 h-3.5" />
-                                            Generate Descriptions
-                                            <span className="ml-auto text-[10px] text-violet-400/60">Gemini</span>
-                                        </button>
-                                    )}
                                 </div>
                             )}
+
+                            {/* Translation controls — below AI tools for clear separation from top bar */}
+                            {hasMultipleLanguages && (() => {
+                                const { dirty, total, translated } = getFloorTranslationStatus();
+                                const allCurrent = total > 0 && dirty === 0 && translated === total;
+                                const neverTranslated = translated === 0 && dirty === 0;
+                                const hasUntranslated = total > 0 && (dirty > 0 || (translated < total && !neverTranslated));
+
+                                let buttonLabel: string;
+                                let buttonStyle: string;
+                                if (translateStatus === 'success' && translateMessage) {
+                                    buttonLabel = translateMessage;
+                                    buttonStyle = 'bg-green-500/10 text-green-400 border-green-500/20';
+                                } else if (translateStatus === 'error') {
+                                    buttonLabel = 'Retry translation';
+                                    buttonStyle = 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20';
+                                } else if (allCurrent) {
+                                    buttonLabel = `Re-translate all ${total} fields`;
+                                    buttonStyle = 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20';
+                                } else if (dirty > 0) {
+                                    buttonLabel = `Translate ${dirty} changed field${dirty > 1 ? 's' : ''}`;
+                                    buttonStyle = 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20 hover:bg-yellow-500/20';
+                                } else if (neverTranslated && total > 0) {
+                                    buttonLabel = `Translate floor (${total} field${total > 1 ? 's' : ''})`;
+                                    buttonStyle = 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/20 hover:bg-[var(--color-accent-primary)]/20';
+                                } else if (hasUntranslated) {
+                                    buttonLabel = `Translate ${total - translated} remaining`;
+                                    buttonStyle = 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/20 hover:bg-[var(--color-accent-primary)]/20';
+                                } else {
+                                    buttonLabel = 'Translate floor';
+                                    buttonStyle = 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] border-[var(--color-accent-primary)]/20 hover:bg-[var(--color-accent-primary)]/20';
+                                }
+
+                                return (
+                                    <div className="bg-gradient-to-br from-blue-500/[0.05] to-transparent border border-blue-500/15 rounded-xl p-3 space-y-2">
+                                        <div className="flex items-center gap-1.5">
+                                            <Languages className="w-3.5 h-3.5 text-blue-400" />
+                                            <span className="text-xs font-semibold text-[var(--color-text-primary)] uppercase tracking-wider">Translation</span>
+                                            {allCurrent && (
+                                                <span className="ml-auto flex items-center gap-1 text-[10px] text-green-400">
+                                                    <CheckIcon className="w-3 h-3" /> Up to date
+                                                </span>
+                                            )}
+                                            {dirty > 0 && (
+                                                <span className="ml-auto text-[10px] text-yellow-400">{dirty} changed</span>
+                                            )}
+                                        </div>
+
+                                        <button
+                                            onClick={() => handleTranslateFloor(allCurrent)}
+                                            disabled={isTranslatingAll || total === 0}
+                                            className={`w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border disabled:opacity-50 transition-all ${buttonStyle}`}
+                                        >
+                                            {isTranslatingAll ? (
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            ) : translateStatus === 'success' ? (
+                                                <CheckIcon className="w-3.5 h-3.5" />
+                                            ) : translateStatus === 'error' ? (
+                                                <AlertTriangle className="w-3.5 h-3.5" />
+                                            ) : (
+                                                <Languages className="w-3.5 h-3.5" />
+                                            )}
+                                            {isTranslatingAll ? 'Translating...' : buttonLabel}
+                                        </button>
+
+                                        {/* Status summary */}
+                                        {total > 0 && !isTranslatingAll && translateStatus === 'idle' && (
+                                            <div className="flex items-center justify-between text-[10px] text-[var(--color-text-muted)] px-1">
+                                                <span>{translated}/{total} fields translated</span>
+                                            </div>
+                                        )}
+
+                                        {/* Error message banner */}
+                                        {translateStatus === 'error' && translateMessage && (
+                                            <div className="flex items-start gap-2 text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-2.5 py-2">
+                                                <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                                <span>{translateMessage}</span>
+                                            </div>
+                                        )}
+
+                                        {/* Success message */}
+                                        {translateStatus === 'success' && translateMessage && (
+                                            <div className="flex items-center gap-2 text-[11px] text-green-400 bg-green-500/10 border border-green-500/20 rounded-lg px-2.5 py-1.5">
+                                                <CheckIcon className="w-3.5 h-3.5 shrink-0" />
+                                                <span>{translateMessage}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             {/* Selected marker editor */}
                             {selectedMarker && (
@@ -983,13 +975,22 @@ export function ImageMapEditorModal({
                                             <MapPin className="w-4 h-4 text-[var(--color-accent-primary)]" />
                                             Marker #{selectedMarker.number || '?'}
                                         </h4>
-                                        <button
-                                            onClick={() => deleteMarker(selectedMarker.id)}
-                                            className="text-red-400 hover:text-red-500 p-1 rounded hover:bg-red-500/10 transition-colors"
-                                            title="Delete marker"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={() => deleteMarker(selectedMarker.id)}
+                                                className="text-red-400 hover:text-red-500 p-1 rounded hover:bg-red-500/10 transition-colors"
+                                                title="Delete marker"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => setSelectedMarkerId(null)}
+                                                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] p-1 rounded hover:bg-[var(--color-bg-hover)] transition-colors"
+                                                title="Close marker editor"
+                                            >
+                                                <ChevronUp className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {/* Label */}
@@ -1030,23 +1031,13 @@ export function ImageMapEditorModal({
                                         </div>
                                     </div>
 
-                                    {/* Color swatches */}
+                                    {/* Color */}
                                     <div>
                                         <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">Color</label>
-                                        <div className="flex gap-1.5 flex-wrap">
-                                            {COLOR_OPTIONS.map(opt => (
-                                                <button
-                                                    key={opt.value}
-                                                    onClick={() => updateMarker(selectedMarker.id, { color: opt.value })}
-                                                    className={`w-6 h-6 rounded-full transition-all ${(selectedMarker.color || '#3b82f6') === opt.value
-                                                        ? 'ring-2 ring-offset-2 ring-[var(--color-accent-primary)] scale-110'
-                                                        : 'hover:scale-110'
-                                                        }`}
-                                                    style={{ backgroundColor: opt.value }}
-                                                    title={opt.label}
-                                                />
-                                            ))}
-                                        </div>
+                                        <ColorPicker
+                                            value={selectedMarker.color || '#3b82f6'}
+                                            onChange={(color) => updateMarker(selectedMarker.id, { color })}
+                                        />
                                     </div>
 
                                     {/* Action: Link to Stop OR Info Text */}
@@ -1094,9 +1085,44 @@ export function ImageMapEditorModal({
 
                             {/* Marker list */}
                             <div>
-                                <h4 className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-2">
-                                    Markers on this floor ({activeMarkers.length})
-                                </h4>
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider">
+                                        Markers on this floor ({activeMarkers.length})
+                                    </h4>
+                                </div>
+
+                                {/* Bulk edit toolbar */}
+                                {activeMarkers.length > 1 && (
+                                    <div className="mb-3 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-lg p-2.5 space-y-2">
+                                        <div className="flex items-center gap-1.5">
+                                            <Wand2 className="w-3 h-3 text-[var(--color-text-muted)]" />
+                                            <span className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider">Apply to all markers</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-[var(--color-text-muted)] shrink-0">Icon</span>
+                                            <div className="flex gap-0.5 flex-wrap">
+                                                {ICON_OPTIONS.slice(0, 8).map(opt => (
+                                                    <button
+                                                        key={opt.value}
+                                                        onClick={() => updateAllMarkers({ icon: opt.value })}
+                                                        className="w-6 h-6 rounded text-center text-xs hover:bg-[var(--color-bg-hover)] transition-colors"
+                                                        title={`Set all to ${opt.label}`}
+                                                    >
+                                                        {opt.icon}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-[var(--color-text-muted)] shrink-0">Color</span>
+                                            <ColorPicker
+                                                value={activeMarkers[0]?.color || '#3b82f6'}
+                                                onChange={(color) => updateAllMarkers({ color })}
+                                                size="sm"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                                 {activeMarkers.length === 0 ? (
                                     <p className="text-sm text-[var(--color-text-muted)] italic text-center py-6">
                                         Click on the floor plan to place markers
@@ -1216,6 +1242,18 @@ export function ImageMapEditorModal({
                     )}
                 </div>
             </div>
+
+            {/* Preview Choice Modal */}
+            {showPreview && stop && tourData && (
+                <PreviewChoiceModal
+                    isOpen={showPreview}
+                    tour={tourData}
+                    stops={allStops}
+                    initialStop={stop}
+                    availableLanguages={availableLanguages}
+                    onClose={() => setShowPreview(false)}
+                />
+            )}
         </div>
     );
 }

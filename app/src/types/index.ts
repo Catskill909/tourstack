@@ -465,6 +465,7 @@ export interface ImageMapFloor {
   label: { [lang: string]: string };    // e.g. "Ground Floor", "Level 2"
   order: number;
   markers: ImageMapMarker[];
+  color?: string;                       // Floor tab accent color (hex)
 }
 
 export interface ImageMapBlockData {

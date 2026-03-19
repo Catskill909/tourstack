@@ -161,6 +161,7 @@ export function ImageMapBlockPreview({
                     <Layers className="w-4 h-4 text-[var(--color-text-muted)] shrink-0 mr-1" />
                     {floors.map(floor => {
                         const label = floor.label?.[language] || floor.label?.en || `Floor ${floor.order + 1}`;
+                        const floorColor = floor.color || 'var(--color-accent-primary)';
                         return (
                             <button
                                 key={floor.id}
@@ -171,9 +172,10 @@ export function ImageMapBlockPreview({
                                     setOrigin({ x: 50, y: 50 });
                                 }}
                                 className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all ${floor.id === activeFloorId
-                                    ? 'bg-[var(--color-accent-primary)] text-white shadow-md'
+                                    ? 'text-white shadow-md'
                                     : 'bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] shadow-sm ring-1 ring-black/[0.08] dark:ring-white/[0.12] hover:bg-[var(--color-bg-hover)] hover:shadow-md'
                                     }`}
+                                style={floor.id === activeFloorId ? { backgroundColor: floorColor } : undefined}
                             >
                                 {label}
                             </button>

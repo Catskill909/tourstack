@@ -1,8 +1,8 @@
 # Image Map Block — Development Guide
 
 **Created:** March 9, 2026 | **Phase 28**
-**Status:** Phase 1 + Phase 1+ + Phase 1.5 Translation Rework COMPLETE ✅
-**Next up:** Phase 2 editor polish, then Phase 3 AI & Accessibility
+**Status:** Phase 1 + Phase 1+ + Phase 1.5 + Phase 2 Editor Polish COMPLETE ✅
+**Next up:** Phase 3 AI & Accessibility, Phase 4 "Where Am I?"
 
 ---
 
@@ -63,11 +63,18 @@ Why this matters:
 | **Translation: error handling** | ✅ Done | Error/success banners, per-marker status dots |
 | **Translation: UI consolidation** | ✅ Done | Single translate button per floor, per-marker/per-floor status indicators |
 | **Translation: rate limiting** | ✅ Done | Server-side 80K/100s sliding window, retry + auto-fallback to LibreTranslate |
+| **Preview button** | ✅ Done | Opens PreviewChoiceModal (simulator/device) from editor header |
+| **Translation UI reorganization** | ✅ Done | Translation section moved below AI Tools with dedicated card, status in header subtitle |
+| **Floor label translation status** | ✅ Done | Per-field "Translated" / "Changed" / "Not translated" badge next to floor label |
+| **AI Suggest Markers** | ✅ Done | Gemini analyzes floor plan → suggests markers with labels + descriptions |
+| **AI tool run status** | ✅ Done | Suggest Markers button shows green checkmark after successful run |
+| **Marker editor collapse** | ✅ Done | ChevronUp button to close selected marker editor panel |
+| **Bulk marker edit** | ✅ Done | "Apply to all markers" toolbar — set icon or color for all markers at once |
+| **Per-floor colors** | ✅ Done | Each floor has a custom color, used on floor tabs in editor + visitor preview |
+| **Custom color picker** | ✅ Done | Reusable `ColorPicker` component with 8 presets + custom color (rainbow gradient button → native picker) |
 | Marker drag-to-reorder in list | 🔜 Next | GripVertical icon shown but reorder not wired |
 | Marker categories & filters | 🔜 Next | Group by exhibits/facilities/exits |
 | "Where Am I?" button | 🔜 Future | Uses last-visited-stop + GPS + QR/NFC |
-| AI Auto-Marker Placement | 🔜 Next | Gemini/GPT-4V detects rooms on floor plans |
-| AI Description Generator | 🔜 Next | Auto-generate info text from stop content |
 | Accessibility Annotations | 🔜 Next | Wheelchair routes, tactile paths, elevators |
 | Walk-and-assign field mode | 🔜 Future | GPS → image coordinate mapping |
 | Custom marker icons | 🔜 Future | Upload custom PNG/SVG per marker |
@@ -190,6 +197,7 @@ export interface ImageMapFloor {
   label: { [lang: string]: string };      // e.g. "Ground Floor", "Level 2"
   order: number;
   markers: ImageMapMarker[];
+  color?: string;                          // Floor tab accent color (hex)
 }
 
 export interface ImageMapBlockData {
@@ -230,12 +238,13 @@ export interface ImageMapBlockData {
 
 | File | Lines | Purpose |
 |------|-------|---------|
-| `app/src/components/blocks/ImageMapEditorModal.tsx` | ~1150 | Full-screen editor: floor tabs, canvas, marker sidebar, settings, translation with dirty tracking |
+| `app/src/components/blocks/ImageMapEditorModal.tsx` | ~1200 | Full-screen editor: floor tabs, canvas, marker sidebar, settings, translation, AI tools, bulk edit, preview |
 | `app/src/components/blocks/ImageMapBlockEditor.tsx` | ~133 | Inline summary card: thumbnail, stats, "Open Full Editor" button |
-| `app/src/components/blocks/ImageMapBlockPreview.tsx` | ~305 | Visitor view: floor plan, markers, zoom, popups, floor switcher, legend |
-| `app/src/components/blocks/ImageMapMarkerPin.tsx` | ~91 | Reusable marker pin: 5 icons, 7+ colors, selection/drag states |
-| `app/src/types/index.ts` | — | `ImageMapBlockData`, `ImageMapMarker`, `ImageMapFloor`, `ImageMapIcon` |
-| `app/src/components/StopEditor.tsx` | — | Block registration: add menu, empty block data, modal state |
+| `app/src/components/blocks/ImageMapBlockPreview.tsx` | ~422 | Visitor view: floor plan, markers, zoom, popups, floor switcher (per-floor colors), legend |
+| `app/src/components/blocks/ImageMapMarkerPin.tsx` | ~127 | Reusable marker pin: 16 icons, custom colors, selection/drag states |
+| `app/src/components/ui/ColorPicker.tsx` | ~75 | Reusable color picker: 8 presets + custom color (native OS picker) |
+| `app/src/types/index.ts` | — | `ImageMapBlockData`, `ImageMapMarker`, `ImageMapFloor` (with `color`), `ImageMapIcon` |
+| `app/src/components/StopEditor.tsx` | — | Block registration: add menu, empty block data, modal state, preview props |
 | `app/src/components/blocks/StopContentBlock.tsx` | — | Preview rendering: icon (`LayoutGrid`), label, size logic |
 
 ### Registration Points (3 + 3 pattern)
@@ -373,23 +382,26 @@ function simpleHash(str: string): string {
 
 ---
 
-### Phase 2: Editor Polish 🔜
+### Phase 2: Editor Polish ✅ (Complete — March 19, 2026)
 
-| Feature | Description | Complexity |
-|---------|-------------|------------|
-| **Marker drag-to-reorder** | Wire up the existing GripVertical handles in marker sidebar list | Low |
-| **Bulk select + delete** | Multi-select markers for batch operations | Low |
-| **Duplicate marker** | Clone a marker (same config, slightly offset position) | Low |
-| **Auto-number** | Button to assign sequential numbers based on list order | Low |
-| **Marker categories** | Group by type (exhibits, facilities, exits) + visitor filter toggles | Medium |
-| **Snap-to-grid** | Optional alignment grid for precise marker placement | Medium |
+| Feature | Status | Description |
+|---------|--------|-------------|
+| **Preview button** | ✅ Done | Opens PreviewChoiceModal (simulator/device) from editor header |
+| **Translation UI reorganization** | ✅ Done | Moved to dedicated "Translation" card below AI Tools, clearer visual separation |
+| **AI tool run status** | ✅ Done | Suggest Markers shows green checkmark after successful run |
+| **Marker editor collapse** | ✅ Done | ChevronUp button to close selected marker panel |
+| **Bulk marker edit** | ✅ Done | "Apply to all markers" toolbar — set icon or color for all markers at once |
+| **Per-floor colors** | ✅ Done | Each floor has a custom color for tabs in editor + visitor preview |
+| **Custom color picker** | ✅ Done | Reusable `ColorPicker` component — 8 presets + custom color (rainbow button → native picker) |
+| **Removed redundant AI button** | ✅ Done | "Generate Descriptions" removed — "Suggest Markers" already generates both labels + descriptions |
+| Marker drag-to-reorder | 🔜 Next | GripVertical icon shown but reorder not wired |
+| Marker categories | 🔜 Next | Group by type (exhibits, facilities, exits) + visitor filter toggles |
 
 ### Phase 3: AI & Accessibility 🔜
 
 | Feature | Description | Complexity |
 |---------|-------------|------------|
-| **AI Auto-Marker Placement** | Gemini/GPT-4V detects rooms and exhibits on uploaded floor plans, suggests marker positions | Medium |
-| **AI Description Generator** | Generates visitor-friendly info text from marker label + stop content | Medium |
+| **AI Auto-Marker Placement** | ✅ Done — Gemini analyzes floor plans, suggests markers with positions + descriptions | Medium |
 | **Accessibility Annotations** | Wheelchair routes, tactile paths, elevator markers with standardized icons | Medium |
 
 ### Phase 4: "Where Am I?" Button 🔜

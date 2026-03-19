@@ -1055,6 +1055,8 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                         availableLanguages={availableLanguages}
                         allStops={allStops}
                         translationProvider={translationProvider}
+                        stop={editedStop}
+                        tourData={tourData}
                         onChange={(data) => handleUpdateBlock(showImageMapEditorId, data)}
                         onClose={() => setShowImageMapEditorId(null)}
                     />
