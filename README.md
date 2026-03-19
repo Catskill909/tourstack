@@ -1,8 +1,23 @@
 # TourStack 🏛️
 
-**Museum tour builder with modular content blocks and Swiss Army Knife positioning**
+**AI-powered museum tour builder with modular content blocks, multilingual support, and Swiss Army Knife positioning**
 
-Build interactive tours with QR codes, GPS, Bluetooth beacons, NFC, and more. Support for multilingual content, audio guides, image galleries, and rich media.
+Build interactive tours with QR codes, GPS, Bluetooth beacons, NFC, and more. AI translation, text-to-speech narration, image analysis, document intelligence, and a per-tour visitor chatbot — all built in.
+
+---
+
+## 🤖 AI-Powered Features
+
+| Feature | What it does | Powered by |
+|---------|-------------|------------|
+| **Magic Translate** | One-click translation for all content fields — titles, descriptions, text blocks, quick actions, welcome messages | Google Cloud Translation, LibreTranslate (fallback) |
+| **Text-to-Speech** | Generate narration audio for any stop in 32+ languages with 3000+ voice options | ElevenLabs, Deepgram Aura-2, Google Cloud TTS |
+| **Image OCR & Analysis** | Extract text from images, auto-generate alt text, identify artwork and objects | Google Vision AI |
+| **AI Concierge Chatbot** | Per-tour visitor chatbot with custom persona, quick actions, and knowledge sourced from tour content + uploaded documents | Google Gemini |
+| **Document Intelligence** | Upload PDFs/DOCX — extract text, generate summaries, key facts, and FAQ for chatbot knowledge | Google Gemini |
+| **Image Map Editor** | Place interactive hotspots on images with labels, descriptions, and custom colors | Built-in |
+
+> All AI features are optional — TourStack works fully offline with no API keys configured. Add keys to unlock each capability.
 
 ---
 
