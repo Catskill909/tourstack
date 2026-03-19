@@ -3,7 +3,7 @@ import { X, Upload, Trash2, Plus, Minus, RotateCcw, MapPin, Layers, GripVertical
 import { ImageMapMarkerPin } from './ImageMapMarkerPin';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { PreviewChoiceModal } from '../PreviewChoiceModal';
-import { ColorPicker, PRESET_COLORS } from '../ui/ColorPicker';
+import { ColorPicker } from '../ui/ColorPicker';
 import { magicTranslate, type TranslationProvider } from '../../services/translationService';
 import type { ImageMapBlockData, ImageMapMarker, ImageMapFloor, ImageMapIcon, Stop, Tour } from '../../types';
 
