@@ -15,7 +15,7 @@ Build interactive tours with QR codes, GPS, Bluetooth beacons, NFC, and more. AI
 | **Image OCR & Analysis** | Extract text from images, auto-generate alt text, identify artwork and objects | Google Vision AI |
 | **AI Concierge Chatbot** | Per-tour visitor chatbot with custom persona, quick actions, and knowledge sourced from tour content + uploaded documents | Google Gemini |
 | **Document Intelligence** | Upload PDFs/DOCX — extract text, generate summaries, key facts, and FAQ for chatbot knowledge | Google Gemini |
-| **Image Map Editor** | Place interactive hotspots on images with labels, descriptions, and custom colors | Built-in |
+| **Image Map Editor** | Place interactive hotspots on images with AI-assisted floorplan analysis to auto-suggest marker placements | Google Gemini |
 
 > All AI features are optional — TourStack works fully offline with no API keys configured. Add keys to unlock each capability.
 
