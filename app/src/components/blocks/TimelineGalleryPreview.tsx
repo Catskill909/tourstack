@@ -37,6 +37,17 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
     // Sort images by timestamp
     const sortedImages = [...images].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
+    // Set initial image to the one with lowest timestamp (first in sortedImages)
+    useEffect(() => {
+        if (sortedImages.length > 0 && currentTime === 0 && !isPlaying) {
+            const firstByTimestamp = sortedImages[0];
+            const correctIndex = images.findIndex(img => img.id === firstByTimestamp.id || img.url === firstByTimestamp.url);
+            if (correctIndex >= 0 && correctIndex !== currentIndex) {
+                setCurrentIndex(correctIndex);
+            }
+        }
+    }, [sortedImages.length, images.length]);
+
     // Preload all images on mount
     useEffect(() => {
         if (images.length === 0) return;
