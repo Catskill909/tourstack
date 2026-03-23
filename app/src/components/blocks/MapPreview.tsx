@@ -268,7 +268,7 @@ function OpenStreetMapView({ data, language, interactive, className, onStopNavig
 }
 
 // Google Maps component
-function GoogleMapView({ data, language, interactive, className, apiKey }: { data: MapBlockData; language: string; interactive: boolean; className?: string; apiKey: string }) {
+function GoogleMapView({ data, language, interactive, className, apiKey, onStopNavigate }: { data: MapBlockData; language: string; interactive: boolean; className?: string; apiKey: string; onStopNavigate?: (stopId: string) => void }) {
   const mapRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
@@ -333,6 +333,8 @@ function GoogleMapView({ data, language, interactive, className, apiKey }: { dat
         }
 
         // Add custom markers with colored pins
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let activeInfoWindow: any = null;
         if (data.markers && data.markers.length > 0) {
           const bounds = new window.google!.maps.LatLngBounds();
 
@@ -357,13 +359,32 @@ function GoogleMapView({ data, language, interactive, className, apiKey }: { dat
             // Info window
             const infoText = marker.infoText?.[language] || marker.infoText?.en || '';
             const label = marker.title?.[language] || marker.title?.en || '';
-            if (infoText || label) {
+            if (infoText || label || marker.stopId) {
               let content = '<div style="padding:10px 12px;min-width:140px;max-width:240px;font-family:system-ui,-apple-system,sans-serif;">';
               if (label) content += `<strong style="display:block;font-size:15px;font-weight:600;color:#111827;margin-bottom:2px;">${escapeHtml(label)}</strong>`;
               if (infoText) content += `<p style="color:#6b7280;font-size:13px;margin:4px 0 0;line-height:1.45;">${escapeHtml(infoText)}</p>`;
+              if (marker.stopId) content += `<a href="#" class="gmap-stop-link" data-stop-id="${escapeHtml(marker.stopId)}" style="display:inline-block;margin-top:8px;padding:5px 12px;font-size:12.5px;font-weight:600;color:#374151;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;text-decoration:none;">Go to stop &rarr;</a>`;
               content += '</div>';
               const infoWindow = new window.google!.maps.InfoWindow({ content });
-              gMarker.addListener('click', () => infoWindow.open(map, gMarker));
+              gMarker.addListener('click', () => {
+                // Close any previously open InfoWindow
+                if (activeInfoWindow) activeInfoWindow.close();
+                infoWindow.open(map, gMarker);
+                activeInfoWindow = infoWindow;
+              });
+              // Handle stop link clicks inside InfoWindow
+              if (marker.stopId && onStopNavigate) {
+                window.google!.maps.event.addListener(infoWindow, 'domready', () => {
+                  const el = document.querySelector('.gmap-stop-link[data-stop-id]') as HTMLElement;
+                  if (el) {
+                    el.addEventListener('click', (evt) => {
+                      evt.preventDefault();
+                      const stopId = el.getAttribute('data-stop-id');
+                      if (stopId) onStopNavigate(stopId);
+                    });
+                  }
+                });
+              }
             }
           });
 
@@ -489,7 +510,7 @@ export function MapPreview({ data, language, deviceType: _deviceType = 'phone', 
 
     return (
       <div className={containerClass}>
-        <GoogleMapView data={data} language={language} interactive={interactive} apiKey={googleApiKey} />
+        <GoogleMapView data={data} language={language} interactive={interactive} apiKey={googleApiKey} onStopNavigate={onStopNavigate} />
         {markerTitle && (
           <div className="mt-2 text-sm text-[var(--color-text-secondary)]">{markerTitle}</div>
         )}
