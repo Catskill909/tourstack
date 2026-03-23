@@ -532,9 +532,9 @@ export function MapEditorModal({
       {/* Preview Choice Modal — portal to document.body to escape Leaflet z-index stacking context */}
       {showPreview && stop && tourData && (() => {
         // Build a preview stop with the current (possibly unsaved) map block data
-        const previewStop = {
+        const previewStop: Stop = {
           ...stop,
-          contentBlocks: (stop.contentBlocks || []).map((b: { type: string; data: unknown }) =>
+          contentBlocks: (stop.contentBlocks || []).map((b) =>
             b.type === 'map' ? { ...b, data } : b
           ),
         };

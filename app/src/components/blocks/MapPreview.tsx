@@ -134,8 +134,6 @@ function OpenStreetMapView({ data, language, interactive, className, onStopNavig
           doubleClickZoom: interactive,
           boxZoom: interactive,
           keyboard: interactive,
-          // Always allow tap on markers for popups even when map isn't draggable
-          tap: true,
         });
 
         // Add tile layer based on style
