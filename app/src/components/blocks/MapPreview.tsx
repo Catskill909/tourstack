@@ -361,9 +361,9 @@ function GoogleMapView({ data, language, interactive, className, apiKey, onStopN
             const label = marker.title?.[language] || marker.title?.en || '';
             if (infoText || label || marker.stopId) {
               let content = '<div style="padding:8px 10px;max-width:220px;font-family:system-ui,-apple-system,sans-serif;">';
-              if (label) content += `<strong style="display:block;font-size:15px;font-weight:600;color:#111827;margin-bottom:2px;">${escapeHtml(label)}</strong>`;
-              if (infoText) content += `<p style="color:#6b7280;font-size:13px;margin:4px 0 0;line-height:1.45;">${escapeHtml(infoText)}</p>`;
-              if (marker.stopId) content += `<a href="#" class="gmap-stop-link" data-stop-id="${escapeHtml(marker.stopId)}" style="display:inline-block;margin-top:8px;padding:5px 12px;font-size:12.5px;font-weight:600;color:#374151;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;text-decoration:none;">Go to stop &rarr;</a>`;
+              if (label) content += `<strong style="display:block;font-size:13px;font-weight:600;color:#f9fafb;margin-bottom:2px;">${escapeHtml(label)}</strong>`;
+              if (infoText) content += `<p style="color:#9ca3af;font-size:12px;margin:2px 0 0;line-height:1.35;">${escapeHtml(infoText)}</p>`;
+              if (marker.stopId) content += `<a href="#" class="gmap-stop-link" data-stop-id="${escapeHtml(marker.stopId)}" style="display:inline-block;margin-top:6px;padding:4px 10px;font-size:11.5px;font-weight:600;color:#e5e7eb;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-decoration:none;">Go to stop &rarr;</a>`;
               content += '</div>';
               const infoWindow = new window.google!.maps.InfoWindow({ content });
               gMarker.addListener('click', () => {
