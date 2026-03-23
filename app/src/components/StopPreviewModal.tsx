@@ -168,7 +168,7 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
 
     return (
         <div
-            className="fixed inset-0 z-50 flex flex-col bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0d0d0d]"
+            className="fixed inset-0 z-[110] flex flex-col bg-gradient-to-br from-[#0a0a0a] via-[#111111] to-[#0d0d0d]"
             onClick={onClose}
         >
             {/* Header Bar */}
@@ -210,11 +210,10 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                 {deviceType === 'tablet' && (
                     <button
                         onClick={toggleOrientation}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border ${
-                            isLandscape
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 border ${isLandscape
                                 ? 'bg-[var(--color-accent-primary)]/15 border-[var(--color-accent-primary)]/40 text-[var(--color-accent-primary)]'
                                 : 'bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                        }`}
+                            }`}
                         title={orientation === 'portrait' ? 'Switch to landscape' : 'Switch to portrait'}
                     >
                         <RotateCw className="w-4 h-4" />
@@ -292,178 +291,178 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                 {isKioskMode ? (
                     /* ===== KIOSK MODE: Frameless, fills available space ===== */
                     <div className="w-full h-full flex items-center justify-center">
-                    <div
-                        className="relative w-full h-full overflow-hidden rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-primary)]"
-                        style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}
-                    >
-                        {/* Screen Content */}
                         <div
-                            className="h-full overflow-y-auto"
-                            style={{ scrollbarWidth: 'none' }}
+                            className="relative w-full h-full overflow-hidden rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-primary)]"
+                            style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}
                         >
-                            {/* Back navigation bar when viewing a different stop */}
-                            {stopHistory.length > 0 && !(blocks.length > 0 && blocks[0].type === 'tour') && (
-                                <div className="sticky top-0 z-10 bg-[var(--color-bg-surface)]/95 backdrop-blur-md">
-                                    <div className="flex items-center gap-2 py-2 px-10 border-b border-[var(--color-border-default)]">
-                                        <button
-                                            onClick={navigateBack}
-                                            className="flex items-center gap-1 text-[var(--color-accent-primary)] text-sm hover:underline"
+                            {/* Screen Content */}
+                            <div
+                                className="h-full overflow-y-auto"
+                                style={{ scrollbarWidth: 'none' }}
+                            >
+                                {/* Back navigation bar when viewing a different stop */}
+                                {stopHistory.length > 0 && !(blocks.length > 0 && blocks[0].type === 'tour') && (
+                                    <div className="sticky top-0 z-10 bg-[var(--color-bg-surface)]/95 backdrop-blur-md">
+                                        <div className="flex items-center gap-2 py-2 px-10 border-b border-[var(--color-border-default)]">
+                                            <button
+                                                onClick={navigateBack}
+                                                className="flex items-center gap-1 text-[var(--color-accent-primary)] text-sm hover:underline"
+                                            >
+                                                <ChevronLeft className="w-4 h-4" />
+                                                Back
+                                            </button>
+                                            <span className="text-xs text-[var(--color-text-muted)] truncate flex-1 text-right">
+                                                {getStopTitle()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Content */}
+                                {(() => {
+                                    const hasTourIntroFirst = blocks.length > 0 && blocks[0].type === 'tour';
+                                    const kioskContentHeight = containerSize.height || undefined;
+                                    return (
+                                        <div
+                                            className={hasTourIntroFirst ? '' : 'space-y-5 px-10'}
+                                            style={hasTourIntroFirst ? { height: kioskContentHeight, minHeight: kioskContentHeight } : {
+                                                paddingTop: 24,
+                                                fontSize: '1.25rem',
+                                            }}
                                         >
-                                            <ChevronLeft className="w-4 h-4" />
-                                            Back
-                                        </button>
-                                        <span className="text-xs text-[var(--color-text-muted)] truncate flex-1 text-right">
-                                            {getStopTitle()}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Content */}
-                            {(() => {
-                                const hasTourIntroFirst = blocks.length > 0 && blocks[0].type === 'tour';
-                                const kioskContentHeight = containerSize.height || undefined;
-                                return (
-                                    <div
-                                        className={hasTourIntroFirst ? '' : 'space-y-5 px-10'}
-                                        style={hasTourIntroFirst ? { height: kioskContentHeight, minHeight: kioskContentHeight } : {
-                                            paddingTop: 24,
-                                            fontSize: '1.25rem',
-                                        }}
-                                    >
-                                        {/* Stop Header */}
-                                        {!hasTourIntroFirst && (displaySettings.showTitles || displaySettings.showDescriptions) && (
-                                            <div className="space-y-3 mb-4">
-                                                {displaySettings.showTitles && (currentStop.showTitle ?? true) && (
-                                                    <h1
-                                                        className="font-bold text-[var(--color-text-primary)] leading-tight"
-                                                        style={{ fontSize: '2.5rem' }}
-                                                    >
-                                                        {getStopTitle()}
-                                                    </h1>
-                                                )}
-                                                {displaySettings.showDescriptions && (currentStop.showDescription ?? true) && getStopDescription() && (
-                                                    <p
-                                                        className="text-[var(--color-text-secondary)] leading-relaxed"
-                                                        style={{ fontSize: '1.25rem' }}
-                                                    >
-                                                        {getStopDescription()}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* Hero Image */}
-                                        {!hasTourIntroFirst && (currentStop.showImage ?? true) && (() => {
-                                            const heroImage = currentStop.image;
-                                            if (!heroImage) return null;
-                                            const imageData = typeof heroImage === 'object'
-                                                ? heroImage
-                                                : { url: heroImage, caption: {} };
-                                            if (!imageData.url) return null;
-                                            const caption = typeof imageData.caption === 'object'
-                                                ? imageData.caption[previewLanguage] || imageData.caption.en || ''
-                                                : '';
-                                            return (
-                                                <figure className="overflow-hidden rounded-lg mb-4 -mx-10">
-                                                    <img
-                                                        src={imageData.url}
-                                                        alt=""
-                                                        className="w-full h-auto object-cover"
-                                                        style={{ maxHeight: (containerSize.height || 600) * 0.4 }}
-                                                    />
-                                                    {caption && (
-                                                        <figcaption
-                                                            className="text-[var(--color-text-muted)] bg-[var(--color-bg-elevated)]/50 leading-snug"
-                                                            style={{ fontSize: '0.9rem', padding: '0.75rem 2.5rem' }}
+                                            {/* Stop Header */}
+                                            {!hasTourIntroFirst && (displaySettings.showTitles || displaySettings.showDescriptions) && (
+                                                <div className="space-y-3 mb-4">
+                                                    {displaySettings.showTitles && (currentStop.showTitle ?? true) && (
+                                                        <h1
+                                                            className="font-bold text-[var(--color-text-primary)] leading-tight"
+                                                            style={{ fontSize: '2.5rem' }}
                                                         >
-                                                            {caption}
-                                                        </figcaption>
+                                                            {getStopTitle()}
+                                                        </h1>
                                                     )}
-                                                </figure>
-                                            );
-                                        })()}
-
-                                        {/* Content Blocks */}
-                                        {blocks.length === 0 ? (
-                                            <div className="flex flex-col items-center justify-center py-16 text-[var(--color-text-muted)]">
-                                                <div className="w-16 h-16 rounded-full bg-[var(--color-bg-elevated)] flex items-center justify-center mb-4">
-                                                    <RotateCcw className="w-8 h-8 opacity-50" />
+                                                    {displaySettings.showDescriptions && (currentStop.showDescription ?? true) && getStopDescription() && (
+                                                        <p
+                                                            className="text-[var(--color-text-secondary)] leading-relaxed"
+                                                            style={{ fontSize: '1.25rem' }}
+                                                        >
+                                                            {getStopDescription()}
+                                                        </p>
+                                                    )}
                                                 </div>
-                                                <p className="text-sm">No content blocks yet</p>
-                                                <p className="text-xs mt-1 opacity-60">Add content to see it here</p>
-                                            </div>
-                                        ) : (
-                                            <div className={hasTourIntroFirst ? '' : 'space-y-5'} style={hasTourIntroFirst ? { height: '100%', minHeight: '100%' } : {}}>
-                                                {blocks.map((block: ContentBlock, index: number) => (
-                                                    <div
-                                                        key={block.id}
-                                                        className={
-                                                            index === 0 && hasTourIntroFirst
-                                                                ? ''
-                                                                : index > 0 && hasTourIntroFirst
-                                                                    ? 'space-y-5 px-10'
-                                                                    : ''
-                                                        }
-                                                        style={index === 0 && hasTourIntroFirst ? { height: kioskContentHeight, minHeight: kioskContentHeight } : {}}
-                                                    >
-                                                        <StopContentBlock
-                                                            block={block}
-                                                            mode="view"
-                                                            language={previewLanguage}
-                                                            deviceType={deviceType}
-                                                            tourData={tourData}
-                                                            allStops={allStops}
-                                                            displaySettings={displaySettings}
-                                                            onNavigateToStop={navigateToStop}
+                                            )}
+
+                                            {/* Hero Image */}
+                                            {!hasTourIntroFirst && (currentStop.showImage ?? true) && (() => {
+                                                const heroImage = currentStop.image;
+                                                if (!heroImage) return null;
+                                                const imageData = typeof heroImage === 'object'
+                                                    ? heroImage
+                                                    : { url: heroImage, caption: {} };
+                                                if (!imageData.url) return null;
+                                                const caption = typeof imageData.caption === 'object'
+                                                    ? imageData.caption[previewLanguage] || imageData.caption.en || ''
+                                                    : '';
+                                                return (
+                                                    <figure className="overflow-hidden rounded-lg mb-4 -mx-10">
+                                                        <img
+                                                            src={imageData.url}
+                                                            alt=""
+                                                            className="w-full h-auto object-cover"
+                                                            style={{ maxHeight: (containerSize.height || 600) * 0.4 }}
                                                         />
+                                                        {caption && (
+                                                            <figcaption
+                                                                className="text-[var(--color-text-muted)] bg-[var(--color-bg-elevated)]/50 leading-snug"
+                                                                style={{ fontSize: '0.9rem', padding: '0.75rem 2.5rem' }}
+                                                            >
+                                                                {caption}
+                                                            </figcaption>
+                                                        )}
+                                                    </figure>
+                                                );
+                                            })()}
+
+                                            {/* Content Blocks */}
+                                            {blocks.length === 0 ? (
+                                                <div className="flex flex-col items-center justify-center py-16 text-[var(--color-text-muted)]">
+                                                    <div className="w-16 h-16 rounded-full bg-[var(--color-bg-elevated)] flex items-center justify-center mb-4">
+                                                        <RotateCcw className="w-8 h-8 opacity-50" />
                                                     </div>
-                                                ))}
-                                            </div>
-                                        )}
+                                                    <p className="text-sm">No content blocks yet</p>
+                                                    <p className="text-xs mt-1 opacity-60">Add content to see it here</p>
+                                                </div>
+                                            ) : (
+                                                <div className={hasTourIntroFirst ? '' : 'space-y-5'} style={hasTourIntroFirst ? { height: '100%', minHeight: '100%' } : {}}>
+                                                    {blocks.map((block: ContentBlock, index: number) => (
+                                                        <div
+                                                            key={block.id}
+                                                            className={
+                                                                index === 0 && hasTourIntroFirst
+                                                                    ? ''
+                                                                    : index > 0 && hasTourIntroFirst
+                                                                        ? 'space-y-5 px-10'
+                                                                        : ''
+                                                            }
+                                                            style={index === 0 && hasTourIntroFirst ? { height: kioskContentHeight, minHeight: kioskContentHeight } : {}}
+                                                        >
+                                                            <StopContentBlock
+                                                                block={block}
+                                                                mode="view"
+                                                                language={previewLanguage}
+                                                                deviceType={deviceType}
+                                                                tourData={tourData}
+                                                                allStops={allStops}
+                                                                displaySettings={displaySettings}
+                                                                onNavigateToStop={navigateToStop}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
 
-                                        {/* Bottom padding */}
-                                        {!hasTourIntroFirst && <div className="h-8" />}
-                                    </div>
-                                );
-                            })()}
+                                            {/* Bottom padding */}
+                                            {!hasTourIntroFirst && <div className="h-8" />}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+
+                            {/* Kiosk Chat Button + Drawer */}
+                            {tourData?.conciergeEnabled !== false && (
+                                <>
+                                    <KioskChatButton
+                                        onClick={() => setIsChatOpen(true)}
+                                        contained
+                                        iconName={tourData?.conciergeChatIcon}
+                                        iconColor={tourData?.conciergeChatIconColor}
+                                        iconBgColor={tourData?.conciergeChatIconBgColor}
+                                    />
+                                    <ChatDrawer
+                                        isOpen={isChatOpen}
+                                        onClose={() => setIsChatOpen(false)}
+                                        language={previewLanguage}
+                                        tourId={tourData?.id}
+                                        contained
+                                        tourQuickActions={(() => {
+                                            const raw = tourData?.conciergeQuickActions;
+                                            if (!raw) return undefined;
+                                            if (Array.isArray(raw)) return raw;
+                                            try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
+                                        })()}
+                                        tourWelcomeMessage={(() => {
+                                            const raw = tourData?.conciergeWelcome;
+                                            if (!raw) return undefined;
+                                            if (typeof raw === 'object') return raw;
+                                            try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
+                                        })()}
+                                        iconName={tourData?.conciergeChatIcon}
+                                        iconColor={tourData?.conciergeChatIconColor}
+                                        iconBgColor={tourData?.conciergeChatIconBgColor}
+                                    />
+                                </>
+                            )}
                         </div>
-
-                        {/* Kiosk Chat Button + Drawer */}
-                        {tourData?.conciergeEnabled !== false && (
-                            <>
-                                <KioskChatButton
-                                    onClick={() => setIsChatOpen(true)}
-                                    contained
-                                    iconName={tourData?.conciergeChatIcon}
-                                    iconColor={tourData?.conciergeChatIconColor}
-                                    iconBgColor={tourData?.conciergeChatIconBgColor}
-                                />
-                                <ChatDrawer
-                                    isOpen={isChatOpen}
-                                    onClose={() => setIsChatOpen(false)}
-                                    language={previewLanguage}
-                                    tourId={tourData?.id}
-                                    contained
-                                    tourQuickActions={(() => {
-                                        const raw = tourData?.conciergeQuickActions;
-                                        if (!raw) return undefined;
-                                        if (Array.isArray(raw)) return raw;
-                                        try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
-                                    })()}
-                                    tourWelcomeMessage={(() => {
-                                        const raw = tourData?.conciergeWelcome;
-                                        if (!raw) return undefined;
-                                        if (typeof raw === 'object') return raw;
-                                        try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
-                                    })()}
-                                    iconName={tourData?.conciergeChatIcon}
-                                    iconColor={tourData?.conciergeChatIconColor}
-                                    iconBgColor={tourData?.conciergeChatIconBgColor}
-                                />
-                            </>
-                        )}
-                    </div>
                     </div>
                 ) : (
                     /* ===== PHONE / TABLET MODE: Device frame with bezel ===== */
@@ -476,326 +475,326 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                             minHeight: '100%',
                         }}
                     >
-                    <div
-                        style={{
-                            width: scaledWidth * scale,
-                            height: scaledHeight * scale,
-                            flexShrink: 0,
-                            transition: 'width 300ms ease-out, height 300ms ease-out',
-                        }}
-                    >
-                    <div
-                        className="relative"
-                        style={{
-                            transform: `scale(${scale})`,
-                            transformOrigin: 'top left',
-                            transition: 'transform 300ms ease-out',
-                        }}
-                    >
-                        {/* Device Frame - Outer Shell */}
                         <div
-                            className="relative"
                             style={{
-                                width: scaledWidth,
-                                height: scaledHeight,
-                                borderRadius: device.bezelRadius,
-                                background: 'linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0f0f0f 100%)',
-                                boxShadow: `
+                                width: scaledWidth * scale,
+                                height: scaledHeight * scale,
+                                flexShrink: 0,
+                                transition: 'width 300ms ease-out, height 300ms ease-out',
+                            }}
+                        >
+                            <div
+                                className="relative"
+                                style={{
+                                    transform: `scale(${scale})`,
+                                    transformOrigin: 'top left',
+                                    transition: 'transform 300ms ease-out',
+                                }}
+                            >
+                                {/* Device Frame - Outer Shell */}
+                                <div
+                                    className="relative"
+                                    style={{
+                                        width: scaledWidth,
+                                        height: scaledHeight,
+                                        borderRadius: device.bezelRadius,
+                                        background: 'linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0f0f0f 100%)',
+                                        boxShadow: `
                                     0 0 0 1px rgba(255,255,255,0.08),
                                     0 25px 50px -12px rgba(0,0,0,0.8),
                                     0 12px 24px -8px rgba(0,0,0,0.6),
                                     inset 0 1px 0 rgba(255,255,255,0.1)
                                 `,
-                            }}
-                        >
-                            {/* Side Buttons - hidden in landscape */}
-                            {!isLandscape && (
-                                <>
-                                    {/* Volume (left side) */}
-                                    <div
-                                        className="absolute -left-[3px] top-[100px] w-[3px] h-[32px] rounded-l-sm"
-                                        style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
-                                    />
-                                    <div
-                                        className="absolute -left-[3px] top-[145px] w-[3px] h-[56px] rounded-l-sm"
-                                        style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
-                                    />
-                                    <div
-                                        className="absolute -left-[3px] top-[210px] w-[3px] h-[56px] rounded-l-sm"
-                                        style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
-                                    />
-                                    {/* Power (right side) */}
-                                    <div
-                                        className="absolute -right-[3px] top-[160px] w-[3px] h-[80px] rounded-r-sm"
-                                        style={{ background: 'linear-gradient(270deg, #1a1a1a, #2a2a2a)' }}
-                                    />
-                                </>
-                            )}
-
-                            {/* Inner Bezel */}
-                            <div
-                                className="absolute inset-0 m-[1px]"
-                                style={{
-                                    borderRadius: device.bezelRadius - 1,
-                                    background: 'linear-gradient(180deg, #1f1f1f 0%, #171717 100%)',
-                                }}
-                            />
-
-                            {/* Screen Area */}
-                            <div
-                                className="absolute overflow-hidden bg-[var(--color-bg-primary)]"
-                                style={{
-                                    top: device.bezelWidth,
-                                    left: device.bezelWidth,
-                                    width: effectiveWidth,
-                                    height: effectiveHeight,
-                                    borderRadius: device.screenRadius,
-                                }}
-                            >
-                                {/* Status Bar — positioned absolutely at top, BEHIND the notch (like real iOS) */}
-                                {showStatusBar && (
-                                    <div
-                                        className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6"
-                                        style={{
-                                            paddingTop: deviceType === 'phone' ? 14 : 8,
-                                            paddingBottom: 4,
-                                        }}
-                                    >
-                                        <span className="text-xs font-semibold text-[var(--color-text-primary)]">9:41</span>
-                                        <div className="flex items-center gap-1.5">
-                                            {/* Signal bars */}
-                                            <div className="flex items-end gap-[2px]">
-                                                <div className="w-[3px] h-[4px] rounded-sm bg-[var(--color-text-primary)]" />
-                                                <div className="w-[3px] h-[6px] rounded-sm bg-[var(--color-text-primary)]" />
-                                                <div className="w-[3px] h-[8px] rounded-sm bg-[var(--color-text-primary)]" />
-                                                <div className="w-[3px] h-[10px] rounded-sm bg-[var(--color-text-primary)]" />
-                                            </div>
-                                            {/* WiFi */}
-                                            <svg className="w-4 h-4 text-[var(--color-text-primary)]" viewBox="0 0 24 24" fill="currentColor">
-                                                <path d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-4.9-2.3l1.4 1.4C9.4 16.4 10.6 16 12 16s2.6.4 3.5 1.1l1.4-1.4C15.6 14.6 13.9 14 12 14s-3.6.6-4.9 1.7zm-2.8-2.8l1.4 1.4C7.3 13 9.5 12 12 12s4.7 1 6.3 2.3l1.4-1.4C17.7 11.1 15 10 12 10s-5.7 1.1-7.7 2.9zM1.5 10l1.4 1.4C5.1 9.2 8.4 8 12 8s6.9 1.2 9.1 3.4L22.5 10C19.8 7.3 16.1 6 12 6s-7.8 1.3-10.5 4z" />
-                                            </svg>
-                                            {/* Battery */}
-                                            <div className="flex items-center gap-1">
-                                                <div className="relative w-6 h-3 rounded-[3px] border border-[var(--color-text-primary)] p-[2px]">
-                                                    <div className="h-full w-full rounded-[1px] bg-green-500" />
-                                                </div>
-                                                <div className="w-[2px] h-[4px] rounded-r-sm bg-[var(--color-text-primary)]" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Dynamic Island / Notch (Phone only) — above status bar and content */}
-                                {deviceType === 'phone' && (
-                                    <div
-                                        className="absolute top-[10px] left-1/2 -translate-x-1/2 z-30 flex items-center justify-center"
-                                        style={{
-                                            width: device.notchWidth,
-                                            height: device.notchHeight,
-                                            borderRadius: 20,
-                                            background: '#000',
-                                        }}
-                                    >
-                                        {/* Camera dot */}
-                                        <div className="w-3 h-3 rounded-full bg-[#1a1a1a] border border-[#333] ml-auto mr-4" />
-                                    </div>
-                                )}
-
-                                {/* Screen Content — starts below the notch safe area */}
-                                <div
-                                    className="h-full overflow-y-auto"
-                                    style={{ scrollbarWidth: 'none', height: effectiveHeight }}
+                                    }}
                                 >
-                                    {/* Safe area spacer + back navigation */}
-                                    {!(blocks.length > 0 && blocks[0].type === 'tour') && (
-                                        <div className="sticky top-0 z-10 bg-[var(--color-bg-surface)]/95 backdrop-blur-md">
-                                            {/* Safe area spacer — always present to keep content below notch */}
-                                            <div style={{ height: deviceType === 'phone' ? 48 : 24 }} />
-
-                                            {/* Back navigation bar when viewing a different stop */}
-                                            {stopHistory.length > 0 && (
-                                                <div className={`flex items-center gap-2 py-2 border-b border-[var(--color-border-default)] ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`}>
-                                                    <button
-                                                        onClick={navigateBack}
-                                                        className="flex items-center gap-1 text-[var(--color-accent-primary)] text-sm hover:underline"
-                                                    >
-                                                        <ChevronLeft className="w-4 h-4" />
-                                                        Back
-                                                    </button>
-                                                    <span className="text-xs text-[var(--color-text-muted)] truncate flex-1 text-right">
-                                                        {getStopTitle()}
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
+                                    {/* Side Buttons - hidden in landscape */}
+                                    {!isLandscape && (
+                                        <>
+                                            {/* Volume (left side) */}
+                                            <div
+                                                className="absolute -left-[3px] top-[100px] w-[3px] h-[32px] rounded-l-sm"
+                                                style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
+                                            />
+                                            <div
+                                                className="absolute -left-[3px] top-[145px] w-[3px] h-[56px] rounded-l-sm"
+                                                style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
+                                            />
+                                            <div
+                                                className="absolute -left-[3px] top-[210px] w-[3px] h-[56px] rounded-l-sm"
+                                                style={{ background: 'linear-gradient(90deg, #1a1a1a, #2a2a2a)' }}
+                                            />
+                                            {/* Power (right side) */}
+                                            <div
+                                                className="absolute -right-[3px] top-[160px] w-[3px] h-[80px] rounded-r-sm"
+                                                style={{ background: 'linear-gradient(270deg, #1a1a1a, #2a2a2a)' }}
+                                            />
+                                        </>
                                     )}
 
-                                    {/* Content */}
-                                    {/* Remove padding for Tour Intro blocks to allow full-bleed */}
-                                    {(() => {
-                                        const hasTourIntroFirst = blocks.length > 0 && blocks[0].type === 'tour';
-                                        return (
+                                    {/* Inner Bezel */}
+                                    <div
+                                        className="absolute inset-0 m-[1px]"
+                                        style={{
+                                            borderRadius: device.bezelRadius - 1,
+                                            background: 'linear-gradient(180deg, #1f1f1f 0%, #171717 100%)',
+                                        }}
+                                    />
+
+                                    {/* Screen Area */}
+                                    <div
+                                        className="absolute overflow-hidden bg-[var(--color-bg-primary)]"
+                                        style={{
+                                            top: device.bezelWidth,
+                                            left: device.bezelWidth,
+                                            width: effectiveWidth,
+                                            height: effectiveHeight,
+                                            borderRadius: device.screenRadius,
+                                        }}
+                                    >
+                                        {/* Status Bar — positioned absolutely at top, BEHIND the notch (like real iOS) */}
+                                        {showStatusBar && (
                                             <div
-                                                className={hasTourIntroFirst ? '' : `space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`}
-                                                style={hasTourIntroFirst ? { height: effectiveHeight, minHeight: effectiveHeight } : {
-                                                    paddingTop: 16,
-                                                    fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem',
+                                                className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6"
+                                                style={{
+                                                    paddingTop: deviceType === 'phone' ? 14 : 8,
+                                                    paddingBottom: 4,
                                                 }}
                                             >
-                                                {/* Stop Header - MOVED TO TOP - hide when Tour Intro block is first (it has its own title/desc) */}
-                                                {!hasTourIntroFirst && (displaySettings.showTitles || displaySettings.showDescriptions) && (
-                                                    <div className="space-y-3 mb-4">
-                                                        {displaySettings.showTitles && (currentStop.showTitle ?? true) && (
-                                                            <h1
-                                                                className="font-bold text-[var(--color-text-primary)] leading-tight"
-                                                                style={{ fontSize: deviceType === 'tablet' ? '2.5rem' : '1.5rem' }}
-                                                            >
-                                                                {getStopTitle()}
-                                                            </h1>
-                                                        )}
-                                                        {displaySettings.showDescriptions && (currentStop.showDescription ?? true) && getStopDescription() && (
-                                                            <p
-                                                                className="text-[var(--color-text-secondary)] leading-relaxed"
-                                                                style={{ fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem' }}
-                                                            >
-                                                                {getStopDescription()}
-                                                            </p>
-                                                        )}
+                                                <span className="text-xs font-semibold text-[var(--color-text-primary)]">9:41</span>
+                                                <div className="flex items-center gap-1.5">
+                                                    {/* Signal bars */}
+                                                    <div className="flex items-end gap-[2px]">
+                                                        <div className="w-[3px] h-[4px] rounded-sm bg-[var(--color-text-primary)]" />
+                                                        <div className="w-[3px] h-[6px] rounded-sm bg-[var(--color-text-primary)]" />
+                                                        <div className="w-[3px] h-[8px] rounded-sm bg-[var(--color-text-primary)]" />
+                                                        <div className="w-[3px] h-[10px] rounded-sm bg-[var(--color-text-primary)]" />
                                                     </div>
-                                                )}
-
-                                                {/* Hero Image - NOW SECOND - hide when Tour Intro block is first */}
-                                                {!hasTourIntroFirst && (currentStop.showImage ?? true) && (() => {
-                                                    const heroImage = currentStop.image;
-                                                    if (!heroImage) return null;
-
-                                                    // Handle both new object format and legacy string format
-                                                    const imageData = typeof heroImage === 'object'
-                                                        ? heroImage
-                                                        : { url: heroImage, caption: {} };
-
-                                                    if (!imageData.url) return null;
-
-                                                    const caption = typeof imageData.caption === 'object'
-                                                        ? imageData.caption[previewLanguage] || imageData.caption.en || ''
-                                                        : '';
-
-                                                    return (
-                                                        <figure className={`overflow-hidden rounded-lg mb-4 ${deviceType === 'tablet' ? '-mx-8' : '-mx-5'}`}>
-                                                            <img
-                                                                src={imageData.url}
-                                                                alt=""
-                                                                className="w-full h-auto object-cover"
-                                                                style={{ maxHeight: effectiveHeight * 0.4 }}
-                                                            />
-                                                            {caption && (
-                                                                <figcaption
-                                                                    className="text-[var(--color-text-muted)] bg-[var(--color-bg-elevated)]/50 leading-snug"
-                                                                    style={{
-                                                                        fontSize: deviceType === 'tablet' ? '0.9rem' : '0.75rem',
-                                                                        padding: deviceType === 'tablet' ? '0.75rem 2rem' : '0.5rem 1.25rem'
-                                                                    }}
-                                                                >
-                                                                    {caption}
-                                                                </figcaption>
-                                                            )}
-                                                        </figure>
-                                                    );
-                                                })()}
-
-                                                {/* Content Blocks */}
-                                                {blocks.length === 0 ? (
-                                                    <div className={`flex flex-col items-center justify-center py-16 text-[var(--color-text-muted)] ${hasTourIntroFirst ? 'px-5' : ''}`}>
-                                                        <div className="w-16 h-16 rounded-full bg-[var(--color-bg-elevated)] flex items-center justify-center mb-4">
-                                                            <RotateCcw className="w-8 h-8 opacity-50" />
+                                                    {/* WiFi */}
+                                                    <svg className="w-4 h-4 text-[var(--color-text-primary)]" viewBox="0 0 24 24" fill="currentColor">
+                                                        <path d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-4.9-2.3l1.4 1.4C9.4 16.4 10.6 16 12 16s2.6.4 3.5 1.1l1.4-1.4C15.6 14.6 13.9 14 12 14s-3.6.6-4.9 1.7zm-2.8-2.8l1.4 1.4C7.3 13 9.5 12 12 12s4.7 1 6.3 2.3l1.4-1.4C17.7 11.1 15 10 12 10s-5.7 1.1-7.7 2.9zM1.5 10l1.4 1.4C5.1 9.2 8.4 8 12 8s6.9 1.2 9.1 3.4L22.5 10C19.8 7.3 16.1 6 12 6s-7.8 1.3-10.5 4z" />
+                                                    </svg>
+                                                    {/* Battery */}
+                                                    <div className="flex items-center gap-1">
+                                                        <div className="relative w-6 h-3 rounded-[3px] border border-[var(--color-text-primary)] p-[2px]">
+                                                            <div className="h-full w-full rounded-[1px] bg-green-500" />
                                                         </div>
-                                                        <p className="text-sm">No content blocks yet</p>
-                                                        <p className="text-xs mt-1 opacity-60">Add content to see it here</p>
+                                                        <div className="w-[2px] h-[4px] rounded-r-sm bg-[var(--color-text-primary)]" />
                                                     </div>
-                                                ) : (
-                                                    <div className={hasTourIntroFirst ? '' : 'space-y-5'} style={hasTourIntroFirst ? { height: '100%', minHeight: '100%' } : {}}>
-                                                        {blocks.map((block: ContentBlock, index: number) => (
-                                                            <div
-                                                                key={block.id}
-                                                                className={
-                                                                    index === 0 && hasTourIntroFirst
-                                                                        ? ''
-                                                                        : index > 0 && hasTourIntroFirst
-                                                                            ? `space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`
-                                                                            : ''
-                                                                }
-                                                                style={index === 0 && hasTourIntroFirst ? { height: effectiveHeight, minHeight: effectiveHeight } : {}}
-                                                            >    <StopContentBlock
-                                                                    block={block}
-                                                                    mode="view"
-                                                                    language={previewLanguage}
-                                                                    deviceType={deviceType}
-                                                                    tourData={tourData}
-                                                                    allStops={allStops}
-                                                                    displaySettings={displaySettings}
-                                                                    onNavigateToStop={navigateToStop}
-                                                                />
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-
-                                                {/* Bottom safe area padding */}
-                                                {!hasTourIntroFirst && <div className="h-8" />}
+                                                </div>
                                             </div>
-                                        );
-                                    })()}
-                                </div>
-
-                                {/* Chat Floating Button + Drawer (inside device screen) */}
-                                {tourData?.conciergeEnabled !== false && (
-                                    <>
-                                        {!isKioskMode && (
-                                            <ChatFloatingButton
-                                                onClick={() => setIsChatOpen(true)}
-                                                contained
-                                                iconName={tourData?.conciergeChatIcon}
-                                                iconColor={tourData?.conciergeChatIconColor}
-                                                iconBgColor={tourData?.conciergeChatIconBgColor}
-                                            />
                                         )}
-                                        <ChatDrawer
-                                            isOpen={isChatOpen}
-                                            onClose={() => setIsChatOpen(false)}
-                                            language={previewLanguage}
-                                            tourId={tourData?.id}
-                                            contained
-                                            tourQuickActions={(() => {
-                                                const raw = tourData?.conciergeQuickActions;
-                                                if (!raw) return undefined;
-                                                if (Array.isArray(raw)) return raw;
-                                                try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
-                                            })()}
-                                            tourWelcomeMessage={(() => {
-                                                const raw = tourData?.conciergeWelcome;
-                                                if (!raw) return undefined;
-                                                if (typeof raw === 'object') return raw;
-                                                try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
-                                            })()}
-                                            iconName={tourData?.conciergeChatIcon}
-                                            iconColor={tourData?.conciergeChatIconColor}
-                                            iconBgColor={tourData?.conciergeChatIconBgColor}
-                                        />
-                                    </>
-                                )}
 
-                                {/* Home Indicator */}
-                                <div
-                                    className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white/30"
-                                    style={{
-                                        width: device.homeIndicatorWidth,
-                                        height: device.homeIndicatorHeight,
-                                    }}
-                                />
+                                        {/* Dynamic Island / Notch (Phone only) — above status bar and content */}
+                                        {deviceType === 'phone' && (
+                                            <div
+                                                className="absolute top-[10px] left-1/2 -translate-x-1/2 z-30 flex items-center justify-center"
+                                                style={{
+                                                    width: device.notchWidth,
+                                                    height: device.notchHeight,
+                                                    borderRadius: 20,
+                                                    background: '#000',
+                                                }}
+                                            >
+                                                {/* Camera dot */}
+                                                <div className="w-3 h-3 rounded-full bg-[#1a1a1a] border border-[#333] ml-auto mr-4" />
+                                            </div>
+                                        )}
+
+                                        {/* Screen Content — starts below the notch safe area */}
+                                        <div
+                                            className="h-full overflow-y-auto"
+                                            style={{ scrollbarWidth: 'none', height: effectiveHeight }}
+                                        >
+                                            {/* Safe area spacer + back navigation */}
+                                            {!(blocks.length > 0 && blocks[0].type === 'tour') && (
+                                                <div className="sticky top-0 z-10 bg-[var(--color-bg-surface)]/95 backdrop-blur-md">
+                                                    {/* Safe area spacer — always present to keep content below notch */}
+                                                    <div style={{ height: deviceType === 'phone' ? 48 : 24 }} />
+
+                                                    {/* Back navigation bar when viewing a different stop */}
+                                                    {stopHistory.length > 0 && (
+                                                        <div className={`flex items-center gap-2 py-2 border-b border-[var(--color-border-default)] ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`}>
+                                                            <button
+                                                                onClick={navigateBack}
+                                                                className="flex items-center gap-1 text-[var(--color-accent-primary)] text-sm hover:underline"
+                                                            >
+                                                                <ChevronLeft className="w-4 h-4" />
+                                                                Back
+                                                            </button>
+                                                            <span className="text-xs text-[var(--color-text-muted)] truncate flex-1 text-right">
+                                                                {getStopTitle()}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Content */}
+                                            {/* Remove padding for Tour Intro blocks to allow full-bleed */}
+                                            {(() => {
+                                                const hasTourIntroFirst = blocks.length > 0 && blocks[0].type === 'tour';
+                                                return (
+                                                    <div
+                                                        className={hasTourIntroFirst ? '' : `space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`}
+                                                        style={hasTourIntroFirst ? { height: effectiveHeight, minHeight: effectiveHeight } : {
+                                                            paddingTop: 16,
+                                                            fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem',
+                                                        }}
+                                                    >
+                                                        {/* Stop Header - MOVED TO TOP - hide when Tour Intro block is first (it has its own title/desc) */}
+                                                        {!hasTourIntroFirst && (displaySettings.showTitles || displaySettings.showDescriptions) && (
+                                                            <div className="space-y-3 mb-4">
+                                                                {displaySettings.showTitles && (currentStop.showTitle ?? true) && (
+                                                                    <h1
+                                                                        className="font-bold text-[var(--color-text-primary)] leading-tight"
+                                                                        style={{ fontSize: deviceType === 'tablet' ? '2.5rem' : '1.5rem' }}
+                                                                    >
+                                                                        {getStopTitle()}
+                                                                    </h1>
+                                                                )}
+                                                                {displaySettings.showDescriptions && (currentStop.showDescription ?? true) && getStopDescription() && (
+                                                                    <p
+                                                                        className="text-[var(--color-text-secondary)] leading-relaxed"
+                                                                        style={{ fontSize: deviceType === 'tablet' ? '1.25rem' : '1rem' }}
+                                                                    >
+                                                                        {getStopDescription()}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Hero Image - NOW SECOND - hide when Tour Intro block is first */}
+                                                        {!hasTourIntroFirst && (currentStop.showImage ?? true) && (() => {
+                                                            const heroImage = currentStop.image;
+                                                            if (!heroImage) return null;
+
+                                                            // Handle both new object format and legacy string format
+                                                            const imageData = typeof heroImage === 'object'
+                                                                ? heroImage
+                                                                : { url: heroImage, caption: {} };
+
+                                                            if (!imageData.url) return null;
+
+                                                            const caption = typeof imageData.caption === 'object'
+                                                                ? imageData.caption[previewLanguage] || imageData.caption.en || ''
+                                                                : '';
+
+                                                            return (
+                                                                <figure className={`overflow-hidden rounded-lg mb-4 ${deviceType === 'tablet' ? '-mx-8' : '-mx-5'}`}>
+                                                                    <img
+                                                                        src={imageData.url}
+                                                                        alt=""
+                                                                        className="w-full h-auto object-cover"
+                                                                        style={{ maxHeight: effectiveHeight * 0.4 }}
+                                                                    />
+                                                                    {caption && (
+                                                                        <figcaption
+                                                                            className="text-[var(--color-text-muted)] bg-[var(--color-bg-elevated)]/50 leading-snug"
+                                                                            style={{
+                                                                                fontSize: deviceType === 'tablet' ? '0.9rem' : '0.75rem',
+                                                                                padding: deviceType === 'tablet' ? '0.75rem 2rem' : '0.5rem 1.25rem'
+                                                                            }}
+                                                                        >
+                                                                            {caption}
+                                                                        </figcaption>
+                                                                    )}
+                                                                </figure>
+                                                            );
+                                                        })()}
+
+                                                        {/* Content Blocks */}
+                                                        {blocks.length === 0 ? (
+                                                            <div className={`flex flex-col items-center justify-center py-16 text-[var(--color-text-muted)] ${hasTourIntroFirst ? 'px-5' : ''}`}>
+                                                                <div className="w-16 h-16 rounded-full bg-[var(--color-bg-elevated)] flex items-center justify-center mb-4">
+                                                                    <RotateCcw className="w-8 h-8 opacity-50" />
+                                                                </div>
+                                                                <p className="text-sm">No content blocks yet</p>
+                                                                <p className="text-xs mt-1 opacity-60">Add content to see it here</p>
+                                                            </div>
+                                                        ) : (
+                                                            <div className={hasTourIntroFirst ? '' : 'space-y-5'} style={hasTourIntroFirst ? { height: '100%', minHeight: '100%' } : {}}>
+                                                                {blocks.map((block: ContentBlock, index: number) => (
+                                                                    <div
+                                                                        key={block.id}
+                                                                        className={
+                                                                            index === 0 && hasTourIntroFirst
+                                                                                ? ''
+                                                                                : index > 0 && hasTourIntroFirst
+                                                                                    ? `space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`
+                                                                                    : ''
+                                                                        }
+                                                                        style={index === 0 && hasTourIntroFirst ? { height: effectiveHeight, minHeight: effectiveHeight } : {}}
+                                                                    >    <StopContentBlock
+                                                                            block={block}
+                                                                            mode="view"
+                                                                            language={previewLanguage}
+                                                                            deviceType={deviceType}
+                                                                            tourData={tourData}
+                                                                            allStops={allStops}
+                                                                            displaySettings={displaySettings}
+                                                                            onNavigateToStop={navigateToStop}
+                                                                        />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Bottom safe area padding */}
+                                                        {!hasTourIntroFirst && <div className="h-8" />}
+                                                    </div>
+                                                );
+                                            })()}
+                                        </div>
+
+                                        {/* Chat Floating Button + Drawer (inside device screen) */}
+                                        {tourData?.conciergeEnabled !== false && (
+                                            <>
+                                                {!isKioskMode && (
+                                                    <ChatFloatingButton
+                                                        onClick={() => setIsChatOpen(true)}
+                                                        contained
+                                                        iconName={tourData?.conciergeChatIcon}
+                                                        iconColor={tourData?.conciergeChatIconColor}
+                                                        iconBgColor={tourData?.conciergeChatIconBgColor}
+                                                    />
+                                                )}
+                                                <ChatDrawer
+                                                    isOpen={isChatOpen}
+                                                    onClose={() => setIsChatOpen(false)}
+                                                    language={previewLanguage}
+                                                    tourId={tourData?.id}
+                                                    contained
+                                                    tourQuickActions={(() => {
+                                                        const raw = tourData?.conciergeQuickActions;
+                                                        if (!raw) return undefined;
+                                                        if (Array.isArray(raw)) return raw;
+                                                        try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
+                                                    })()}
+                                                    tourWelcomeMessage={(() => {
+                                                        const raw = tourData?.conciergeWelcome;
+                                                        if (!raw) return undefined;
+                                                        if (typeof raw === 'object') return raw;
+                                                        try { return JSON.parse(raw as unknown as string); } catch { return undefined; }
+                                                    })()}
+                                                    iconName={tourData?.conciergeChatIcon}
+                                                    iconColor={tourData?.conciergeChatIconColor}
+                                                    iconBgColor={tourData?.conciergeChatIconBgColor}
+                                                />
+                                            </>
+                                        )}
+
+                                        {/* Home Indicator */}
+                                        <div
+                                            className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white/30"
+                                            style={{
+                                                width: device.homeIndicatorWidth,
+                                                height: device.homeIndicatorHeight,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    </div>
                     </div>
                 )}
             </div>

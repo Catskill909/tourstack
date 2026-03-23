@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MapPin, AlertCircle } from 'lucide-react';
-import type { MapBlockData } from '../../types';
+import type { MapBlockData, MapMarker } from '../../types';
 
 interface MapPreviewProps {
   data: MapBlockData;
@@ -8,6 +8,7 @@ interface MapPreviewProps {
   deviceType?: 'phone' | 'tablet' | 'kiosk';
   interactive?: boolean;
   className?: string;
+  onStopNavigate?: (stopId: string) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,8 +58,25 @@ function loadGoogleMapsScript(apiKey: string): Promise<void> {
   return googleMapsLoadPromise;
 }
 
+// Escape HTML to prevent XSS in popup content
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Generate marker HTML for Leaflet divIcon — shared with MapEditorModal
+function previewMarkerIconHtml(marker: MapMarker): string {
+  const color = marker.color || '#3b82f6';
+  const icon = marker.icon || 'pin';
+  if (icon === 'number') return `<div style="width:28px;height:28px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid #fff;">${marker.number || '?'}</div>`;
+  if (icon === 'dot') return `<div style="width:16px;height:16px;border-radius:50%;background:${color};box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid #fff;"></div>`;
+  if (icon === 'star') return `<div style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3));"><svg width="20" height="20" viewBox="0 0 24 24" fill="${color}" stroke="#fff" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>`;
+  const circleIcons: Record<string, string> = { info: 'ℹ️', accessibility: '♿', restroom: '🚻', stairs: '🪜', elevator: '🛗', exit: '🚪', cafe: '☕', 'gift-shop': '🎁', ticket: '🎫', camera: '📷', 'audio-guide': '🎧', parking: '🅿️' };
+  if (circleIcons[icon]) return `<div style="width:28px;height:28px;border-radius:50%;background:${color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,0.3);border:2px solid #fff;">${circleIcons[icon]}</div>`;
+  return `<div style="filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3));"><svg width="24" height="32" viewBox="0 0 24 32"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z" fill="${color}" stroke="#fff" stroke-width="1.5"/><circle cx="12" cy="12" r="5" fill="#fff"/></svg></div>`;
+}
+
 // OpenStreetMap component using Leaflet
-function OpenStreetMapView({ data, interactive, className }: { data: MapBlockData; interactive: boolean; className?: string }) {
+function OpenStreetMapView({ data, language, interactive, className, onStopNavigate }: { data: MapBlockData; language: string; interactive: boolean; className?: string; onStopNavigate?: (stopId: string) => void }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +84,7 @@ function OpenStreetMapView({ data, interactive, className }: { data: MapBlockDat
   // Handle container resize (e.g., switching between phone/tablet preview)
   useEffect(() => {
     if (!mapRef.current) return;
-    
+
     const container = mapRef.current;
     const resizeObserver = new ResizeObserver(() => {
       // Delay to allow CSS transitions to complete
@@ -74,7 +92,7 @@ function OpenStreetMapView({ data, interactive, className }: { data: MapBlockDat
         mapInstanceRef.current?.invalidateSize();
       }, 150);
     });
-    
+
     resizeObserver.observe(container);
     return () => resizeObserver.disconnect();
   }, []);
@@ -99,7 +117,11 @@ function OpenStreetMapView({ data, interactive, className }: { data: MapBlockDat
         // Clean up existing map
         if (mapInstanceRef.current) {
           mapInstanceRef.current.remove();
+          mapInstanceRef.current = null;
         }
+
+        // Bail if container was removed from DOM
+        if (!mapRef.current) return;
 
         // Create map
         const map = L.map(mapRef.current!, {
@@ -112,6 +134,8 @@ function OpenStreetMapView({ data, interactive, className }: { data: MapBlockDat
           doubleClickZoom: interactive,
           boxZoom: interactive,
           keyboard: interactive,
+          // Always allow tap on markers for popups even when map isn't draggable
+          tap: true,
         });
 
         // Add tile layer based on style
@@ -128,8 +152,8 @@ function OpenStreetMapView({ data, interactive, className }: { data: MapBlockDat
 
         L.tileLayer(tileUrl, { attribution }).addTo(map);
 
-        // Add marker if enabled
-        if (data.showMarker) {
+        // Add legacy single marker if enabled (backward compat)
+        if (data.showMarker && (!data.markers || data.markers.length === 0)) {
           L.marker([data.latitude, data.longitude]).addTo(map);
         }
 
@@ -144,11 +168,71 @@ function OpenStreetMapView({ data, interactive, className }: { data: MapBlockDat
           }).addTo(map);
         }
 
-        // Add additional markers
-        if (data.markers) {
+        // Add custom markers
+        if (data.markers && data.markers.length > 0) {
+          const bounds = L.latLngBounds([]);
+
           data.markers.forEach((marker) => {
-            L.marker([marker.latitude, marker.longitude]).addTo(map);
+            const icon = L.divIcon({
+              html: previewMarkerIconHtml(marker),
+              className: 'map-custom-marker',
+              iconSize: marker.icon === 'dot' ? [16, 16] : marker.icon === 'pin' ? [24, 32] : [28, 28],
+              iconAnchor: marker.icon === 'pin' ? [12, 32] : marker.icon === 'dot' ? [8, 8] : [14, 14],
+            });
+            const latlng = L.latLng(marker.latitude, marker.longitude);
+            bounds.extend(latlng);
+            const leafletMarker = L.marker(latlng, { icon }).addTo(map);
+
+            // Tooltip for label
+            const label = marker.title?.[language] || marker.title?.en || '';
+            if (label) {
+              leafletMarker.bindTooltip(label, { permanent: !!data.showLabels, direction: 'top', offset: [0, -10] });
+            }
+
+            // Popup with info text or stop link
+            const infoText = marker.infoText?.[language] || marker.infoText?.en || '';
+            if (infoText || marker.stopId) {
+              let popupHtml = '<div class="map-marker-popup">';
+              if (label) popupHtml += `<strong>${escapeHtml(label)}</strong>`;
+              if (infoText) popupHtml += `<p>${escapeHtml(infoText)}</p>`;
+              if (marker.stopId) popupHtml += `<a href="#" class="map-stop-link" data-stop-id="${escapeHtml(marker.stopId)}">Go to stop &rarr;</a>`;
+              popupHtml += '</div>';
+              leafletMarker.bindPopup(popupHtml, { maxWidth: 280, minWidth: 160, closeButton: true, className: 'map-styled-popup' });
+            }
+
+            // Click with stop link navigation — direct click opens popup when popup exists, navigates when no popup
+            if (marker.stopId && onStopNavigate) {
+              leafletMarker.on('click', () => {
+                if (!infoText) onStopNavigate(marker.stopId!);
+              });
+            }
           });
+
+          // Handle stop link clicks in popups via event delegation
+          if (onStopNavigate) {
+            map.on('popupopen', (e: L.PopupEvent) => {
+              const el = e.popup.getElement();
+              if (!el) return;
+              el.querySelectorAll('.map-stop-link').forEach((link: Element) => {
+                (link as HTMLElement).addEventListener('click', (evt) => {
+                  evt.preventDefault();
+                  const stopId = (evt.currentTarget as HTMLElement).getAttribute('data-stop-id');
+                  if (stopId) onStopNavigate(stopId);
+                });
+              });
+            });
+          }
+
+          // Route lines
+          if (data.showRouteLines && data.markers.length >= 2) {
+            const latlngs = data.markers.map(m => [m.latitude, m.longitude] as [number, number]);
+            L.polyline(latlngs, { color: '#8b5cf6', weight: 3, opacity: 0.6, dashArray: '8, 8' }).addTo(map);
+          }
+
+          // Fit bounds to show all markers (with padding) if more than 1 marker
+          if (data.markers.length > 1 && bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [30, 30], maxZoom: data.zoom });
+          }
         }
 
         mapInstanceRef.current = map;
@@ -171,7 +255,7 @@ function OpenStreetMapView({ data, interactive, className }: { data: MapBlockDat
         mapInstanceRef.current = null;
       }
     };
-  }, [data.latitude, data.longitude, data.zoom, data.style, data.showMarker, data.showTriggerZone, data.triggerRadius, interactive]);
+  }, [data.latitude, data.longitude, data.zoom, data.style, data.showMarker, data.showTriggerZone, data.triggerRadius, data.markers, data.showLabels, data.showRouteLines, interactive, language, onStopNavigate]);
 
   if (error) {
     return (
@@ -186,7 +270,7 @@ function OpenStreetMapView({ data, interactive, className }: { data: MapBlockDat
 }
 
 // Google Maps component
-function GoogleMapView({ data, interactive, className, apiKey }: { data: MapBlockData; interactive: boolean; className?: string; apiKey: string }) {
+function GoogleMapView({ data, language, interactive, className, apiKey }: { data: MapBlockData; language: string; interactive: boolean; className?: string; apiKey: string }) {
   const mapRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapInstanceRef = useRef<any>(null);
@@ -204,7 +288,7 @@ function GoogleMapView({ data, interactive, className, apiKey }: { data: MapBloc
         console.log('GoogleMapView: loading script with key length:', apiKey.length);
         await loadGoogleMapsScript(apiKey);
         console.log('GoogleMapView: script loaded, window.google:', !!window.google);
-        
+
         if (!window.google?.maps) {
           throw new Error('Google Maps API not available after script load');
         }
@@ -228,8 +312,8 @@ function GoogleMapView({ data, interactive, className, apiKey }: { data: MapBloc
           draggable: interactive,
         });
 
-        // Add marker if enabled
-        if (data.showMarker) {
+        // Add marker if enabled (legacy single marker)
+        if (data.showMarker && (!data.markers || data.markers.length === 0)) {
           new window.google!.maps.Marker({
             position: { lat: data.latitude, lng: data.longitude },
             map,
@@ -250,14 +334,57 @@ function GoogleMapView({ data, interactive, className, apiKey }: { data: MapBloc
           });
         }
 
-        // Add additional markers
-        if (data.markers) {
+        // Add custom markers with colored pins
+        if (data.markers && data.markers.length > 0) {
+          const bounds = new window.google!.maps.LatLngBounds();
+
           data.markers.forEach((marker) => {
-            new window.google!.maps.Marker({
-              position: { lat: marker.latitude, lng: marker.longitude },
+            const color = marker.color || '#3b82f6';
+            const pos = { lat: marker.latitude, lng: marker.longitude };
+            bounds.extend(pos);
+            const gMarker = new window.google!.maps.Marker({
+              position: pos,
               map,
+              icon: {
+                path: window.google!.maps.SymbolPath.CIRCLE,
+                fillColor: color,
+                fillOpacity: 1,
+                strokeColor: '#ffffff',
+                strokeWeight: 2,
+                scale: 10,
+              },
+              title: marker.title?.[language] || marker.title?.en || '',
             });
+
+            // Info window
+            const infoText = marker.infoText?.[language] || marker.infoText?.en || '';
+            const label = marker.title?.[language] || marker.title?.en || '';
+            if (infoText || label) {
+              let content = '<div style="padding:10px 12px;min-width:140px;max-width:240px;font-family:system-ui,-apple-system,sans-serif;">';
+              if (label) content += `<strong style="display:block;font-size:15px;font-weight:600;color:#111827;margin-bottom:2px;">${escapeHtml(label)}</strong>`;
+              if (infoText) content += `<p style="color:#6b7280;font-size:13px;margin:4px 0 0;line-height:1.45;">${escapeHtml(infoText)}</p>`;
+              content += '</div>';
+              const infoWindow = new window.google!.maps.InfoWindow({ content });
+              gMarker.addListener('click', () => infoWindow.open(map, gMarker));
+            }
           });
+
+          // Fit bounds for multi-markers
+          if (data.markers.length > 1) {
+            map.fitBounds(bounds, { padding: 30 });
+          }
+
+          // Route lines
+          if (data.showRouteLines && data.markers.length >= 2) {
+            const path = data.markers.map(m => ({ lat: m.latitude, lng: m.longitude }));
+            new window.google!.maps.Polyline({
+              path,
+              map,
+              strokeColor: '#8b5cf6',
+              strokeOpacity: 0.6,
+              strokeWeight: 3,
+            });
+          }
         }
 
         mapInstanceRef.current = map;
@@ -271,21 +398,21 @@ function GoogleMapView({ data, interactive, className, apiKey }: { data: MapBloc
     };
 
     initMap();
-  }, [data.latitude, data.longitude, data.zoom, data.style, data.showMarker, data.showTriggerZone, data.triggerRadius, apiKey, interactive]);
+  }, [data.latitude, data.longitude, data.zoom, data.style, data.showMarker, data.showTriggerZone, data.triggerRadius, data.markers, data.showRouteLines, apiKey, interactive, language]);
 
   // Always render the map container so ref is available
   return (
     <div className={`relative w-full h-full min-h-[200px] rounded-lg ${className}`} style={{ minHeight: '200px' }}>
       {/* Map container - always rendered for ref */}
       <div ref={mapRef} className="absolute inset-0 rounded-lg" />
-      
+
       {/* Loading overlay */}
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-[var(--color-bg-elevated)] rounded-lg">
           <div className="animate-pulse text-[var(--color-text-muted)]">Loading Google Maps...</div>
         </div>
       )}
-      
+
       {/* Error overlay */}
       {error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-bg-elevated)] rounded-lg">
@@ -297,7 +424,7 @@ function GoogleMapView({ data, interactive, className, apiKey }: { data: MapBloc
   );
 }
 
-export function MapPreview({ data, language, deviceType: _deviceType = 'phone', interactive = false, className = '' }: MapPreviewProps) {
+export function MapPreview({ data, language, deviceType: _deviceType = 'phone', interactive = false, className = '', onStopNavigate }: MapPreviewProps) {
   void _deviceType; // Reserved for future tablet-specific styling
   const [googleApiKey, setGoogleApiKey] = useState<string | null>(null);
 
@@ -364,9 +491,12 @@ export function MapPreview({ data, language, deviceType: _deviceType = 'phone', 
 
     return (
       <div className={containerClass}>
-        <GoogleMapView data={data} interactive={interactive} apiKey={googleApiKey} />
+        <GoogleMapView data={data} language={language} interactive={interactive} apiKey={googleApiKey} />
         {markerTitle && (
           <div className="mt-2 text-sm text-[var(--color-text-secondary)]">{markerTitle}</div>
+        )}
+        {data.showLegend && data.markers && data.markers.length > 0 && (
+          <MapLegend markers={data.markers} language={language} />
         )}
       </div>
     );
@@ -375,10 +505,30 @@ export function MapPreview({ data, language, deviceType: _deviceType = 'phone', 
   // Default to OpenStreetMap
   return (
     <div className={containerClass}>
-      <OpenStreetMapView data={data} interactive={interactive} />
+      <OpenStreetMapView data={data} language={language} interactive={interactive} onStopNavigate={onStopNavigate} />
       {markerTitle && (
         <div className="mt-2 text-sm text-[var(--color-text-secondary)]">{markerTitle}</div>
       )}
+      {data.showLegend && data.markers && data.markers.length > 0 && (
+        <MapLegend markers={data.markers} language={language} />
+      )}
+    </div>
+  );
+}
+
+// Legend component
+function MapLegend({ markers, language }: { markers: MapMarker[]; language: string }) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-2 px-1">
+      {markers.map((marker, idx) => {
+        const label = marker.title?.[language] || marker.title?.en || `Marker ${idx + 1}`;
+        return (
+          <div key={marker.id} className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+            <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: marker.color || '#3b82f6' }} />
+            <span>{label}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

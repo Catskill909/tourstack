@@ -52,7 +52,7 @@ When museum staff access visitor pages, they see:
 | Phase 8: Thumbnail Markers UI | ✅ Complete |
 | Phase 9: Translation Infrastructure | ✅ Complete |
 | Phase 10: Audio Player Size Variants | ✅ Complete |
-| Phase 11: Map Block | ✅ Complete |
+| Phase 11: Map Block (Multi-Marker Upgrade) | ✅ Complete |
 | Phase 12: Audio TTS Section | ✅ Complete |
 | Phase 13: ElevenLabs Integration | ✅ Complete |
 | Phase 13.5: Translate Collections | ✅ DEPLOYED |
@@ -75,6 +75,7 @@ When museum staff access visitor pages, they see:
 | Database Safety Infrastructure | ✅ Complete |
 | Phase 29: Language Reconciliation & UX Polish | ✅ Complete |
 | Phase 30: Unified Preview System & iPad Orientation | ✅ Complete |
+| Phase 11b: Map Block Multi-Marker Upgrade | ✅ Complete |
 | Phase 26.2: Per-Tour AI Concierge | 🎯 NEXT |
 
 ### Tour Block (Phase 16) - COMPLETE ✅

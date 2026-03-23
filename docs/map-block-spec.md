@@ -1476,5 +1476,108 @@ model LocationTrigger {
 
 ---
 
+## Part 10: Map Block Upgrade — Implementation Plan
+
+**Date:** March 23, 2026  
+**Status:** IN PROGRESS  
+**Goal:** Bring the geographic Map Block to feature parity with the Image Map Block (minus AI features)
+
+### Current State vs. Target
+
+| Capability | Map Block (now) | Image Map Block | Target |
+|---|---|---|---|
+| **Markers** | Single center marker | Unlimited per floor | **Unlimited markers** |
+| **Marker icons** | 5 basic (`default/stop/start/end/poi`) | 16 museum-specific | **16 icons** (shared set) |
+| **Marker colors** | None (default blue) | 7+ presets + custom | **Full color picker** |
+| **Stop linking** | None | Tap → navigate to stop | **Tap → stop navigation** |
+| **Info popups** | None | Glass-morphism popup | **Info popups on visitor tap** |
+| **Marker descriptions** | Type exists, not in editor | Rich info text | **Multilingual rich text** |
+| **Marker list/sidebar** | None | Select, edit, delete list | **Full marker sidebar** |
+| **Translation** | None | LanguageSwitcher + Translate All | **Full translation UI** |
+| **Legend** | None | Toggle-able grid below map | **Legend toggle** |
+| **Bulk operations** | None | Apply icon/color to all | **Bulk icon/color** |
+| **Drag to reposition** | Single marker drag | Per-marker drag | **Per-marker drag** |
+
+### Design Decisions
+
+1. **Reuse existing components:** `ColorPicker`, `LanguageSwitcher`, `PreviewChoiceModal`, `magicTranslate()`
+2. **Shared icon type with ImageMap:** `MapMarkerIcon` = same 16 icons (pin, dot, number, star, info, accessibility, restroom, stairs, elevator, exit, cafe, gift-shop, ticket, camera, audio-guide, parking)
+3. **Custom Leaflet markers via `L.divIcon`:** Render colored markers with icon SVGs — no image files needed per combo
+4. **Backward-compatible data model:** Existing single-marker blocks continue working; `markers[]` array extends the block
+5. **Two-tab sidebar:** "Markers" tab (list + selected marker editor) + "Settings" tab (provider, style, size, trigger zone)
+6. **Museum-first UX:** Click map → marker placed → sidebar highlights it for naming → staff labels exhibits, amenities, stops
+
+### Phase 1: Data Model & Multi-Marker Foundation ✅
+- [x] Expand `MapMarker` type with `color`, `stopId`, `infoText`, shared icon type
+- [x] Editor: click-to-place adds new markers (not replaces)
+- [x] Marker list sidebar with select/edit/delete
+- [x] Selected marker editing (label, icon, color, description, stop link)
+- [x] Tabbed sidebar: Markers tab + Settings tab
+
+### Phase 2: Marker Customization (Icons, Colors, Stop Links) ✅
+- [x] 16 icon types (reuse ImageMap icon set)
+- [x] `ColorPicker` component integration
+- [x] Stop linking dropdown (from `allStops` prop)
+- [x] Info text multilingual textarea
+- [x] Custom Leaflet `L.divIcon` markers with color + icon rendering
+- [x] Numbered markers when icon is `number`
+
+### Phase 3: Visitor Experience (Preview) ✅
+- [x] Custom colored marker rendering in MapPreview (Leaflet + Google)
+- [x] Info popup on marker tap (glassmorphism, matching Image Map style)
+- [x] "Go to stop" button in popups for linked markers
+- [x] Legend below map (toggleable)
+- [x] Marker labels as tooltips
+
+### Phase 4: Translation Integration ✅
+- [x] LanguageSwitcher in editor header
+- [x] "Translate All" button with `magicTranslate()` batch
+- [x] Translation coverage counter ("X/Y translated")
+- [x] Source-hash dirty tracking (same `_sourceHash` pattern)
+
+### Phase 5: Polish & Bulk Operations ✅
+- [x] Bulk icon/color apply ("Apply to all markers" toolbar)
+- [x] Fit bounds auto-zoom for multiple markers
+- [x] Show route lines toggle (connecting lines between markers)
+- [x] Show labels toggle
+
+### Phase 6: Bug Fixes & Polish ✅
+- [x] **Translation bug fix:** `handleTranslateAll()` used `result.translations` which was always `undefined` — `magicTranslate()` returns a flat `{ [lang]: string }` object directly, not wrapped in `.translations`. Fixed to spread result directly: `{ ...marker.title, ...translations }` (matches ImageMapEditorModal pattern)
+- [x] **Translation applies to both fields:** marker title AND info text are now both translated and stamped with `_sourceHash`
+- [x] **Translated text visible in editor:** After translation, switching languages via LanguageSwitcher shows translated text in the sidebar inputs (was already wired, just never received data due to the bug above)
+- [x] **Preview button added:** Uses `PreviewChoiceModal` (same component as ImageMap) — conditionally shown when `stop` and `tourData` props are available
+- [x] **"Done" renamed to "Save & Close"** for clarity
+- [x] **StopEditor prop wiring:** `stop={editedStop}` and `tourData={tourData}` now passed to MapEditorModal so Preview works
+
+### Phase 7: Visitor UX & Interaction Controls ✅
+- [x] **Leaflet CSS overrides for Tailwind** — Tailwind's preflight (`img { display: block; max-width: 100% }`) broke Leaflet tile/marker rendering. Added global CSS overrides in `index.css` for `.leaflet-container img`, `.leaflet-container svg`, `.map-custom-marker`, and popup styling
+- [x] **`allowInteraction` toggle** — New `MapBlockData.allowInteraction` field (defaults to `true`). Toggle in Settings tab: "Allow Pinch/Zoom — Let visitors drag, pinch, and zoom the map". `StopContentBlock.renderMapBlock` now reads `data.allowInteraction` to set `interactive` prop
+- [x] **Fixed `interactive` in renderMapBlock** — Was hardcoded `false`; now `mode === 'view' && data.allowInteraction !== false`
+- [x] **Fixed `onStopNavigate` in renderMapBlock** — Was not passed to MapPreview; now wired so marker stop links work in preview and published tours
+- [x] **Google Maps missing deps** — `GoogleMapView` useEffect was missing `data.markers`, `data.showRouteLines`, `language` in dependency array; markers wouldn't update when data changed
+- [x] **Fit bounds for multi-markers** — Both OpenStreetMap and Google Maps auto-fit viewport to show all markers with padding when >1 marker exists
+- [x] **XSS prevention in popups** — Added `escapeHtml()` for all user-supplied text rendered as HTML in Leaflet popups
+- [x] **Stop link click delegation** — Popup "Go to stop" links now handled via Leaflet `popupopen` event delegation instead of relying on inline handlers
+- [x] **Leaflet `tap: true`** — Ensures marker tap/click works even when map dragging is disabled (non-interactive mode)
+- [x] **Popup styling** — Global CSS for `.leaflet-popup-content-wrapper` (rounded corners) and `.map-stop-link` (styled navigation link)
+
+### Phase 8: Preview Button Fix (Stacking Context) ✅
+- [x] **Root cause: CSS stacking context + Leaflet z-indices** — MapEditorModal's root div (`fixed inset-0 z-[100]`) creates a stacking context. Inside it, Leaflet injects z-[1000] elements (map controls, overlays). PreviewChoiceModal rendered inside this DOM tree was trapped beneath Leaflet's high z-index elements regardless of its own z-index value.
+- [x] **Failed attempt 1 (Session 3):** Added PreviewChoiceModal inside MapEditorModal DOM — appeared as black box, never visible
+- [x] **Failed attempt 2 (Session 5):** Built synthetic previewStop — data correct but rendering still broken
+- [x] **Failed attempt 3 (Session 6):** Bumped z-index from z-50 → z-[110] on PreviewChoiceModal/StopPreviewModal/KioskLauncherModal — still trapped in stacking context
+- [x] **Fix: React `createPortal(document.body)`** — Renders PreviewChoiceModal outside MapEditorModal's DOM tree entirely, escaping the stacking context. Only MapEditorModal.tsx changed.
+- [x] **Key lesson:** z-index bumps cannot escape CSS stacking contexts when sibling elements (Leaflet) use z-1000+. The only reliable fix is `createPortal` to render on `document.body`.
+
+### Phase 9: Marker Popup Styling ✅
+- [x] **Enhanced popup design** — Styled `.leaflet-popup-content-wrapper` with subtle shadow, clean border, larger border-radius for modern look
+- [x] **Close button styling** — Custom styled close button matching app design language
+- [x] **Popup title styling** — Bold title with proper color and spacing
+- [x] **Info text styling** — Muted color, proper margins
+- [x] **Stop link styling** — Emerald accent color, arrow indicator, hover underline
+- [x] **Popup tip (pointer arrow)** — Styled to match popup wrapper background
+
+---
+
 *Document prepared for TourStack development team*  
-*Last updated: January 21, 2026*
+*Last updated: March 23, 2026*

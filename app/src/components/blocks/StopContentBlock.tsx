@@ -349,6 +349,7 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
         };
         const size = data.size || 'medium';
         const style = sizeStyles[size] || sizeStyles.medium;
+        const isInteractive = mode === 'view' && (data.allowInteraction !== false);
 
         return (
             <>
@@ -358,8 +359,9 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                         data={data}
                         language={language}
                         deviceType={deviceType}
-                        interactive={false}
+                        interactive={isInteractive}
                         className="w-full h-full"
+                        onStopNavigate={mode === 'view' ? onNavigateToStop : undefined}
                     />
                 </div>
             </>

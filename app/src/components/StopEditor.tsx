@@ -855,6 +855,10 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                             data={block.data as MapBlockData}
                             language={language}
                             availableLanguages={availableLanguages}
+                            allStops={allStops}
+                            translationProvider={translationProvider}
+                            stop={editedStop}
+                            tourData={tourData}
                             onChange={updateBlock}
                             onClose={closeEditor}
                         />

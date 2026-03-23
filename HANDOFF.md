@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: March 19, 2026
-**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅ | Chatbot UX Unification COMPLETE ✅
+**Last Updated**: March 23, 2026
+**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅ | Chatbot UX Unification COMPLETE ✅ | Map Block Upgrade COMPLETE ✅
 
 ---
 
@@ -455,7 +455,7 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Editor Layout Fix** - Small player displays on its own line below upload
 - [x] **Removed Duration Field** - Simplified interface, not needed
 
-### Phase 11: Map Block ✅ (Jan 21, 2026)
+### Phase 11: Map Block ✅ (Jan 21, 2026 — Upgraded March 23, 2026)
 - [x] **OpenStreetMap Integration** - Leaflet-based maps (free, no API key)
 - [x] **Google Maps Integration** - Premium maps with API key support
 - [x] **Full-Screen Map Editor** - Click to place markers, address search, current location
@@ -465,6 +465,19 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Trigger Zones** - Configurable radius for geofencing
 - [x] **Settings API** - Persistent settings storage with env var overrides
 - [x] **Coolify Ready** - `GOOGLE_MAPS_API_KEY` env var support for production
+
+**March 23 Upgrade — Multi-Marker Parity with Image Map Block:**
+- [x] **Multi-Marker Support** - Unlimited markers with click-to-place, 16 icon types, color picker
+- [x] **Inline Marker Editing** - Editor expands in-place below clicked marker (no scroll-to-top)
+- [x] **Translation Integration** - LanguageSwitcher + batch Translate All for marker titles & info text
+- [x] **Source-Hash Dirty Tracking** - `_sourceHash` pattern for translation freshness
+- [x] **Leaflet CSS Overrides** - Fixed Tailwind preflight breaking tile/marker rendering
+- [x] **allowInteraction Toggle** - Pinch/zoom control per map block
+- [x] **Custom Popup Styling** - Compact dark-mode-friendly popups with styled stop links
+- [x] **XSS Prevention** - `escapeHtml()` for all user text in Leaflet popups
+- [x] **Preview Button Fix** - `createPortal(document.body)` escapes Leaflet z-index stacking context
+- [x] **Fit Bounds** - Auto-viewport to show all markers with padding
+- [x] **Route Lines** - Dashed connecting lines between markers (toggleable)
 
 ### Phase 28: Image Map Block ✅ (March 10, 2026)
 - [x] **New Block Type** - `imageMap` content block for indoor floor plans
@@ -1107,6 +1120,7 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | Map Preview | `app/src/components/blocks/MapPreview.tsx` |
 | Map Editor Modal | `app/src/components/blocks/MapEditorModal.tsx` |
 | Map Block Editor | `app/src/components/blocks/MapBlockEditor.tsx` |
+| Map Block Spec | `docs/map-block-spec.md` |
 | Settings API | `app/server/routes/settings.ts` |
 | **Image Map Block** | |
 | Image Map Editor Modal | `app/src/components/blocks/ImageMapEditorModal.tsx` |

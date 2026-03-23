@@ -419,17 +419,24 @@ export type MapProvider = 'openstreetmap' | 'google';
 export type MapStyle = 'standard' | 'satellite' | 'terrain' | 'hybrid';
 export type MapSize = 'small' | 'medium' | 'large';  // small=150px, medium=250px, large=fills available
 
+// Shared icon type used by both Map and Image Map blocks
+export type MapMarkerIcon = 'pin' | 'dot' | 'number' | 'star' | 'info' | 'accessibility' | 'restroom' | 'stairs' | 'elevator' | 'exit' | 'cafe' | 'gift-shop' | 'ticket' | 'camera' | 'audio-guide' | 'parking';
+
 export interface MapMarker {
   id: string;
   latitude: number;
   longitude: number;
   title?: { [lang: string]: string };
   description?: { [lang: string]: string };
-  icon?: 'default' | 'stop' | 'start' | 'end' | 'poi';
+  icon?: MapMarkerIcon;
+  color?: string;           // Marker color (hex)
+  stopId?: string;          // Link to a stop (tap → navigate)
+  infoText?: { [lang: string]: string }; // Info popup text on visitor tap
+  number?: number;          // Display number when icon is 'number'
 }
 
 export interface MapBlockData {
-  // Core position
+  // Core position (map viewport center)
   latitude: number;
   longitude: number;
   zoom: number;
@@ -439,16 +446,22 @@ export interface MapBlockData {
   style: MapStyle;                // Map style
 
   // Display options
-  showMarker: boolean;            // Show marker at center
+  showMarker: boolean;            // Show marker at center (legacy single marker)
   markerTitle?: { [lang: string]: string };
   size?: MapSize;                 // Display size: small, medium, large (default: medium)
 
-  // Additional markers (for tour overview maps)
+  // Multiple markers
   markers?: MapMarker[];
 
   // Trigger zone (optional)
   triggerRadius?: number;         // Radius in meters for geofence
   showTriggerZone?: boolean;      // Visualize the trigger zone
+
+  // Display toggles
+  showLegend?: boolean;           // Show legend below map
+  showLabels?: boolean;           // Show marker labels on map
+  showRouteLines?: boolean;       // Show connecting lines between markers
+  allowInteraction?: boolean;     // Allow visitor pinch/zoom/drag (default: true)
 
   // Block metadata
   title?: { [lang: string]: string };
