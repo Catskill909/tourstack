@@ -24,6 +24,9 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
     const audioRef = useRef<HTMLAudioElement>(null);
     const animationFrameRef = useRef<number>(0);
 
+    // Use language-specific audio if available, fall back to audioUrl
+    const audioUrl = data.audioFiles?.[language] || data.audioUrl;
+
     const images = data.images || [];
     const transitionDurationMs = data.crossfadeDuration || 500;
     const transitionDuration = transitionDurationMs / 1000; // Convert ms to seconds for Framer Motion
@@ -85,7 +88,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
         );
     }
 
-    if (!data.audioUrl) {
+    if (!audioUrl) {
         return (
             <div className="bg-[var(--color-bg-hover)] rounded-lg p-8 text-center text-[var(--color-text-muted)]">
                 <Images className="w-12 h-12 mx-auto mb-2" />
@@ -130,11 +133,11 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
         cancelAnimationFrame(animationFrameRef.current);
     }, []);
 
-    // Full reset when audio source changes (e.g., future per-language audio support)
-    const prevAudioUrlRef = useRef(data.audioUrl);
+    // Full reset when audio source changes (e.g., language switch)
+    const prevAudioUrlRef = useRef(audioUrl);
     useEffect(() => {
-        if (prevAudioUrlRef.current !== data.audioUrl) {
-            prevAudioUrlRef.current = data.audioUrl;
+        if (prevAudioUrlRef.current !== audioUrl) {
+            prevAudioUrlRef.current = audioUrl;
             const audio = audioRef.current;
             if (audio) {
                 audio.pause();
@@ -146,7 +149,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
             setCurrentIndex(0);
             setPreviousIndex(null);
         }
-    }, [data.audioUrl, stopRAF]);
+    }, [audioUrl, stopRAF]);
 
     // Audio element event listeners (registered once, stable)
     useEffect(() => {
@@ -185,7 +188,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
             audio.removeEventListener('pause', onPause);
             audio.removeEventListener('ended', onEnded);
         };
-    }, [data.audioUrl, startRAF, stopRAF]);
+    }, [audioUrl, startRAF, stopRAF]);
 
     function togglePlayback() {
         if (!audioRef.current) return;
@@ -218,7 +221,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
             {/* Hidden Audio Element */}
             <audio
                 ref={audioRef}
-                src={data.audioUrl}
+                src={audioUrl}
                 className="hidden"
                 preload="auto"
             />

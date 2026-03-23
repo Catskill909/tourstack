@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Music, Images, Clock, Sliders, Trash2, Mic, Loader2, Captions, Languages, FolderOpen, Upload } from 'lucide-react';
+import { X, Music, Images, Clock, Sliders, Trash2, Mic, Loader2, Captions, Languages, FolderOpen, Upload, Volume2, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AudioWaveform, type AudioWaveformHandle } from './AudioWaveform';
 import type { TimelineGalleryBlockData, TransitionType, Stop, Tour } from '../../types';
@@ -173,20 +173,19 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
         }
     }
 
-    // Handle import from collection (single language for Timeline Gallery)
+    // Handle import from collection - imports all audio files and transcripts
     function handleImportFromCollection(importData: ImportedAudioData) {
-        // Get the first (and should be only in single mode) audio URL
-        const [firstLang] = Object.keys(importData.audioFiles);
-        if (firstLang && importData.audioFiles[firstLang]) {
-            const audioUrl = importData.audioFiles[firstLang];
+        // Use the current language's audio as the active audioUrl, or fall back to first available
+        const audioUrl = importData.audioFiles[language] || importData.audioFiles[Object.keys(importData.audioFiles)[0]];
+        if (audioUrl) {
             // Create audio element to get duration
             const audio = new Audio(audioUrl);
             audio.onloadedmetadata = () => {
                 onChange({
                     ...data,
                     audioUrl,
+                    audioFiles: { ...data.audioFiles, ...importData.audioFiles },
                     audioDuration: audio.duration,
-                    // Also import transcript for all languages
                     transcript: { ...data.transcript, ...importData.transcript },
                 });
             };
@@ -195,6 +194,7 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                 onChange({
                     ...data,
                     audioUrl,
+                    audioFiles: { ...data.audioFiles, ...importData.audioFiles },
                     transcript: { ...data.transcript, ...importData.transcript },
                 });
             };
@@ -609,6 +609,46 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                     )}
                 </div>
             </div>
+
+            {/* Imported Audio Files Section */}
+            {data.audioFiles && Object.keys(data.audioFiles).length > 0 && (
+                <div className="px-6 pb-4">
+                    <div className="bg-purple-500/5 border border-purple-500/20 rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Globe className="w-4 h-4 text-purple-400" />
+                            <span className="text-sm font-medium text-purple-300">Imported Audio Files</span>
+                            <span className="text-xs text-gray-500">({Object.keys(data.audioFiles).length} languages)</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {Object.entries(data.audioFiles).map(([lang, url]) => (
+                                <button
+                                    key={lang}
+                                    onClick={() => {
+                                        // Switch to this language's audio
+                                        onChange({ ...data, audioUrl: url });
+                                    }}
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${
+                                        data.audioUrl === url
+                                            ? 'bg-purple-500 text-white'
+                                            : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                                    }`}
+                                >
+                                    <Volume2 className="w-3.5 h-3.5" />
+                                    <span className="uppercase font-medium">{lang}</span>
+                                    {data.audioUrl === url && (
+                                        <span className="text-xs opacity-75">(active)</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                        {data.transcript && Object.keys(data.transcript).length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-white/10">
+                                <div className="text-xs text-gray-500 mb-2">Transcript available for: {Object.keys(data.transcript).map(l => l.toUpperCase()).join(', ')}</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Edit Image Modal */}
             {editingImage && (

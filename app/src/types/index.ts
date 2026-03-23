@@ -310,7 +310,8 @@ export interface TimelineGalleryBlockData {
     credit?: { [lang: string]: string };
     timestamp: number;                  // Seconds into audio when image appears
   }>;
-  audioUrl: string;                     // Audio file URL
+  audioUrl: string;                     // Audio file URL (active language)
+  audioFiles?: { [lang: string]: string }; // Per-language audio URLs from collection import
   audioDuration: number;                // Total duration in seconds
   crossfadeDuration?: number;           // Crossfade duration in ms (default 500)
   transitionType?: TransitionType;      // Transition effect (default 'fade')

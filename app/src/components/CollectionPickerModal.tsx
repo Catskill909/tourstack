@@ -186,19 +186,15 @@ export function CollectionPickerModal({
                 onLanguagesChanged([...tourLanguages!, ...addLanguages]);
             }
         } else {
-            // Import single language audio only, but ALL transcripts
-            // Timeline Gallery uses single audioUrl but transcript switches with language
-            const item = audioItems.find(i => i.language === selectedLanguage);
-            if (item) {
+            // Import ALL audio files and transcripts for Timeline Gallery
+            // Timeline Gallery uses single audioUrl for playback but stores all for display/switching
+            audioItems.forEach(item => {
                 audioFiles[item.language] = item.url;
+                transcript[item.language] = item.text;
                 voiceInfo[item.language] = {
                     name: item.voice.name,
                     provider: item.provider,
                 };
-            }
-            // Import ALL transcripts so text switches with language
-            audioItems.forEach(item => {
-                transcript[item.language] = item.text;
             });
         }
 
