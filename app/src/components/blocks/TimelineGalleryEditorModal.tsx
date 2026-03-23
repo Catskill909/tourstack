@@ -769,7 +769,7 @@ export function TimelineGalleryEditorModal({ data, language, availableLanguages 
                 isOpen={showCollectionPicker}
                 onClose={() => setShowCollectionPicker(false)}
                 onImport={handleImportFromCollection}
-                mode="single"
+                mode="multi"
             />
 
             {/* Preview Choice Modal */}

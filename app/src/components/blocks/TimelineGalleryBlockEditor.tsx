@@ -147,20 +147,19 @@ export function TimelineGalleryBlockEditor({ data, language, availableLanguages 
         }
     }
 
-    // Handle import from collection (single language for Timeline Gallery)
+    // Handle import from collection - imports all audio files and transcripts
     function handleImportFromCollection(importData: ImportedAudioData) {
-        // Get the first (and should be only in single mode) audio URL
-        const [firstLang] = Object.keys(importData.audioFiles);
-        if (firstLang && importData.audioFiles[firstLang]) {
-            const audioUrl = importData.audioFiles[firstLang];
+        // Use the current language's audio as the active audioUrl, or fall back to first available
+        const audioUrl = importData.audioFiles[language] || importData.audioFiles[Object.keys(importData.audioFiles)[0]];
+        if (audioUrl) {
             // Create audio element to get duration
             const audio = new Audio(audioUrl);
             audio.onloadedmetadata = () => {
                 onChange({
                     ...data,
                     audioUrl,
+                    audioFiles: { ...data.audioFiles, ...importData.audioFiles },
                     audioDuration: audio.duration,
-                    // Also import transcript for all languages
                     transcript: { ...data.transcript, ...importData.transcript },
                 });
             };
@@ -169,6 +168,7 @@ export function TimelineGalleryBlockEditor({ data, language, availableLanguages 
                 onChange({
                     ...data,
                     audioUrl,
+                    audioFiles: { ...data.audioFiles, ...importData.audioFiles },
                     transcript: { ...data.transcript, ...importData.transcript },
                 });
             };
@@ -577,7 +577,7 @@ export function TimelineGalleryBlockEditor({ data, language, availableLanguages 
                 isOpen={showCollectionPicker}
                 onClose={() => setShowCollectionPicker(false)}
                 onImport={handleImportFromCollection}
-                mode="single"
+                mode="multi"
             />
         </div>
     );
