@@ -314,15 +314,15 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
                 </div>
             )}
 
-            {/* Caption and Credit - fixed height to prevent layout shift */}
-            <div className="p-4 bg-gradient-to-r from-[var(--color-bg-elevated)] to-[var(--color-bg-surface)] border-b border-[var(--color-border-default)] min-h-[6rem] max-h-[6rem] overflow-hidden">
+            {/* Caption and Credit - FIXED HEIGHT for max text, text aligns top, player NEVER moves */}
+            <div className="p-4 bg-gradient-to-r from-[var(--color-bg-elevated)] to-[var(--color-bg-surface)] h-44">
                 {currentImage && (
                     <div className="space-y-1">
-                        <p className="text-[var(--color-text-primary)] font-medium line-clamp-4">
+                        <p className="text-[var(--color-text-primary)] font-medium">
                             {currentImage.caption?.[language] || currentImage.caption?.en || ''}
                         </p>
                         {currentImage.credit?.[language] && (
-                            <p className="text-sm text-[var(--color-text-muted)] italic line-clamp-1">
+                            <p className="text-sm text-[var(--color-text-muted)] italic">
                                 {currentImage.credit[language]}
                             </p>
                         )}

@@ -21,6 +21,9 @@ if [ -f /app/data/dev.db ]; then
   sqlite3 /app/data/dev.db "ALTER TABLE Stop ADD COLUMN shortCode TEXT;" 2>/dev/null || true
   sqlite3 /app/data/dev.db "CREATE UNIQUE INDEX IF NOT EXISTS Stop_shortCode_key ON Stop(shortCode);" 2>/dev/null || true
   sqlite3 /app/data/dev.db "ALTER TABLE Stop ADD COLUMN slug TEXT;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Stop ADD COLUMN showTitle INTEGER DEFAULT 1;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Stop ADD COLUMN showImage INTEGER DEFAULT 1;" 2>/dev/null || true
+  sqlite3 /app/data/dev.db "ALTER TABLE Stop ADD COLUMN showDescription INTEGER DEFAULT 1;" 2>/dev/null || true
 
   # Tour table migrations
   sqlite3 /app/data/dev.db "ALTER TABLE Tour ADD COLUMN slug TEXT;" 2>/dev/null || true

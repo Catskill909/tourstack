@@ -153,6 +153,9 @@ router.post('/', async (req: Request, res: Response) => {
                 interactive: data.interactive ? JSON.stringify(data.interactive) : null,
                 links: JSON.stringify(data.links || []),
                 accessibility: JSON.stringify(data.accessibility || {}),
+                showTitle: data.showTitle !== undefined ? !!data.showTitle : true,
+                showImage: data.showImage !== undefined ? !!data.showImage : true,
+                showDescription: data.showDescription !== undefined ? !!data.showDescription : true,
             },
         });
 
@@ -212,6 +215,9 @@ router.put('/:id', async (req: Request<IdParams>, res: Response) => {
         if (data.interactive !== undefined) updateData.interactive = data.interactive ? JSON.stringify(data.interactive) : null;
         if (data.links !== undefined) updateData.links = JSON.stringify(data.links);
         if (data.accessibility !== undefined) updateData.accessibility = JSON.stringify(data.accessibility);
+        if (data.showTitle !== undefined) updateData.showTitle = !!data.showTitle;
+        if (data.showImage !== undefined) updateData.showImage = !!data.showImage;
+        if (data.showDescription !== undefined) updateData.showDescription = !!data.showDescription;
 
         const stop = await prisma.stop.update({
             where: { id: req.params.id },

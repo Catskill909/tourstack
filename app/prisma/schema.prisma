@@ -89,6 +89,9 @@ model Stop {
   interactive        String?
   links              String
   accessibility      String
+  showTitle          Boolean  @default(true)
+  showImage          Boolean  @default(true)
+  showDescription    Boolean  @default(true)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   tour               Tour     @relation(fields: [tourId], references: [id], onDelete: Cascade)
