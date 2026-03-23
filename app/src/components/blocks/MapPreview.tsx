@@ -195,7 +195,7 @@ function OpenStreetMapView({ data, language, interactive, className, onStopNavig
               if (infoText) popupHtml += `<p>${escapeHtml(infoText)}</p>`;
               if (marker.stopId) popupHtml += `<a href="#" class="map-stop-link" data-stop-id="${escapeHtml(marker.stopId)}">Go to stop &rarr;</a>`;
               popupHtml += '</div>';
-              leafletMarker.bindPopup(popupHtml, { maxWidth: 280, minWidth: 160, closeButton: true, className: 'map-styled-popup' });
+              leafletMarker.bindPopup(popupHtml, { maxWidth: 260, minWidth: 80, closeButton: true, className: 'map-styled-popup', autoPanPadding: [20, 20] });
             }
 
             // Click with stop link navigation — direct click opens popup when popup exists, navigates when no popup
@@ -360,7 +360,7 @@ function GoogleMapView({ data, language, interactive, className, apiKey, onStopN
             const infoText = marker.infoText?.[language] || marker.infoText?.en || '';
             const label = marker.title?.[language] || marker.title?.en || '';
             if (infoText || label || marker.stopId) {
-              let content = '<div style="padding:10px 12px;min-width:140px;max-width:240px;font-family:system-ui,-apple-system,sans-serif;">';
+              let content = '<div style="padding:8px 10px;max-width:220px;font-family:system-ui,-apple-system,sans-serif;">';
               if (label) content += `<strong style="display:block;font-size:15px;font-weight:600;color:#111827;margin-bottom:2px;">${escapeHtml(label)}</strong>`;
               if (infoText) content += `<p style="color:#6b7280;font-size:13px;margin:4px 0 0;line-height:1.45;">${escapeHtml(infoText)}</p>`;
               if (marker.stopId) content += `<a href="#" class="gmap-stop-link" data-stop-id="${escapeHtml(marker.stopId)}" style="display:inline-block;margin-top:8px;padding:5px 12px;font-size:12.5px;font-weight:600;color:#374151;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;text-decoration:none;">Go to stop &rarr;</a>`;
