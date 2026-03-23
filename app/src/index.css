@@ -236,15 +236,10 @@ body {
 .gm-style .gm-style-iw-tc::after {
   background: #1f2937 !important;
 }
-/* Google Maps close button */
-.gm-style .gm-style-iw-c button.gm-ui-hover-effect {
-  top: 2px !important;
-  right: 2px !important;
-  width: 24px !important;
-  height: 24px !important;
-  opacity: 0.7 !important;
-  filter: invert(1) !important;
+/* Google Maps close button — hide unreliable built-in, we render our own */
+.gm-style .gm-style-iw-c > button {
+  display: none !important;
 }
-.gm-style .gm-style-iw-c button.gm-ui-hover-effect:hover {
-  opacity: 1 !important;
+.gm-style .gm-style-iw-c button.gm-ui-hover-effect {
+  display: none !important;
 }

@@ -360,7 +360,9 @@ function GoogleMapView({ data, language, interactive, className, apiKey, onStopN
             const infoText = marker.infoText?.[language] || marker.infoText?.en || '';
             const label = marker.title?.[language] || marker.title?.en || '';
             if (infoText || label || marker.stopId) {
-              let content = '<div style="padding:8px 10px;max-width:220px;font-family:system-ui,-apple-system,sans-serif;">';
+              const markerId = marker.id;
+              let content = '<div style="position:relative;padding:8px 28px 8px 10px;max-width:220px;font-family:system-ui,-apple-system,sans-serif;">';
+              content += `<button data-close-iw="${escapeHtml(markerId)}" style="position:absolute;top:4px;right:4px;width:20px;height:20px;border:none;background:rgba(255,255,255,0.1);border-radius:4px;color:#9ca3af;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">&times;</button>`;
               if (label) content += `<strong style="display:block;font-size:13px;font-weight:600;color:#f9fafb;margin-bottom:2px;">${escapeHtml(label)}</strong>`;
               if (infoText) content += `<p style="color:#9ca3af;font-size:12px;margin:2px 0 0;line-height:1.35;">${escapeHtml(infoText)}</p>`;
               if (marker.stopId) content += `<a href="#" class="gmap-stop-link" data-stop-id="${escapeHtml(marker.stopId)}" style="display:inline-block;margin-top:6px;padding:4px 10px;font-size:11.5px;font-weight:600;color:#e5e7eb;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:6px;text-decoration:none;">Go to stop &rarr;</a>`;
@@ -372,19 +374,23 @@ function GoogleMapView({ data, language, interactive, className, apiKey, onStopN
                 infoWindow.open(map, gMarker);
                 activeInfoWindow = infoWindow;
               });
-              // Handle stop link clicks inside InfoWindow
-              if (marker.stopId && onStopNavigate) {
-                window.google!.maps.event.addListener(infoWindow, 'domready', () => {
-                  const el = document.querySelector('.gmap-stop-link[data-stop-id]') as HTMLElement;
-                  if (el) {
-                    el.addEventListener('click', (evt) => {
+              // Wire up custom close button and stop link on domready
+              window.google!.maps.event.addListener(infoWindow, 'domready', () => {
+                const closeBtn = document.querySelector(`[data-close-iw="${markerId}"]`) as HTMLElement;
+                if (closeBtn) {
+                  closeBtn.addEventListener('click', () => infoWindow.close());
+                }
+                if (marker.stopId && onStopNavigate) {
+                  const stopLink = document.querySelector(`.gmap-stop-link[data-stop-id="${marker.stopId}"]`) as HTMLElement;
+                  if (stopLink) {
+                    stopLink.addEventListener('click', (evt) => {
                       evt.preventDefault();
-                      const stopId = el.getAttribute('data-stop-id');
+                      const stopId = stopLink.getAttribute('data-stop-id');
                       if (stopId) onStopNavigate(stopId);
                     });
                   }
-                });
-              }
+                }
+              });
             }
           });
 
