@@ -173,16 +173,16 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
         >
             {/* Header Bar */}
             <div
-                className="flex flex-wrap items-center gap-4 px-4 py-3 bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-b border-[var(--color-border-default)]"
+                className="flex items-center gap-4 px-4 py-3 bg-[var(--color-bg-surface)]/95 backdrop-blur-md border-b border-[var(--color-border-default)]"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Title */}
-                <h2 className="text-base font-semibold text-[var(--color-text-primary)] truncate max-w-[200px]">
+                <h2 className="text-base font-semibold text-[var(--color-text-primary)] truncate">
                     Preview: <span className="text-[var(--color-accent-primary)]">{getStopTitle()}</span>
                 </h2>
 
                 {/* Spacer */}
-                <div className="flex-1" />
+                <div className="flex-1 min-w-0" />
 
                 {/* Device Toggle */}
                 <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)]">
@@ -272,25 +272,15 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                     </div>
                 )}
 
-                {/* Language Switcher */}
-                {availableLanguages.length > 1 && (
-                    <LanguageSwitcher
-                        availableLanguages={availableLanguages}
-                        activeLanguage={previewLanguage}
-                        onChange={setPreviewLanguage}
-                        size="sm"
-                        showStatus={false}
-                    />
-                )}
-
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="p-2 hover:bg-[var(--color-bg-hover)] rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                    className="group shrink-0 p-2.5 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] text-[var(--color-text-muted)] shadow-sm hover:bg-[var(--color-bg-hover)] hover:border-[var(--color-border-hover)] hover:text-[var(--color-text-primary)] hover:shadow-md active:scale-95 transition-all duration-300 ease-out"
                     title="Close preview (Esc)"
                 >
-                    <X className="w-5 h-5" />
+                    <X className="w-5 h-5 transition-transform duration-300 ease-out group-hover:rotate-90" />
                 </button>
+
             </div>
 
             {/* Device Preview Area */}
@@ -819,17 +809,30 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
 
             {/* Footer */}
             <div
-                className="flex items-center justify-center gap-2 py-3 bg-[var(--color-bg-surface)]/80 backdrop-blur-sm border-t border-[var(--color-border-default)]"
+                className="flex items-center gap-2 py-3 px-4 bg-[var(--color-bg-surface)]/80 backdrop-blur-sm border-t border-[var(--color-border-default)]"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-[var(--color-bg-elevated)]">
+                {/* Language Switcher - bottom left */}
+                {availableLanguages.length > 1 ? (
+                    <LanguageSwitcher
+                        availableLanguages={availableLanguages}
+                        activeLanguage={previewLanguage}
+                        onChange={setPreviewLanguage}
+                        size="sm"
+                        showStatus={false}
+                    />
+                ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-[var(--color-bg-elevated)] text-xs text-[var(--color-text-muted)]">
                         <span className="w-2 h-2 rounded-full bg-[var(--color-accent-primary)]" />
                         {previewLanguage.toUpperCase()}
                     </span>
-                    <span>·</span>
-                    <span>{isKioskMode ? 'Kiosk preview — content fills available space' : 'This is how visitors will see this stop on their device'}</span>
-                </div>
+                )}
+
+                <div className="flex-1" />
+
+                <span className="text-xs text-[var(--color-text-muted)]">
+                    {isKioskMode ? 'Kiosk preview — content fills available space' : 'This is how visitors will see this stop on their device'}
+                </span>
             </div>
         </div>
     );
