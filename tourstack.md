@@ -647,10 +647,17 @@ Image Gallery & Timeline:
  - OpenStreetMap integration (free, no API key)
  - Google Maps integration (premium, API key required)
  - Click-to-place markers with address search
+ - Multi-marker support: unlimited markers, 16 icon types, color picker
+ - Dark neutral popup theme (#1f2937) with auto-sizing
+ - Google Maps full parity: stop links, auto-close, custom close button
+ - Inline marker editing with auto-scroll
+ - Translation integration with batch Translate All + source-hash tracking
  - Size options: Small (150px), Medium (250px), Large (full height)
  - Trigger zones with configurable radius for geofencing
  - Provider toggle (OpenStreetMap/Google Maps)
  - Map styles: Standard, Satellite, Terrain, Hybrid
+ - Route lines, fit bounds, allowInteraction toggle
+ - XSS prevention via `escapeHtml()` for all popup content
 Audio guide (MP3 upload with **3 size variants**):
  - **Large**: Full player with title, progress, time, speed, skip ±10s, volume
  - **Medium**: Compact inline - play + scrubber + time + volume

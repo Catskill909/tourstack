@@ -473,8 +473,9 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Source-Hash Dirty Tracking** - `_sourceHash` pattern for translation freshness
 - [x] **Leaflet CSS Overrides** - Fixed Tailwind preflight breaking tile/marker rendering
 - [x] **allowInteraction Toggle** - Pinch/zoom control per map block
-- [x] **Custom Popup Styling** - Compact dark-mode-friendly popups with styled stop links
-- [x] **XSS Prevention** - `escapeHtml()` for all user text in Leaflet popups
+- [x] **Custom Popup Styling** - Dark neutral theme (#1f2937 bg), compact auto-sizing, styled stop links
+- [x] **Google Maps Full Parity** - InfoWindow stop links, auto-close previous, custom close button, dark theme
+- [x] **XSS Prevention** - `escapeHtml()` for all user text in Leaflet and Google Maps popups
 - [x] **Preview Button Fix** - `createPortal(document.body)` escapes Leaflet z-index stacking context
 - [x] **Fit Bounds** - Auto-viewport to show all markers with padding
 - [x] **Route Lines** - Dashed connecting lines between markers (toggleable)

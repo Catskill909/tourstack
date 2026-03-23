@@ -87,7 +87,7 @@ npm run start
 - **Visit Analytics**: VisitLog table tracks stop visits with source, token, timestamp, and user agent
 - **Tour Block**: Full-screen hero intro with architectural design system aesthetic
 - **Language Reconciliation**: Smart import detects language mismatches, prompts to expand tour or filter import
-- **13 Content Blocks**: Text, Image, Gallery, Timeline Gallery, Audio, Video, Quote, Timeline, Comparison, Positioning, Map, Image Map, Tour
+- **13 Content Blocks**: Text, Image, Gallery, Timeline Gallery, Audio, Video, Quote, Timeline, Comparison, Positioning, Map (multi-marker, dark popups, OpenStreetMap + Google Maps), Image Map, Tour
 - **Stop Editor**: Split-pane editor with live preview mode
 - **Timeline Gallery**: Audio-synced image galleries with **thumbnail markers** on waveform
 - **Multilingual**: All content supports multiple languages with Magic Translate AI
@@ -129,7 +129,7 @@ TourStack/
 | Audio | wavesurfer.js |
 | Animation | Framer Motion |
 | Validation | Zod |
-| Maps | Leaflet + Google Maps API |
+| Maps | Leaflet + Google Maps API (full parity) |
 | Icons | Lucide React |
 
 ## 📖 Documentation

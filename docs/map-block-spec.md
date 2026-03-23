@@ -1577,6 +1577,19 @@ model LocationTrigger {
 - [x] **Stop link styling** — Emerald accent color, arrow indicator, hover underline
 - [x] **Popup tip (pointer arrow)** — Styled to match popup wrapper background
 
+### Phase 10: Google Maps Full Parity ✅
+- [x] **Stop link in InfoWindow** — Google Maps InfoWindow now renders "Go to stop →" link with `onStopNavigate` support (was missing entirely)
+- [x] **Auto-close previous InfoWindow** — Clicking a new marker closes the previously open InfoWindow (tracked via `activeInfoWindow` ref)
+- [x] **`onStopNavigate` prop** — `GoogleMapView` now accepts and wires stop navigation (was only on `OpenStreetMapView`)
+- [x] **Compact auto-sizing** — Removed `min-width` from both Leaflet (was 120px CSS + 160px bindPopup) and Google Maps (was 140px inline). Popups now shrink to fit content
+
+### Phase 11: Dark Neutral Popup Theme ✅
+- [x] **Dark background** — Both Leaflet and Google Maps popups use `#1f2937` (gray-900) background with matching tip/arrow
+- [x] **Light text** — Title: `#f9fafb`, info text: `#9ca3af`, stop link: `#e5e7eb` with glass-effect button
+- [x] **Google Maps InfoWindow CSS overrides** — `.gm-style-iw-c`, `.gm-style-iw-d`, `.gm-style-iw-tc::after` all overridden to kill internal padding and set dark background
+- [x] **Custom close button** — Google's built-in close button (`button.gm-ui-hover-effect`) is unreliable across JS API versions (worked locally, invisible in production). Hidden via CSS `display:none`, replaced with custom `×` button rendered inside InfoWindow HTML, wired via `domready` event with unique `data-close-iw` attribute per marker
+- [x] **Leaflet close button** — Restyled for dark theme: `#9ca3af` color, hover `rgba(255,255,255,0.1)` background
+
 ---
 
 *Document prepared for TourStack development team*  
