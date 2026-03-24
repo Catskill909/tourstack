@@ -388,6 +388,21 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                     ? 'border border-white/80 text-white hover:bg-white/10'
                     : 'text-white/90 hover:text-white hover:bg-white/5';
 
+        // CTA button click handler
+        const handleCtaClick = () => {
+            if (data.ctaAction === 'external-url' && data.ctaExternalUrl) {
+                window.open(data.ctaExternalUrl, '_blank', 'noopener,noreferrer');
+            } else if (data.ctaAction === 'specific-stop' && data.ctaTargetStopId && onNavigateToStop) {
+                onNavigateToStop(data.ctaTargetStopId);
+            } else if (data.ctaAction === 'next-stop' && onNavigateToStop && allStops && currentStopId) {
+                // Find current stop index and navigate to next
+                const currentIndex = allStops.findIndex(s => s.id === currentStopId);
+                if (currentIndex >= 0 && currentIndex < allStops.length - 1) {
+                    onNavigateToStop(allStops[currentIndex + 1].id);
+                }
+            }
+        };
+
         return (
             <div className="relative w-full h-full" style={{ minHeight: 'inherit' }}>
                 {/* Full-bleed Hero Image - fills entire container */}
@@ -439,7 +454,7 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                                     {description}
                                 </p>
                             )}
-                            <button className={`flex items-center gap-2 ${isTablet ? 'px-8 py-4 text-lg' : 'px-5 py-2.5 text-sm'} bg-white text-neutral-900 font-medium tracking-wide transition-all hover:bg-neutral-100`}>
+                            <button onClick={handleCtaClick} className={`flex items-center gap-2 ${isTablet ? 'px-8 py-4 text-lg' : 'px-5 py-2.5 text-sm'} bg-white text-neutral-900 font-medium tracking-wide transition-all hover:bg-neutral-100`}>
                                 {ctaText}
                                 <ChevronRight className={isTablet ? 'w-6 h-6' : 'w-4 h-4'} />
                             </button>
@@ -461,7 +476,7 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                                     {description}
                                 </p>
                             )}
-                            <button className={`inline-flex items-center gap-3 ${isTablet ? 'px-8 py-4 text-lg' : 'px-5 py-2.5 text-sm'} font-medium tracking-wide transition-all ${ctaClasses}`}>
+                            <button onClick={handleCtaClick} className={`inline-flex items-center gap-3 ${isTablet ? 'px-8 py-4 text-lg' : 'px-5 py-2.5 text-sm'} font-medium tracking-wide transition-all ${ctaClasses}`}>
                                 {ctaText}
                                 <ChevronRight className={isTablet ? 'w-6 h-6' : 'w-4 h-4'} />
                             </button>
