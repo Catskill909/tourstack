@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Trash2, Plus, GripVertical, Loader2 } from 'lucide-react';
-import type { AccordionBlockData, AccordionItem, AccordionIcon, AccordionStyle } from '../../types';
+import type { AccordionBlockData, AccordionItem, AccordionIcon } from '../../types';
 import type { TranslationProvider } from '../../services/translationService';
 import { translateBatch } from '../../services/translationService';
 import { LanguageSwitcher } from '../LanguageSwitcher';
