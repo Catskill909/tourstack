@@ -568,8 +568,17 @@ function ExplorerTab({ tours, stats }: { tours: Tour[]; stats: ApiStats | null }
 
     // Parse response for structured view
     let parsedResponse: Record<string, unknown> | null = null;
+    let parsedTours: Array<Record<string, unknown>> = [];
+    let parsedStops: Array<Record<string, unknown>> = [];
+    let parsedSingleTour: Record<string, unknown> | null = null;
     try {
-        if (response) parsedResponse = JSON.parse(response);
+        if (response) {
+            parsedResponse = JSON.parse(response);
+            if (parsedResponse && Array.isArray(parsedResponse.tours)) parsedTours = parsedResponse.tours as Array<Record<string, unknown>>;
+            if (parsedResponse && Array.isArray(parsedResponse.stops)) parsedStops = parsedResponse.stops as Array<Record<string, unknown>>;
+            if (parsedResponse && parsedResponse.tour && typeof parsedResponse.tour === 'object' && !Array.isArray(parsedResponse.tour))
+                parsedSingleTour = parsedResponse.tour as Record<string, unknown>;
+        }
     } catch { /* keep null */ }
 
     return (
@@ -761,11 +770,11 @@ function ExplorerTab({ tours, stats }: { tours: Tour[]; stats: ApiStats | null }
                     {parsedResponse && (
                         <div className="px-6 py-3 border-b border-[var(--color-border-default)] space-y-1">
                             {/* Tours array */}
-                            {Array.isArray(parsedResponse.tours) && (parsedResponse.tours as Record<string, unknown>[]).map((tour: Record<string, unknown>, i: number) => (
+                            {parsedTours.map((tour, i) => (
                                 <CollapsibleBlock
                                     key={String(tour.id || i)}
-                                    label={`Tour: ${getNestedTitle(tour.title)} ${tour.status ? `(${tour.status})` : ''}`}
-                                    badge={tour.stop_count !== undefined ? `${tour.stop_count} stops` : undefined}
+                                    label={`Tour: ${getNestedTitle(tour.title)} ${tour.status ? `(${String(tour.status)})` : ''}`}
+                                    badge={tour.stop_count !== undefined ? `${String(tour.stop_count)} stops` : undefined}
                                     isOpen={expandedBlocks.has(`tour-${i}`)}
                                     onToggle={() => toggleBlock(`tour-${i}`)}
                                     json={tour}
@@ -773,17 +782,17 @@ function ExplorerTab({ tours, stats }: { tours: Tour[]; stats: ApiStats | null }
                             ))}
 
                             {/* Single tour */}
-                            {parsedResponse.tour && typeof parsedResponse.tour === 'object' && !Array.isArray(parsedResponse.tour) && (
+                            {parsedSingleTour && (
                                 <CollapsibleBlock
-                                    label={`Tour: ${getNestedTitle((parsedResponse.tour as Record<string, unknown>).title)}`}
+                                    label={`Tour: ${getNestedTitle(parsedSingleTour.title)}`}
                                     isOpen={expandedBlocks.has('tour-single')}
                                     onToggle={() => toggleBlock('tour-single')}
-                                    json={parsedResponse.tour as Record<string, unknown>}
+                                    json={parsedSingleTour}
                                 />
                             )}
 
                             {/* Stops array */}
-                            {Array.isArray(parsedResponse.stops) && (parsedResponse.stops as Record<string, unknown>[]).map((stop: Record<string, unknown>, i: number) => (
+                            {parsedStops.map((stop, i) => (
                                 <CollapsibleBlock
                                     key={String(stop.id || i)}
                                     label={`Stop ${(stop.order as number ?? i) + 1}: ${getNestedTitle(stop.title)}`}
@@ -976,8 +985,6 @@ function FeedPreviewModal({ name, url, content, isLoading, onClose }: {
     isLoading: boolean;
     onClose: () => void;
 }) {
-    const baseUrl = window.location.origin;
-
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-[var(--color-bg-surface)] rounded-2xl shadow-2xl max-w-4xl w-full max-h-[80vh] flex flex-col border border-[var(--color-border-default)]">
