@@ -78,6 +78,7 @@ When museum staff access visitor pages, they see:
 | Phase 11b: Map Block Multi-Marker Upgrade | ✅ Complete |
 | Phase 31: Image Block Enhancement | ✅ Complete |
 | Phase 32: HTML / Embed Block | ✅ Complete |
+| Phase 33: Accordion Block | ✅ Complete |
 | Phase 26.2: Per-Tour AI Concierge | 🎯 NEXT |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
@@ -458,6 +459,37 @@ Collections → AI Analyze → Translate → Save → Auto-Sync → Media Librar
 - `htmlSanitizer.ts` - DOMPurify with 3-tier sanitization
 - `types/index.ts` - `HtmlBlockData`, `HtmlEmbedProvider` types
 - `docs/html-block-dev.md` - Full development documentation
+
+### Accordion Block (Phase 33) - COMPLETE ✅ (March 25, 2026)
+
+**New Content Block Type:** Collapsible sections block for organizing supplementary content into expandable panels — FAQ, provenance, conservation notes, visitor info, and more.
+
+| Feature | Description |
+|---------|-------------|
+| **5 Visual Styles** | Minimal (clean lines), Card (separated cards), Bordered (left accent), Museum (amber/gold accents, uppercase), FAQ (Q:/A: prefixes) |
+| **6 Templates** | Visitor FAQ, Artwork Details, Did You Know, Visitor Information, Artifact Record, Blank — each with preset headings and icons |
+| **Two-Page Editor** | Page 1: Template picker showing descriptions, style wireframe previews, and preset section headings with icons. Page 2: Section editor with style selector, settings, and content fields |
+| **16 Section Icons** | Info, Question, History, Star, Warning, Lightbulb, Book, Eye, Palette, Shield, Accessibility, Camera, Map Pin, Ticket, Clock, None |
+| **CSS-Only Animation** | `grid-template-rows` transition for smooth expand/collapse — no Framer Motion (avoids transform/sticky bugs) |
+| **Single Translate All** | One button batch-translates all headings + content. Shows idle → translating → translated states, auto-resets on content edit |
+| **Style Preview Thumbnails** | Mini wireframe previews in style selector showing visual treatment of each style |
+| **Behavior Options** | Allow multiple open (default off), show expand/collapse all, numbered items |
+| **Accessibility** | `aria-expanded`, `aria-controls`, `role="region"`, `motion-reduce:transition-none` |
+| **Carriage Returns** | `whitespace-pre-wrap` preserves line breaks in pasted content |
+
+**Key Architecture Decisions:**
+- **CSS grid-template-rows over Framer Motion** — avoids `transform` creating new containing blocks that break `position: sticky` (documented in `docs/sticky-header-bug.md`)
+- **Two-page editor over single-page** — templates need to show preset headings with icons so curators see what they'll get before committing; single-page collapsed the visual distinction between templates
+- **Single Translate All over per-field buttons** — accordion blocks have many fields; per-field buttons created visual clutter and confused the UX. One button with idle/done states is clearer
+- **Constrained editor width** — `max-w-2xl mx-auto` prevents sections from stretching edge-to-edge in the wide BlockEditorModal
+
+**Files:**
+- `AccordionBlockEditor.tsx` - Two-page editor with template picker + section editor
+- `StopContentBlock.tsx` - `AccordionBlockView` with CSS grid animation, all 5 styles
+- `accordionTemplates.ts` - 6 museum-focused quick-start templates
+- `accordionStyles.ts` - 5 style configs, 16 icon mappings
+- `types/index.ts` - `AccordionBlockData`, `AccordionItem`, `AccordionIcon`, `AccordionStyle`
+- `docs/accordion-block-dev.md` - Full development documentation
 
 ---
 

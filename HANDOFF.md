@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: March 25, 2026
-**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅ | Chatbot UX Unification COMPLETE ✅ | Map Block Upgrade COMPLETE ✅ | Image Block Enhancement COMPLETE ✅ | HTML/Embed Block COMPLETE ✅
+**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅ | Chatbot UX Unification COMPLETE ✅ | Map Block Upgrade COMPLETE ✅ | Image Block Enhancement COMPLETE ✅ | HTML/Embed Block COMPLETE ✅ | Accordion Block COMPLETE ✅
 
 ---
 
@@ -524,6 +524,30 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - `app/src/lib/htmlSanitizer.ts` — DOMPurify with 3-tier sanitization (default/iframe/sandboxed)
 - `app/src/types/index.ts` — `HtmlBlockData`, `HtmlEmbedProvider` types
 - `docs/html-block-dev.md` — Full development documentation
+
+### Phase 33: Accordion Block ✅ (March 25, 2026)
+- [x] **New Block Type** - `accordion` content block for collapsible sections (FAQ, provenance, visitor info)
+- [x] **5 Visual Styles** - Minimal, Card, Bordered, Museum (amber/gold accents), FAQ (Q:/A: prefixes)
+- [x] **6 Quick-Start Templates** - Visitor FAQ, Artwork Details, Did You Know, Visitor Information, Artifact Record, Blank
+- [x] **Two-Page Editor Flow** - Page 1: template picker with descriptions, style previews, and preset section headings with icons. Page 2: section editor with all controls
+- [x] **16 Section Icons** - Info, Question, History, Star, Warning, Lightbulb, Book, Eye, Palette, Shield, Accessibility, Camera, Map Pin, Ticket, Clock, None
+- [x] **CSS-Only Animation** - `grid-template-rows` expand/collapse (no Framer Motion — avoids transform/sticky bugs)
+- [x] **Single Translate All Button** - Batch translates all headings + content for all target languages. Shows idle → translating → translated states. Auto-resets when content changes
+- [x] **Multilingual** - LanguageSwitcher with content-status pills, per-language editing for all headings and content
+- [x] **Accessibility** - `aria-expanded`, `aria-controls`, `role="region"`, `motion-reduce:transition-none`
+- [x] **Carriage Return Support** - `whitespace-pre-wrap` preserves line breaks in pasted content
+- [x] **Style Preview Thumbnails** - Mini wireframe previews in style selector showing each style's visual treatment
+- [x] **Section Management** - Add, delete, reorder (up/down), collapse/expand editor cards, icon picker per section
+- [x] **Constrained Editor Width** - `max-w-2xl` for clean layout in wide modal
+- [x] **Behavior Options** - Allow multiple open, show expand/collapse all toggle, numbered items
+
+**Key files:**
+- `app/src/components/blocks/AccordionBlockEditor.tsx` — Two-page editor with template picker + section editor
+- `app/src/components/blocks/StopContentBlock.tsx` — `AccordionBlockView` with CSS grid animation
+- `app/src/lib/accordionTemplates.ts` — 6 museum-focused templates
+- `app/src/lib/accordionStyles.ts` — 5 style configs, 16 icon mappings, style option lists
+- `app/src/types/index.ts` — `AccordionBlockData`, `AccordionItem`, `AccordionIcon`, `AccordionStyle` types
+- `docs/accordion-block-dev.md` — Full development documentation
 
 ### Phase 28: Image Map Block ✅ (March 10, 2026)
 - [x] **New Block Type** - `imageMap` content block for indoor floor plans
@@ -1180,6 +1204,11 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | Embed Providers | `app/src/lib/embedProviders.ts` |
 | HTML Sanitizer | `app/src/lib/htmlSanitizer.ts` |
 | HTML Block Dev Guide | `docs/html-block-dev.md` |
+| **Accordion Block** | |
+| Accordion Block Editor | `app/src/components/blocks/AccordionBlockEditor.tsx` |
+| Accordion Templates | `app/src/lib/accordionTemplates.ts` |
+| Accordion Styles | `app/src/lib/accordionStyles.ts` |
+| Accordion Block Dev Guide | `docs/accordion-block-dev.md` |
 | **Image Map Block** | |
 | Image Map Editor Modal | `app/src/components/blocks/ImageMapEditorModal.tsx` |
 | Image Map Block Editor | `app/src/components/blocks/ImageMapBlockEditor.tsx` |
