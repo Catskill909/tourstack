@@ -81,6 +81,12 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
     // Navigation within the simulator — clicking a stop list item loads that stop
     const [currentStop, setCurrentStop] = useState<Stop>(stop);
     const [stopHistory, setStopHistory] = useState<Stop[]>([]);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // Scroll to top whenever the displayed stop changes
+    useEffect(() => {
+        scrollContainerRef.current?.scrollTo(0, 0);
+    }, [currentStop]);
 
     const navigateToStop = (stopId: string) => {
         const target = allStops?.find(s => s.id === stopId);
@@ -297,6 +303,7 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                         >
                             {/* Screen Content */}
                             <div
+                                ref={scrollContainerRef}
                                 className="h-full overflow-y-auto"
                                 style={{ scrollbarWidth: 'none' }}
                             >
@@ -611,6 +618,7 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
 
                                         {/* Screen Content — starts below the notch safe area */}
                                         <div
+                                            ref={scrollContainerRef}
                                             className="h-full overflow-y-auto"
                                             style={{ scrollbarWidth: 'none', height: effectiveHeight }}
                                         >

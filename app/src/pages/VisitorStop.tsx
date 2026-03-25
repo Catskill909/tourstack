@@ -91,6 +91,11 @@ export function VisitorStop() {
     const isStaffParam = searchParams.get('staff') === 'true';
     const isStaff = localStorage.getItem('tourstack_staff') === 'true' || isKioskMode || isStaffParam;
 
+    // Scroll to top when navigating to a new stop
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [stopSlugOrId]);
+
     // Fetch tour and stop data using visitor API (supports slugs)
     useEffect(() => {
         async function fetchData() {

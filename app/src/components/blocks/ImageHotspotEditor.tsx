@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Trash2, Plus, ExternalLink, Navigation, MessageSquare, Languages, Loader2, Save } from 'lucide-react';
+import { X, Trash2, Plus, ExternalLink, Navigation, MessageSquare, Languages, Loader2, Save, Check } from 'lucide-react';
 import type { ImageHotspot, ImageMapIcon, Stop } from '../../types';
 import { ImageMapMarkerPin } from './ImageMapMarkerPin';
 import { ColorPicker } from '../ui/ColorPicker';
@@ -43,6 +43,7 @@ export function ImageHotspotEditor({ imageUrl, hotspots, language, availableLang
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [isTranslatingAll, setIsTranslatingAll] = useState(false);
+    const [translateStatus, setTranslateStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [activeLanguage, setActiveLanguage] = useState(language);
     const [showSaveMenu, setShowSaveMenu] = useState(false);
     const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -121,25 +122,34 @@ export function ImageHotspotEditor({ imageUrl, hotspots, language, availableLang
         if (otherLangs.length === 0 || hotspots.length === 0) return;
 
         setIsTranslatingAll(true);
-        const updatedHotspots = [...hotspots];
-        for (let i = 0; i < updatedHotspots.length; i++) {
-            const hotspot = updatedHotspots[i];
-            const sourceText = hotspot.label?.[primaryLang] || hotspot.label?.['en'];
-            if (!sourceText?.trim()) continue;
+        setTranslateStatus('idle');
+        try {
+            const updatedHotspots = [...hotspots];
+            for (let i = 0; i < updatedHotspots.length; i++) {
+                const hotspot = updatedHotspots[i];
+                const sourceText = hotspot.label?.[primaryLang] || hotspot.label?.['en'];
+                if (!sourceText?.trim()) continue;
 
-            const newLabel = { ...hotspot.label };
-            for (const lang of otherLangs) {
-                try {
-                    const translated = await translateText(sourceText, primaryLang, lang);
-                    newLabel[lang] = translated;
-                } catch (error) {
-                    console.error(`Failed to translate hotspot "${sourceText}" to ${lang}:`, error);
+                const newLabel = { ...hotspot.label };
+                for (const lang of otherLangs) {
+                    try {
+                        const translated = await translateText(sourceText, primaryLang, lang);
+                        newLabel[lang] = translated;
+                    } catch (error) {
+                        console.error(`Failed to translate hotspot "${sourceText}" to ${lang}:`, error);
+                    }
                 }
+                updatedHotspots[i] = { ...hotspot, label: newLabel };
             }
-            updatedHotspots[i] = { ...hotspot, label: newLabel };
+            onChange(updatedHotspots);
+            setTranslateStatus('success');
+        } catch (error) {
+            console.error('Translation failed:', error);
+            setTranslateStatus('error');
+        } finally {
+            setIsTranslatingAll(false);
+            setTimeout(() => setTranslateStatus('idle'), 3000);
         }
-        onChange(updatedHotspots);
-        setIsTranslatingAll(false);
     }
 
     return (
@@ -163,10 +173,16 @@ export function ImageHotspotEditor({ imageUrl, hotspots, language, availableLang
                             type="button"
                             onClick={handleTranslateAllLabels}
                             disabled={isTranslatingAll}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] rounded-lg hover:bg-[var(--color-accent-primary)]/20 disabled:opacity-50 transition-colors"
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                translateStatus === 'success'
+                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                    : translateStatus === 'error'
+                                    ? 'bg-red-500/20 text-red-400'
+                                    : 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/20 disabled:opacity-50'
+                            }`}
                         >
-                            {isTranslatingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Languages className="w-4 h-4" />}
-                            <span>Translate All</span>
+                            {isTranslatingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : translateStatus === 'success' ? <Check className="w-4 h-4" /> : <Languages className="w-4 h-4" />}
+                            <span>{isTranslatingAll ? 'Translating...' : translateStatus === 'success' ? 'Done' : 'Translate All'}</span>
                         </button>
                     )}
                     {/* Save button with dropdown */}
