@@ -231,7 +231,55 @@ export type ContentBlockType =
   | 'tour'
   | 'stopList'
   | 'qrScanner'
-  | 'html';
+  | 'html'
+  | 'accordion';
+
+// Accordion types
+export interface AccordionItem {
+  id: string;
+  heading: { [lang: string]: string };
+  content: { [lang: string]: string };
+  icon?: AccordionIcon;
+  defaultOpen?: boolean;
+}
+
+export type AccordionIcon =
+  | 'none'
+  | 'info'
+  | 'question'
+  | 'history'
+  | 'star'
+  | 'warning'
+  | 'lightbulb'
+  | 'book'
+  | 'eye'
+  | 'palette'
+  | 'shield'
+  | 'accessibility'
+  | 'camera'
+  | 'map-pin'
+  | 'ticket'
+  | 'clock';
+
+export type AccordionStyle =
+  | 'minimal'
+  | 'card'
+  | 'bordered'
+  | 'museum'
+  | 'faq';
+
+export interface AccordionBlockData {
+  items: AccordionItem[];
+  style: AccordionStyle;
+  allowMultipleOpen: boolean;
+  collapseLabel?: { [lang: string]: string };
+  showExpandAll: boolean;
+  numberedItems: boolean;
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
+}
 
 // Block data interfaces
 export interface TextBlockData {
@@ -700,7 +748,8 @@ export type ContentBlockData =
   | TourBlockData
   | StopListBlockData
   | QRScannerBlockData
-  | HtmlBlockData;
+  | HtmlBlockData
+  | AccordionBlockData;
 
 // Base content block interface
 export interface ContentBlock {

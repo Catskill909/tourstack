@@ -17,8 +17,9 @@ import { TourBlockEditor } from './blocks/TourBlockEditor';
 import { StopListEditorModal } from './blocks/StopListEditorModal';
 import { ComparisonBlockEditor } from './blocks/ComparisonBlockEditor';
 import { HtmlBlockEditor } from './blocks/HtmlBlockEditor';
+import { AccordionBlockEditor } from './blocks/AccordionBlockEditor';
 import { PreviewChoiceModal } from './PreviewChoiceModal';
-import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, ComparisonBlockData, HtmlBlockData, StopImageData } from '../types';
+import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, ComparisonBlockData, HtmlBlockData, AccordionBlockData, StopImageData } from '../types';
 
 interface StopEditorProps {
     stop: Stop;
@@ -254,6 +255,8 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
             return { beforeImage: { url: '' }, afterImage: { url: '' }, orientation: 'horizontal', initialPosition: 50 } as ComparisonBlockData;
         case 'html':
             return { mode: 'html', embedCode: '', url: '', htmlContent: { en: HTML_BLOCK_DEMO }, aspectRatio: 'auto', sizing: 'fill', maxWidth: 'large', borderRadius: false, allowInteraction: true, lazyLoad: true } as HtmlBlockData;
+        case 'accordion':
+            return { items: [{ id: `acc_${Date.now()}`, heading: { en: 'Section 1' }, content: { en: '' }, icon: 'none', defaultOpen: false }], style: 'minimal', allowMultipleOpen: true, showExpandAll: false, numberedItems: false } as AccordionBlockData;
         default:
             return { content: { en: '' }, style: 'normal' } as TextBlockData;
     }
@@ -940,7 +943,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                     <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6 w-full max-w-md shadow-xl">
                         <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">Add Content Block</h3>
                         <div className="grid grid-cols-3 gap-3">
-                            {(['tour', 'text', 'image', 'gallery', 'timelineGallery', 'audio', 'comparison', 'map', 'imageMap', 'html', 'stopList', 'qrScanner'] as ContentBlockType[]).map((type) => {
+                            {(['tour', 'text', 'image', 'gallery', 'timelineGallery', 'audio', 'comparison', 'map', 'imageMap', 'html', 'accordion', 'stopList', 'qrScanner'] as ContentBlockType[]).map((type) => {
                                 const Icon = BLOCK_ICONS[type];
                                 return (
                                     <button
@@ -1103,7 +1106,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                         tourData={tourData}
                         allStops={allStops}
                         availableLanguages={availableLanguages}
-                        wide={block.type === 'gallery' || block.type === 'image' || block.type === 'tour' || block.type === 'html'}
+                        wide={block.type === 'gallery' || block.type === 'image' || block.type === 'tour' || block.type === 'html' || block.type === 'accordion'}
                     >
                         {block.type === 'text' && (
                             <TextBlockEditor
@@ -1185,6 +1188,15 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                         {block.type === 'html' && (
                             <HtmlBlockEditor
                                 data={block.data as HtmlBlockData}
+                                language={language}
+                                availableLanguages={availableLanguages}
+                                translationProvider={translationProvider}
+                                onChange={updateBlock}
+                            />
+                        )}
+                        {block.type === 'accordion' && (
+                            <AccordionBlockEditor
+                                data={block.data as AccordionBlockData}
                                 language={language}
                                 availableLanguages={availableLanguages}
                                 translationProvider={translationProvider}

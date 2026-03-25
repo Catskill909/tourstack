@@ -13,3 +13,4 @@ export { ComparisonBlockEditor } from './ComparisonBlockEditor';
 export { ComparisonPreview } from './ComparisonPreview';
 export { ImageHotspotEditor } from './ImageHotspotEditor';
 export { ImageLightbox } from '../ui/ImageLightbox';
+export { AccordionBlockEditor } from './AccordionBlockEditor';

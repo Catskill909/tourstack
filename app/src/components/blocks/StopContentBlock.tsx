@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight, List, ScanLine, LayoutGrid, ZoomIn, Code } from 'lucide-react';
+import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight, ChevronDown, List, ScanLine, LayoutGrid, ZoomIn, Code, ListCollapse } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, ComparisonBlockData, HtmlBlockData, Tour, Stop } from '../../types';
+import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, ComparisonBlockData, HtmlBlockData, AccordionBlockData, Tour, Stop } from '../../types';
+import { ACCORDION_STYLES, ACCORDION_ICON_MAP } from '../../lib/accordionStyles';
 import { GalleryPreview } from './GalleryPreview';
 import { TimelineGalleryPreview } from './TimelineGalleryPreview';
 import { MapPreview } from './MapPreview';
@@ -53,6 +54,7 @@ const BLOCK_ICONS: Record<ContentBlockType, LucideIcon> = {
     stopList: List,
     qrScanner: ScanLine,
     html: Code,
+    accordion: ListCollapse,
 };
 
 const BLOCK_LABELS: Record<ContentBlockType, string> = {
@@ -72,6 +74,7 @@ const BLOCK_LABELS: Record<ContentBlockType, string> = {
     stopList: 'Stop List',
     qrScanner: 'QR Scanner',
     html: 'HTML / Embed',
+    accordion: 'Accordion',
 };
 
 function ImageBlockView({ data, language, mode, onNavigateToStop, deviceType = 'phone' }: { data: ImageBlockData; language: string; mode: 'view' | 'edit'; onNavigateToStop?: (stopId: string) => void; deviceType?: 'phone' | 'tablet' | 'kiosk' }) {
@@ -713,6 +716,93 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
         );
     }
 
+    function AccordionBlockView({ data }: { data: AccordionBlockData }) {
+        const [openItems, setOpenItems] = useState<Set<string>>(() =>
+            new Set(data.items.filter(i => i.defaultOpen).map(i => i.id))
+        );
+
+        function toggleItem(id: string) {
+            setOpenItems(prev => {
+                const next = new Set(prev);
+                if (next.has(id)) {
+                    next.delete(id);
+                } else {
+                    if (!data.allowMultipleOpen) next.clear();
+                    next.add(id);
+                }
+                return next;
+            });
+        }
+
+        const styleConfig = ACCORDION_STYLES[data.style] || ACCORDION_STYLES.minimal;
+
+        return (
+            <>
+                {renderBlockHeader(data)}
+                <div className={styleConfig.container}>
+                    {data.showExpandAll && (
+                        <button
+                            onClick={() => {
+                                if (openItems.size === data.items.length) {
+                                    setOpenItems(new Set());
+                                } else {
+                                    setOpenItems(new Set(data.items.map(i => i.id)));
+                                }
+                            }}
+                            className="text-xs text-neutral-400 hover:text-neutral-200 mb-2"
+                        >
+                            {openItems.size === data.items.length ? 'Collapse All' : 'Expand All'}
+                        </button>
+                    )}
+
+                    {data.items.map((item, index) => {
+                        const isOpen = openItems.has(item.id);
+                        const heading = item.heading[language] || item.heading.en || '';
+                        const content = item.content[language] || item.content.en || '';
+                        const IconComponent = item.icon && item.icon !== 'none'
+                            ? ACCORDION_ICON_MAP[item.icon]
+                            : null;
+
+                        return (
+                            <div key={item.id} className={styleConfig.item(isOpen)}>
+                                <button
+                                    onClick={() => toggleItem(item.id)}
+                                    className={styleConfig.heading(isOpen)}
+                                    aria-expanded={isOpen}
+                                    aria-controls={`accordion-content-${item.id}`}
+                                    id={`accordion-heading-${item.id}`}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        {IconComponent && <IconComponent className="w-4 h-4 flex-shrink-0" />}
+                                        {data.numberedItems && <span className="text-neutral-500">{index + 1}.</span>}
+                                        {data.style === 'faq' && <span className="text-neutral-500 font-bold">Q:</span>}
+                                        <span>{heading}</span>
+                                    </span>
+                                    <ChevronDown className={`w-4 h-4 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                <div
+                                    id={`accordion-content-${item.id}`}
+                                    role="region"
+                                    aria-labelledby={`accordion-heading-${item.id}`}
+                                    className="grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none"
+                                    style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
+                                >
+                                    <div className="overflow-hidden">
+                                        <div className={styleConfig.content}>
+                                            {data.style === 'faq' && <span className="text-neutral-500 font-medium">A: </span>}
+                                            {content}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </>
+        );
+    }
+
     function renderBlock() {
         switch (block.type) {
             case 'text':
@@ -787,6 +877,8 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                 return renderQRScannerBlock(block.data as QRScannerBlockData);
             case 'html':
                 return renderHtmlBlock(block.data as HtmlBlockData);
+            case 'accordion':
+                return <AccordionBlockView data={block.data as AccordionBlockData} />;
             default:
                 return (
                     <div className="text-[var(--color-text-muted)] text-sm">
