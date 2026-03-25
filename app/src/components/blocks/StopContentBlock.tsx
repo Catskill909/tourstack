@@ -649,11 +649,12 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
 
         // Max width — 'full' uses full-bleed calc() pattern like Image block
         const isFull = data.maxWidth === 'full';
-        const maxWidthClass = isFull ? '' : ({
+        const maxWidthMap: Record<string, string> = {
             small: 'max-w-sm mx-auto',
             medium: 'max-w-xl mx-auto',
             large: 'w-full',
-        }[data.maxWidth || 'large'] || 'w-full');
+        };
+        const maxWidthClass = isFull ? '' : (maxWidthMap[data.maxWidth || 'large'] || 'w-full');
 
         // Full-bleed inline style (same pattern as Image block full format)
         const fullBleedStyle: React.CSSProperties = isFull ? { marginLeft: '-24px', width: 'calc(100% + 48px)' } : {};
