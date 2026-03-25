@@ -89,7 +89,7 @@ export function BlockEditorModal({ title, icon: Icon, onClose, onSave, children,
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-6">
-                <div className={wide ? 'max-w-6xl mx-auto' : 'max-w-2xl mx-auto'}>
+                <div className={wide ? 'max-w-[1400px] mx-auto' : 'max-w-2xl mx-auto'}>
                     {children}
                 </div>
             </div>

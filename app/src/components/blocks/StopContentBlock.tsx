@@ -528,19 +528,19 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                     }}
                 />
 
-                {/* Gradient Overlay - ONLY behind text area at bottom, much darker */}
+                {/* Gradient Overlay - behind text area, darker for readability */}
                 {data.layout === 'hero-bottom' || !data.layout ? (
                     <div
                         className="absolute bottom-0 left-0 right-0 pointer-events-none"
                         style={{
-                            height: '55%',
-                            background: `linear-gradient(to top, rgba(0,0,0,${overlayOpacity}) 0%, rgba(0,0,0,${overlayOpacity * 0.7}) 35%, rgba(0,0,0,0.2) 70%, transparent 100%)`
+                            height: '70%',
+                            background: `linear-gradient(to top, rgba(0,0,0,${overlayOpacity}) 0%, rgba(0,0,0,${overlayOpacity * 0.85}) 30%, rgba(0,0,0,${overlayOpacity * 0.4}) 65%, transparent 100%)`
                         }}
                     />
                 ) : data.layout === 'hero-center' ? (
                     <div
                         className="absolute inset-0 pointer-events-none"
-                        style={{ background: `rgba(0,0,0,${overlayOpacity * 0.6})` }}
+                        style={{ background: `rgba(0,0,0,${overlayOpacity * 0.8})` }}
                     />
                 ) : null}
 

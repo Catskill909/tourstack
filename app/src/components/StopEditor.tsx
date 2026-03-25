@@ -914,7 +914,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                         tourData={tourData}
                         allStops={allStops}
                         availableLanguages={availableLanguages}
-                        wide={block.type === 'gallery' || block.type === 'image'}
+                        wide={block.type === 'gallery' || block.type === 'image' || block.type === 'tour'}
                     >
                         {block.type === 'text' && (
                             <TextBlockEditor
