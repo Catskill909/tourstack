@@ -256,7 +256,7 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
         case 'html':
             return { mode: 'html', embedCode: '', url: '', htmlContent: { en: HTML_BLOCK_DEMO }, aspectRatio: 'auto', sizing: 'fill', maxWidth: 'large', borderRadius: false, allowInteraction: true, lazyLoad: true } as HtmlBlockData;
         case 'accordion':
-            return { items: [{ id: `acc_${Date.now()}`, heading: { en: 'Section 1' }, content: { en: '' }, icon: 'none', defaultOpen: false }], style: 'minimal', allowMultipleOpen: true, showExpandAll: false, numberedItems: false } as AccordionBlockData;
+            return { items: [{ id: `acc_${Date.now()}`, heading: { en: 'Section 1' }, content: { en: '' }, icon: 'none', defaultOpen: false }], style: 'minimal', allowMultipleOpen: false, showExpandAll: false, numberedItems: false } as AccordionBlockData;
         default:
             return { content: { en: '' }, style: 'normal' } as TextBlockData;
     }
@@ -1199,7 +1199,6 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                                 data={block.data as AccordionBlockData}
                                 language={language}
                                 availableLanguages={availableLanguages}
-                                translationProvider={translationProvider}
                                 onChange={updateBlock}
                             />
                         )}

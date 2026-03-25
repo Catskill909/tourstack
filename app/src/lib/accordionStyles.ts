@@ -55,7 +55,7 @@ export const ACCORDION_STYLES: Record<AccordionStyle, {
     item: () => '',
     heading: (isOpen) =>
       `flex items-center justify-between w-full py-3 text-left text-sm font-medium ${isOpen ? 'text-white' : 'text-neutral-300'} hover:text-white transition-colors`,
-    content: 'pb-3 pl-1 text-sm text-neutral-400 leading-relaxed',
+    content: 'pb-3 pl-1 text-sm text-neutral-400 leading-relaxed whitespace-pre-wrap',
   },
   card: {
     container: 'space-y-2',
@@ -63,14 +63,14 @@ export const ACCORDION_STYLES: Record<AccordionStyle, {
       `rounded-lg ${isOpen ? 'bg-neutral-800/70' : 'bg-neutral-800/40'} transition-colors`,
     heading: (isOpen) =>
       `flex items-center justify-between w-full px-4 py-3 text-left text-sm font-medium ${isOpen ? 'text-white' : 'text-neutral-300'} hover:text-white`,
-    content: 'px-4 pb-3 text-sm text-neutral-400 leading-relaxed',
+    content: 'px-4 pb-3 text-sm text-neutral-400 leading-relaxed whitespace-pre-wrap',
   },
   bordered: {
     container: 'border-l-2 border-neutral-600 divide-y divide-neutral-700/50',
     item: () => '',
     heading: (isOpen) =>
       `flex items-center justify-between w-full px-4 py-3 text-left text-sm font-medium ${isOpen ? 'text-white border-l-2 border-blue-500 -ml-[2px]' : 'text-neutral-300'} hover:text-white`,
-    content: 'px-4 pb-3 text-sm text-neutral-400 leading-relaxed',
+    content: 'px-4 pb-3 text-sm text-neutral-400 leading-relaxed whitespace-pre-wrap',
   },
   museum: {
     container: 'divide-y divide-neutral-700/30',
@@ -78,7 +78,7 @@ export const ACCORDION_STYLES: Record<AccordionStyle, {
       `${isOpen ? 'border-l-2 border-amber-500/70' : ''}`,
     heading: (isOpen) =>
       `flex items-center justify-between w-full px-4 py-3.5 text-left text-sm tracking-wide ${isOpen ? 'text-amber-400 font-semibold' : 'text-neutral-300 font-medium'} hover:text-amber-300 transition-colors uppercase`,
-    content: 'px-4 pb-4 text-sm text-neutral-400 leading-relaxed bg-gradient-to-b from-neutral-800/30 to-transparent',
+    content: 'px-4 pb-4 text-sm text-neutral-400 leading-relaxed whitespace-pre-wrap bg-gradient-to-b from-neutral-800/30 to-transparent',
   },
   faq: {
     container: 'space-y-1',
@@ -86,7 +86,7 @@ export const ACCORDION_STYLES: Record<AccordionStyle, {
       `rounded-lg ${isOpen ? 'bg-neutral-800/50' : ''} ${!isOpen ? 'odd:bg-neutral-800/20' : ''}`,
     heading: (isOpen) =>
       `flex items-center justify-between w-full px-4 py-3 text-left text-sm font-semibold ${isOpen ? 'text-white' : 'text-neutral-200'} hover:text-white`,
-    content: 'px-4 pb-3 text-sm text-neutral-400 leading-relaxed',
+    content: 'px-4 pb-3 text-sm text-neutral-400 leading-relaxed whitespace-pre-wrap',
   },
 };
 
