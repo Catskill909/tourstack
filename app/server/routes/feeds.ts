@@ -15,6 +15,12 @@ interface FeedQueryParams {
     include_stops?: string;  // Include stops (default: true)
 }
 
+// Derive the public base URL from the incoming request.
+// Works behind reverse proxies (Coolify) because trust proxy is set.
+function getBaseUrl(req: Request): string {
+    return `${req.protocol}://${req.get('host')}`;
+}
+
 // GET /api/feeds/tours - Get all tours as a feed
 // Query params: ?lang=es&format=compact&status=published&include_stops=true
 router.get('/tours', async (req: Request, res: Response) => {
@@ -47,8 +53,9 @@ router.get('/tours', async (req: Request, res: Response) => {
                 status: status || 'all',
                 include_stops: includeStops,
             },
+            base_url: getBaseUrl(req),
             total_tours: filteredTours.length,
-            tours: filteredTours.map((tour) => formatTourForFeed(tour, lang, format)),
+            tours: filteredTours.map((tour) => formatTourForFeed(tour, lang, format, getBaseUrl(req))),
         };
 
         res.json(feed);
@@ -85,8 +92,9 @@ router.get('/tours/:id', async (req: Request, res: Response) => {
                 language: lang || 'all',
                 format,
             },
+            base_url: getBaseUrl(req),
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            tour: formatTourForFeed(tour as any, lang, format),
+            tour: formatTourForFeed(tour as any, lang, format, getBaseUrl(req)),
         };
 
         res.json(feed);
@@ -131,8 +139,9 @@ router.get('/tours/:id/stops', async (req: Request, res: Response) => {
             tour_slug: tourData.slug,
             tour_title: localizedTitle,
             total_stops: tourData.stops?.length || 0,
+            base_url: getBaseUrl(req),
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            stops: (tourData.stops || []).map((stop: any) => formatStopForFeed(stop, lang, parseJsonArray(tourData.languages))),
+            stops: (tourData.stops || []).map((stop: any) => formatStopForFeed(stop, lang, parseJsonArray(tourData.languages), getBaseUrl(req))),
         };
 
         res.json(feed);
@@ -190,7 +199,7 @@ const formatImageUrl = formatMediaUrl;
 
 // Helper: Format tour for feed output
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function formatTourForFeed(tour: any, lang?: string, format: string = 'full') {
+function formatTourForFeed(tour: any, lang?: string, format: string = 'full', baseUrl?: string) {
     const title = parseLocalizedField(tour.title);
     const description = parseLocalizedField(tour.description);
 
@@ -220,7 +229,7 @@ function formatTourForFeed(tour: any, lang?: string, format: string = 'full') {
             slug: tour.slug,
             title: localizedTitle,
             description: localizedDescription,
-            hero_image: formatImageUrl(tour.heroImage),
+            hero_image: formatImageUrl(tour.heroImage, baseUrl),
             status: tour.status,
             languages: parseJsonArray(tour.languages),
             primary_language: tour.primaryLanguage,
@@ -240,7 +249,7 @@ function formatTourForFeed(tour: any, lang?: string, format: string = 'full') {
         slug: tour.slug,
         title: localizedTitle,
         description: localizedDescription,
-        hero_image: formatImageUrl(tour.heroImage),
+        hero_image: formatImageUrl(tour.heroImage, baseUrl),
         status: tour.status,
         languages: parseJsonArray(tour.languages),
         primary_language: tour.primaryLanguage,
@@ -254,47 +263,72 @@ function formatTourForFeed(tour: any, lang?: string, format: string = 'full') {
         created_at: tour.createdAt.toISOString(),
         updated_at: tour.updatedAt.toISOString(),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        stops: tour.stops?.map((stop: any) => formatStopForFeed(stop, lang, parseJsonArray(tour.languages))) || [],
+        stops: tour.stops?.map((stop: any) => formatStopForFeed(stop, lang, parseJsonArray(tour.languages), baseUrl)) || [],
         stop_count: tour.stops?.length || 0,
     };
 }
 
-// Helper: Clean base64 data from content blocks
+// Helper: Recursively strip ALL base64 data URIs from any value.
+// Walks the entire object/array tree — catches base64 in block.data.url,
+// block.data.images[].url, nested hotspots, floor plans, etc.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function stripBase64Deep(value: any): any {
+    if (!value) return value;
+
+    // String — strip if base64
+    if (typeof value === 'string') {
+        return value.startsWith('data:') ? null : value;
+    }
+
+    // Array — recurse and drop nulled-out string entries
+    if (Array.isArray(value)) {
+        return value.map(item => stripBase64Deep(item)).filter(item => item !== null || typeof item !== 'string');
+    }
+
+    // Object — recurse into every property
+    if (typeof value === 'object') {
+        const result: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(value)) {
+            result[k] = stripBase64Deep(v);
+        }
+        return result;
+    }
+
+    return value;
+}
+
+// Helper: Clean base64 data from content blocks (recursive — catches all nesting)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function cleanContentBlocks(blocks: any[]): any[] {
-    return blocks.map(block => {
-        const cleaned = { ...block };
+    return blocks.map(block => stripBase64Deep(block));
+}
 
-        // Clean image fields in various block types
-        if (cleaned.image && typeof cleaned.image === 'string' && cleaned.image.startsWith('data:')) {
-            cleaned.image = null;
-        }
-        if (cleaned.src && typeof cleaned.src === 'string' && cleaned.src.startsWith('data:')) {
-            cleaned.src = null;
-        }
-        if (cleaned.url && typeof cleaned.url === 'string' && cleaned.url.startsWith('data:')) {
-            cleaned.url = null;
-        }
+// Helper: Recursively resolve relative /uploads/... URLs to absolute URLs.
+// Walks the entire tree so it catches image, audio, and video URLs at any depth.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolveUrlsDeep(value: any, baseUrl: string): any {
+    if (!value) return value;
 
-        // Clean images array (for gallery blocks)
-        if (cleaned.images && Array.isArray(cleaned.images)) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            cleaned.images = cleaned.images.map((img: any) => {
-                if (typeof img === 'string') {
-                    return img.startsWith('data:') ? null : img;
-                }
-                if (img && img.src && typeof img.src === 'string' && img.src.startsWith('data:')) {
-                    return { ...img, src: null };
-                }
-                if (img && img.url && typeof img.url === 'string' && img.url.startsWith('data:')) {
-                    return { ...img, url: null };
-                }
-                return img;
-            }).filter(Boolean);
+    if (typeof value === 'string') {
+        if (value.startsWith('/uploads/')) {
+            return `${baseUrl}${value}`;
         }
+        return value;
+    }
 
-        return cleaned;
-    });
+    if (Array.isArray(value)) {
+        return value.map(item => resolveUrlsDeep(item, baseUrl));
+    }
+
+    if (typeof value === 'object') {
+        const result: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(value)) {
+            result[k] = resolveUrlsDeep(v, baseUrl);
+        }
+        return result;
+    }
+
+    return value;
 }
 
 // Helper: Filter a multilingual object to only include allowed languages
@@ -354,7 +388,7 @@ function filterBlockLanguages(block: any, tourLanguages?: string[]): any {
 
 // Helper: Format stop for feed output
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function formatStopForFeed(stop: any, lang?: string, tourLanguages?: string[]) {
+function formatStopForFeed(stop: any, lang?: string, tourLanguages?: string[], baseUrl?: string) {
     const title = parseLocalizedField(stop.title);
     const localizedTitle = lang ? { [lang]: title[lang] || title['en'] || '' } : title;
 
@@ -371,7 +405,7 @@ function formatStopForFeed(stop: any, lang?: string, tourLanguages?: string[]) {
 
             // If it's an object (new format), include caption and credit
             if (typeof parsed === 'object' && parsed.url) {
-                const imageUrl = formatImageUrl(parsed.url);
+                const imageUrl = formatImageUrl(parsed.url, baseUrl);
                 if (imageUrl) {
                     heroImage = {
                         url: imageUrl,
@@ -381,7 +415,7 @@ function formatStopForFeed(stop: any, lang?: string, tourLanguages?: string[]) {
                 }
             } else if (typeof parsed === 'string') {
                 // Legacy format - just a URL string
-                const imageUrl = formatImageUrl(parsed);
+                const imageUrl = formatImageUrl(parsed, baseUrl);
                 if (imageUrl) {
                     heroImage = { url: imageUrl };
                 }
@@ -406,11 +440,16 @@ function formatStopForFeed(stop: any, lang?: string, tourLanguages?: string[]) {
             if (b.type === 'timelineGallery' && b.data?.audioFiles && lang) {
                 const resolved = b.data.audioFiles[lang] || b.data.audioFiles['en'] || b.data.audioUrl;
                 if (resolved) {
-                    return { ...b, data: { ...b.data, audioUrl: formatMediaUrl(resolved) } };
+                    return { ...b, data: { ...b.data, audioUrl: formatMediaUrl(resolved, baseUrl) } };
                 }
             }
             return b;
         });
+
+        // Resolve all relative /uploads/... URLs to absolute URLs
+        if (baseUrl) {
+            contentBlocks = contentBlocks.map((b: any) => resolveUrlsDeep(b, baseUrl));
+        }
     } catch {
         contentBlocks = [];
     }
