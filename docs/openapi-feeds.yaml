@@ -1,0 +1,463 @@
+openapi: 3.0.3
+info:
+  title: TourStack Feed API
+  version: "2.0"
+  description: |
+    Public JSON feed for TourStack tours, stops, and content blocks.
+    All endpoints require authentication (session cookie or API key).
+
+    **Media URLs** are returned as absolute URLs (e.g. `https://tourstack.app/uploads/images/abc.jpg`).
+    Base64 data URIs are stripped from all responses.
+
+    **Language filtering:** Pass `?lang=es` to get content in a single language.
+    Omit to get all languages. The feed always falls back to `en` if the requested
+    language is missing.
+
+servers:
+  - url: /api/feeds
+    description: Feed API (relative to host)
+
+paths:
+  /tours:
+    get:
+      summary: List all tours
+      description: Returns all tours, optionally filtered by status. Supports three output formats.
+      parameters:
+        - $ref: "#/components/parameters/lang"
+        - $ref: "#/components/parameters/format"
+        - name: status
+          in: query
+          description: Filter by tour status
+          schema:
+            $ref: "#/components/schemas/TourStatus"
+        - name: include_stops
+          in: query
+          description: Include stop data (default true)
+          schema:
+            type: string
+            enum: ["true", "false"]
+            default: "true"
+      responses:
+        "200":
+          description: Tour list feed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                    example: "2.0"
+                  generated_at:
+                    type: string
+                    format: date-time
+                  base_url:
+                    type: string
+                    description: Origin URL for this server
+                    example: "https://tourstack.app"
+                  query:
+                    type: object
+                    properties:
+                      language:
+                        type: string
+                      format:
+                        type: string
+                      status:
+                        type: string
+                      include_stops:
+                        type: boolean
+                  total_tours:
+                    type: integer
+                  tours:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TourFull"
+
+  /tours/{id}:
+    get:
+      summary: Get a single tour
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/lang"
+        - $ref: "#/components/parameters/format"
+      responses:
+        "200":
+          description: Single tour feed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  generated_at:
+                    type: string
+                    format: date-time
+                  base_url:
+                    type: string
+                  query:
+                    type: object
+                    properties:
+                      language:
+                        type: string
+                      format:
+                        type: string
+                  tour:
+                    $ref: "#/components/schemas/TourFull"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /tours/{id}/stops:
+    get:
+      summary: Get stops for a tour
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200":
+          description: Stops feed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  generated_at:
+                    type: string
+                    format: date-time
+                  base_url:
+                    type: string
+                  query:
+                    type: object
+                    properties:
+                      language:
+                        type: string
+                  tour_id:
+                    type: string
+                  tour_slug:
+                    type: string
+                    nullable: true
+                  tour_title:
+                    $ref: "#/components/schemas/LocalizedString"
+                  total_stops:
+                    type: integer
+                  stops:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Stop"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    lang:
+      name: lang
+      in: query
+      description: |
+        ISO 639-1 language code. When set, all multilingual fields return
+        only the requested language (with `en` fallback). Omit to get all languages.
+      schema:
+        type: string
+        example: es
+    format:
+      name: format
+      in: query
+      description: Output detail level
+      schema:
+        type: string
+        enum: [full, compact, minimal]
+        default: full
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Tour not found
+
+  schemas:
+    LocalizedString:
+      description: |
+        Object keyed by ISO 639-1 language code. When `?lang=` is set,
+        contains only the requested language. Otherwise contains all languages.
+      type: object
+      additionalProperties:
+        type: string
+      example:
+        en: "Welcome to the Gallery"
+        es: "Bienvenido a la Galería"
+
+    TourStatus:
+      type: string
+      enum: [draft, review, testing, scheduled, published, paused, archived]
+
+    Difficulty:
+      type: string
+      enum: [accessible, family, general, academic, children]
+
+    Accessibility:
+      type: object
+      description: Tour or stop accessibility settings
+      properties:
+        wheelchairAccessible:
+          type: boolean
+        audioDescriptions:
+          type: boolean
+        signLanguage:
+          type: boolean
+        tactileElements:
+          type: boolean
+        quietSpaceFriendly:
+          type: boolean
+
+    HeroImage:
+      type: object
+      nullable: true
+      description: Stop hero image with optional localized caption/credit
+      properties:
+        url:
+          type: string
+          description: Absolute URL to the image
+          example: "https://tourstack.app/uploads/images/abc123.jpg"
+        caption:
+          $ref: "#/components/schemas/LocalizedString"
+        credit:
+          $ref: "#/components/schemas/LocalizedString"
+
+    # ----- Tour schemas by format -----
+
+    TourMinimal:
+      type: object
+      description: "Returned when `?format=minimal`"
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+          nullable: true
+        title:
+          $ref: "#/components/schemas/LocalizedString"
+        status:
+          $ref: "#/components/schemas/TourStatus"
+        stop_count:
+          type: integer
+
+    TourCompact:
+      type: object
+      description: "Returned when `?format=compact`"
+      allOf:
+        - $ref: "#/components/schemas/TourMinimal"
+        - type: object
+          properties:
+            description:
+              $ref: "#/components/schemas/LocalizedString"
+            hero_image:
+              type: string
+              nullable: true
+              description: Absolute URL (or null if base64/missing)
+            languages:
+              type: array
+              items:
+                type: string
+              example: ["en", "es", "fr"]
+            primary_language:
+              type: string
+              example: "en"
+            estimated_duration:
+              type: integer
+              description: Duration in minutes
+            difficulty:
+              $ref: "#/components/schemas/Difficulty"
+            positioning_method:
+              type: string
+              example: "qr_code"
+            accessibility:
+              $ref: "#/components/schemas/Accessibility"
+            concierge_enabled:
+              type: boolean
+            updated_at:
+              type: string
+              format: date-time
+
+    TourFull:
+      type: object
+      description: "Returned when `?format=full` (default)"
+      allOf:
+        - $ref: "#/components/schemas/TourCompact"
+        - type: object
+          properties:
+            backup_positioning_method:
+              type: string
+              nullable: true
+            published_at:
+              type: string
+              format: date-time
+              nullable: true
+            created_at:
+              type: string
+              format: date-time
+            stops:
+              type: array
+              items:
+                $ref: "#/components/schemas/Stop"
+
+    # ----- Stop schema -----
+
+    Stop:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+          nullable: true
+        short_code:
+          type: string
+          nullable: true
+          description: 6-char code for QR/shortlink lookup
+          example: "A3K9MN"
+        type:
+          type: string
+          enum: [mandatory, optional, bonus, secret]
+        title:
+          $ref: "#/components/schemas/LocalizedString"
+        description:
+          $ref: "#/components/schemas/LocalizedString"
+        hero_image:
+          $ref: "#/components/schemas/HeroImage"
+        order:
+          type: integer
+        show_title:
+          type: boolean
+        show_image:
+          type: boolean
+        show_description:
+          type: boolean
+        content_blocks:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContentBlock"
+        positioning:
+          type: object
+          nullable: true
+          description: Legacy positioning data
+        primary_positioning:
+          type: object
+          nullable: true
+          description: QR code URL, shortCode, GPS coordinates, NFC data, etc.
+          properties:
+            method:
+              type: string
+              enum: [qr_code, gps, nfc, beacon, manual]
+            url:
+              type: string
+            shortCode:
+              type: string
+            latitude:
+              type: number
+            longitude:
+              type: number
+            radius:
+              type: number
+        links:
+          type: array
+          items:
+            type: object
+        accessibility:
+          $ref: "#/components/schemas/Accessibility"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ----- Content block schema -----
+
+    ContentBlock:
+      type: object
+      description: |
+        A content block within a stop. The `data` shape varies by `type`.
+        All multilingual fields inside `data` are filtered by the `?lang=` param.
+        All media URLs are absolute. Base64 data is stripped.
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum:
+            - text
+            - image
+            - gallery
+            - timelineGallery
+            - audio
+            - video
+            - quote
+            - timeline
+            - comparison
+            - positioning
+            - map
+            - imageMap
+            - tour
+            - stopList
+            - qrScanner
+            - html
+            - accordion
+        order:
+          type: integer
+        data:
+          type: object
+          description: |
+            Block-specific data. Shape depends on `type`. Common patterns:
+
+            **text** — `{ content: LocalizedString, style: "normal"|"callout"|"sidebar" }`
+
+            **image** — `{ url: string, caption?: LocalizedString, credit?: LocalizedString, size, altText?: LocalizedString, hotspots?: [...] }`
+
+            **gallery** — `{ images: [{ url, caption?, credit? }], layout: "carousel"|"grid"|"masonry"|"slideshow"|"filmstrip" }`
+
+            **timelineGallery** — `{ images: [{ url, caption?, credit?, timestamp }], audioUrl: string, audioFiles?: { lang: url }, audioDuration: number, transcript?: LocalizedString }`
+
+            **audio** — `{ audioFiles: { lang: url }, title: LocalizedString, size, transcript?: LocalizedString }`
+
+            **video** — `{ videoUrl: string, provider: "youtube"|"vimeo"|"direct", title: LocalizedString, subtitles?: { lang: url } }`
+
+            **quote** — `{ quote: LocalizedString, author?: LocalizedString, source?: LocalizedString }`
+
+            **timeline** — `{ events: [{ date, title: LocalizedString, description?: LocalizedString, image? }] }`
+
+            **comparison** — `{ beforeImage: { url, label?: LocalizedString }, afterImage: { url, label?: LocalizedString } }`
+
+            **map** — `{ latitude, longitude, zoom, provider, markers?: [{ latitude, longitude, title?, description? }] }`
+
+            **imageMap** — `{ imageUrl, markers: [{ x, y, label: LocalizedString }], floors?: [...] }`
+
+            **tour** — `{ layout, ctaText: LocalizedString, titleOverride?: LocalizedString }`
+
+            **stopList** — `{ stopIds: string[], layout, heading?: LocalizedString }`
+
+            **qrScanner** — `{ mode: "navigate"|"checkin"|"scavenger"|"info", promptText?: LocalizedString }`
+
+            **html** — `{ mode: "embed"|"url"|"html", htmlContent?: LocalizedString, embedCode?, url? }`
+
+            **accordion** — `{ items: [{ heading: LocalizedString, content: LocalizedString }], style }`
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
