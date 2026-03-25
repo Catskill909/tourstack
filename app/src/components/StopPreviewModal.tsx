@@ -67,7 +67,7 @@ const DEVICE_CONFIGS = {
 export function StopPreviewModal({ stop, tourData, allStops, availableLanguages = ['en'], onClose }: StopPreviewModalProps) {
     const [deviceType, setDeviceType] = useState<DeviceType>('phone');
     const [previewLanguage, setPreviewLanguage] = useState(tourData?.primaryLanguage || availableLanguages[0] || 'en');
-    const [scale, setScale] = useState(0.85);
+    const [scale, setScale] = useState(0.75);
     const [showStatusBar, setShowStatusBar] = useState(true);
     const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
     const [displaySettings, setDisplaySettings] = useState<DisplaySettings>({
@@ -120,7 +120,7 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
     const getDefaultScale = (type: DeviceType, orient: 'portrait' | 'landscape' = 'portrait') => {
         if (type === 'kiosk') return 1;
         if (type === 'tablet') return orient === 'landscape' ? 0.45 : 0.55;
-        return 0.85;
+        return 0.75;
     };
 
     const handleDeviceChange = (type: DeviceType) => {
