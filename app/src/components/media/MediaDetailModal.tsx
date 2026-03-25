@@ -106,10 +106,21 @@ export function MediaDetailModal({ media, onClose, onUpdate, onDelete }: MediaDe
     setCaption(description);
   }, []);
 
-  // Handle AI analysis completion - store for saving
-  const handleAnalysisComplete = useCallback((analysis: AIAnalysisResult) => {
+  // Handle AI analysis completion - store and auto-save
+  const handleAnalysisComplete = useCallback(async (analysis: AIAnalysisResult) => {
     setAiMetadata(analysis);
-  }, []);
+    // Auto-save the AI analysis results
+    try {
+      setIsSaving(true);
+      const updated = await mediaService.update(media.id, { alt, caption, tags, aiMetadata: analysis });
+      onUpdate(updated);
+      setHasChanges(false);
+    } catch (err) {
+      console.error('Failed to auto-save AI analysis:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [media.id, alt, caption, tags, onUpdate]);
 
   const TYPE_ICONS: Record<MediaType, typeof Image> = {
     image: Image,
