@@ -44,7 +44,11 @@ import {
     Settings,
     Navigation,
     Target,
-    LayoutGrid
+    LayoutGrid,
+    Crosshair,
+    ZoomIn,
+    Save,
+    Crop
 } from 'lucide-react';
 
 // Types
@@ -1473,47 +1477,113 @@ const ImagesGalleriesPage = () => (
         <header>
             <h1 className="text-3xl font-bold text-white mb-4">Images & Galleries</h1>
             <p className="text-xl text-neutral-400">
-                Add visual content to enhance the visitor experience.
+                Rich image editing with focal point control, hotspots, lightbox, comparison, and full translation support.
             </p>
         </header>
 
         <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
-            <h2 className="text-xl font-semibold text-white mb-4">Image Block Options</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">Image Block Features</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
                     <Image className="w-5 h-5 text-white mb-2" />
                     <h3 className="font-medium text-white mb-1">Single Image</h3>
-                    <p className="text-sm text-neutral-400">Full-width hero image with optional caption</p>
+                    <p className="text-sm text-neutral-400">Full-width image with caption, credit, and alt text — all translatable</p>
                 </div>
                 <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
                     <Layers className="w-5 h-5 text-white mb-2" />
                     <h3 className="font-medium text-white mb-1">Gallery</h3>
                     <p className="text-sm text-neutral-400">Swipeable carousel of multiple images</p>
                 </div>
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <ArrowLeftRight className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-medium text-white mb-1">Comparison</h3>
+                    <p className="text-sm text-neutral-400">Before/after slider for comparing two images side by side</p>
+                </div>
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <LayoutGrid className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-medium text-white mb-1">Image Map</h3>
+                    <p className="text-sm text-neutral-400">Floor plans with tappable markers for indoor navigation</p>
+                </div>
             </div>
         </div>
 
-        <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Uploading Images</h2>
-            <div className="p-5 bg-white/[0.02] border border-white/10 rounded-xl">
-                <ol className="space-y-3 text-sm">
-                    <li className="flex items-start gap-3">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">1</span>
-                        <span className="text-neutral-300">Add an Image block to your stop</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">2</span>
-                        <span className="text-neutral-300">Click the upload area or drag and drop an image file</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">3</span>
-                        <span className="text-neutral-300">Add an optional caption</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-xs font-bold shrink-0">4</span>
-                        <span className="text-neutral-300">For galleries, repeat to add more images</span>
-                    </li>
-                </ol>
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">Image Editor Tools</h2>
+            <p className="text-sm text-neutral-400 mb-4">
+                The Image Block editor opens in a wide 2-column layout. Image preview and controls on the left, text fields and tools on the right.
+            </p>
+            <ul className="space-y-3">
+                <li className="flex items-start gap-3 p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Crosshair className="w-5 h-5 text-white mt-0.5 shrink-0" />
+                    <div>
+                        <h3 className="font-medium text-white">Focal Point</h3>
+                        <p className="text-sm text-neutral-400">Click anywhere on the image to set the focal point. When the image is cropped (e.g., in a card or thumbnail), it will always center on this point.</p>
+                    </div>
+                </li>
+                <li className="flex items-start gap-3 p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Crop className="w-5 h-5 text-white mt-0.5 shrink-0" />
+                    <div>
+                        <h3 className="font-medium text-white">Format &amp; Crop</h3>
+                        <p className="text-sm text-neutral-400">Choose between Cropped (fixed aspect ratio, edge-to-edge) and Full (shows the entire image). Cropped mode uses the focal point to determine which part of the image is visible.</p>
+                    </div>
+                </li>
+                <li className="flex items-start gap-3 p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <ZoomIn className="w-5 h-5 text-white mt-0.5 shrink-0" />
+                    <div>
+                        <h3 className="font-medium text-white">Lightbox</h3>
+                        <p className="text-sm text-neutral-400">Visitors can tap any image to open a fullscreen lightbox view. Fills the device screen with pinch-to-zoom support.</p>
+                    </div>
+                </li>
+                <li className="flex items-start gap-3 p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <MousePointerClick className="w-5 h-5 text-white mt-0.5 shrink-0" />
+                    <div>
+                        <h3 className="font-medium text-white">Hotspots</h3>
+                        <p className="text-sm text-neutral-400">Add interactive markers to your image. Each hotspot can show a tooltip, navigate to another stop, or open an external URL. Choose from 5 icon styles and 7+ colors.</p>
+                    </div>
+                </li>
+                <li className="flex items-start gap-3 p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Languages className="w-5 h-5 text-white mt-0.5 shrink-0" />
+                    <div>
+                        <h3 className="font-medium text-white">Translation</h3>
+                        <p className="text-sm text-neutral-400">Language pills let you switch between languages for caption, credit, and alt text. Use the translate button to auto-translate to all tour languages at once.</p>
+                    </div>
+                </li>
+                <li className="flex items-start gap-3 p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Eye className="w-5 h-5 text-white mt-0.5 shrink-0" />
+                    <div>
+                        <h3 className="font-medium text-white">Alt Text</h3>
+                        <p className="text-sm text-neutral-400">Add accessibility descriptions per language. Screen readers use this to describe the image to visually impaired visitors.</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <div className="p-6 bg-white/[0.02] border border-white/10 rounded-2xl">
+            <h2 className="text-xl font-semibold text-white mb-4">Hotspot Editor</h2>
+            <p className="text-sm text-neutral-400 mb-4">
+                Click "Edit Hotspots" to open the full-screen hotspot editor.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Target className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-medium text-white mb-1">Place Markers</h3>
+                    <p className="text-sm text-neutral-400">Click on the image to add hotspot markers. Drag them to reposition. All markers stay visible in the sidebar while editing.</p>
+                </div>
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Settings className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-medium text-white mb-1">Configure Actions</h3>
+                    <p className="text-sm text-neutral-400">Each hotspot can: show a tooltip with text, navigate to another stop in the tour, or open an external URL.</p>
+                </div>
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Languages className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-medium text-white mb-1">Translate Labels</h3>
+                    <p className="text-sm text-neutral-400">Language pills at the top let you edit each hotspot label per language. "Translate All" translates every hotspot label at once.</p>
+                </div>
+                <div className="p-4 bg-black/50 border border-white/10 rounded-xl">
+                    <Save className="w-5 h-5 text-white mb-2" />
+                    <h3 className="font-medium text-white mb-1">Save Options</h3>
+                    <p className="text-sm text-neutral-400">Save button offers "Save &amp; Continue Editing" to keep working, or "Save &amp; Exit" to save and close the editor.</p>
+                </div>
             </div>
         </div>
 
@@ -1527,7 +1597,10 @@ const ImagesGalleriesPage = () => (
                     <li>• Use high-resolution images (at least 1200px wide)</li>
                     <li>• JPG for photos, PNG for graphics with transparency</li>
                     <li>• Keep file sizes under 2MB for fast loading</li>
-                    <li>• Include alt text for accessibility</li>
+                    <li>• Always set a focal point — it controls cropping in cards and thumbnails</li>
+                    <li>• Include alt text for accessibility in every language</li>
+                    <li>• Use "Full" format for artwork that should never be cropped</li>
+                    <li>• Use hotspots to highlight details visitors might miss</li>
                 </ul>
             </div>
         </div>
@@ -1606,7 +1679,7 @@ const ContentBlocksPage = () => (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
                 { icon: Pencil, name: 'Text', desc: 'Rich formatted text with multilingual support' },
-                { icon: Image, name: 'Image', desc: 'Single image with caption and alt text' },
+                { icon: Image, name: 'Image', desc: 'Image with focal point, crop, hotspots, lightbox, and translation' },
                 { icon: Layers, name: 'Gallery', desc: 'Carousel, grid, or masonry image layouts' },
                 { icon: Play, name: 'Timeline Gallery', desc: 'Audio-synced slideshow with waveform editor' },
                 { icon: Volume2, name: 'Audio', desc: 'Audio player in 3 sizes with multi-language support' },

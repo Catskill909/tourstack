@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { X, Eye } from 'lucide-react';
+import { X, Eye, Save } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { PreviewChoiceModal } from '../PreviewChoiceModal';
 import type { Stop, Tour } from '../../types';
@@ -8,6 +8,7 @@ interface BlockEditorModalProps {
     title: string;
     icon: LucideIcon;
     onClose: () => void;
+    onSave?: (shouldClose: boolean) => void;
     children: ReactNode;
     stop?: Stop;
     tourData?: Tour;
@@ -16,8 +17,9 @@ interface BlockEditorModalProps {
     wide?: boolean;
 }
 
-export function BlockEditorModal({ title, icon: Icon, onClose, children, stop, tourData, allStops, availableLanguages = ['en'], wide = false }: BlockEditorModalProps) {
+export function BlockEditorModal({ title, icon: Icon, onClose, onSave, children, stop, tourData, allStops, availableLanguages = ['en'], wide = false }: BlockEditorModalProps) {
     const [showPreview, setShowPreview] = useState(false);
+    const [showSaveMenu, setShowSaveMenu] = useState(false);
 
     return (
         <div className="fixed inset-0 z-[100] flex flex-col" style={{ backgroundColor: '#0a0a0a' }}>
@@ -39,12 +41,43 @@ export function BlockEditorModal({ title, icon: Icon, onClose, children, stop, t
                             Preview
                         </button>
                     )}
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/90 text-white rounded-lg font-medium transition-colors"
-                    >
-                        Done
-                    </button>
+                    {/* Save button with dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowSaveMenu(!showSaveMenu)}
+                            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/90 text-white rounded-lg font-medium transition-colors"
+                        >
+                            <Save className="w-4 h-4" />
+                            Save
+                        </button>
+                        {showSaveMenu && (
+                            <>
+                                <div className="fixed inset-0 z-10" onClick={() => setShowSaveMenu(false)} />
+                                <div className="absolute right-0 top-full mt-2 z-20 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl shadow-2xl overflow-hidden min-w-[220px]">
+                                    <button
+                                        onClick={() => {
+                                            if (onSave) onSave(false);
+                                            setShowSaveMenu(false);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
+                                    >
+                                        <Save className="w-4 h-4 text-[var(--color-accent-primary)]" />
+                                        Save & Continue Editing
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (onSave) onSave(true);
+                                            setShowSaveMenu(false);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors border-t border-[var(--color-border-default)]"
+                                    >
+                                        <X className="w-4 h-4 text-green-500" />
+                                        Save & Exit
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-white/10 rounded-lg text-gray-400"

@@ -9,3 +9,7 @@ export { BlockEditorModal } from './BlockEditorModal';
 export { MapEditorModal } from './MapEditorModal';
 export { MapPreview } from './MapPreview';
 export { TourBlockEditor } from './TourBlockEditor';
+export { ComparisonBlockEditor } from './ComparisonBlockEditor';
+export { ComparisonPreview } from './ComparisonPreview';
+export { ImageHotspotEditor } from './ImageHotspotEditor';
+export { ImageLightbox } from '../ui/ImageLightbox';

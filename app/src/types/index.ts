@@ -250,12 +250,29 @@ export interface StopImageData {
   credit?: { [lang: string]: string };
 }
 
+export interface ImageHotspot {
+  id: string;
+  x: number;  // percentage 0-100
+  y: number;  // percentage 0-100
+  label: { [lang: string]: string };
+  icon?: ImageMapIcon;
+  color?: string;  // hex color
+  action?: {
+    type: 'tooltip' | 'navigate' | 'url';
+    stopId?: string;
+    url?: string;
+  };
+}
+
 export interface ImageBlockData {
   url: string;
   caption?: { [lang: string]: string };
   credit?: { [lang: string]: string };
   size: 'small' | 'medium' | 'large' | 'full';
-  aspectRatio?: '16:9' | '4:3' | '1:1' | 'auto';
+  aspectRatio?: '16:9' | '4:3' | '1:1' | '3:4' | 'auto';
+  focalPoint?: { x: number; y: number };  // percentage 0-100, controls object-position
+  altText?: { [lang: string]: string };
+  hotspots?: ImageHotspot[];
   // Block metadata
   title?: { [lang: string]: string };
   showTitle?: boolean;
@@ -389,17 +406,21 @@ export interface TimelineBlockData {
 }
 
 export interface ComparisonBlockData {
-  leftImage: {
+  beforeImage: {
     url: string;
-    label: { [lang: string]: string };
-    caption?: { [lang: string]: string };
+    label?: { [lang: string]: string };
   };
-  rightImage: {
+  afterImage: {
     url: string;
-    label: { [lang: string]: string };
-    caption?: { [lang: string]: string };
+    label?: { [lang: string]: string };
   };
-  mode: 'side-by-side' | 'slider';
+  orientation: 'horizontal' | 'vertical';
+  initialPosition?: number;  // 0-100, default 50
+  // Block metadata
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
 }
 
 export interface PositioningBlockData {

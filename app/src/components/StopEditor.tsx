@@ -15,8 +15,9 @@ import { QRScannerBlockEditor } from './blocks/QRScannerBlockEditor';
 import { ImageMapEditorModal } from './blocks/ImageMapEditorModal';
 import { TourBlockEditor } from './blocks/TourBlockEditor';
 import { StopListEditorModal } from './blocks/StopListEditorModal';
+import { ComparisonBlockEditor } from './blocks/ComparisonBlockEditor';
 import { PreviewChoiceModal } from './PreviewChoiceModal';
-import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, StopImageData } from '../types';
+import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, ComparisonBlockData, StopImageData } from '../types';
 
 interface StopEditorProps {
     stop: Stop;
@@ -62,6 +63,8 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
             return { mode: 'navigate', restrictToTour: true, showConfirmation: true, showShortCodeEntry: true, showScanHistory: false, cameraFacing: 'environment', scannerSize: 'medium', viewfinderStyle: 'rounded', promptText: { en: 'Scan the QR code at the next exhibit' } } as QRScannerBlockData;
         case 'imageMap':
             return { imageUrl: '', markers: [], size: 'large', showLabels: true, zoomable: true, showLegend: false } as ImageMapBlockData;
+        case 'comparison':
+            return { beforeImage: { url: '' }, afterImage: { url: '' }, orientation: 'horizontal', initialPosition: 50 } as ComparisonBlockData;
         default:
             return { content: { en: '' }, style: 'normal' } as TextBlockData;
     }
@@ -748,7 +751,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                     <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6 w-full max-w-md shadow-xl">
                         <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">Add Content Block</h3>
                         <div className="grid grid-cols-3 gap-3">
-                            {(['tour', 'text', 'image', 'gallery', 'timelineGallery', 'audio', 'map', 'imageMap', 'stopList', 'qrScanner'] as ContentBlockType[]).map((type) => {
+                            {(['tour', 'text', 'image', 'gallery', 'timelineGallery', 'audio', 'comparison', 'map', 'imageMap', 'stopList', 'qrScanner'] as ContentBlockType[]).map((type) => {
                                 const Icon = BLOCK_ICONS[type];
                                 return (
                                     <button
@@ -833,6 +836,10 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                 if (!block) return null;
                 const closeEditor = () => setActiveBlockEditorId(null);
                 const updateBlock = (data: ContentBlockData) => handleUpdateBlock(activeBlockEditorId, data);
+                const saveFromBlockEditor = (shouldClose: boolean) => {
+                    handleSave(false); // Save without closing StopEditor
+                    if (shouldClose) closeEditor(); // Close the block editor if requested
+                };
 
                 // Blocks with dedicated full-screen modals
                 if (block.type === 'timelineGallery') {
@@ -902,11 +909,12 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                         title={BLOCK_LABELS[block.type]}
                         icon={BlockIcon}
                         onClose={closeEditor}
+                        onSave={saveFromBlockEditor}
                         stop={editedStop}
                         tourData={tourData}
                         allStops={allStops}
                         availableLanguages={availableLanguages}
-                        wide={block.type === 'gallery'}
+                        wide={block.type === 'gallery' || block.type === 'image'}
                     >
                         {block.type === 'text' && (
                             <TextBlockEditor
@@ -923,6 +931,8 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                                 language={language}
                                 availableLanguages={availableLanguages}
                                 translationProvider={translationProvider}
+                                allStops={allStops}
+                                onSave={saveFromBlockEditor}
                                 onChange={updateBlock}
                             />
                         )}
@@ -961,6 +971,15 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                                 translationProvider={translationProvider}
                                 tourData={tourData}
                                 allStops={allStops}
+                                onChange={updateBlock}
+                            />
+                        )}
+                        {block.type === 'comparison' && (
+                            <ComparisonBlockEditor
+                                data={block.data as ComparisonBlockData}
+                                language={language}
+                                availableLanguages={availableLanguages}
+                                translationProvider={translationProvider}
                                 onChange={updateBlock}
                             />
                         )}

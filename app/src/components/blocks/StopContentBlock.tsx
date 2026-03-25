@@ -1,13 +1,17 @@
-import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight, List, ScanLine, LayoutGrid } from 'lucide-react';
+import { useState } from 'react';
+import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight, List, ScanLine, LayoutGrid, ZoomIn } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, Tour, Stop } from '../../types';
+import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, ComparisonBlockData, Tour, Stop } from '../../types';
 import { GalleryPreview } from './GalleryPreview';
 import { TimelineGalleryPreview } from './TimelineGalleryPreview';
 import { MapPreview } from './MapPreview';
 import { ImageMapBlockPreview } from './ImageMapBlockPreview';
+import { ImageMapMarkerPin } from './ImageMapMarkerPin';
 import { StopListBlockPreview } from './StopListBlockPreview';
 import { QRScannerBlockPreview } from './QRScannerBlockPreview';
+import { ComparisonPreview } from './ComparisonPreview';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
+import { ImageLightbox } from '../ui/ImageLightbox';
 import fallbackImage from '../../assets/fallback.jpg';
 
 export interface DisplaySettings {
@@ -65,6 +69,132 @@ const BLOCK_LABELS: Record<ContentBlockType, string> = {
     stopList: 'Stop List',
     qrScanner: 'QR Scanner',
 };
+
+function ImageBlockView({ data, language, mode, onNavigateToStop, deviceType = 'phone' }: { data: ImageBlockData; language: string; mode: 'view' | 'edit'; onNavigateToStop?: (stopId: string) => void; deviceType?: 'phone' | 'tablet' | 'kiosk' }) {
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
+    const caption = data.caption?.[language] || data.caption?.en;
+    const credit = data.credit?.[language] || data.credit?.en;
+    const altText = data.altText?.[language] || data.altText?.en || caption || '';
+    const aspectClasses: Record<string, string> = {
+        small: 'aspect-[16/9]',
+        medium: 'aspect-square',
+        large: 'aspect-[3/4]',
+        full: '',
+    };
+    const isCropped = data.size !== 'full';
+    const focalStyle = data.focalPoint && isCropped
+        ? { objectPosition: `${data.focalPoint.x}% ${data.focalPoint.y}%` }
+        : undefined;
+    const hasHotspots = mode === 'view' && data.hotspots && data.hotspots.length > 0;
+    // Full format breaks out of content padding for edge-to-edge display
+    const paddingPx = deviceType === 'tablet' || deviceType === 'kiosk' ? 32 : 20; // px-8=32px, px-5=20px
+    const fullBleedStyle = !isCropped ? {
+        marginLeft: `-${paddingPx}px`,
+        marginRight: `-${paddingPx}px`,
+        width: `calc(100% + ${paddingPx * 2}px)`,
+    } : undefined;
+
+    function handleImageClick() {
+        if (mode !== 'view') return;
+        if (hasHotspots) {
+            // If hotspots exist, clicking the image background dismisses active hotspot
+            setActiveHotspot(null);
+        } else {
+            setLightboxOpen(true);
+        }
+    }
+
+    function handleHotspotClick(e: React.MouseEvent, hotspotId: string) {
+        e.stopPropagation();
+        const hotspot = data.hotspots?.find(h => h.id === hotspotId);
+        if (!hotspot) return;
+
+        if (hotspot.action?.type === 'navigate' && hotspot.action.stopId && onNavigateToStop) {
+            onNavigateToStop(hotspot.action.stopId);
+        } else if (hotspot.action?.type === 'url' && hotspot.action.url) {
+            window.open(hotspot.action.url, '_blank', 'noopener');
+        } else {
+            // Toggle tooltip
+            setActiveHotspot(prev => prev === hotspotId ? null : hotspotId);
+        }
+    }
+
+    return (
+        <figure className="w-full" style={fullBleedStyle}>
+            {data.url ? (
+                <div
+                    className={`overflow-hidden ${isCropped ? 'rounded-lg' : 'w-full'} relative group ${aspectClasses[data.size] || ''} ${mode === 'view' && !hasHotspots ? 'cursor-zoom-in' : ''}`}
+                    onClick={handleImageClick}
+                >
+                    <img
+                        src={data.url}
+                        alt={altText}
+                        className={`w-full ${isCropped ? 'h-full object-cover rounded-lg' : 'block'}`}
+                        style={focalStyle}
+                    />
+                    {mode === 'view' && !hasHotspots && (
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                            <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-70 transition-opacity drop-shadow-lg" />
+                        </div>
+                    )}
+                    {/* Hotspot pins */}
+                    {hasHotspots && data.hotspots!.map(hotspot => (
+                        <div
+                            key={hotspot.id}
+                            className="absolute z-10"
+                            style={{
+                                left: `${hotspot.x}%`,
+                                top: `${hotspot.y}%`,
+                            }}
+                        >
+                            <ImageMapMarkerPin
+                                marker={{
+                                    id: hotspot.id,
+                                    x: hotspot.x,
+                                    y: hotspot.y,
+                                    label: hotspot.label,
+                                    icon: hotspot.icon || 'pin',
+                                    color: hotspot.color,
+                                }}
+                                language={language}
+                                selected={activeHotspot === hotspot.id}
+                                showLabel={false}
+                                onClick={(e) => handleHotspotClick(e, hotspot.id)}
+                            />
+                            {/* Tooltip */}
+                            {activeHotspot === hotspot.id && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-48 z-20">
+                                    <div className="bg-[#1f2937] text-white text-xs rounded-lg px-3 py-2 shadow-lg">
+                                        <p className="font-medium">{hotspot.label?.[language] || hotspot.label?.en || ''}</p>
+                                    </div>
+                                    <div className="w-2 h-2 bg-[#1f2937] rotate-45 mx-auto -mt-1" />
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="aspect-video bg-[var(--color-bg-hover)] rounded-lg flex items-center justify-center text-[var(--color-text-muted)]">
+                    <Image className="w-12 h-12" />
+                </div>
+            )}
+            {caption && (
+                <figcaption className="text-sm text-[var(--color-text-muted)] mt-2 text-center">{caption}</figcaption>
+            )}
+            {mode === 'view' && (
+                <ImageLightbox
+                    isOpen={lightboxOpen}
+                    src={data.url}
+                    alt={altText}
+                    caption={caption}
+                    credit={credit}
+                    onClose={() => setLightboxOpen(false)}
+                />
+            )}
+        </figure>
+    );
+}
 
 export function StopContentBlock({ block, mode, language, deviceType = 'phone', tourData, allStops, currentStopId, displaySettings, onNavigateToStop, onEdit, onDelete }: StopContentBlockProps) {
     const Icon = BLOCK_ICONS[block.type];
@@ -135,28 +265,10 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
     }
 
     function renderImageBlock(data: ImageBlockData) {
-        const caption = data.caption?.[language] || data.caption?.en;
-        const sizeClasses = {
-            small: 'max-w-xs',
-            medium: 'max-w-md',
-            large: 'max-w-2xl',
-            full: 'w-full',
-        };
         return (
             <>
                 {renderBlockHeader(data)}
-                <figure className={sizeClasses[data.size]}>
-                    {data.url ? (
-                        <img src={data.url} alt="" className="rounded-lg w-full" />
-                    ) : (
-                        <div className="aspect-video bg-[var(--color-bg-hover)] rounded-lg flex items-center justify-center text-[var(--color-text-muted)]">
-                            <Image className="w-12 h-12" />
-                        </div>
-                    )}
-                    {caption && (
-                        <figcaption className="text-sm text-[var(--color-text-muted)] mt-2 text-center">{caption}</figcaption>
-                    )}
-                </figure>
+                <ImageBlockView data={data} language={language} mode={mode} onNavigateToStop={onNavigateToStop} deviceType={deviceType} />
             </>
         );
     }
@@ -548,6 +660,15 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
                         />
                     </>
                 );
+            case 'comparison': {
+                const compData = block.data as ComparisonBlockData;
+                return (
+                    <>
+                        {renderBlockHeader(compData)}
+                        <ComparisonPreview data={compData} language={language} />
+                    </>
+                );
+            }
             case 'qrScanner':
                 return renderQRScannerBlock(block.data as QRScannerBlockData);
             default:

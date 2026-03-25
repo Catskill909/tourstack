@@ -76,6 +76,7 @@ When museum staff access visitor pages, they see:
 | Phase 29: Language Reconciliation & UX Polish | ✅ Complete |
 | Phase 30: Unified Preview System & iPad Orientation | ✅ Complete |
 | Phase 11b: Map Block Multi-Marker Upgrade | ✅ Complete |
+| Phase 31: Image Block Enhancement | ✅ Complete |
 | Phase 26.2: Per-Tour AI Concierge | 🎯 NEXT |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
@@ -393,6 +394,38 @@ Collections → AI Analyze → Translate → Save → Auto-Sync → Media Librar
 - `ImageMapMarkerPin.tsx` - Reusable marker component (5 icons, 7+ colors)
 - `types/index.ts` - `ImageMapBlockData`, `ImageMapMarker`, `ImageMapFloor` types
 - `docs/image-map-block-dev.md` - Full development documentation
+
+### Image Block Enhancement (Phase 31) - COMPLETE ✅ (March 24, 2026)
+
+**Enhancement:** Comprehensive upgrade to the existing Image Block with professional editing features, translation support, and hotspot interactivity.
+
+| Feature | Description |
+|---------|-------------|
+| **Focal Point + Crop** | Crosshair placement on image, crop preview with aspect ratio, `objectPosition` for rendering |
+| **Full-Bleed Format** | Edge-to-edge images using `calc()` width (not negative margins — `overflow-y: auto` clips those) |
+| **Lightbox** | Tap-to-zoom fullscreen view, renders in-tree (no portal) so `fixed inset-0` fills simulator screen |
+| **Hotspot Editor** | Full-screen editor with icon picker (5 icons), color picker (7+ colors), actions (tooltip/navigate/URL) |
+| **Hotspot Translation** | LanguageSwitcher pills + MagicTranslateButton per label + "Translate All" bulk button |
+| **Image Translation** | LanguageSwitcher + MagicTranslateButton on caption, credit, and alt text fields |
+| **Comparison Block** | Before/after slider with `clip-path: inset()` for image comparisons |
+| **2-Column Editor** | Wide `BlockEditorModal` with image preview left, text fields + tools right |
+| **Save Button** | Explicit Save dropdown with "Save & Continue Editing" and "Save & Exit" (in both block editor and hotspot editor) |
+| **Alt Text** | Per-language accessibility field with translation support |
+
+**Key Architecture Decisions:**
+- **No `createPortal` for lightbox** — `transform: scale()` on simulator creates CSS containing block; `fixed` inside it fills simulator screen (correct behavior)
+- **Full-bleed via inline styles** — `marginLeft: -Npx, width: calc(100% + 2Npx)` instead of Tailwind `-mx-N` (overflow-y clips negative margins)
+- **Save callback chain** — `onSave` flows: StopEditor `handleSave()` → BlockEditorModal → ImageBlockEditor → ImageHotspotEditor
+- **Reusable components** — `ImageMapMarkerPin` shared with Image Map Block; hotspot/lightbox/focal-point components designed to plug into Gallery block later
+
+**Files:**
+- `ImageBlockEditor.tsx` - 2-column editor with focal point, format, translation, hotspot launcher
+- `ImageHotspotEditor.tsx` - Full-screen hotspot editor with save, language pills, translate all
+- `ImageLightbox.tsx` - Fullscreen lightbox (no portal, contained by simulator transform)
+- `StopContentBlock.tsx` - `ImageBlockView` renders images with full-bleed and lightbox in preview
+- `BlockEditorModal.tsx` - Generic block editor wrapper with Save dropdown
+- `ComparisonBlockEditor.tsx` - Before/after comparison editor
+- `ComparisonPreview.tsx` - Draggable comparison slider
 
 ---
 

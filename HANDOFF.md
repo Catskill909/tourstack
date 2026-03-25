@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: March 23, 2026
-**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅ | Chatbot UX Unification COMPLETE ✅ | Map Block Upgrade COMPLETE ✅
+**Last Updated**: March 24, 2026
+**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅ | Chatbot UX Unification COMPLETE ✅ | Map Block Upgrade COMPLETE ✅ | Image Block Enhancement COMPLETE ✅
 
 ---
 
@@ -479,6 +479,28 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - [x] **Preview Button Fix** - `createPortal(document.body)` escapes Leaflet z-index stacking context
 - [x] **Fit Bounds** - Auto-viewport to show all markers with padding
 - [x] **Route Lines** - Dashed connecting lines between markers (toggleable)
+
+### Image Block Enhancement ✅ (March 24, 2026)
+- [x] **Format Picker** - Landscape (16:9), Square (1:1), Portrait (3:4), Full (edge-to-edge) with visual icons
+- [x] **Focal Point + Crop** - Draggable crosshair on source image, crop preview with aspect ratio applied
+- [x] **Full-Bleed Display** - Full format fills simulator screen using `calc()` width (not negative margins, which get clipped by `overflow-y-auto`)
+- [x] **Lightbox** - Tap-to-zoom with pinch, pan, double-tap, swipe-down dismiss. Renders in-tree (NO portal) so it fills simulator screen, not browser
+- [x] **Alt Text** - Per-language accessibility field with MagicTranslateButton
+- [x] **Caption + Credit** - Per-language with MagicTranslateButton, credit shown in lightbox only
+- [x] **Image Hotspots** - Full-screen editor with icon picker (16 types), color picker, tooltip/navigate/URL actions
+- [x] **Hotspot Editor UX** - Always-visible hotspot list + edit panel, click between points, Save button, language pills, Translate All
+- [x] **Comparison Block** - Before/after image slider with `clip-path: inset()`, horizontal/vertical orientation
+- [x] **Translation** - LanguageSwitcher pills + MagicTranslateButton on all text fields (caption, credit, alt text, hotspot labels)
+- [x] **Save Button** - All block editors now have Save dropdown (Save & Continue Editing / Save & Exit) via `onSave` callback chain from StopEditor
+- [x] **2-Column Layout** - Image editor uses wide modal with image+format on left, text fields+hotspots on right
+
+**Key files:**
+- `app/src/components/blocks/ImageBlockEditor.tsx` — 2-column editor
+- `app/src/components/blocks/StopContentBlock.tsx` — `ImageBlockView` preview rendering
+- `app/src/components/ui/ImageLightbox.tsx` — Fullscreen lightbox (no portal)
+- `app/src/components/blocks/ImageHotspotEditor.tsx` — Hotspot editor with save + language pills
+- `app/src/components/blocks/BlockEditorModal.tsx` — Generic block editor wrapper with Save button
+- `app/src/components/blocks/ComparisonBlockEditor.tsx` + `ComparisonPreview.tsx` — Before/after comparison
 
 ### Phase 28: Image Map Block ✅ (March 10, 2026)
 - [x] **New Block Type** - `imageMap` content block for indoor floor plans
@@ -1123,6 +1145,13 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | Map Block Editor | `app/src/components/blocks/MapBlockEditor.tsx` |
 | Map Block Spec | `docs/map-block-spec.md` |
 | Settings API | `app/server/routes/settings.ts` |
+| **Image Block Enhancement** | |
+| Image Block Editor | `app/src/components/blocks/ImageBlockEditor.tsx` |
+| Image Lightbox | `app/src/components/ui/ImageLightbox.tsx` |
+| Image Hotspot Editor | `app/src/components/blocks/ImageHotspotEditor.tsx` |
+| Block Editor Modal | `app/src/components/blocks/BlockEditorModal.tsx` |
+| Comparison Block Editor | `app/src/components/blocks/ComparisonBlockEditor.tsx` |
+| Comparison Preview | `app/src/components/blocks/ComparisonPreview.tsx` |
 | **Image Map Block** | |
 | Image Map Editor Modal | `app/src/components/blocks/ImageMapEditorModal.tsx` |
 | Image Map Block Editor | `app/src/components/blocks/ImageMapBlockEditor.tsx` |
