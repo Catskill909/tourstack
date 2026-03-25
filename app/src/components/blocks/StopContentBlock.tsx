@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight, List, ScanLine, LayoutGrid, ZoomIn } from 'lucide-react';
+import { Type, Image, Images, Music, Video, Quote, History, Columns, QrCode, Map as MapIcon, Play, ChevronRight, List, ScanLine, LayoutGrid, ZoomIn, Code } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, ComparisonBlockData, Tour, Stop } from '../../types';
+import type { ContentBlock, ContentBlockType, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, VideoBlockData, QuoteBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, ComparisonBlockData, HtmlBlockData, Tour, Stop } from '../../types';
 import { GalleryPreview } from './GalleryPreview';
 import { TimelineGalleryPreview } from './TimelineGalleryPreview';
 import { MapPreview } from './MapPreview';
@@ -10,6 +10,8 @@ import { ImageMapMarkerPin } from './ImageMapMarkerPin';
 import { StopListBlockPreview } from './StopListBlockPreview';
 import { QRScannerBlockPreview } from './QRScannerBlockPreview';
 import { ComparisonPreview } from './ComparisonPreview';
+import { detectProvider, generateEmbedUrl } from '../../lib/embedProviders';
+import { sanitizeHtml, extractIframeSrc } from '../../lib/htmlSanitizer';
 import { CustomAudioPlayer } from '../ui/CustomAudioPlayer';
 import { ImageLightbox } from '../ui/ImageLightbox';
 import fallbackImage from '../../assets/fallback.jpg';
@@ -50,6 +52,7 @@ const BLOCK_ICONS: Record<ContentBlockType, LucideIcon> = {
     tour: Play,
     stopList: List,
     qrScanner: ScanLine,
+    html: Code,
 };
 
 const BLOCK_LABELS: Record<ContentBlockType, string> = {
@@ -68,6 +71,7 @@ const BLOCK_LABELS: Record<ContentBlockType, string> = {
     tour: 'Tour Intro',
     stopList: 'Stop List',
     qrScanner: 'QR Scanner',
+    html: 'HTML / Embed',
 };
 
 function ImageBlockView({ data, language, mode, onNavigateToStop, deviceType = 'phone' }: { data: ImageBlockData; language: string; mode: 'view' | 'edit'; onNavigateToStop?: (stopId: string) => void; deviceType?: 'phone' | 'tablet' | 'kiosk' }) {
@@ -599,6 +603,115 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
         );
     }
 
+    function renderHtmlBlock(data: HtmlBlockData) {
+        // Determine what to render
+        let iframeSrc = '';
+        let rawHtml = '';
+
+        if (data.mode === 'url' && data.url) {
+            const provider = data.provider || detectProvider(data.url);
+            iframeSrc = generateEmbedUrl(data.url, provider);
+        } else if (data.mode === 'embed' && data.embedCode) {
+            const src = extractIframeSrc(data.embedCode);
+            if (src) {
+                iframeSrc = src;
+            } else {
+                rawHtml = sanitizeHtml(data.embedCode, true);
+            }
+        } else if (data.mode === 'html') {
+            rawHtml = sanitizeHtml(data.htmlContent?.[language] || data.htmlContent?.en || '', false, true);
+        }
+
+        const sizing = data.sizing || 'fill';
+
+        // Aspect ratio class (only used when sizing is 'auto' with a specific ratio)
+        const aspectClass = (sizing === 'auto' && data.aspectRatio !== 'auto') ? ({
+            '16:9': 'aspect-video',
+            '4:3': 'aspect-[4/3]',
+            '1:1': 'aspect-square',
+            '9:16': 'aspect-[9/16]',
+            '21:9': 'aspect-[21/9]',
+        }[data.aspectRatio] || '') : '';
+
+        // Container height based on sizing mode
+        let containerStyle: React.CSSProperties = {};
+        let containerClass = '';
+
+        if (sizing === 'fill') {
+            // Fill all available space — uses flex-1 + h-full inherited from parent
+            containerClass = 'w-full h-full';
+            containerStyle = { minHeight: 'inherit', flex: 1 };
+        } else if (sizing === 'fixed') {
+            // Fixed pixel height
+            containerStyle = { height: `${data.height || 500}px` };
+        }
+        // sizing === 'auto': no height set, aspect ratio or content determines height
+
+        // Max width — 'full' uses full-bleed calc() pattern like Image block
+        const isFull = data.maxWidth === 'full';
+        const maxWidthClass = isFull ? '' : ({
+            small: 'max-w-sm mx-auto',
+            medium: 'max-w-xl mx-auto',
+            large: 'w-full',
+        }[data.maxWidth || 'large'] || 'w-full');
+
+        // Full-bleed inline style (same pattern as Image block full format)
+        const fullBleedStyle: React.CSSProperties = isFull ? { marginLeft: '-24px', width: 'calc(100% + 48px)' } : {};
+        const roundedClass = (!isFull && data.borderRadius) ? 'rounded-lg' : '';
+
+        return (
+            <div
+                className={`${sizing === 'fill' ? 'flex flex-col w-full h-full' : ''}`}
+                style={sizing === 'fill' ? { minHeight: 'inherit' } : {}}
+            >
+                {renderBlockHeader(data)}
+                <div
+                    className={`${maxWidthClass} ${containerClass} ${sizing === 'fill' ? 'flex-1' : ''}`}
+                    style={{ ...fullBleedStyle, ...containerStyle }}
+                >
+                    {iframeSrc ? (
+                        <div
+                            className={`relative overflow-hidden ${aspectClass} ${roundedClass} bg-black ${sizing === 'fill' ? 'w-full h-full' : sizing === 'fixed' ? 'w-full h-full' : ''}`}
+                            style={sizing === 'fill' ? { minHeight: 'inherit' } : {}}
+                        >
+                            <iframe
+                                src={iframeSrc}
+                                className={`border-0 ${sizing === 'fill' || sizing === 'fixed' ? 'absolute inset-0 w-full h-full' : 'w-full h-full'}`}
+                                style={{
+                                    pointerEvents: data.allowInteraction !== false ? 'auto' : 'none',
+                                    ...(sizing === 'auto' && !aspectClass ? { minHeight: '300px' } : {}),
+                                }}
+                                sandbox="allow-scripts allow-same-origin allow-popups"
+                                loading={data.lazyLoad !== false ? 'lazy' : 'eager'}
+                                allowFullScreen
+                            />
+                        </div>
+                    ) : rawHtml ? (
+                        <iframe
+                            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;box-sizing:border-box}html,body{height:100%;min-height:100%}body{font-family:system-ui,-apple-system,sans-serif;color:#e5e5e5;background:#111;overflow-x:hidden}a{color:#60a5fa}</style></head><body>${rawHtml}</body></html>`}
+                            className={`border-0 w-full ${roundedClass} ${sizing === 'fill' ? 'h-full' : ''}`}
+                            style={{
+                                background: 'transparent',
+                                pointerEvents: data.allowInteraction !== false ? 'auto' : 'none',
+                                ...(sizing === 'auto' && !aspectClass ? { minHeight: '300px' } : {}),
+                                ...(sizing === 'fill' ? { minHeight: 'inherit' } : {}),
+                                ...(sizing === 'fixed' ? { height: '100%' } : {}),
+                            }}
+                            sandbox="allow-scripts allow-same-origin allow-popups"
+                        />
+                    ) : (
+                        <div className="flex items-center justify-center h-32 bg-[var(--color-bg-elevated)] rounded-lg">
+                            <div className="text-center text-[var(--color-text-muted)]">
+                                <Code className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-xs">No embed content configured</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
     function renderBlock() {
         switch (block.type) {
             case 'text':
@@ -671,6 +784,8 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
             }
             case 'qrScanner':
                 return renderQRScannerBlock(block.data as QRScannerBlockData);
+            case 'html':
+                return renderHtmlBlock(block.data as HtmlBlockData);
             default:
                 return (
                     <div className="text-[var(--color-text-muted)] text-sm">
@@ -681,9 +796,11 @@ export function StopContentBlock({ block, mode, language, deviceType = 'phone', 
     }
 
     if (mode === 'view') {
-        // For tour blocks, pass through height to fill container
+        // For tour blocks and HTML fill blocks, pass through height to fill container
         const isTourBlock = block.type === 'tour';
-        return <div className={`content-block ${isTourBlock ? 'h-full' : ''}`} style={isTourBlock ? { minHeight: '100%' } : {}}>{renderBlock()}</div>;
+        const isHtmlFill = block.type === 'html' && ((block.data as HtmlBlockData).sizing || 'fill') === 'fill';
+        const fillsContainer = isTourBlock || isHtmlFill;
+        return <div className={`content-block ${fillsContainer ? 'h-full flex flex-col' : ''}`} style={fillsContainer ? { minHeight: '100%' } : {}}>{renderBlock()}</div>;
     }
 
     // Edit mode - show with controls

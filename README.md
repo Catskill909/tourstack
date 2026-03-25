@@ -87,7 +87,7 @@ npm run start
 - **Visit Analytics**: VisitLog table tracks stop visits with source, token, timestamp, and user agent
 - **Tour Block**: Full-screen hero intro with architectural design system aesthetic
 - **Language Reconciliation**: Smart import detects language mismatches, prompts to expand tour or filter import
-- **13 Content Blocks**: Text, Image, Gallery, Timeline Gallery, Audio, Video, Quote, Timeline, Comparison, Positioning, Map (multi-marker, dark popups, OpenStreetMap + Google Maps), Image Map, Tour
+- **14 Content Blocks**: Text, Image, Gallery, Timeline Gallery, Audio, Video, Quote, Timeline, Comparison, Positioning, Map (multi-marker, dark popups, OpenStreetMap + Google Maps), Image Map, HTML/Embed, Tour
 - **Stop Editor**: Split-pane editor with live preview mode
 - **Timeline Gallery**: Audio-synced image galleries with **thumbnail markers** on waveform
 - **Multilingual**: All content supports multiple languages with Magic Translate AI
@@ -142,6 +142,7 @@ TourStack/
 | [docs/image-map-block-dev.md](./docs/image-map-block-dev.md) | Image Map block feature |
 | [docs/language-collection-import-audit.md](./docs/language-collection-import-audit.md) | Language import reconciliation audit |
 | [docs/ai-chatbot-documents-dev.md](./docs/ai-chatbot-documents-dev.md) | AI Chatbot & Documents development |
+| [docs/html-block-dev.md](./docs/html-block-dev.md) | HTML / Embed block development |
 | [docs/ELEVENLABS-VOICES-ISSUE.md](./docs/ELEVENLABS-VOICES-ISSUE.md) | ElevenLabs voice API limitations |
 | [tourstack.md](./tourstack.md) | Full scope reference |
 

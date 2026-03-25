@@ -77,6 +77,7 @@ When museum staff access visitor pages, they see:
 | Phase 30: Unified Preview System & iPad Orientation | ✅ Complete |
 | Phase 11b: Map Block Multi-Marker Upgrade | ✅ Complete |
 | Phase 31: Image Block Enhancement | ✅ Complete |
+| Phase 32: HTML / Embed Block | ✅ Complete |
 | Phase 26.2: Per-Tour AI Concierge | 🎯 NEXT |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
@@ -426,6 +427,37 @@ Collections → AI Analyze → Translate → Save → Auto-Sync → Media Librar
 - `BlockEditorModal.tsx` - Generic block editor wrapper with Save dropdown
 - `ComparisonBlockEditor.tsx` - Before/after comparison editor
 - `ComparisonPreview.tsx` - Draggable comparison slider
+
+### HTML / Embed Block (Phase 32) - COMPLETE ✅ (March 25, 2026)
+
+**New Content Block Type:** General-purpose HTML/embed block for 3D models, virtual tours, donation widgets, custom HTML/CSS/JS, and any third-party embed.
+
+| Feature | Description |
+|---------|-------------|
+| **3 Content Modes** | Embed Code (paste iframes), URL (auto-detect 14 providers), Raw HTML (multilingual with JS support) |
+| **14 Embed Providers** | Sketchfab, Matterport, YouTube, Vimeo, Spotify, SoundCloud, Google Arts/Maps/Forms, Typeform, Instagram, Twitter, CodePen |
+| **JavaScript Support** | Raw HTML renders via `<iframe srcdoc>` with sandbox — scripts execute safely isolated from parent app |
+| **Google Fonts + CSS** | `<link>` and `<style>` tags load inside sandboxed iframe for custom typography |
+| **3 Sizing Modes** | Fill Screen (Tour Block pattern), Fixed Height (200-800px slider), Auto (aspect ratio or content) |
+| **Full-Screen Fill** | Height chains through VisitorStop → StopPreviewModal → StopContentBlock → renderHtmlBlock |
+| **Responsive Scaling** | Demo uses CSS `clamp()` for fluid typography across iPhone (375px) / iPad (820px) / Kiosk (1080px+) |
+| **Translation** | Raw HTML mode: LanguageSwitcher + MagicTranslateButton (same pattern as TextBlockEditor) |
+| **DOMPurify Sanitization** | 3-tier: default (standard HTML), allowIframes (embed mode), sandboxed (scripts + SVG + forms) |
+| **Demo Content** | New blocks start pre-filled with museum-themed HTML: Playfair Display + Inter fonts, stat cards, JS tabbed widget |
+
+**Key Architecture Decisions:**
+- **iframe srcdoc over dangerouslySetInnerHTML** — enables JavaScript execution while maintaining security via sandbox attributes
+- **Fill Screen follows Tour Block pattern** — same height chain through all rendering layers (VisitorStop, StopPreviewModal, StopContentBlock wrapper)
+- **`clamp()` responsive fonts** — fluid scaling without media queries, works at any viewport width
+- **3-tier sanitization** — sandboxed mode allows `<script>`, `<canvas>`, `<svg>`, form elements when content is safely iframe'd
+
+**Files:**
+- `HtmlBlockEditor.tsx` - 3-mode editor with live iframe srcdoc preview
+- `StopContentBlock.tsx` - `renderHtmlBlock()` with 3 sizing modes
+- `embedProviders.ts` - URL auto-detection for 14 services
+- `htmlSanitizer.ts` - DOMPurify with 3-tier sanitization
+- `types/index.ts` - `HtmlBlockData`, `HtmlEmbedProvider` types
+- `docs/html-block-dev.md` - Full development documentation
 
 ---
 

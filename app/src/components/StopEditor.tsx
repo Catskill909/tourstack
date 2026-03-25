@@ -16,8 +16,9 @@ import { ImageMapEditorModal } from './blocks/ImageMapEditorModal';
 import { TourBlockEditor } from './blocks/TourBlockEditor';
 import { StopListEditorModal } from './blocks/StopListEditorModal';
 import { ComparisonBlockEditor } from './blocks/ComparisonBlockEditor';
+import { HtmlBlockEditor } from './blocks/HtmlBlockEditor';
 import { PreviewChoiceModal } from './PreviewChoiceModal';
-import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, ComparisonBlockData, StopImageData } from '../types';
+import type { Stop, Tour, ContentBlock, ContentBlockType, ContentBlockData, TextBlockData, ImageBlockData, GalleryBlockData, TimelineGalleryBlockData, AudioBlockData, PositioningBlockData, MapBlockData, ImageMapBlockData, TourBlockData, StopListBlockData, QRScannerBlockData, ComparisonBlockData, HtmlBlockData, StopImageData } from '../types';
 
 interface StopEditorProps {
     stop: Stop;
@@ -38,6 +39,192 @@ interface StopEditorProps {
 function generateBlockId(): string {
     return `block_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
+
+const HTML_BLOCK_DEMO = `<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  .demo-page {
+    font-family: 'Inter', system-ui, sans-serif;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    color: #f5f5f5;
+    background-color: #171717;
+    line-height: 1.7;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+  .demo-page h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.75rem, 4vw, 3rem);
+    margin-bottom: 0.25rem;
+    color: #ffffff;
+  }
+  .demo-page .subtitle {
+    color: #a3a3a3;
+    font-size: clamp(0.7rem, 1.5vw, 0.95rem);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 1.25rem;
+  }
+  .demo-page hr { border: none; border-top: 1px solid #404040; margin: clamp(1rem, 2vw, 1.75rem) 0; }
+  .demo-page h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.15rem, 2.5vw, 1.75rem);
+    margin: clamp(1rem, 2vw, 1.75rem) 0 0.5rem;
+    color: #ffffff;
+  }
+  .demo-page p {
+    margin-bottom: 0.75rem;
+    font-size: clamp(0.9rem, 2vw, 1.15rem);
+    color: #d4d4d4;
+  }
+  .demo-page ul { padding-left: 1.25rem; margin-bottom: 1rem; }
+  .demo-page li {
+    margin-bottom: 0.5rem;
+    font-size: clamp(0.85rem, 1.8vw, 1.1rem);
+    color: #d4d4d4;
+  }
+  .demo-page li::marker { color: #fbbf24; }
+  .demo-page blockquote {
+    border-left: 3px solid #d97706;
+    padding: clamp(0.75rem, 2vw, 1.25rem) clamp(1rem, 2vw, 1.5rem);
+    margin: clamp(1rem, 2vw, 1.75rem) 0;
+    background: rgba(217,119,6,0.1);
+    border-radius: 0 0.5rem 0.5rem 0;
+    font-style: italic;
+    color: #e5e5e5;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+  }
+  .demo-page .stats {
+    display: flex;
+    gap: clamp(0.5rem, 1.5vw, 1rem);
+    margin: clamp(1rem, 2vw, 1.75rem) 0;
+  }
+  .demo-page .stat {
+    flex: 1;
+    padding: clamp(0.75rem, 2vw, 1.25rem);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid #333;
+    border-radius: 0.5rem;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .demo-page .stat:hover { border-color: #fbbf24; background: rgba(217,119,6,0.15); }
+  .demo-page .stat-value {
+    font-size: clamp(1.25rem, 3vw, 2rem);
+    font-weight: 700;
+    color: #fbbf24;
+  }
+  .demo-page .stat-label {
+    font-size: clamp(0.6rem, 1.2vw, 0.8rem);
+    color: #a3a3a3;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .demo-page .widget {
+    margin-top: clamp(1rem, 2vw, 1.75rem);
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #333;
+    border-radius: 0.75rem;
+  }
+  .demo-page .widget-title {
+    font-size: clamp(0.65rem, 1.3vw, 0.85rem);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #a3a3a3;
+    margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
+  }
+  .demo-page .tab-bar { display: flex; gap: 0.5rem; margin-bottom: clamp(0.5rem, 1.5vw, 1rem); flex-wrap: wrap; }
+  .demo-page .tab {
+    padding: clamp(0.3rem, 0.8vw, 0.5rem) clamp(0.6rem, 1.5vw, 1rem);
+    border-radius: 999px;
+    border: 1px solid #525252;
+    font-size: clamp(0.75rem, 1.6vw, 0.95rem);
+    cursor: pointer;
+    background: transparent;
+    color: #d4d4d4;
+    transition: all 0.2s;
+  }
+  .demo-page .tab.active, .demo-page .tab:hover { background: #d97706; color: #fff; border-color: #d97706; }
+  .demo-page .tab-content {
+    font-size: clamp(0.85rem, 1.8vw, 1.05rem);
+    min-height: 3rem;
+    color: #d4d4d4;
+    line-height: 1.6;
+  }
+  .demo-page .footer {
+    margin-top: clamp(1.25rem, 2.5vw, 2rem);
+    padding-top: 1rem;
+    border-top: 1px solid #333;
+    font-size: clamp(0.65rem, 1.2vw, 0.8rem);
+    color: #737373;
+    text-align: center;
+  }
+</style>
+
+<div class="demo-page">
+  <h1>The Great Hall</h1>
+  <div class="subtitle">Gallery 204 \\u00b7 Second Floor \\u00b7 Permanent Collection</div>
+  <hr>
+
+  <p>Originally constructed in <strong>1902</strong>, this space has hosted over <em>2,000 exhibitions</em> spanning art, science, and culture from around the world.</p>
+
+  <h2>Highlights</h2>
+  <ul>
+    <li><strong>The Meridian Sundial</strong> \\u2014 a 12-foot bronze gnomon aligned to true north</li>
+    <li><strong>Hall of Whispers</strong> \\u2014 parabolic archways that carry sound 40 meters</li>
+    <li><strong>The Founders' Mosaic</strong> \\u2014 14,000 hand-cut tiles depicting the city skyline</li>
+  </ul>
+
+  <blockquote>
+    "Every object tells a story waiting to be heard."<br>
+    <span style="font-style: normal; font-size: 0.8em; color: #a3a3a3;">\\u2014 Dr. Elena Marchetti, Chief Curator</span>
+  </blockquote>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-value">1902</div>
+      <div class="stat-label">Founded</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">2,847</div>
+      <div class="stat-label">Artifacts</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value">12</div>
+      <div class="stat-label">Languages</div>
+    </div>
+  </div>
+
+  <div class="widget">
+    <div class="widget-title">Did You Know?</div>
+    <div class="tab-bar" id="tabBar">
+      <button class="tab active" onclick="showTab(0)">Architecture</button>
+      <button class="tab" onclick="showTab(1)">History</button>
+      <button class="tab" onclick="showTab(2)">Collection</button>
+    </div>
+    <div class="tab-content" id="tabContent">
+      The Great Hall's dome spans 28 meters and was the largest unsupported span in the country when built. The acoustic design allows a whisper at one focal point to be heard clearly at the other, 40 meters away.
+    </div>
+  </div>
+
+  <div class="footer">
+    HTML Block Demo \\u00b7 Google Fonts, CSS, and JavaScript widgets<br>
+    All text content translates automatically via Magic Translate
+  </div>
+</div>
+
+<script>
+  const tabs = [
+    "The Great Hall's dome spans 28 meters and was the largest unsupported span in the country when built. The acoustic design allows a whisper at one focal point to be heard clearly at the other, 40 meters away.",
+    "During World War II, the Hall served as a temporary shelter for displaced families. Over 3,000 people lived here between 1942 and 1945. Marks from that era can still be seen on the original marble columns.",
+    "The permanent collection includes artifacts from 47 countries. The oldest piece, a Mesopotamian cylinder seal, dates to 3200 BCE. New acquisitions are added quarterly through the Global Heritage Program."
+  ];
+  function showTab(i) {
+    document.getElementById('tabContent').textContent = tabs[i];
+    document.querySelectorAll('.tab').forEach((t, j) => t.classList.toggle('active', j === i));
+  }
+</script>`;
 
 function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
     switch (type) {
@@ -65,6 +252,8 @@ function createEmptyBlockData(type: ContentBlockType): ContentBlockData {
             return { imageUrl: '', markers: [], size: 'large', showLabels: true, zoomable: true, showLegend: false } as ImageMapBlockData;
         case 'comparison':
             return { beforeImage: { url: '' }, afterImage: { url: '' }, orientation: 'horizontal', initialPosition: 50 } as ComparisonBlockData;
+        case 'html':
+            return { mode: 'html', embedCode: '', url: '', htmlContent: { en: HTML_BLOCK_DEMO }, aspectRatio: 'auto', sizing: 'fill', maxWidth: 'large', borderRadius: false, allowInteraction: true, lazyLoad: true } as HtmlBlockData;
         default:
             return { content: { en: '' }, style: 'normal' } as TextBlockData;
     }
@@ -751,7 +940,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                     <div className="bg-[var(--color-bg-surface)] rounded-xl border border-[var(--color-border-default)] p-6 w-full max-w-md shadow-xl">
                         <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">Add Content Block</h3>
                         <div className="grid grid-cols-3 gap-3">
-                            {(['tour', 'text', 'image', 'gallery', 'timelineGallery', 'audio', 'comparison', 'map', 'imageMap', 'stopList', 'qrScanner'] as ContentBlockType[]).map((type) => {
+                            {(['tour', 'text', 'image', 'gallery', 'timelineGallery', 'audio', 'comparison', 'map', 'imageMap', 'html', 'stopList', 'qrScanner'] as ContentBlockType[]).map((type) => {
                                 const Icon = BLOCK_ICONS[type];
                                 return (
                                     <button
@@ -914,7 +1103,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                         tourData={tourData}
                         allStops={allStops}
                         availableLanguages={availableLanguages}
-                        wide={block.type === 'gallery' || block.type === 'image' || block.type === 'tour'}
+                        wide={block.type === 'gallery' || block.type === 'image' || block.type === 'tour' || block.type === 'html'}
                     >
                         {block.type === 'text' && (
                             <TextBlockEditor
@@ -990,6 +1179,15 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                                 availableLanguages={availableLanguages}
                                 translationProvider={translationProvider}
                                 allStops={allStops}
+                                onChange={updateBlock}
+                            />
+                        )}
+                        {block.type === 'html' && (
+                            <HtmlBlockEditor
+                                data={block.data as HtmlBlockData}
+                                language={language}
+                                availableLanguages={availableLanguages}
+                                translationProvider={translationProvider}
                                 onChange={updateBlock}
                             />
                         )}

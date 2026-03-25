@@ -230,7 +230,8 @@ export type ContentBlockType =
   | 'imageMap'
   | 'tour'
   | 'stopList'
-  | 'qrScanner';
+  | 'qrScanner'
+  | 'html';
 
 // Block data interfaces
 export interface TextBlockData {
@@ -628,6 +629,60 @@ export interface QRScannerBlockData {
   showBlockImage?: boolean;
 }
 
+// HTML / Embed block — supports iframes, URLs, and raw multilingual HTML
+export type HtmlEmbedProvider =
+  | 'sketchfab'
+  | 'matterport'
+  | 'youtube'
+  | 'vimeo'
+  | 'spotify'
+  | 'soundcloud'
+  | 'google-arts'
+  | 'google-maps'
+  | 'google-forms'
+  | 'typeform'
+  | 'instagram'
+  | 'twitter'
+  | 'codepen'
+  | 'custom';
+
+export interface HtmlBlockData {
+  // Content modes (one active at a time)
+  mode: 'embed' | 'url' | 'html';
+
+  // Mode: 'embed' — paste full iframe/embed code
+  embedCode: string;
+
+  // Mode: 'url' — paste a URL, auto-detect provider
+  url: string;
+  provider?: HtmlEmbedProvider;
+
+  // Mode: 'html' — raw HTML (admin-only, sanitized)
+  htmlContent: { [lang: string]: string };
+
+  // Display
+  aspectRatio: '16:9' | '4:3' | '1:1' | '9:16' | '21:9' | 'auto';
+  sizing: 'auto' | 'fill' | 'fixed';  // auto=content height, fill=remaining space, fixed=pixel height
+  height?: number;                      // Used when sizing='fixed' (px value)
+  maxWidth?: 'small' | 'medium' | 'large' | 'full';
+  borderRadius?: boolean;
+
+  // Caption & attribution
+  caption?: { [lang: string]: string };
+  source?: { [lang: string]: string };
+  sourceUrl?: string;
+
+  // Interaction
+  allowInteraction: boolean;
+  lazyLoad: boolean;
+
+  // Block metadata (standard pattern)
+  title?: { [lang: string]: string };
+  showTitle?: boolean;
+  blockImage?: StopImageData;
+  showBlockImage?: boolean;
+}
+
 // Discriminated union for type safety
 export type ContentBlockData =
   | TextBlockData
@@ -644,7 +699,8 @@ export type ContentBlockData =
   | ImageMapBlockData
   | TourBlockData
   | StopListBlockData
-  | QRScannerBlockData;
+  | QRScannerBlockData
+  | HtmlBlockData;
 
 // Base content block interface
 export interface ContentBlock {

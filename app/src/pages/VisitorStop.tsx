@@ -588,20 +588,28 @@ export function VisitorStop() {
                             </div>
                         ) : (
                             <div className="space-y-6">
-                                {blocks.map((block: ContentBlock) => (
-                                    <StopContentBlock
-                                        key={block.id}
-                                        block={block}
-                                        mode="view"
-                                        language={language}
-                                        deviceType={deviceType}
-                                        tourData={tour as any}
-                                        allStops={allStops}
-                                        currentStopId={stop?.id}
-                                        displaySettings={displaySettings}
-                                        onNavigateToStop={handleNavigateToStop}
-                                    />
-                                ))}
+                                {blocks.map((block: ContentBlock) => {
+                                    // HTML blocks with 'fill' sizing get full remaining viewport height
+                                    const isHtmlFill = block.type === 'html' && ((block.data as any).sizing || 'fill') === 'fill';
+                                    return (
+                                        <div
+                                            key={block.id}
+                                            style={isHtmlFill ? { height: 'calc(100dvh - 60px)', minHeight: '400px' } : {}}
+                                        >
+                                            <StopContentBlock
+                                                block={block}
+                                                mode="view"
+                                                language={language}
+                                                deviceType={deviceType}
+                                                tourData={tour as any}
+                                                allStops={allStops}
+                                                currentStopId={stop?.id}
+                                                displaySettings={displaySettings}
+                                                onNavigateToStop={handleNavigateToStop}
+                                            />
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
                     </main>

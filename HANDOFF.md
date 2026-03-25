@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
-**Last Updated**: March 24, 2026
-**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅ | Chatbot UX Unification COMPLETE ✅ | Map Block Upgrade COMPLETE ✅ | Image Block Enhancement COMPLETE ✅
+**Last Updated**: March 25, 2026
+**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅ | Chatbot UX Unification COMPLETE ✅ | Map Block Upgrade COMPLETE ✅ | Image Block Enhancement COMPLETE ✅ | HTML/Embed Block COMPLETE ✅
 
 ---
 
@@ -501,6 +501,29 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - `app/src/components/blocks/ImageHotspotEditor.tsx` — Hotspot editor with save + language pills
 - `app/src/components/blocks/BlockEditorModal.tsx` — Generic block editor wrapper with Save button
 - `app/src/components/blocks/ComparisonBlockEditor.tsx` + `ComparisonPreview.tsx` — Before/after comparison
+
+### Phase 32: HTML / Embed Block ✅ (March 25, 2026)
+- [x] **New Block Type** - `html` content block for embeds, URLs, and raw HTML/CSS/JS
+- [x] **3 Content Modes** - Embed Code (paste iframes), URL (auto-detect provider), Raw HTML (multilingual with JS)
+- [x] **14 Embed Providers** - Auto-detection for Sketchfab, Matterport, YouTube, Vimeo, Spotify, SoundCloud, Google Arts/Maps/Forms, Typeform, Instagram, Twitter, CodePen, custom
+- [x] **Sandboxed iframe Rendering** - Raw HTML renders via `<iframe srcdoc>` with `sandbox="allow-scripts allow-same-origin allow-popups"` — JavaScript executes safely
+- [x] **Google Fonts + CSS** - `<link>` and `<style>` tags allowed in sanitizer, fonts load inside sandboxed iframe
+- [x] **3 Sizing Modes** - Fill Screen (follows Tour Block pattern), Fixed Height (200-800px slider), Auto (aspect ratio or content)
+- [x] **Full-Screen Preview** - Fill mode chains height through VisitorStop → StopPreviewModal → StopContentBlock → renderHtmlBlock
+- [x] **Responsive Font Scaling** - Demo content uses CSS `clamp()` for fluid typography across iPhone/iPad/Kiosk
+- [x] **Translation Integration** - Raw HTML mode has LanguageSwitcher + MagicTranslateButton (same pattern as TextBlockEditor)
+- [x] **DOMPurify Sanitization** - 3-tier system: default (standard HTML), allowIframes (embed mode), sandboxed (scripts + SVG + forms for srcdoc)
+- [x] **Pre-filled Demo Content** - New blocks start with museum-themed HTML demo featuring Playfair Display + Inter fonts, stat cards, blockquote, and JS tabbed widget
+- [x] **Display Settings** - Max width pills (Small/Medium/Large/Full), rounded corners toggle (default off), lazy load, allow interaction
+- [x] **Wide Editor Modal** - HTML block uses wide modal layout like Image block
+
+**Key files:**
+- `app/src/components/blocks/HtmlBlockEditor.tsx` — 3-mode editor with live preview
+- `app/src/components/blocks/StopContentBlock.tsx` — `renderHtmlBlock()` with 3 sizing modes
+- `app/src/lib/embedProviders.ts` — Provider auto-detection for 14 services
+- `app/src/lib/htmlSanitizer.ts` — DOMPurify with 3-tier sanitization (default/iframe/sandboxed)
+- `app/src/types/index.ts` — `HtmlBlockData`, `HtmlEmbedProvider` types
+- `docs/html-block-dev.md` — Full development documentation
 
 ### Phase 28: Image Map Block ✅ (March 10, 2026)
 - [x] **New Block Type** - `imageMap` content block for indoor floor plans
@@ -1152,6 +1175,11 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | Block Editor Modal | `app/src/components/blocks/BlockEditorModal.tsx` |
 | Comparison Block Editor | `app/src/components/blocks/ComparisonBlockEditor.tsx` |
 | Comparison Preview | `app/src/components/blocks/ComparisonPreview.tsx` |
+| **HTML / Embed Block** | |
+| HTML Block Editor | `app/src/components/blocks/HtmlBlockEditor.tsx` |
+| Embed Providers | `app/src/lib/embedProviders.ts` |
+| HTML Sanitizer | `app/src/lib/htmlSanitizer.ts` |
+| HTML Block Dev Guide | `docs/html-block-dev.md` |
 | **Image Map Block** | |
 | Image Map Editor Modal | `app/src/components/blocks/ImageMapEditorModal.tsx` |
 | Image Map Block Editor | `app/src/components/blocks/ImageMapBlockEditor.tsx` |

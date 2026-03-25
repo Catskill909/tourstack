@@ -394,30 +394,39 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                                                 </div>
                                             ) : (
                                                 <div className={hasTourIntroFirst ? '' : 'space-y-5'} style={hasTourIntroFirst ? { height: '100%', minHeight: '100%' } : {}}>
-                                                    {blocks.map((block: ContentBlock, index: number) => (
-                                                        <div
-                                                            key={block.id}
-                                                            className={
-                                                                index === 0 && hasTourIntroFirst
-                                                                    ? ''
-                                                                    : index > 0 && hasTourIntroFirst
-                                                                        ? 'space-y-5 px-10'
-                                                                        : ''
-                                                            }
-                                                            style={index === 0 && hasTourIntroFirst ? { height: kioskContentHeight, minHeight: kioskContentHeight } : {}}
-                                                        >
-                                                            <StopContentBlock
-                                                                block={block}
-                                                                mode="view"
-                                                                language={previewLanguage}
-                                                                deviceType={deviceType}
-                                                                tourData={tourData}
-                                                                allStops={allStops}
-                                                                displaySettings={displaySettings}
-                                                                onNavigateToStop={navigateToStop}
-                                                            />
-                                                        </div>
-                                                    ))}
+                                                    {blocks.map((block: ContentBlock, index: number) => {
+                                                        const isHtmlFill = block.type === 'html' && ((block.data as any).sizing || 'fill') === 'fill';
+                                                        return (
+                                                            <div
+                                                                key={block.id}
+                                                                className={
+                                                                    index === 0 && hasTourIntroFirst
+                                                                        ? ''
+                                                                        : index > 0 && hasTourIntroFirst
+                                                                            ? 'space-y-5 px-10'
+                                                                            : ''
+                                                                }
+                                                                style={
+                                                                    index === 0 && hasTourIntroFirst
+                                                                        ? { height: kioskContentHeight, minHeight: kioskContentHeight }
+                                                                        : isHtmlFill
+                                                                            ? { height: `${effectiveHeight - 60}px`, minHeight: '400px' }
+                                                                            : {}
+                                                                }
+                                                            >
+                                                                <StopContentBlock
+                                                                    block={block}
+                                                                    mode="view"
+                                                                    language={previewLanguage}
+                                                                    deviceType={deviceType}
+                                                                    tourData={tourData}
+                                                                    allStops={allStops}
+                                                                    displaySettings={displaySettings}
+                                                                    onNavigateToStop={navigateToStop}
+                                                                />
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
 
@@ -713,29 +722,39 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                                                             </div>
                                                         ) : (
                                                             <div className={hasTourIntroFirst ? '' : 'space-y-5'} style={hasTourIntroFirst ? { height: '100%', minHeight: '100%' } : {}}>
-                                                                {blocks.map((block: ContentBlock, index: number) => (
-                                                                    <div
-                                                                        key={block.id}
-                                                                        className={
-                                                                            index === 0 && hasTourIntroFirst
-                                                                                ? ''
-                                                                                : index > 0 && hasTourIntroFirst
-                                                                                    ? `space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`
-                                                                                    : ''
-                                                                        }
-                                                                        style={index === 0 && hasTourIntroFirst ? { height: effectiveHeight, minHeight: effectiveHeight } : {}}
-                                                                    >    <StopContentBlock
-                                                                            block={block}
-                                                                            mode="view"
-                                                                            language={previewLanguage}
-                                                                            deviceType={deviceType}
-                                                                            tourData={tourData}
-                                                                            allStops={allStops}
-                                                                            displaySettings={displaySettings}
-                                                                            onNavigateToStop={navigateToStop}
-                                                                        />
-                                                                    </div>
-                                                                ))}
+                                                                {blocks.map((block: ContentBlock, index: number) => {
+                                                                    const isHtmlFill = block.type === 'html' && ((block.data as any).sizing || 'fill') === 'fill';
+                                                                    return (
+                                                                        <div
+                                                                            key={block.id}
+                                                                            className={
+                                                                                index === 0 && hasTourIntroFirst
+                                                                                    ? ''
+                                                                                    : index > 0 && hasTourIntroFirst
+                                                                                        ? `space-y-5 ${deviceType === 'tablet' ? 'px-8' : 'px-5'}`
+                                                                                        : ''
+                                                                            }
+                                                                            style={
+                                                                                index === 0 && hasTourIntroFirst
+                                                                                    ? { height: effectiveHeight, minHeight: effectiveHeight }
+                                                                                    : isHtmlFill
+                                                                                        ? { height: `${effectiveHeight - 60}px`, minHeight: '400px' }
+                                                                                        : {}
+                                                                            }
+                                                                        >
+                                                                            <StopContentBlock
+                                                                                block={block}
+                                                                                mode="view"
+                                                                                language={previewLanguage}
+                                                                                deviceType={deviceType}
+                                                                                tourData={tourData}
+                                                                                allStops={allStops}
+                                                                                displaySettings={displaySettings}
+                                                                                onNavigateToStop={navigateToStop}
+                                                                            />
+                                                                        </div>
+                                                                    );
+                                                                })}
                                                             </div>
                                                         )}
 
