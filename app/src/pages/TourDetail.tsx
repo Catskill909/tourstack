@@ -382,7 +382,19 @@ export function TourDetail() {
 
 
     if (isLoading) {
-        return <div className="p-6 text-center text-[var(--color-text-muted)]">Loading...</div>;
+        return (
+            <div className="flex flex-col items-center justify-center" style={{ minHeight: 'calc(100vh - 120px)' }}>
+                <div className="relative w-12 h-12 mb-4">
+                    <div
+                        className="absolute inset-0 rounded-full border-[3px] border-[var(--color-border)]"
+                    />
+                    <div
+                        className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-[var(--color-accent-primary)] animate-spin"
+                    />
+                </div>
+                <p className="text-sm text-[var(--color-text-muted)] animate-pulse">Loading tour stops…</p>
+            </div>
+        );
     }
 
     if (!tour) {
