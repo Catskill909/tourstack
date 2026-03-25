@@ -111,6 +111,20 @@ export function ImageHotspotEditor({ imageUrl, hotspots, language, availableLang
     const primaryLang = availableLanguages[0] || 'en';
     const otherLangs = availableLanguages.filter(l => l !== primaryLang);
 
+    // Build aggregated content map across all hotspots for language pill status
+    const aggregatedContentMap: { [lang: string]: string } = {};
+    for (const lang of availableLanguages) {
+        const hotspotsWithSource = hotspots.filter(h => h.label?.[primaryLang]?.trim());
+        if (hotspotsWithSource.length === 0) {
+            // No hotspots have source text — nothing to translate
+            continue;
+        }
+        const allHaveTranslation = hotspotsWithSource.every(h => h.label?.[lang]?.trim());
+        if (allHaveTranslation) {
+            aggregatedContentMap[lang] = 'yes';
+        }
+    }
+
     function handleLabelTranslations(translations: { [lang: string]: string }) {
         if (!selectedHotspot) return;
         updateHotspot(selectedHotspot.id, {
@@ -142,12 +156,13 @@ export function ImageHotspotEditor({ imageUrl, hotspots, language, availableLang
                 updatedHotspots[i] = { ...hotspot, label: newLabel };
             }
             onChange(updatedHotspots);
+            setIsTranslatingAll(false);
             setTranslateStatus('success');
+            setTimeout(() => setTranslateStatus('idle'), 3000);
         } catch (error) {
             console.error('Translation failed:', error);
-            setTranslateStatus('error');
-        } finally {
             setIsTranslatingAll(false);
+            setTranslateStatus('error');
             setTimeout(() => setTranslateStatus('idle'), 3000);
         }
     }
@@ -173,12 +188,14 @@ export function ImageHotspotEditor({ imageUrl, hotspots, language, availableLang
                             type="button"
                             onClick={handleTranslateAllLabels}
                             disabled={isTranslatingAll}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${
                                 translateStatus === 'success'
-                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                    ? 'bg-green-500 text-white'
                                     : translateStatus === 'error'
-                                    ? 'bg-red-500/20 text-red-400'
-                                    : 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/20 disabled:opacity-50'
+                                    ? 'bg-red-500/80 text-white'
+                                    : isTranslatingAll
+                                    ? 'bg-[var(--color-accent-primary)]/50 text-white cursor-wait'
+                                    : 'bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/20'
                             }`}
                         >
                             {isTranslatingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : translateStatus === 'success' ? <Check className="w-4 h-4" /> : <Languages className="w-4 h-4" />}
@@ -239,7 +256,7 @@ export function ImageHotspotEditor({ imageUrl, hotspots, language, availableLang
                         availableLanguages={availableLanguages}
                         activeLanguage={activeLanguage}
                         onChange={setActiveLanguage}
-                        contentMap={selectedHotspot?.label || {}}
+                        contentMap={aggregatedContentMap}
                         size="sm"
                         showStatus={true}
                     />
