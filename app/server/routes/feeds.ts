@@ -5,7 +5,7 @@ import { prisma } from '../db.js';
 const router = Router();
 
 // Feed version for schema tracking
-const FEED_VERSION = '1.0';
+const FEED_VERSION = '2.0';
 
 // Query parameter types
 interface FeedQueryParams {
@@ -128,6 +128,7 @@ router.get('/tours/:id/stops', async (req: Request, res: Response) => {
                 language: lang || 'all',
             },
             tour_id: tourData.id,
+            tour_slug: tourData.slug,
             tour_title: localizedTitle,
             total_stops: tourData.stops?.length || 0,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -161,30 +162,31 @@ function parseJsonArray(field: string | null): string[] {
     }
 }
 
-// Helper: Convert image field to proper URL
+// Helper: Convert any media field (image, audio, video) to proper URL
 // Base64 data URIs are NOT included in feeds - they bloat the response
-// In production, images should be stored as file URLs
-function formatImageUrl(imageField: string | null, baseUrl?: string): string | null {
-    if (!imageField) return null;
+function formatMediaUrl(field: string | null, baseUrl?: string): string | null {
+    if (!field) return null;
 
-    // If it's a base64 data URI, return a placeholder or null
-    // Base64 images should NOT be in API feeds - they're too large
-    if (imageField.startsWith('data:')) {
-        return null; // Omit base64 images from feed
+    // Strip base64 data URIs
+    if (field.startsWith('data:')) {
+        return null;
     }
 
-    // If it's already a full URL, return as-is
-    if (imageField.startsWith('http://') || imageField.startsWith('https://')) {
-        return imageField;
+    // Already a full URL — return as-is
+    if (field.startsWith('http://') || field.startsWith('https://')) {
+        return field;
     }
 
-    // If it's a relative path (e.g., /uploads/...), prepend base URL
-    if (imageField.startsWith('/')) {
-        return baseUrl ? `${baseUrl}${imageField}` : imageField;
+    // Relative path (e.g., /uploads/...) — prepend base URL if available
+    if (field.startsWith('/')) {
+        return baseUrl ? `${baseUrl}${field}` : field;
     }
 
-    return imageField;
+    return field;
 }
+
+// Backward-compatible alias
+const formatImageUrl = formatMediaUrl;
 
 // Helper: Format tour for feed output
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -196,10 +198,15 @@ function formatTourForFeed(tour: any, lang?: string, format: string = 'full') {
     const localizedTitle = lang ? { [lang]: title[lang] || title['en'] || '' } : title;
     const localizedDescription = lang ? { [lang]: description[lang] || description['en'] || '' } : description;
 
+    // Parse accessibility once
+    let accessibility = null;
+    try { accessibility = tour.accessibility ? JSON.parse(tour.accessibility) : null; } catch { /* */ }
+
     // Minimal format - just IDs and titles
     if (format === 'minimal') {
         return {
             id: tour.id,
+            slug: tour.slug,
             title: localizedTitle,
             status: tour.status,
             stop_count: tour.stops?.length || 0,
@@ -210,13 +217,18 @@ function formatTourForFeed(tour: any, lang?: string, format: string = 'full') {
     if (format === 'compact') {
         return {
             id: tour.id,
+            slug: tour.slug,
             title: localizedTitle,
             description: localizedDescription,
             hero_image: formatImageUrl(tour.heroImage),
             status: tour.status,
             languages: parseJsonArray(tour.languages),
+            primary_language: tour.primaryLanguage,
             estimated_duration: tour.duration || tour.estimatedDuration,
             difficulty: tour.difficulty,
+            positioning_method: tour.primaryPositioningMethod,
+            accessibility,
+            concierge_enabled: tour.conciergeEnabled ?? false,
             stop_count: tour.stops?.length || 0,
             updated_at: tour.updatedAt.toISOString(),
         };
@@ -225,13 +237,20 @@ function formatTourForFeed(tour: any, lang?: string, format: string = 'full') {
     // Full format - everything
     return {
         id: tour.id,
+        slug: tour.slug,
         title: localizedTitle,
         description: localizedDescription,
         hero_image: formatImageUrl(tour.heroImage),
         status: tour.status,
         languages: parseJsonArray(tour.languages),
+        primary_language: tour.primaryLanguage,
         estimated_duration: tour.duration || tour.estimatedDuration,
         difficulty: tour.difficulty,
+        positioning_method: tour.primaryPositioningMethod,
+        backup_positioning_method: tour.backupPositioningMethod || null,
+        accessibility,
+        concierge_enabled: tour.conciergeEnabled ?? false,
+        published_at: tour.publishedAt ? tour.publishedAt.toISOString() : null,
         created_at: tour.createdAt.toISOString(),
         updated_at: tour.updatedAt.toISOString(),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -295,20 +314,40 @@ function filterLanguageKeys(obj: any, tourLanguages?: string[]): any {
     return filtered;
 }
 
+// Helper: Recursively filter all multilingual fields in any value to tour languages.
+// Walks objects and arrays, applying filterLanguageKeys to every object that looks
+// like a language map (keys are 2-3 char codes). This handles nested structures like
+// accordion items, gallery image captions, map markers, timeline events, etc.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function filterLanguagesDeep(value: any, tourLanguages: string[]): any {
+    if (!value || typeof value !== 'object') return value;
+
+    if (Array.isArray(value)) {
+        return value.map(item => filterLanguagesDeep(item, tourLanguages));
+    }
+
+    // Check if this object itself is a language map
+    const keys = Object.keys(value);
+    const looksLikeLangMap = keys.length > 0 && keys.every(k => /^[a-z]{2,3}$/.test(k));
+    if (looksLikeLangMap) {
+        return filterLanguageKeys(value, tourLanguages);
+    }
+
+    // Otherwise recurse into each property
+    const result: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) {
+        result[k] = filterLanguagesDeep(v, tourLanguages);
+    }
+    return result;
+}
+
 // Helper: Filter all multilingual fields in a content block's data to tour languages
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function filterBlockLanguages(block: any, tourLanguages?: string[]): any {
     if (!block || !tourLanguages) return block;
     const cleaned = { ...block };
     if (cleaned.data && typeof cleaned.data === 'object') {
-        const data = { ...cleaned.data };
-        // Filter known multilingual fields
-        for (const field of ['content', 'title', 'caption', 'credit', 'transcript', 'audioFiles', 'text', 'description', 'question']) {
-            if (data[field] && typeof data[field] === 'object' && !Array.isArray(data[field])) {
-                data[field] = filterLanguageKeys(data[field], tourLanguages);
-            }
-        }
-        cleaned.data = data;
+        cleaned.data = filterLanguagesDeep(cleaned.data, tourLanguages);
     }
     return cleaned;
 }
@@ -360,6 +399,18 @@ function formatStopForFeed(stop: any, lang?: string, tourLanguages?: string[]) {
         contentBlocks = tourLanguages
             ? cleaned.map((b: any) => filterBlockLanguages(b, tourLanguages))
             : cleaned;
+
+        // Resolve timelineGallery audioUrl from audioFiles when language is requested
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        contentBlocks = contentBlocks.map((b: any) => {
+            if (b.type === 'timelineGallery' && b.data?.audioFiles && lang) {
+                const resolved = b.data.audioFiles[lang] || b.data.audioFiles['en'] || b.data.audioUrl;
+                if (resolved) {
+                    return { ...b, data: { ...b.data, audioUrl: formatMediaUrl(resolved) } };
+                }
+            }
+            return b;
+        });
     } catch {
         contentBlocks = [];
     }
@@ -379,15 +430,31 @@ function formatStopForFeed(stop: any, lang?: string, tourLanguages?: string[]) {
         primaryPositioning = null;
     }
 
+    // Parse links
+    let links = [];
+    try { links = stop.links ? JSON.parse(stop.links) : []; } catch { /* */ }
+
+    // Parse accessibility
+    let stopAccessibility = null;
+    try { stopAccessibility = stop.accessibility ? JSON.parse(stop.accessibility) : null; } catch { /* */ }
+
     return {
         id: stop.id,
+        slug: stop.slug,
+        short_code: stop.shortCode || (primaryPositioning?.shortCode ?? null),
+        type: stop.type,
         title: localizedTitle,
         description: localizedDescription,
         hero_image: heroImage,
         order: stop.order,
+        show_title: stop.showTitle ?? true,
+        show_image: stop.showImage ?? true,
+        show_description: stop.showDescription ?? true,
         content_blocks: contentBlocks,
         positioning: positioning,
-        primary_positioning: primaryPositioning, // QR code URL, shortCode, NFC data
+        primary_positioning: primaryPositioning,
+        links,
+        accessibility: stopAccessibility,
         created_at: stop.createdAt.toISOString(),
         updated_at: stop.updatedAt.toISOString(),
     };
