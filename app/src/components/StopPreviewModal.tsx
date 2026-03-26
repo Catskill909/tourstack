@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Smartphone, Tablet, RotateCcw, RotateCw, ZoomIn, ZoomOut, Monitor, MonitorOff, ChevronLeft, MonitorPlay } from 'lucide-react';
 import { StopContentBlock } from './blocks/StopContentBlock';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { DisplaySettingsPanel, type DisplaySettings } from './DisplaySettingsPanel';
+import { type DisplaySettings } from './DisplaySettingsPanel';
 import { ChatDrawer, ChatFloatingButton, KioskChatButton } from './chat/ChatDrawer';
 import type { Stop, Tour, ContentBlock } from '../types';
 
@@ -70,7 +70,7 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
     const [scale, setScale] = useState(0.75);
     const [showStatusBar, setShowStatusBar] = useState(true);
     const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
-    const [displaySettings, setDisplaySettings] = useState<DisplaySettings>({
+    const [displaySettings] = useState<DisplaySettings>({
         showTitles: tourData?.displaySettings?.showTitles ?? true,
         showDescriptions: tourData?.displaySettings?.showDescriptions ?? true,
     });
