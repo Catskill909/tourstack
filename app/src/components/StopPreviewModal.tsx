@@ -826,13 +826,6 @@ export function StopPreviewModal({ stop, tourData, allStops, availableLanguages 
                 )}
             </div>
 
-            {/* Display Settings FAB */}
-            <DisplaySettingsPanel
-                settings={displaySettings}
-                onChange={setDisplaySettings}
-                position="bottom-right"
-            />
-
             {/* Footer */}
             <div
                 className="flex items-center gap-2 py-3 px-4 bg-[var(--color-bg-surface)]/80 backdrop-blur-sm border-t border-[var(--color-border-default)]"
