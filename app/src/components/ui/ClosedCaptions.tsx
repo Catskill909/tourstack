@@ -105,7 +105,7 @@ export function ClosedCaptions({
 
     return (
         <div className={`${padding} bg-black/80 backdrop-blur-sm rounded-lg ${className}`}>
-            <p className={`text-center text-white ${textSize} leading-relaxed`}>
+            <p className={`text-left text-white ${textSize} leading-relaxed line-clamp-3`}>
                 {currentSentence}
             </p>
         </div>

@@ -298,9 +298,9 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
                 )}
             </div>
 
-            {/* Closed Captions - phone only (below image, smaller text) */}
+            {/* Closed Captions - phone only (below image) - its own container */}
             {isPhone && showCaptions && ((data.transcriptWords?.length ?? 0) > 0 || data.transcript?.[language]) && (
-                <div className="px-3 py-2 bg-[var(--color-bg-elevated)] border-b border-[var(--color-border-default)]">
+                <div className="px-3 py-2">
                     <ClosedCaptions
                         words={data.transcript?.[language] ? undefined : data.transcriptWords}
                         transcript={data.transcript?.[language]}
@@ -309,29 +309,12 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
                         isVisible={true}
                         maxWords={12}
                         size="small"
-                        className="bg-transparent"
                     />
                 </div>
             )}
 
-            {/* Caption and Credit - max 5 lines, no wasted space */}
-            <div className="p-4 bg-gradient-to-r from-[var(--color-bg-elevated)] to-[var(--color-bg-surface)]">
-                {currentImage && (
-                    <div className="space-y-1">
-                        <p className="text-[var(--color-text-primary)] font-medium line-clamp-5">
-                            {currentImage.caption?.[language] || currentImage.caption?.en || ''}
-                        </p>
-                        {currentImage.credit?.[language] && (
-                            <p className="text-sm text-[var(--color-text-muted)] italic line-clamp-1">
-                                {currentImage.credit[language]}
-                            </p>
-                        )}
-                    </div>
-                )}
-            </div>
-
-            {/* Custom Audio Player */}
-            <div className="p-4 bg-[var(--color-bg-surface)]">
+            {/* Custom Audio Player - its own container */}
+            <div className="p-4 bg-[var(--color-bg-elevated)] border-t border-[var(--color-border-default)]">
                 {/* Progress bar */}
                 <div
                     className="h-2 bg-[var(--color-bg-hover)] rounded-full cursor-pointer overflow-hidden mb-4"
