@@ -18,76 +18,6 @@ interface ClosedCaptionsProps {
     size?: 'small' | 'normal';
 }
 
-// Helper: Split text into chunks of roughly equal size (~5 lines worth)
-// Handles both Western languages (split by words) and CJK (split by characters)
-function splitIntoChunks(text: string, maxCharsPerChunk: number): string[] {
-    if (!text) return [];
-    
-    // Detect if text contains CJK characters (Chinese, Japanese, Korean)
-    const hasCJK = /[\u4e00-\u9fff\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/.test(text);
-    
-    if (hasCJK) {
-        // For CJK: split by character count, try to break at punctuation
-        const chunks: string[] = [];
-        let remaining = text;
-        
-        while (remaining.length > 0) {
-            if (remaining.length <= maxCharsPerChunk) {
-                chunks.push(remaining.trim());
-                break;
-            }
-            
-            // Find a good break point (punctuation) within the chunk
-            let breakPoint = maxCharsPerChunk;
-            const punctuation = /[。！？，、；：""''（）\.\!\?\,\;\:]/;
-            
-            // Look backwards from maxCharsPerChunk for punctuation
-            for (let i = maxCharsPerChunk; i > maxCharsPerChunk * 0.6; i--) {
-                if (punctuation.test(remaining[i])) {
-                    breakPoint = i + 1;
-                    break;
-                }
-            }
-            
-            chunks.push(remaining.slice(0, breakPoint).trim());
-            remaining = remaining.slice(breakPoint).trim();
-        }
-        
-        return chunks;
-    } else {
-        // For Western languages: split by sentences first, then combine/split to fit
-        const sentenceRegex = /[^.!?]*[.!?]+/g;
-        const sentences = text.match(sentenceRegex) || [text];
-        const chunks: string[] = [];
-        let currentChunk = '';
-        
-        for (const sentence of sentences) {
-            const trimmed = sentence.trim();
-            if (!trimmed) continue;
-            
-            // If adding this sentence would exceed limit, start new chunk
-            if (currentChunk.length + trimmed.length > maxCharsPerChunk && currentChunk.length > 0) {
-                chunks.push(currentChunk.trim());
-                currentChunk = trimmed;
-            } else {
-                currentChunk += (currentChunk ? ' ' : '') + trimmed;
-            }
-            
-            // If current chunk is already too long, split it
-            if (currentChunk.length > maxCharsPerChunk) {
-                chunks.push(currentChunk.trim());
-                currentChunk = '';
-            }
-        }
-        
-        if (currentChunk.trim()) {
-            chunks.push(currentChunk.trim());
-        }
-        
-        return chunks;
-    }
-}
-
 export function ClosedCaptions({
     words,
     transcript,
@@ -98,28 +28,25 @@ export function ClosedCaptions({
     className = '',
     size = 'normal',
 }: ClosedCaptionsProps) {
-    // ~150 chars = ~5 lines on mobile (30 chars per line)
-    // For CJK, use ~75 chars (characters are wider)
-    const maxCharsPerChunk = 150;
-    
     // Build sentences from words (if available) or from transcript text
     const currentSentence = useMemo(() => {
         // If transcript is provided, prefer it (used for translated languages)
         // Only use word-level timestamps if no transcript is provided
         if (transcript && duration > 0) {
-            // Split transcript into consistent-sized chunks
-            const chunks = splitIntoChunks(transcript, maxCharsPerChunk);
+            // Split into sentences - handles Western (.!?) and CJK (。！？) punctuation
+            const sentenceRegex = /[^.!?。！？]*[.!?。！？]+/g;
+            const sentences = transcript.match(sentenceRegex) || [transcript];
             
-            if (chunks.length === 0) return null;
+            if (sentences.length === 0) return null;
             
-            // Calculate which chunk to show based on time
-            const timePerChunk = duration / chunks.length;
-            const chunkIndex = Math.min(
-                Math.floor(currentTime / timePerChunk),
-                chunks.length - 1
+            // Calculate which sentence to show based on time
+            const timePerSentence = duration / sentences.length;
+            const sentenceIndex = Math.min(
+                Math.floor(currentTime / timePerSentence),
+                sentences.length - 1
             );
             
-            return chunks[chunkIndex] || null;
+            return sentences[sentenceIndex]?.trim() || null;
         }
 
         // Fallback: If we have word-level timestamps and no transcript, use them

@@ -11,7 +11,8 @@ interface TimelineGalleryPreviewProps {
 }
 
 export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }: TimelineGalleryPreviewProps) {
-    const isPhone = deviceType === 'phone';
+    const _isPhone = deviceType === 'phone';
+    void _isPhone;
     const [currentIndex, setCurrentIndex] = useState(0);
     const [previousIndex, setPreviousIndex] = useState<number | null>(null); // For true crossfade
     const [isPlaying, setIsPlaying] = useState(false);
@@ -262,7 +263,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
                         <img
                             src={images[previousIndex].url}
                             alt=""
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-cover"
                         />
                     </motion.div>
                 )}
@@ -278,42 +279,14 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
                         <img
                             src={currentImage.url}
                             alt=""
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-cover"
                         />
                     </motion.div>
                 )}
 
-                {/* Closed Captions Overlay - tablet only (overlay on image) */}
-                {!isPhone && showCaptions && ((data.transcriptWords?.length ?? 0) > 0 || data.transcript?.[language]) && (
-                    <div className="absolute bottom-0 left-0 right-0 pb-3 px-4 z-30">
-                        <ClosedCaptions
-                            words={data.transcript?.[language] ? undefined : data.transcriptWords}
-                            transcript={data.transcript?.[language]}
-                            currentTime={currentTime}
-                            duration={data.audioDuration}
-                            isVisible={true}
-                            maxWords={12}
-                        />
-                    </div>
-                )}
             </div>
 
-            {/* Closed Captions - phone only (below image) - its own container */}
-            {isPhone && showCaptions && ((data.transcriptWords?.length ?? 0) > 0 || data.transcript?.[language]) && (
-                <div className="px-3 py-2">
-                    <ClosedCaptions
-                        words={data.transcript?.[language] ? undefined : data.transcriptWords}
-                        transcript={data.transcript?.[language]}
-                        currentTime={currentTime}
-                        duration={data.audioDuration}
-                        isVisible={true}
-                        maxWords={12}
-                        size="small"
-                    />
-                </div>
-            )}
-
-            {/* Custom Audio Player - its own container */}
+            {/* Custom Audio Player - directly under image, never moves */}
             <div className="p-4 bg-[var(--color-bg-elevated)] border-t border-[var(--color-border-default)]">
                 {/* Progress bar */}
                 <div
@@ -361,7 +334,7 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
 
                     <div className="flex items-center gap-2">
                         {/* CC Toggle Button */}
-                        {data.transcriptWords && data.transcriptWords.length > 0 && (
+                        {((data.transcriptWords && data.transcriptWords.length > 0) || data.transcript?.[language]) && (
                             <button
                                 type="button"
                                 onClick={() => setShowCaptions(!showCaptions)}
@@ -388,6 +361,21 @@ export function TimelineGalleryPreview({ data, language, deviceType = 'phone' }:
                     </div>
                 </div>
             </div>
+
+            {/* Captions - BELOW audio player, toggleable via CC button, on by default */}
+            {showCaptions && ((data.transcriptWords?.length ?? 0) > 0 || data.transcript?.[language]) && (
+                <div className="px-4 py-3 bg-[var(--color-bg-surface)] border-t border-[var(--color-border-default)]">
+                    <ClosedCaptions
+                        words={data.transcript?.[language] ? undefined : data.transcriptWords}
+                        transcript={data.transcript?.[language]}
+                        currentTime={currentTime}
+                        duration={data.audioDuration}
+                        isVisible={true}
+                        maxWords={12}
+                        size="small"
+                    />
+                </div>
+            )}
         </div>
     );
 }
