@@ -1,7 +1,7 @@
 # TourStack Handoff Document 📋
 
 **Last Updated**: March 25, 2026
-**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅ | Chatbot UX Unification COMPLETE ✅ | Map Block Upgrade COMPLETE ✅ | Image Block Enhancement COMPLETE ✅ | HTML/Embed Block COMPLETE ✅ | Accordion Block COMPLETE ✅
+**Session Status**: Unified Preview System COMPLETE ✅ | iPad Orientation COMPLETE ✅ | Language Reconciliation COMPLETE ✅ | Session Management COMPLETE ✅ | UX Polish COMPLETE ✅ | Image Map Block COMPLETE ✅ | NFC Tag Pairing Phase 1 COMPLETE ✅ | GPS + Geofencing COMPLETE ✅ | Kiosk Preview COMPLETE ✅ | Database Safety COMPLETE ✅ | Translation Rework COMPLETE ✅ | Chatbot UX Unification COMPLETE ✅ | Map Block Upgrade COMPLETE ✅ | Image Block Enhancement COMPLETE ✅ | HTML/Embed Block COMPLETE ✅ | Accordion Block COMPLETE ✅ | API & Feeds v2.0 COMPLETE ✅
 
 ---
 
@@ -548,6 +548,41 @@ TourStack uses a **modular content block system** where tours and stops are comp
 - `app/src/lib/accordionStyles.ts` — 5 style configs, 16 icon mappings, style option lists
 - `app/src/types/index.ts` — `AccordionBlockData`, `AccordionItem`, `AccordionIcon`, `AccordionStyle` types
 - `docs/accordion-block-dev.md` — Full development documentation
+
+### Phase 34: API & Feeds v2.0 ✅ (March 25, 2026)
+
+**Feed v2.0 Upgrade:**
+- [x] **Feed Audit & Fixes** — Full audit of all JSON endpoints (`docs/json-audit.md`), added missing fields (`slug`, `primaryLanguage`, `primary_positioning`, accessibility fields)
+- [x] **Base URL Injection** — All media URLs resolve to absolute URLs via `getBaseUrl(req)` + `resolveUrlsDeep()` recursive resolution
+- [x] **Language Filtering** — `cleanContentBlocks()` recursively filters content block languages to match `tour.languages`, strips orphan translations
+- [x] **Base64 Stripping** — `stripBase64Deep()` removes data URIs from all feed responses to keep payloads small
+- [x] **snake_case Normalization** — Feed API uses consistent snake_case naming (vs camelCase in internal APIs)
+- [x] **Three Output Formats** — `?format=minimal|compact|full` controls response detail level
+- [x] **OpenAPI 3.0 Spec** — Static spec at `docs/openapi-feeds.yaml` served live at `GET /api/feeds/openapi.json`
+- [x] **API & Feeds Admin Page** — Full admin UI with Overview (stats), Feeds (per-tour endpoints), and Explorer (live response browser) tabs
+- [x] **Explorer Tab** — Parses live feed responses, displays tours and stops in collapsible tree with mandatory/optional badges
+- [x] **Raw JSON Toggle** — Collapsible raw JSON viewer in Explorer tab
+
+**API Architecture:**
+
+| API | Audience | Naming | Auth |
+|-----|----------|--------|------|
+| `/api/tours/*`, `/api/stops/*` | Admin CMS (internal) | camelCase | Session |
+| `/api/visitor/*` | Visitor frontend (internal) | camelCase | Public |
+| `/api/feeds/*` | External apps, integrations | snake_case | Session |
+
+**Feed Endpoints:**
+- `GET /api/feeds/tours` — List tours (filterable by status, language, format)
+- `GET /api/feeds/tours/:id` — Single tour with all stops and content blocks
+- `GET /api/feeds/tours/:id/stops` — Stops only for a tour
+- `GET /api/feeds/openapi.json` — OpenAPI 3.0 specification
+
+> **Key Files:**
+> - `app/server/routes/feeds.ts` — Feed API routes, formatting, base URL injection, language filtering
+> - `app/src/pages/ApiFeeds.tsx` — API & Feeds admin page (Overview, Feeds, Explorer tabs)
+> - `docs/openapi-feeds.yaml` — OpenAPI 3.0 spec covering all feed endpoints and 17 content block types
+> - `docs/json-audit.md` — Full audit of all JSON endpoints
+> - `docs/json-feed-next-steps.md` — Implementation plan and decisions
 
 ### Phase 28: Image Map Block ✅ (March 10, 2026)
 - [x] **New Block Type** - `imageMap` content block for indoor floor plans
@@ -1173,6 +1208,11 @@ audioFiles?: { [lang: string]: string }; // Per-language audio URLs
 | Express Server | `app/server/index.ts` |
 | Media Upload | `app/server/routes/media.ts` |
 | Stops API | `app/server/routes/stops.ts` |
+| **API & Feeds** | |
+| Feed API Routes | `app/server/routes/feeds.ts` |
+| API & Feeds Admin Page | `app/src/pages/ApiFeeds.tsx` |
+| OpenAPI 3.0 Spec | `docs/openapi-feeds.yaml` |
+| Feed Audit | `docs/json-audit.md` |
 | **Timeline Gallery** | |
 | Editor Modal | `app/src/components/blocks/TimelineGalleryEditorModal.tsx` |
 | Waveform | `app/src/components/blocks/AudioWaveform.tsx` |

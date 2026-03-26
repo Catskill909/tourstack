@@ -79,6 +79,7 @@ When museum staff access visitor pages, they see:
 | Phase 31: Image Block Enhancement | ✅ Complete |
 | Phase 32: HTML / Embed Block | ✅ Complete |
 | Phase 33: Accordion Block | ✅ Complete |
+| Phase 34: API & Feeds v2.0 | ✅ Complete |
 | Phase 26.2: Per-Tour AI Concierge | 🎯 NEXT |
 
 ### Tour Block (Phase 16) - COMPLETE ✅
@@ -490,6 +491,37 @@ Collections → AI Analyze → Translate → Save → Auto-Sync → Media Librar
 - `accordionStyles.ts` - 5 style configs, 16 icon mappings
 - `types/index.ts` - `AccordionBlockData`, `AccordionItem`, `AccordionIcon`, `AccordionStyle`
 - `docs/accordion-block-dev.md` - Full development documentation
+
+### API & Feeds v2.0 (Phase 34) - COMPLETE ✅ (March 25, 2026)
+
+**New Feature:** Public JSON feed API for external app integrations, with admin UI for browsing feeds and an OpenAPI 3.0 specification.
+
+| Feature | Description |
+|---------|-------------|
+| **Feed v2.0** | Versioned JSON feed with `slug`, `primaryLanguage`, `primary_positioning`, accessibility fields |
+| **Base URL Injection** | All media URLs resolved to absolute URLs via `getBaseUrl(req)` + recursive `resolveUrlsDeep()` |
+| **Language Filtering** | `?lang=es` filters content to single language with `en` fallback; recursive block-level filtering |
+| **Base64 Stripping** | `stripBase64Deep()` removes data URIs from all feed responses |
+| **Three Output Formats** | `?format=minimal` (list), `compact` (with stops), `full` (with content blocks) |
+| **OpenAPI 3.0 Spec** | Static spec at `docs/openapi-feeds.yaml`, served live at `/api/feeds/openapi.json` |
+| **Admin Page** | API & Feeds page with Overview (stats), Feeds (per-tour endpoints), Explorer (live response browser) tabs |
+| **Explorer Tab** | Parses live feed, displays tours/stops in collapsible tree with mandatory/optional badges |
+| **snake_case API** | Feed API uses snake_case (external contract), separate from camelCase internal APIs |
+
+**API Architecture:**
+
+| API | Audience | Naming | Auth |
+|-----|----------|--------|------|
+| `/api/tours/*`, `/api/stops/*` | Admin CMS | camelCase | Session |
+| `/api/visitor/*` | Visitor frontend | camelCase | Public |
+| `/api/feeds/*` | External apps | snake_case | Session |
+
+**Files:**
+- `app/server/routes/feeds.ts` - Feed API routes, formatting, URL injection, language filtering
+- `app/src/pages/ApiFeeds.tsx` - Admin page (Overview, Feeds, Explorer tabs)
+- `docs/openapi-feeds.yaml` - OpenAPI 3.0 spec (all endpoints, 17 content block types)
+- `docs/json-audit.md` - Full endpoint audit
+- `docs/json-feed-next-steps.md` - Implementation plan and decisions
 
 ---
 

@@ -92,6 +92,7 @@ npm run start
 - **Timeline Gallery**: Audio-synced image galleries with **thumbnail markers** on waveform
 - **Multilingual**: All content supports multiple languages with Magic Translate AI
 - **JSON Export**: Portable tour data for mobile apps and backup
+- **API & Feeds v2.0**: Public JSON feed API with OpenAPI 3.0 spec, three output formats (minimal/compact/full), language filtering, absolute media URLs, and admin Explorer UI
 
 ## 📁 Project Structure
 
@@ -144,6 +145,8 @@ TourStack/
 | [docs/ai-chatbot-documents-dev.md](./docs/ai-chatbot-documents-dev.md) | AI Chatbot & Documents development |
 | [docs/html-block-dev.md](./docs/html-block-dev.md) | HTML / Embed block development |
 | [docs/accordion-block-dev.md](./docs/accordion-block-dev.md) | Accordion block development |
+| [docs/openapi-feeds.yaml](./docs/openapi-feeds.yaml) | OpenAPI 3.0 spec for Feed API |
+| [docs/json-audit.md](./docs/json-audit.md) | JSON endpoint audit |
 | [docs/ELEVENLABS-VOICES-ISSUE.md](./docs/ELEVENLABS-VOICES-ISSUE.md) | ElevenLabs voice API limitations |
 | [tourstack.md](./tourstack.md) | Full scope reference |
 
