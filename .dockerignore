@@ -24,6 +24,7 @@ app/uploads/**
 
 # Documentation (not needed in image)
 docs/
+!docs/openapi-feeds.yaml
 *.md
 !app/README.md
 
