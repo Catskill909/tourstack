@@ -1,21 +1,21 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { prisma } from '../db.js';
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 
 const router = Router();
 
 // GET /api/feeds/openapi.json - Serve OpenAPI spec
 router.get('/openapi.json', (_req: Request, res: Response) => {
     try {
-        const specPath = join(__dirname, '../../../docs/openapi-feeds.yaml');
+        // Production: docs/ is at cwd (WORKDIR /app)
+        // Local dev: cwd is app/, so docs/ is one level up
+        let specPath = join(process.cwd(), 'docs/openapi-feeds.yaml');
+        if (!existsSync(specPath)) {
+            specPath = join(process.cwd(), '../docs/openapi-feeds.yaml');
+        }
         const yaml = readFileSync(specPath, 'utf-8');
-        // Return as YAML with correct content type
         res.setHeader('Content-Type', 'text/yaml; charset=utf-8');
         res.send(yaml);
     } catch {

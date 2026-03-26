@@ -48,6 +48,9 @@ COPY --from=builder /app/server ./server
 # Copy generated Prisma client
 COPY --from=builder /app/src/generated ./src/generated
 
+# Copy OpenAPI spec
+COPY docs/openapi-feeds.yaml ./docs/openapi-feeds.yaml
+
 # Copy startup script
 COPY --from=builder /app/scripts ./scripts
 RUN chmod +x ./scripts/start.sh
