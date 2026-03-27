@@ -621,7 +621,7 @@ export interface TourBlockData {
 }
 
 // Stop List Block - curated list of stops displayed as visual cards
-export type StopListLayout = 'card' | 'large-card' | 'compact-list' | 'full-bleed';
+export type StopListLayout = 'card' | 'card-left' | 'large-card' | 'compact-list' | 'full-bleed' | 'numbered' | 'overlay' | 'minimal' | 'timeline';
 
 export interface StopListBlockData {
   stopIds: string[];

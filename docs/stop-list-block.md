@@ -305,7 +305,7 @@ interface StopListBlockPreviewProps {
 └────────────────────────────────────┘
 ```
 
-- Always 1 column (list is inherently vertical)
+- Phone: 1 column (list is inherently vertical), Tablet: 2-column grid
 - Circular thumbnail: `w-12 h-12 rounded-full object-cover`
 - Dividers between items: `border-b border-[var(--color-border-default)]`
 - On tablet: items may show additional info or larger thumbnails
@@ -398,8 +398,8 @@ Clicking a stop in admin preview loads that stop inside the simulator frame:
 ```typescript
 // Uses isTablet prop only — CSS breakpoints don't work in scaled preview frames
 const getGridClass = () => {
-  if (data.layout === 'compact-list') return 'grid grid-cols-1 gap-0';
   if (isTablet) return 'grid grid-cols-2 gap-3';
+  if (data.layout === 'compact-list') return 'grid grid-cols-1 gap-0';
   return 'grid grid-cols-1 gap-3';
 };
 ```
@@ -562,8 +562,8 @@ className={isTablet ? 'text-sm' : 'text-xs'}
 12. Add responsive grid for visitor pages (CSS breakpoints)
 13. Test in StopPreviewModal (phone + tablet device frames)
 
-### Phase 4: Future Templates
-14. Additional layout templates (timeline-style, map-integrated, etc.)
+### Phase 4: Future Templates & Enhancements
+14. Implement new template variants (see §16 Brainstorm below)
 15. Filtering/search within stop list
 16. Animated transitions between states
 
@@ -686,3 +686,68 @@ In `VisitorStop.tsx`, the stop list block needs to trigger navigation:
 - [x] Block saves and loads correctly (JSON round-trip)
 - [x] TypeScript compiles without errors (`npm run typecheck`)
 - [x] Block renders in StopPreviewModal (both phone and tablet frames)
+
+---
+
+## 16. All Templates Reference (9 total)
+
+> **Status:** All 9 templates implemented. Template selector uses a 3×3 grid.
+
+### Template Catalog
+
+| # | Layout Key | Name | Image | Grid (phone) | Grid (tablet) | Notes |
+|---|-----------|------|-------|-------------|--------------|-------|
+| 1 | `card` | Card | Thumbnail right | 1-col, gap-3 | 2-col | Default — text left, image right |
+| 2 | `card-left` | Card Left | Thumbnail left | 1-col, gap-3 | 2-col | Mirror of Card — image left, text right |
+| 3 | `large-card` | Large Card | Full-width above | 1-col, gap-3 | 2-col | Vertical scroll, high visual impact |
+| 4 | `compact-list` | Compact | Small thumb left | 1-col, gap-0 | 2-col | Dense list rows with border dividers |
+| 5 | `full-bleed` | Full Bleed | Edge-to-edge bg | 1-col, gap-3 | 2-col | `aspect-[3/4]`, gradient overlay, cinematic |
+| 6 | `overlay` | Overlay | Text over image | 1-col, gap-3 | 2-col | `aspect-[16/10]`, rounded cards, gradient overlay |
+| 7 | `numbered` | Numbered | None | 1-col, gap-0 | 2-col | Large accent-colored number, no image, typographic |
+| 8 | `minimal` | Minimal | None | 1-col, gap-0 | 2-col | Text only, table-of-contents style, subtle dividers |
+| 9 | `timeline` | Timeline | Small thumb right | 1-col, gap-0 | **1-col** (always) | Vertical rail with accent dots + connecting line |
+
+### Template Groups
+
+**Card Variants** (image + text in bordered cards):
+- `card` — image right
+- `card-left` — image left
+
+**Visual / Image-Forward** (large images as primary element):
+- `large-card` — image above text, separate sections
+- `full-bleed` — tall cinematic images, text overlaid at bottom
+- `overlay` — shorter landscape images, text overlaid, rounded corners
+
+**List / Text-Forward** (dense, scannable, minimal visuals):
+- `compact-list` — small thumbnails, dense rows
+- `numbered` — large stop numbers, no images
+- `minimal` — text only, table of contents
+
+**Structural** (unique layout pattern):
+- `timeline` — vertical connecting line with nodes, always 1-col
+
+### Grid Logic
+
+```typescript
+const getGridClass = () => {
+  if (data.layout === 'timeline') return 'grid grid-cols-1 gap-0';  // always 1-col
+  if (isTablet) return 'grid grid-cols-2 gap-3';                     // all others: 2-col on tablet
+  if (data.layout === 'compact-list' || data.layout === 'numbered' || data.layout === 'minimal')
+    return 'grid grid-cols-1 gap-0';                                  // list-style: no gap on phone
+  return 'grid grid-cols-1 gap-3';                                    // card-style: gap on phone
+};
+```
+
+**Why timeline is always 1-col:** The vertical rail (accent dot + connecting line) runs between items. Splitting into 2 columns would break the visual continuity.
+
+### Editor UI
+
+Template selector uses a **3×3 grid** (previously 2×2) with compact button sizing:
+- Icon + label on first line
+- Description text below in `text-[10px]`
+- Active state: accent border + accent bg/10
+
+### Future Candidates (not implemented)
+
+#### Hero Spotlight (`hero`)
+First stop gets a large hero card (full-width image, prominent title). Remaining stops render in a smaller grid below. **Deferred** — the Tour Block and block image already provide hero functionality at the stop level.

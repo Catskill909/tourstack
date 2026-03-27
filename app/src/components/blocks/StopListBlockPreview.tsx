@@ -89,8 +89,9 @@ export function StopListBlockPreview({
     // Determine grid columns based on layout and device
     // Uses isTablet prop — CSS breakpoints don't work in scaled preview frames
     const getGridClass = () => {
-        if (data.layout === 'compact-list') return 'grid grid-cols-1 gap-0';
+        if (data.layout === 'timeline') return 'grid grid-cols-1 gap-0';
         if (isTablet) return 'grid grid-cols-2 gap-3';
+        if (data.layout === 'compact-list' || data.layout === 'numbered' || data.layout === 'minimal') return 'grid grid-cols-1 gap-0';
         return 'grid grid-cols-1 gap-3';
     };
 
@@ -277,7 +278,169 @@ function StopCard({
                 </Wrapper>
             );
 
-        // Default: 'card' layout
+        case 'card-left':
+            return (
+                <Wrapper
+                    {...wrapperProps}
+                    className={`w-full flex items-start gap-3 rounded-xl bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] overflow-hidden transition-all ${isTablet ? 'p-3' : 'p-2.5'} ${isClickable ? 'hover:border-[var(--color-accent-primary)]/50 hover:shadow-lg cursor-pointer text-left' : ''}`}
+                >
+                    <img
+                        src={imageUrl}
+                        alt={title}
+                        className={`rounded-lg object-cover flex-shrink-0 ${isTablet ? 'w-24 h-24' : 'w-20 h-20'}`}
+                    />
+                    <div className="flex-1 min-w-0">
+                        {showStopNumbers && (
+                            <span className={`text-[var(--color-accent-primary)] font-semibold tracking-[0.15em] uppercase ${isTablet ? 'text-xs' : 'text-[10px]'}`}>
+                                Stop {stopNumber}
+                            </span>
+                        )}
+                        <h3 className={`font-semibold text-[var(--color-text-primary)] ${isTablet ? 'text-lg mt-1' : 'text-base mt-0.5'}`}>
+                            {title}
+                        </h3>
+                        {showDescription && description && (
+                            <p className={`text-[var(--color-text-secondary)] mt-0.5 line-clamp-2 ${isTablet ? 'text-sm' : 'text-xs'}`}>
+                                {description}
+                            </p>
+                        )}
+                        {showDuration && duration && (
+                            <span className="flex items-center gap-1 text-[var(--color-text-muted)] text-xs mt-2">
+                                <Clock className="w-3 h-3" />
+                                {duration} MINS
+                            </span>
+                        )}
+                    </div>
+                </Wrapper>
+            );
+
+        case 'numbered':
+            return (
+                <Wrapper
+                    {...wrapperProps}
+                    className={`w-full flex items-center gap-4 px-3 py-3.5 text-left border-b border-[var(--color-border-default)] transition-colors ${isClickable ? 'hover:bg-[var(--color-bg-hover)] cursor-pointer' : ''}`}
+                >
+                    <span className={`font-bold text-[var(--color-accent-primary)] flex-shrink-0 tabular-nums ${isTablet ? 'text-3xl w-12' : 'text-2xl w-10'}`}>
+                        {stopNumber}
+                    </span>
+                    <div className="flex-1 min-w-0 text-left">
+                        <h3 className={`font-semibold text-[var(--color-text-primary)] ${isTablet ? 'text-base' : 'text-sm'}`}>
+                            {title}
+                        </h3>
+                        {showDescription && description && (
+                            <p className="text-[var(--color-text-secondary)] text-xs truncate mt-0.5">{description}</p>
+                        )}
+                    </div>
+                    {showDuration && duration && (
+                        <span className="flex items-center gap-1 text-[var(--color-text-muted)] text-xs flex-shrink-0">
+                            <Clock className="w-3 h-3" />
+                            {duration} MINS
+                        </span>
+                    )}
+                    {isClickable && <ChevronRight className="w-4 h-4 text-[var(--color-text-muted)] flex-shrink-0" />}
+                </Wrapper>
+            );
+
+        case 'overlay':
+            return (
+                <Wrapper
+                    {...wrapperProps}
+                    className={`block w-full text-left rounded-xl overflow-hidden relative transition-all ${isClickable ? 'hover:shadow-lg cursor-pointer' : ''}`}
+                >
+                    <div className="aspect-[16/10] relative">
+                        <img src={imageUrl} alt={title} className="absolute inset-0 w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                        <div className={`absolute bottom-0 left-0 right-0 ${isTablet ? 'p-4' : 'p-3'}`}>
+                            {showStopNumbers && (
+                                <span className={`text-[var(--color-accent-primary)] font-semibold tracking-[0.15em] uppercase ${isTablet ? 'text-xs' : 'text-[10px]'}`}>
+                                    Stop {stopNumber}
+                                </span>
+                            )}
+                            <h3 className={`font-bold text-white ${isTablet ? 'text-lg mt-0.5' : 'text-base mt-0.5'}`}>
+                                {title}
+                            </h3>
+                            {showDescription && description && (
+                                <p className="text-white/70 text-xs mt-0.5 line-clamp-1">{description}</p>
+                            )}
+                            {showDuration && duration && (
+                                <span className="flex items-center gap-1 text-white/60 text-xs mt-1">
+                                    <Clock className="w-3 h-3" />
+                                    {duration} MINS
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </Wrapper>
+            );
+
+        case 'minimal':
+            return (
+                <Wrapper
+                    {...wrapperProps}
+                    className={`w-full text-left px-1 py-3 border-b border-[var(--color-border-default)]/50 transition-colors ${isClickable ? 'hover:bg-[var(--color-bg-hover)] cursor-pointer' : ''}`}
+                >
+                    {showStopNumbers && (
+                        <span className={`text-[var(--color-accent-primary)] font-semibold tracking-[0.15em] uppercase ${isTablet ? 'text-xs' : 'text-[10px]'}`}>
+                            Stop {stopNumber}
+                        </span>
+                    )}
+                    <h3 className={`font-medium text-[var(--color-text-primary)] ${isTablet ? 'text-base' : 'text-sm'} ${showStopNumbers ? 'mt-0.5' : ''}`}>
+                        {title}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-0.5">
+                        {showDescription && description && (
+                            <p className="text-[var(--color-text-secondary)] text-xs truncate flex-1">{description}</p>
+                        )}
+                        {showDuration && duration && (
+                            <span className="flex items-center gap-1 text-[var(--color-text-muted)] text-xs flex-shrink-0">
+                                <Clock className="w-3 h-3" />
+                                {duration}m
+                            </span>
+                        )}
+                    </div>
+                </Wrapper>
+            );
+
+        case 'timeline':
+            return (
+                <Wrapper
+                    {...wrapperProps}
+                    className={`w-full flex text-left transition-colors ${isClickable ? 'hover:bg-[var(--color-bg-hover)]/50 cursor-pointer' : ''}`}
+                >
+                    {/* Timeline rail */}
+                    <div className="flex flex-col items-center flex-shrink-0 w-8 mr-3">
+                        <div className={`w-3 h-3 rounded-full bg-[var(--color-accent-primary)] flex-shrink-0 ${index === 0 ? 'mt-1' : ''}`} />
+                        <div className="w-0.5 flex-1 bg-[var(--color-border-default)]" />
+                    </div>
+                    {/* Content */}
+                    <div className={`flex-1 min-w-0 pb-5 ${index === 0 ? '' : ''}`}>
+                        {showStopNumbers && (
+                            <span className={`text-[var(--color-accent-primary)] font-semibold tracking-[0.15em] uppercase ${isTablet ? 'text-xs' : 'text-[10px]'}`}>
+                                Stop {stopNumber}
+                            </span>
+                        )}
+                        <h3 className={`font-semibold text-[var(--color-text-primary)] ${isTablet ? 'text-base' : 'text-sm'} ${showStopNumbers ? 'mt-0.5' : ''}`}>
+                            {title}
+                        </h3>
+                        {showDescription && description && (
+                            <p className="text-[var(--color-text-secondary)] text-xs mt-0.5 line-clamp-2">{description}</p>
+                        )}
+                        {showDuration && duration && (
+                            <span className="flex items-center gap-1 text-[var(--color-text-muted)] text-xs mt-1">
+                                <Clock className="w-3 h-3" />
+                                {duration} MINS
+                            </span>
+                        )}
+                    </div>
+                    {/* Optional thumbnail */}
+                    <img
+                        src={imageUrl}
+                        alt={title}
+                        className={`rounded-lg object-cover flex-shrink-0 self-start mt-1 ${isTablet ? 'w-16 h-16' : 'w-12 h-12'}`}
+                    />
+                </Wrapper>
+            );
+
+        // Default: 'card' layout (image right)
         default:
             return (
                 <Wrapper

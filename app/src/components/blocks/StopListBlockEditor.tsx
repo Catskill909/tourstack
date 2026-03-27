@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { GripVertical, X, Check, LayoutGrid, LayoutList, Rows3, Maximize2 } from 'lucide-react';
+import { GripVertical, X, Check, LayoutGrid, LayoutList, Rows3, Maximize2, PanelLeft, ListOrdered, Layers, AlignLeft, GitCommitVertical } from 'lucide-react';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { MagicTranslateButton } from '../MagicTranslateButton';
 import { BlockMetadataEditor } from './BlockMetadataEditor';
@@ -18,10 +18,15 @@ interface StopListBlockEditorProps {
 }
 
 const LAYOUT_OPTIONS: { value: StopListLayout; label: string; description: string; icon: typeof LayoutGrid }[] = [
-    { value: 'card', label: 'Card', description: 'Image thumbnail with info', icon: LayoutGrid },
+    { value: 'card', label: 'Card', description: 'Image right, text left', icon: LayoutGrid },
+    { value: 'card-left', label: 'Card Left', description: 'Image left, text right', icon: PanelLeft },
     { value: 'large-card', label: 'Large Card', description: 'Full-width image above text', icon: Rows3 },
     { value: 'compact-list', label: 'Compact', description: 'Small thumbnails, dense list', icon: LayoutList },
     { value: 'full-bleed', label: 'Full Bleed', description: 'Edge-to-edge cinematic', icon: Maximize2 },
+    { value: 'overlay', label: 'Overlay', description: 'Text over image, rounded cards', icon: Layers },
+    { value: 'numbered', label: 'Numbered', description: 'Large numbers, no images', icon: ListOrdered },
+    { value: 'minimal', label: 'Minimal', description: 'Text only, table of contents', icon: AlignLeft },
+    { value: 'timeline', label: 'Timeline', description: 'Vertical timeline with line', icon: GitCommitVertical },
 ];
 
 function getStopImageUrl(stop: Stop): string {
@@ -136,7 +141,7 @@ export function StopListBlockEditor({
                 <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">
                     Layout Template
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                     {LAYOUT_OPTIONS.map((option) => {
                         const Icon = option.icon;
                         return (
@@ -144,16 +149,16 @@ export function StopListBlockEditor({
                                 key={option.value}
                                 type="button"
                                 onClick={() => onChange({ ...data, layout: option.value })}
-                                className={`p-3 rounded-lg border text-left transition-all ${data.layout === option.value
+                                className={`p-2.5 rounded-lg border text-left transition-all ${data.layout === option.value
                                     ? 'border-[var(--color-accent-primary)] bg-[var(--color-accent-primary)]/10'
                                     : 'border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)]/50'
                                     }`}
                             >
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Icon className={`w-4 h-4 ${data.layout === option.value ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-text-muted)]'}`} />
-                                    <span className="text-sm font-medium text-[var(--color-text-primary)]">{option.label}</span>
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                    <Icon className={`w-3.5 h-3.5 ${data.layout === option.value ? 'text-[var(--color-accent-primary)]' : 'text-[var(--color-text-muted)]'}`} />
+                                    <span className="text-xs font-medium text-[var(--color-text-primary)]">{option.label}</span>
                                 </div>
-                                <div className="text-xs text-[var(--color-text-muted)]">{option.description}</div>
+                                <div className="text-[10px] text-[var(--color-text-muted)] leading-tight">{option.description}</div>
                             </button>
                         );
                     })}
