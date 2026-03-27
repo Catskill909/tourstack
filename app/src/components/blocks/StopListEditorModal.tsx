@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
-import { GripVertical, X, Check, LayoutGrid, LayoutList, Rows3, Maximize2, PanelLeft, ListOrdered, Layers, AlignLeft, GitCommitVertical, Eye } from 'lucide-react';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { GripVertical, X, Check, LayoutGrid, LayoutList, Rows3, Maximize2, PanelLeft, ListOrdered, Layers, AlignLeft, GitCommitVertical, Eye, Save, AlertTriangle } from 'lucide-react';
 import { LanguageSwitcher } from '../LanguageSwitcher';
 import { MagicTranslateButton } from '../MagicTranslateButton';
 import { BlockMetadataEditor } from './BlockMetadataEditor';
@@ -19,6 +19,7 @@ interface StopListEditorModalProps {
     allStops?: Stop[];
     onChange: (data: StopListBlockData) => void;
     onClose: () => void;
+    onSave?: (shouldClose: boolean) => void;
 }
 
 const LAYOUT_OPTIONS: { value: StopListLayout; label: string; description: string; icon: typeof LayoutGrid }[] = [
@@ -58,9 +59,29 @@ export function StopListEditorModal({
     allStops = [],
     onChange,
     onClose,
+    onSave,
 }: StopListEditorModalProps) {
     const [activeHeadingLang, setActiveHeadingLang] = useState(language);
     const [showStopPreview, setShowStopPreview] = useState(false);
+    const [showSaveMenu, setShowSaveMenu] = useState(false);
+    const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+
+    // Dirty tracking: snapshot data at mount and after each save
+    const savedDataRef = useRef(JSON.stringify(data));
+    const isDirty = JSON.stringify(data) !== savedDataRef.current;
+
+    const handleSaveAndReset = useCallback((shouldClose: boolean) => {
+        if (onSave) onSave(shouldClose);
+        savedDataRef.current = JSON.stringify(data);
+    }, [onSave, data]);
+
+    const handleClose = useCallback(() => {
+        if (isDirty) {
+            setShowUnsavedWarning(true);
+        } else {
+            onClose();
+        }
+    }, [isDirty, onClose]);
     const [activeSubheadingLang, setActiveSubheadingLang] = useState(language);
     const [activeCtaLang, setActiveCtaLang] = useState(language);
     const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -162,11 +183,54 @@ export function StopListEditorModal({
                             Preview
                         </button>
                     )}
+                    {isDirty && (
+                        <span className="text-xs text-yellow-500 font-medium">Unsaved changes</span>
+                    )}
+                    {/* Save button with dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowSaveMenu(!showSaveMenu)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${isDirty
+                                ? 'bg-yellow-500 hover:bg-yellow-600 text-black font-bold animate-pulse'
+                                : 'bg-[var(--color-accent-primary)] hover:bg-[var(--color-accent-primary)]/90 text-white'
+                            }`}
+                        >
+                            <Save className="w-4 h-4" />
+                            Save
+                        </button>
+                        {showSaveMenu && (
+                            <>
+                                <div className="fixed inset-0 z-10" onClick={() => setShowSaveMenu(false)} />
+                                <div className="absolute right-0 top-full mt-2 z-20 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl shadow-2xl overflow-hidden min-w-[220px]">
+                                    <button
+                                        onClick={() => {
+                                            handleSaveAndReset(false);
+                                            setShowSaveMenu(false);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors"
+                                    >
+                                        <Save className="w-4 h-4 text-[var(--color-accent-primary)]" />
+                                        Save & Continue Editing
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            handleSaveAndReset(true);
+                                            setShowSaveMenu(false);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition-colors border-t border-[var(--color-border-default)]"
+                                    >
+                                        <X className="w-4 h-4 text-green-500" />
+                                        Save & Exit
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                     <button
-                        onClick={onClose}
-                        className="flex items-center gap-2 px-5 py-2 bg-[var(--color-accent-primary)] text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+                        onClick={handleClose}
+                        className="p-2 hover:bg-white/10 rounded-lg text-gray-400"
                     >
-                        Done
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
             </div>
@@ -498,6 +562,57 @@ export function StopListEditorModal({
                     availableLanguages={availableLanguages}
                     onClose={() => setShowStopPreview(false)}
                 />
+            )}
+
+            {/* Unsaved Changes Warning Modal */}
+            {showUnsavedWarning && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                    <div className="bg-[var(--color-bg-surface)] rounded-2xl border border-yellow-500/50 p-6 w-full max-w-md shadow-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-3 rounded-full bg-yellow-500/10">
+                                <AlertTriangle className="w-8 h-8 text-yellow-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Unsaved Changes</h3>
+                                <p className="text-sm text-[var(--color-text-muted)]">
+                                    You have unsaved changes
+                                </p>
+                            </div>
+                        </div>
+
+                        <p className="text-[var(--color-text-secondary)] mb-6">
+                            Do you want to save your changes before closing?
+                        </p>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowUnsavedWarning(false)}
+                                className="flex-1 px-4 py-2.5 border border-[var(--color-border-default)] text-[var(--color-text-secondary)] rounded-xl hover:bg-[var(--color-bg-hover)] transition-colors font-medium"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowUnsavedWarning(false);
+                                    onClose();
+                                }}
+                                className="flex-1 px-4 py-2.5 bg-red-500/10 text-red-500 border border-red-500/30 rounded-xl hover:bg-red-500/20 transition-colors font-medium"
+                            >
+                                Discard
+                            </button>
+                            <button
+                                onClick={() => {
+                                    handleSaveAndReset(true);
+                                    setShowUnsavedWarning(false);
+                                }}
+                                className="flex-1 px-4 py-2.5 bg-[var(--color-accent-primary)] text-white rounded-xl hover:bg-[var(--color-accent-primary)]/90 transition-colors font-medium flex items-center justify-center gap-2"
+                            >
+                                <Save className="w-4 h-4" />
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

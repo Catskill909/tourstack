@@ -1075,6 +1075,7 @@ export function StopEditor({ stop, tourData, allStops = [], availableLanguages =
                             allStops={allStops}
                             onChange={updateBlock}
                             onClose={closeEditor}
+                            onSave={saveFromBlockEditor}
                         />
                     );
                 }
