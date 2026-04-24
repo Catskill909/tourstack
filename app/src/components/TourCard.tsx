@@ -40,28 +40,62 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
 
     const [showPreviewChoice, setShowPreviewChoice] = useState(false);
     const [tourStops, setTourStops] = useState<Stop[]>([]);
+    const [isLoadingStops, setIsLoadingStops] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    // Dedupe prefetch + click so hovering then clicking reuses the same request
+    const stopsPromiseRef = useRef<Promise<Stop[]> | null>(null);
+
+    function fetchStopsOnce(): Promise<Stop[]> {
+        if (!stopsPromiseRef.current) {
+            stopsPromiseRef.current = fetch(`/api/stops/${tour.id}`)
+                .then(r => {
+                    if (!r.ok) throw new Error('Failed to fetch stops');
+                    return r.json() as Promise<Stop[]>;
+                })
+                .catch(err => {
+                    stopsPromiseRef.current = null; // allow retry
+                    throw err;
+                });
+        }
+        return stopsPromiseRef.current;
+    }
+
+    // Warm the cache on hover/mousedown so the click feels instant
+    function handlePrefetchStops() {
+        fetchStopsOnce().catch(() => { /* silent — real error surfaces on click */ });
+    }
 
     // Open unified preview choice modal
-    async function handlePreview(e: React.MouseEvent) {
+    function handlePreview(e: React.MouseEvent) {
         e.stopPropagation(); // Prevent card click navigation
 
-        try {
-            const response = await fetch(`/api/stops/${tour.id}`);
-            if (!response.ok) throw new Error('Failed to fetch stops');
-            const stops = await response.json();
+        // Open modal immediately for instant UX; buttons show a spinner until stops arrive
+        setShowPreviewChoice(true);
+        setIsLoadingStops(true);
 
-            if (stops.length === 0) {
-                alert('This tour has no stops yet. Add stops before previewing.');
-                return;
-            }
+        fetchStopsOnce()
+            .then(stops => {
+                if (stops.length === 0) {
+                    setShowPreviewChoice(false);
+                    setIsLoadingStops(false);
+                    alert('This tour has no stops yet. Add stops before previewing.');
+                    return;
+                }
+                setTourStops(stops);
+                setIsLoadingStops(false);
+            })
+            .catch(error => {
+                console.error('Error fetching stops:', error);
+                setShowPreviewChoice(false);
+                setIsLoadingStops(false);
+                alert('Failed to load tour stops. Please try again.');
+            });
+    }
 
-            setTourStops(stops);
-            setShowPreviewChoice(true);
-        } catch (error) {
-            console.error('Error fetching stops:', error);
-            alert('Failed to load tour stops. Please try again.');
-        }
+    function handleClosePreview() {
+        setShowPreviewChoice(false);
+        // Invalidate so the next open fetches fresh stops (in case tour was edited)
+        stopsPromiseRef.current = null;
     }
 
     // Close menu when clicking outside
@@ -149,6 +183,9 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
                 <div className="mb-4">
                     <button
                         onClick={handlePreview}
+                        onMouseEnter={handlePrefetchStops}
+                        onMouseDown={handlePrefetchStops}
+                        onFocus={handlePrefetchStops}
                         className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all ${
                             tour.status === 'published'
                                 ? 'bg-green-600 hover:bg-green-700 text-white'
@@ -242,8 +279,9 @@ export function TourCard({ tour, template, onEdit, onDuplicate, onDelete, onStat
                 isOpen={showPreviewChoice}
                 tour={tour}
                 stops={tourStops}
+                isLoading={isLoadingStops}
                 availableLanguages={tour.languages}
-                onClose={() => setShowPreviewChoice(false)}
+                onClose={handleClosePreview}
             />
         </div>
     );

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Smartphone, ExternalLink, Settings2 } from 'lucide-react';
+import { X, Smartphone, ExternalLink, Settings2, Loader2 } from 'lucide-react';
 import { StopPreviewModal } from './StopPreviewModal';
 import { KioskLauncherModal } from './KioskLauncherModal';
 import type { Tour, Stop } from '../types';
@@ -11,10 +11,12 @@ interface PreviewChoiceModalProps {
     /** Which stop to preview in simulator — defaults to first stop */
     initialStop?: Stop;
     availableLanguages?: string[];
+    /** When true, stops are still loading — action buttons show a spinner and are disabled */
+    isLoading?: boolean;
     onClose: () => void;
 }
 
-export function PreviewChoiceModal({ isOpen, tour, stops, initialStop, availableLanguages, onClose }: PreviewChoiceModalProps) {
+export function PreviewChoiceModal({ isOpen, tour, stops, initialStop, availableLanguages, isLoading = false, onClose }: PreviewChoiceModalProps) {
     const [showSimulator, setShowSimulator] = useState(false);
     const [showKioskModal, setShowKioskModal] = useState(false);
 
@@ -113,12 +115,16 @@ export function PreviewChoiceModal({ isOpen, tour, stops, initialStop, available
                     {/* Simulator */}
                     <button
                         onClick={handleSimulator}
-                        disabled={!previewStop}
+                        disabled={!previewStop || isLoading}
                         className="w-full text-left p-4 rounded-xl border-2 border-[var(--color-border-default)] hover:border-[var(--color-accent-primary)] bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center shrink-0">
-                                <Smartphone className="w-6 h-6 text-blue-400" />
+                                {isLoading ? (
+                                    <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+                                ) : (
+                                    <Smartphone className="w-6 h-6 text-blue-400" />
+                                )}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent-primary)] transition-colors">
@@ -134,12 +140,16 @@ export function PreviewChoiceModal({ isOpen, tour, stops, initialStop, available
                     {/* Tour Device */}
                     <button
                         onClick={handleTourDevice}
-                        disabled={sortedStops.length === 0}
+                        disabled={sortedStops.length === 0 || isLoading}
                         className="w-full text-left p-4 rounded-xl border-2 border-[var(--color-border-default)] hover:border-green-500 bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center shrink-0">
-                                <ExternalLink className="w-6 h-6 text-green-400" />
+                                {isLoading ? (
+                                    <Loader2 className="w-6 h-6 text-green-400 animate-spin" />
+                                ) : (
+                                    <ExternalLink className="w-6 h-6 text-green-400" />
+                                )}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-[var(--color-text-primary)] group-hover:text-green-400 transition-colors">
@@ -157,7 +167,8 @@ export function PreviewChoiceModal({ isOpen, tour, stops, initialStop, available
                 <div className="px-6 pb-5">
                     <button
                         onClick={handleAdvanced}
-                        className="w-full flex items-center justify-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] border border-[var(--color-border-default)] hover:border-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] rounded-lg px-4 py-2.5 transition-all"
+                        disabled={isLoading}
+                        className="w-full flex items-center justify-center gap-2 text-sm font-medium text-[var(--color-text-secondary)] border border-[var(--color-border-default)] hover:border-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] rounded-lg px-4 py-2.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Settings2 className="w-4 h-4" />
                         <span>Advanced: Kiosk, Staff Handoff & Export</span>
