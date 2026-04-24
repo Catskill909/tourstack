@@ -19,6 +19,11 @@ Build interactive tours with QR codes, GPS, Bluetooth beacons, NFC, and more. AI
 
 > All AI features are optional — TourStack works fully offline with no API keys configured. Add keys to unlock each capability.
 
+> [!WARNING]
+> **AI model names are a moving target.** Providers (especially Google Gemini) silently deprecate model versions. Symptoms: every `/api/chat`, `/api/concierge`, or document-analysis call starts returning `500 Internal Server Error` with a response body saying `[GoogleGenerativeAI Error] 429 Resource exhausted` — even on paid tiers with billing active. This is **not** a quota issue; it's the provider's way of signaling "this model is retired."
+>
+> **Diagnosis & fix**: see [docs/ai-model-versions.md](./docs/ai-model-versions.md). Short version — update the hardcoded model string in [app/server/routes/chat.ts](./app/server/routes/chat.ts), [app/server/routes/concierge.ts](./app/server/routes/concierge.ts), and [app/server/routes/gemini.ts](./app/server/routes/gemini.ts) to a currently-supported version, restart the backend, redeploy.
+
 ---
 
 ## ⛔️ APP DIRECTORY + SERVER STARTUP ⛔️
@@ -148,6 +153,7 @@ TourStack/
 | [docs/openapi-feeds.yaml](./docs/openapi-feeds.yaml) | OpenAPI 3.0 spec for Feed API |
 | [docs/json-audit.md](./docs/json-audit.md) | JSON endpoint audit |
 | [docs/ELEVENLABS-VOICES-ISSUE.md](./docs/ELEVENLABS-VOICES-ISSUE.md) | ElevenLabs voice API limitations |
+| [docs/ai-model-versions.md](./docs/ai-model-versions.md) | Gemini model deprecation — diagnosis & fix |
 | [tourstack.md](./tourstack.md) | Full scope reference |
 
 ## 🔧 Commands
